@@ -12,3 +12,11 @@ Each team member would work on a feature that doesn't conflict with another's wo
 a pull request back into `develop`, and at least one other team member reviews and approves the changes before merging. This keeps `develop` stable while still letting people work in parallel.
 
 When the team is ready to prepare a release, a `release/` branch is cut from `develop` for final testing and bug fixes, then merged into both `main` and `develop`. If an urgent fix is needed in production.
+
+
+### Team
+- Narcis Petrica Balint
+- Jes Mariya Wilson
+- Evan Lin
+- Jay Popat
+
