@@ -15,8 +15,8 @@ When the team is ready to prepare a release, a `release/` branch is cut from `de
 
 
 ### Team
-- Narcis
-- Jes
-- Evan
-- Jay
+- Narcis Petrica Balint
+- Jes Mariya Wilson
+- Evan Lin
+- Jay Popat
 
