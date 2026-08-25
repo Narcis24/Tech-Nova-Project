@@ -20,6 +20,4 @@ When the team is ready to prepare a release, a `release/` branch is cut from `de
 - Evan Lin
 - Jay Popat
 
-This is a merge conflict
-
 #This is just a test from Narcis
