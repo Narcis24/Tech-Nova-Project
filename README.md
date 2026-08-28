@@ -19,7 +19,6 @@ When the team is ready to prepare a release, a `release/` branch is cut from `de
 - Jes
 - Evan
 
-<!-- test commit from feature/jes-test.git branch -->
 
 - Jay
 
