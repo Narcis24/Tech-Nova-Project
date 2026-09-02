@@ -7,5 +7,5 @@ RUN mvn -B clean package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=build /app/target/team-skeleton.jar app.jar
+COPY --from=build /app/target/tech-nova.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]
