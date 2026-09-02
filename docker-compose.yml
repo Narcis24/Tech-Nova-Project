@@ -17,6 +17,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - tech-nova-network
 
   app:
     build: .
@@ -27,6 +29,13 @@ services:
       DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-technova}
       DB_USER: ${POSTGRES_USER:-technova}
       DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    networks:
+      - tech-nova-network
 
 volumes:
   db_data:
+
+networks:
+  tech-nova-network:
+    driver: bridge
+
