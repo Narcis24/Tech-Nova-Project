@@ -1,23 +1,41 @@
-### Branching Strategy
+# TechNova - Enterprise Trading Platform
 
-As a team, we revisited the trunk-based vs Gitflow-style comparison and discussed our team size, expected merge frequency, and the process overhead appropriate for a 10-week project.
+**An enterprise-grade trading application with multi-asset support, order management, and real-time position tracking.**
 
-**Decision:** The team has agreed to use a **Gitflow branching strategy**.
+## Branching Strategy
 
-We expect to merge work back into the main development branch approximately **once every 3-5 days**, which fits well with Gitflow's structured use of feature, develop, and release branches.
+**Gitflow** - Feature work on `feature/` branches off `develop`, with PR review before merging. Release branches for testing/bug fixes before merging to `main` and `develop`.
 
-In this scenario, usually teams would work by themselves or in pairs for pair programming. 
+## Team
 
-Each team member would work on a feature that doesn't conflict with another's work, using their own `feature/` branch created off `develop`. Once a feature is complete, the author opens
-a pull request back into `develop`, and at least one other team member reviews and approves the changes before merging. This keeps `develop` stable while still letting people work in parallel.
-
-When the team is ready to prepare a release, a `release/` branch is cut from `develop` for final testing and bug fixes, then merged into both `main` and `develop`. If an urgent fix is needed in production.
-
-
-### Team
 - Narcis Petrica Balint
 - Jes Mariya Wilson
 - Evan Lin
 - Jay Popat
 
-#This is just a test from Narcis
+## Getting Started
+
+### Prerequisites
+
+- PostgreSQL client installed
+- Docker & Docker Compose
+- `.env` file with database credentials
+
+### Setup
+
+```bash
+# Start services
+docker-compose up -d
+
+# Connect to database (optional for direct access)
+psql -h localhost -p 5434 -U technova -d technova
+```
+
+### Database
+
+The application uses PostgreSQL with the following schema:
+
+- **accounts** - Trading accounts with cash balances
+- **instruments** - Available trading instruments (stocks, ETFs, bonds, crypto)
+- **orders** - Order history and current trades
+- **positions** - Real-time position tracking
