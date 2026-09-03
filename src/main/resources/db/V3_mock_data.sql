@@ -46,7 +46,7 @@ INSERT INTO orders (id, account_id, symbol, side, quantity, price, status, idemp
 INSERT INTO orders (id, account_id, symbol, side, quantity, price, status, idempotency_key, created_on) VALUES
 (gen_random_uuid(), 'ACC003', 'MSFT', 'BUY', 15, 380.00, 'FILLED', 'ACC003_001', '2024-01-08 13:30:00'),
 (gen_random_uuid(), 'ACC003', 'VANG', 'BUY', 30, 210.50, 'FILLED', 'ACC003_002', '2024-01-12 10:00:00'),
-(gen_random_uuid(), 'ACC003', 'BTC', 'BUY', 0.5, 45000.00, 'PENDING', 'ACC003_003', NOW());
+(gen_random_uuid(), 'ACC003', 'BTC', 'BUY', 1, 45000.00, 'PENDING', 'ACC003_003', NOW());
 
 -- David's orders
 INSERT INTO orders (id, account_id, symbol, side, quantity, price, status, idempotency_key, created_on) VALUES
