@@ -39,3 +39,11 @@ The application uses PostgreSQL with the following schema:
 - **instruments** - Available trading instruments (stocks, ETFs, bonds, crypto)
 - **orders** - Order history and current trades
 - **positions** - Real-time position tracking
+
+
+
+### Running just the Java File
+mvn clean compile exec:java -Dexec.mainClass="com.neueda.leap.SP100Fetcher"
+
+### Python File
+Just use the run button
