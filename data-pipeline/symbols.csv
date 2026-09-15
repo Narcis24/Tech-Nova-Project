@@ -1,0 +1,40 @@
+symbol,name,asset_class
+AAPL,Apple Inc.,EQUITY
+MSFT,Microsoft Corporation,EQUITY
+NVDA,NVIDIA Corporation,EQUITY
+AMZN,Amazon.com Inc.,EQUITY
+GOOGL,Alphabet Inc.,EQUITY
+META,Meta Platforms Inc.,EQUITY
+TSLA,Tesla Inc.,EQUITY
+BRK-B,Berkshire Hathaway Inc.,EQUITY
+AVGO,Broadcom Inc.,EQUITY
+JPM,JPMorgan Chase & Co.,EQUITY
+LLY,Eli Lilly and Company,EQUITY
+V,Visa Inc.,EQUITY
+XOM,Exxon Mobil Corporation,EQUITY
+UNH,UnitedHealth Group Inc.,EQUITY
+MA,Mastercard Inc.,EQUITY
+JNJ,Johnson & Johnson,EQUITY
+PG,Procter & Gamble Co.,EQUITY
+HD,The Home Depot Inc.,EQUITY
+COST,Costco Wholesale Corporation,EQUITY
+ABBV,AbbVie Inc.,EQUITY
+WMT,Walmart Inc.,EQUITY
+KO,The Coca-Cola Company,EQUITY
+PEP,PepsiCo Inc.,EQUITY
+BAC,Bank of America Corporation,EQUITY
+CVX,Chevron Corporation,EQUITY
+SPY,SPDR S&P 500 ETF Trust,ETF
+QQQ,Invesco QQQ Trust,ETF
+IWM,iShares Russell 2000 ETF,ETF
+DIA,SPDR Dow Jones Industrial Average ETF,ETF
+VTI,Vanguard Total Stock Market ETF,ETF
+EFA,iShares MSCI EAFE ETF,ETF
+XLK,Technology Select Sector SPDR Fund,ETF
+XLE,Energy Select Sector SPDR Fund,ETF
+TLT,iShares 20+ Year Treasury Bond ETF,BOND
+IEF,iShares 7-10 Year Treasury Bond ETF,BOND
+AGG,iShares Core US Aggregate Bond ETF,BOND
+LQD,iShares iBoxx Investment Grade Corporate Bond ETF,BOND
+GLD,SPDR Gold Shares,COMMODITY
+SLV,iShares Silver Trust,COMMODITY
