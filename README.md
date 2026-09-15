@@ -13,29 +13,32 @@
 - Evan Lin
 - Jay Popat
 
+## Layout
+
+```
+app/             Java application
+data-pipeline/   loads market data from Yahoo Finance
+db/migrations/   schema, applied on first db start
+db/scripts/      reset.sh, checks.sql
+docs/
+```
+
 ## Getting Started
 
 ### Prerequisites
 
 - PostgreSQL client installed
 - Docker & Docker Compose
-- `.env` file with database credentials
 
 ### Setup
 
 ```bash
-# Start services
-docker-compose up -d
+cp .env.example .env            # set POSTGRES_PASSWORD
+./db/scripts/reset.sh           # fresh db + market data (pass e.g. 5y for more history)
+docker-compose up -d --build
 
 # Connect to database (optional for direct access)
 psql -h localhost -p 5434 -U technova -d technova
 ```
 
-### Database
-
-The application uses PostgreSQL with the following schema:
-
-- **accounts** - Trading accounts with cash balances
-- **instruments** - Available trading instruments (stocks, ETFs, bonds, crypto)
-- **orders** - Order history and current trades
-- **positions** - Real-time position tracking
+See [docs/database.md](docs/database.md) for the schema.
