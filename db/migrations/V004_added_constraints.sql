@@ -15,4 +15,4 @@ ALTER TABLE positions
     ADD CONSTRAINT chk_positions_average_cost CHECK (average_cost >= 0);
 
 ALTER TABLE instruments
-    ADD CONSTRAINT chk_asset_class CHECK (asset_class IN ('EQUITY', 'BOND', 'ETF'));
+    ADD CONSTRAINT chk_asset_class CHECK (asset_class IN ('EQUITY', 'BOND', 'ETF', 'COMMODITY'));
