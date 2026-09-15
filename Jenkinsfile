@@ -1,24 +1,22 @@
 pipeline {
     agent any
-    environment {
-        JAVA_HOME = '/usr/lib/jvm/java-21-amazon-corretto.x86_64'
-        PATH = "${JAVA_HOME}/bin:${env.PATH}"
-    }
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
-        stage('Build Image') {
+        stage('Build Images') {
             steps {
-                sh 'mvn -B -f app/pom.xml clean package -DskipTests'
                 sh 'docker build -t team-skeleton:latest ./app'
+                sh 'docker build -t tech-nova-pipeline:latest ./data-pipeline'
             }
         }
         stage('Smoke Test') {
             steps {
                 sh 'docker run --rm team-skeleton:latest'
+                // imports dependencies and compiles load.py without hitting Yahoo or a database
+                sh 'docker run --rm --entrypoint python tech-nova-pipeline:latest -c "import load"'
             }
         }
     }
