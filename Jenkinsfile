@@ -12,8 +12,8 @@ pipeline {
         }
         stage('Build Image') {
             steps {
-                sh 'mvn -B clean package -DskipTests'
-                sh 'docker build -t team-skeleton:latest .'
+                sh 'mvn -B -f app/pom.xml clean package -DskipTests'
+                sh 'docker build -t team-skeleton:latest ./app'
             }
         }
         stage('Smoke Test') {
