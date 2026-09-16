@@ -8,7 +8,7 @@ import lombok.Data;
 @Data
 public class AccountResponse {
     
-    private Long accountID; 
+    private String accountID; 
     private BigDecimal cash_balance;
     private AccountStatus status;
     

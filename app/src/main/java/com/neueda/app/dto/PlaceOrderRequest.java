@@ -9,7 +9,7 @@ import lombok.Data;
 public class PlaceOrderRequest {
 
     @NotNull(message = "Account ID required")
-    private Long accountID;
+    private String accountID;
 
     @NotBlank(message = "Symbol required")
     private String symbol;

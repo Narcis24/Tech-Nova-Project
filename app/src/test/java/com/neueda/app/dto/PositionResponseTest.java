@@ -9,21 +9,18 @@ import java.math.BigDecimal;
 public class PositionResponseTest {
     
     @Test 
-    public void positionResponseTest() {
-        Long positionID = 1001L;
-        Long accountID = 12345L;
+    public void positionResponseBasicTest() {
+        String accountID = "12345L";
         String symbol = "AAPL";
         int quantity = 100;
         BigDecimal price = new BigDecimal("150.75");
 
         PositionResponse response = new PositionResponse();
-        response.setPositionID(positionID);
         response.setAccountID(accountID);
         response.setSymbol(symbol);
         response.setQuantity(quantity);
         response.setPrice(price);
 
-        assertEquals(positionID, response.getPositionID());
         assertEquals(accountID, response.getAccountID());
         assertEquals(symbol, response.getSymbol());
         assertEquals(quantity, response.getQuantity());

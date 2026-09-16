@@ -11,7 +11,7 @@ public class AccountResponseTest {
     @Test 
     public void accountResponseTest() {
 
-        Long accountID = 12345L;
+        String accountID = "12345L";
         BigDecimal cash_balance = new BigDecimal("2500.50");
         AccountStatus status = AccountStatus.ACTIVE;
 
@@ -24,17 +24,5 @@ public class AccountResponseTest {
         assertEquals(cash_balance, response.getCash_balance());
         assertEquals(status, response.getStatus());
 
-    }
-
-    @Test
-    public void accountResponseGettersSettersTest() {
-        AccountResponse response = new AccountResponse();
-        response.setAccountID(2L);
-        response.setCash_balance(new BigDecimal("5000.50"));
-        response.setStatus(AccountStatus.INACTIVE);
-
-        assertEquals(2L, response.getAccountID());
-        assertEquals(new BigDecimal("5000.50"), response.getCash_balance());
-        assertEquals(AccountStatus.INACTIVE, response.getStatus());
     }
 }

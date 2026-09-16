@@ -11,7 +11,7 @@ public class OrderResponseTest {
     
     @Test 
     public void orderResponseBasicTest() {
-        Long orderID = 10001L;
+        String orderID = "10001L";
         OrderStatus status = OrderStatus.PENDING;
         String message = "Order placed successfully";
         String symbol = "AAPL";

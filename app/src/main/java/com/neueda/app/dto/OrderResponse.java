@@ -8,7 +8,7 @@ import lombok.Data;
 @Data
 public class OrderResponse {
 
-    private Long orderID;
+    private String orderID;
     private OrderStatus status;
     private String message;
     private String symbol;

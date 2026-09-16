@@ -29,7 +29,7 @@ public class PlaceOrderRequestTest {
     @Test
     public void validPlaceOrderRequestTest() {
         PlaceOrderRequest request = new PlaceOrderRequest();
-        request.setAccountID(1L);
+        request.setAccountID("1L");
         request.setSymbol("AAPL");
         request.setSide("BUY");
         request.setQuantity(100);
@@ -60,7 +60,7 @@ public class PlaceOrderRequestTest {
     @Test 
     public void nullSymbolTest() {
         PlaceOrderRequest request = new PlaceOrderRequest();
-        request.setAccountID(1234L);
+        request.setAccountID("1234L");
         request.setSymbol(null);
         request.setSide("SELL");
         request.setQuantity(200);
@@ -75,7 +75,7 @@ public class PlaceOrderRequestTest {
     @Test 
     public void nullSideTest() {
         PlaceOrderRequest request = new PlaceOrderRequest();
-        request.setAccountID(3456L);
+        request.setAccountID("3456L");
         request.setSymbol("AAPL");
         request.setSide(null);
         request.setQuantity(500);
@@ -90,7 +90,7 @@ public class PlaceOrderRequestTest {
     @Test
     public void invalidSidePatternTest() {
         PlaceOrderRequest request = new PlaceOrderRequest();
-        request.setAccountID(123456L);
+        request.setAccountID("123456L");
         request.setSymbol("AAPL");
         request.setSide("HOLD");  
         request.setQuantity(500);
@@ -105,7 +105,7 @@ public class PlaceOrderRequestTest {
     @Test 
     public void nullQuantityTest() {
         PlaceOrderRequest request = new PlaceOrderRequest();
-        request.setAccountID(1256L);
+        request.setAccountID("1256L");
         request.setSymbol("AAPL");
         request.setSide("SELL");
         request.setQuantity(null);
@@ -120,7 +120,7 @@ public class PlaceOrderRequestTest {
     @Test 
     public void negativePriceTest() {
         PlaceOrderRequest request = new PlaceOrderRequest();
-        request.setAccountID(123456L);
+        request.setAccountID("123456L");
         request.setSymbol("APPL");
         request.setSide("SELL");
         request.setQuantity(200);
