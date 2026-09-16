@@ -1,5 +1,7 @@
 package com.neueda.app.dto;
 
+import java.math.BigDecimal;
+
 import com.neueda.app.enums.OrderStatus;
 import lombok.Data;
 
@@ -13,5 +15,5 @@ public class OrderResponse {
     private String symbol;
     private String side; 
     private int quantity;
-    private double price;
+    private BigDecimal price;
 }

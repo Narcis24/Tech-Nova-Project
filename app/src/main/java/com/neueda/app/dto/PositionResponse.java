@@ -9,6 +9,6 @@ public class PositionResponse {
     private Long accountId; 
     private String symbol; 
     private int quantity;
-    private double price;
+    private BigDecimal price;
 
 }

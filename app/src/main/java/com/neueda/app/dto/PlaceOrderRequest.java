@@ -1,5 +1,7 @@
 package com.neueda.app.dto;
 
+import java.math.BigInteger;
+
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -19,7 +21,7 @@ public class PlaceOrderRequest {
     private Integer quantity;
 
     @DecimalMin("0.01")
-    private Double price;
+    private BigDecimal price;
 
     private String idempotency_key;    
 
