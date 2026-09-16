@@ -1,3 +1,4 @@
+```mermaid
 sequenceDiagram
     actor User
     participant OrderService
@@ -8,22 +9,17 @@ sequenceDiagram
     User ->>OrderService: placeOrder(symbol, side, quantity, price)
 
     OrderService->>Account: validateAccount()
-    Account->>OrderService: ACTIVE
+    Account-->>OrderService: ACTIVE
+
+    OrderService->>Instrument: isTradable()
+    Instrument-->>OrderService: TRADABLE
 
     OrderService->>Order: createOrder()
 
-    Order->>Order: getTotalValue()
-    Order->>OrderService: totalValue
-
-    alt BUY Order
-        OrderService->>Account: debitCash(totalValue)
-    else SELL Order 
-        Note over OrderService, Account: Verify Holdings
-    end
-
-    OrderService->>Order: execute()
-    Order-->>OrderService: status = FILLED
+    Order-->>OrderService: status = PENDING
+    OrderService-->>User: Order Created
 
     OrderService-->>User: Order Confirmation
+```
 
     
