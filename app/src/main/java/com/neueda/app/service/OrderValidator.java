@@ -6,9 +6,13 @@ import com.neueda.app.entity.Account;
 public class OrderValidator {
 
     private final AccountRespository account_repository;
+    private final InstrumentRepository instrument_repository;
 
-    public OrderValidator(AccountRespository account_repository) {
+    public OrderValidator(AccountRespository account_repository,
+        InstrumentRepository instrument_repository) {
+
         this.account_repository = account_repository;
+        this.instrument_repository; = instrument_repository;
     }
 
     public Account validateAccountID(String accountID) {
@@ -23,5 +27,13 @@ public class OrderValidator {
         if (account.getStatus() != AccountStatus.ACTIVE) {
             throw new AccountNotActiveException("Account must be active to place an order")
         }
+    }
+
+    public void validateInstrumentSymbol(String symbol) {
+        return InstrumentRepository.findBySymbol(symbol)
+            .orElseThrow(() ->
+                new InstrumentNotFoundException(
+                    "Instrument Symbol" + symbol + "cannot be found")
+        )
     }
 }
