@@ -6,5 +6,4 @@ public class ErrorResponse {
     
     private String error_code;
     private String message;
-    
 }
