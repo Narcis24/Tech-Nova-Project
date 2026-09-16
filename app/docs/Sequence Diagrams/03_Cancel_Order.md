@@ -13,6 +13,6 @@ sequenceDiagram
     OrderService->>Order: cancel()
     Order-->>OrderService: status = CANCELLED
     
-    OrderService--User: Cancellation Confirmed
+    OrderService-->>User: Cancellation Confirmed
 
 ```
