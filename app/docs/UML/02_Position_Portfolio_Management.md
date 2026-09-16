@@ -1,0 +1,49 @@
+```mermaid
+
+classDiagram
+    class Position {
+        -String accountId
+        -String symbol
+        -int quantity
+        -BigDecimal averageCost
+        +updateOnBuy()
+        +updateOnSell()
+        +getMarketValue()
+        +getUnrealizedPnL()
+    }
+
+    class Account {
+        -String accountId
+        -BigDecimal cashBalance
+    }
+
+    class Instrument {
+        -String symbol
+    }
+
+    class PositionService {
+        +updatePositionOnBuy()
+        +updatePositionOnSell()
+        +getPortfolioSnapshot()
+        +getPortfolioMetrics()
+    }
+
+    class PortfolioMetrics {
+        -BigDecimal totalMarketValue
+        -BigDecimal totalCash
+        -BigDecimal totalUnrealizedPnL
+        +getPortfolioReturn()
+    }
+
+    class PriceService {
+        +getLatestPrice()
+        +getPriceHistory()
+    }
+
+    Account "1" --> "0..*" Position
+    Position --> Instrument
+    PositionService --> Position
+    PositionService --> PortfolioMetrics
+    PositionService --> PriceService
+
+```
