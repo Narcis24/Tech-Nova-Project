@@ -1,5 +1,7 @@
-package com.neueda.leap.dto;
+package com.neueda.app.dto;
 
 public class ErrorResponse {
-    // All error type outputs
+    
+    private String error_code;
+    private String message;
 }

@@ -1,22 +1,26 @@
-package com.neueda.leap.dto;
+package com.neueda.app.dto;
 
-import java.math.BigInteger;
+import jakarta.validation.constraints.*;
+import lombok.Data;
 
-import javax.print.DocFlavor.STRING;
-
+@Data
 public class PlaceOrderRequest {
 
-    // Implement Logic for order request
-    // @NotNull & @Positive
-    
-    // IV = Instance Variable
-    // Following IV is chosen from ETP PDF
+    @NotNull(message = "Account ID required")
+    private Long accountId;
 
-    private BigInteger accountId;
+    @NotBlank(message = "Symbol required")
     private String symbol;
+
+    @Pattern(regexp= "BUY|SELL")
     private String side;
+
+    @Positive(message = "Quantity must be positive")
     private Integer quantity;
+
+    @DecimalMin("0.01")
     private Double price;
-    private String idempotencyKey;
+
+    private String idempotency_key;    
 
 }
