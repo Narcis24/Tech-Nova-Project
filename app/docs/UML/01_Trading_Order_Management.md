@@ -1,0 +1,68 @@
+```mermaid
+
+classDiagram
+    class Account {
+        -String accountId
+        -BigDecimal cashBalance
+        -AccountStatus status
+        +debitCash()
+        +creditCash()
+    }
+
+    class Order {
+        -UUID id
+        -OrderSide side
+        -int quantity
+        -BigDecimal price
+        -OrderStatus status
+        +getTotalValue()
+        +execute()
+        +cancel()
+    }
+
+    class Instrument {
+        -String symbol
+        -boolean tradable
+        +isTradable()
+    }
+
+    class OrderService {
+        +placeOrder()
+        +validateOrder()
+        +executeOrder()
+        +cancelOrder()
+    }
+
+    class AccountStatus {
+        <<enumeration>>
+        ACTIVE
+        INACTIVE
+        SUSPENDED
+    }
+
+    class OrderStatus {
+        <<enumeration>>
+        PENDING
+        FILLED
+        CANCELLED
+        REJECTED
+        PARTIALLY_FILLED
+        EXPIRED
+    }
+
+    class OrderSide {
+        <<enumeration>>
+        BUY
+        SELL
+    }
+
+    Account "1" --> "0..*" Order
+    Order --> Instrument
+    Order --> OrderStatus
+    Order --> OrderSide
+    Account --> AccountStatus
+    OrderService --> Account
+    OrderService --> Order
+    OrderService --> Instrument
+
+```
