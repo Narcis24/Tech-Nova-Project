@@ -7,7 +7,6 @@ import lombok.Data;
 
 @Data
 public class OrderResponse {
-    // Output for order API
 
     private Long orderID;
     private OrderStatus status;
