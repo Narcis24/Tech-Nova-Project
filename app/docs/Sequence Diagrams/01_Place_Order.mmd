@@ -1,0 +1,29 @@
+sequenceDiagram
+    actor User
+    participant OrderService
+    participant Account
+    participant Instrument
+    participant Order
+
+    User ->>OrderService: placeOrder(symbol, side, quantity, price)
+
+    OrderService->>Account: validateAccount()
+    Account->>OrderService: ACTIVE
+
+    OrderService->>Order: createOrder()
+
+    Order->>Order: getTotalValue()
+    Order->>OrderService: totalValue
+
+    alt BUY Order
+        OrderService->>Account: debitCash(totalValue)
+    else SELL Order 
+        Note over OrderService, Account: Verify Holdings
+    end
+
+    OrderService->>Order: execute()
+    Order-->>OrderService: status = FILLED
+
+    OrderService-->>User: Order Confirmation
+
+    
