@@ -1,3 +1,4 @@
 app/target/
 .env*
 !.env.example
+app/target*
