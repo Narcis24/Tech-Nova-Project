@@ -3,8 +3,8 @@ package com.neueda.app.model;
 import com.neueda.app.enums.AccountStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import com.neueda.app.exception.AccountNotActiveException;
-import com.neueda.app.exception.InsufficientFundsException;
+import com.neueda.app.exceptions.AccountNotActiveException;
+import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.contract.AccountOperations;
 
 public class Account  implements AccountOperations {
