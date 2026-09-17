@@ -18,10 +18,10 @@ sequenceDiagram
     PositionService->>Position: getUnrealizedPnL()
     Position-->>PositionService: unrealizedPnL
 
-    PositionService->>PortoflioMetrics: calculateMetrics()
+    PositionService->>PortfolioMetrics: calculateMetrics()
 
     PortfolioMetrics-->>PositionService: Metrics
-    PositionService-->>User: Portofolio Metrics
+    PositionService-->>User: Portfolio Metrics
 
 
 ```

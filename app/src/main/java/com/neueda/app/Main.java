@@ -1,4 +1,4 @@
-package com.neueda.leap;
+package com.neueda.app;
 
 public class Main {
     public static void main(String[] args) 
