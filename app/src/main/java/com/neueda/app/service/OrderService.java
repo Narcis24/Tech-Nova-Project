@@ -1,5 +1,18 @@
 package com.neueda.app.service;
 
+import com.neueda.app.dto.OrderResponse;
+import com.neueda.app.dto.PlaceOrderRequest;
+import com.neueda.app.enums.OrderSide;
+import com.neueda.app.enums.OrderStatus;
+import com.neueda.app.exception.*;
+import com.neueda.app.model.Account;
+import com.neueda.app.model.Instrument;
+import com.neueda.app.model.Order;
+import com.neueda.app.model.Position;
+import com.neueda.app.repository.AccountRepository;
+import com.neueda.app.repository.InstrumentRepository;
+import com.neueda.app.repository.OrderRepository;
+import com.neueda.app.repository.PositionRepository;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -56,23 +69,12 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new TradingException("Order not found: " + orderId));
         
-        if (order.getStatus() != OrderStatus.PENDING) {
-            throw new TradingException("Cannot execute order with status: " + order.getStatus());
-        }
-        
         BigDecimal totalValue = order.getTotalValue();
         
         if (order.getSide() == OrderSide.BUY) {
             // BUY FLOW
             Account account = accountRepository.findById(order.getAccountId())
                 .orElseThrow(() -> new AccountNotFoundException("Account not found"));
-            
-            if (account.getCashBalance().compareTo(totalValue) < 0) {
-                throw new InsufficientFundsException(
-                    "Insufficient funds. Required: " + totalValue +
-                    ", Available: " + account.getCashBalance()
-                );
-            }
             
             account.debitCash(totalValue);
             
@@ -95,13 +97,6 @@ public class OrderService {
                 .findByAccountIdAndSymbol(order.getAccountId(), order.getSymbol())
                 .orElseThrow(() -> new TradingException("Position not found"));
             
-            if (position.getQuantity() < order.getQuantity()) {
-                throw new InsufficientHoldingsException(
-                    "Insufficient holdings. Required: " + order.getQuantity() +
-                    ", Available: " + position.getQuantity()
-                );
-            }
-            
             position.updateOnSell(order.getQuantity());
             
             Account account = accountRepository.findById(order.getAccountId())
@@ -118,10 +113,19 @@ public class OrderService {
         return new OrderResponse(order);
     }
 
-    public OrderResponse getOrder(UUID orderId) {
-            Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new TradingException("Order not found: " + orderId));
-            return new OrderResponse(order);
-    }
 
+    public OrderResponse cancelOrder(UUID orderId) {
+        Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new TradingException("Order not found: " + orderId));
+        
+        order.cancel();  // Entity handles state validation
+        orderRepository.update(order);
+        return new OrderResponse(order);
+    }
+    
+    public OrderResponse getOrder(UUID orderId) {
+        Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new TradingException("Order not found: " + orderId));
+        return new OrderResponse(order);
+    }
 }
