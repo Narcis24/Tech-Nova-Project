@@ -11,7 +11,7 @@ sequenceDiagram
     InstrumentService-->>User: Valid
     
     User->>InstrumentService: getInstrument(symbol)
-    Instrument->>Instrument: isTradable()
+    InstrumentService->>Instrument: isTradable()
     
     Instrument-->>InstrumentService: Instrument Details
     InstrumentService-->>User: Instrument

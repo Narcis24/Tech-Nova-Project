@@ -1,6 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.neueda.leap</groupId>
+    <groupId>com.neueda.app</groupId>
     <artifactId>tech-nova</artifactId>
     <version>0.1.0</version>
     <packaging>jar</packaging>
@@ -64,7 +64,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.neueda.leap.Main</mainClass>
+                            <mainClass>com.neueda.app.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
