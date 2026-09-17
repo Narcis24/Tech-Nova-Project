@@ -14,7 +14,7 @@ public class AccountService {
         this.accountRepository = accountRepository;
     }
 
-    public AccountResponse getAccount(UUID accountId) {
+    public AccountResponse getAccount(String accountId) {
         Account account = accountRepository.findById(accountId)
             .orElseThrow(() -> new AccountNotFoundException("Account not found: " + accountId));
         return new AccountResponse(account);
