@@ -6,7 +6,6 @@ import com.neueda.app.model.Instrument;
 import com.neueda.app.repository.InstrumentRepository;
 import java.util.ArrayList;
 import java.util.List;
-import com.neueda.app.model.AssetClass;
 
 public class InstrumentService {
     
