@@ -9,7 +9,7 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
       # runs any .sql files here once, on first container start, in filename order
-      - ./src/main/resources/db:/docker-entrypoint-initdb.d:ro
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
     ports:
       - "${POSTGRES_PORT:-5434}:5432"
     healthcheck:
@@ -21,7 +21,7 @@ services:
       - tech-nova-network
 
   app:
-    build: .
+    build: ./app
     depends_on:
       db:
         condition: service_healthy
@@ -32,10 +32,21 @@ services:
     networks:
       - tech-nova-network
 
+  # not started by `up`; run with: docker-compose --profile pipeline run --rm pipeline
+  pipeline:
+    build: ./data-pipeline
+    profiles: [pipeline]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: postgresql://${POSTGRES_USER:-technova}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-technova}
+    networks:
+      - tech-nova-network
+
 volumes:
   db_data:
 
 networks:
   tech-nova-network:
     driver: bridge
-
