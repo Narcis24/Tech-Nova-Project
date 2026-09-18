@@ -1,12 +1,11 @@
 package com.neueda.app.service;
 
 import com.neueda.app.dto.InstrumentResponse;
-import com.neueda.app.exception.InstrumentNotFoundException;
+import com.neueda.app.exceptions.InstrumentNotFoundException;
 import com.neueda.app.model.Instrument;
 import com.neueda.app.repository.InstrumentRepository;
 import java.util.ArrayList;
 import java.util.List;
-import com.neueda.app.model.AssetClass;
 
 public class InstrumentService {
     

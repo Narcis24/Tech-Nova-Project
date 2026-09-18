@@ -4,7 +4,7 @@ import com.neueda.app.dto.OrderResponse;
 import com.neueda.app.dto.PlaceOrderRequest;
 import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderStatus;
-import com.neueda.app.exception.*;
+import com.neueda.app.exceptions.*;
 import com.neueda.app.model.Account;
 import com.neueda.app.model.Instrument;
 import com.neueda.app.model.Order;
@@ -14,6 +14,7 @@ import com.neueda.app.repository.InstrumentRepository;
 import com.neueda.app.repository.OrderRepository;
 import com.neueda.app.repository.PositionRepository;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class OrderService {
@@ -55,10 +56,11 @@ public class OrderService {
             UUID.randomUUID(),
             request.getAccountId(),
             request.getSymbol(),
-            request.getSide(),
+            OrderSide.valueOf(request.getSide().toUpperCase()),
             request.getQuantity(),
             request.getPrice(),
-            UUID.randomUUID().toString()
+            request.getIdempotencyKey() != null ? request.getIdempotencyKey() : UUID.randomUUID().toString(),
+            LocalDateTime.now()
         );
         
         orderRepository.save(order);

@@ -1,7 +1,7 @@
 package com.neueda.app.service;
 
 import com.neueda.app.dto.AccountResponse;
-import com.neueda.app.exception.*;
+import com.neueda.app.exceptions.*;
 import com.neueda.app.model.Account;
 import com.neueda.app.repository.AccountRepository;
 import java.math.BigDecimal;

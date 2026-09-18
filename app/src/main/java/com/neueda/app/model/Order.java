@@ -23,17 +23,18 @@ public class Order implements OrderOperations {
     
     /**MUTABLE*/
     private OrderStatus status;                 
-    private LocalDateTime lastModified;        
+    private LocalDateTime lastModified; 
+    private String rejectionReason;       
 
     public Order(UUID id, String accountId, String symbol, OrderSide side, 
                  int quantity, BigDecimal price, String idempotencyKey, 
                  LocalDateTime createdOn) {
         // Validation
         if (quantity <= 0) {
-            throw new InvalidArgumentException("Quantity must be > 0");
+            throw new IllegalArgumentException("Quantity must be > 0");
         }
         if (price.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new InvalidArgumentException("Price must be > 0");
+            throw new IllegalArgumentException("Price must be > 0");
         }
         
         this.id = id;

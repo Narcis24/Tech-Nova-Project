@@ -1,7 +1,7 @@
 package com.neueda.app.service;
 
 import com.neueda.app.dto.PositionResponse;
-import com.neueda.app.exception.TradingException;
+import com.neueda.app.exceptions.TradingException;
 import com.neueda.app.model.Position;
 import com.neueda.app.repository.PositionRepository;
 import com.neueda.app.repository.PriceRepository;
