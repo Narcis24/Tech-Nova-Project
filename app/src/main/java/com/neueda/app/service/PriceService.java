@@ -1,6 +1,6 @@
 package com.neueda.app.service;
 
-import com.neueda.app.exception.TradingException;
+import com.neueda.app.exceptions.TradingException;
 import com.neueda.app.repository.PriceRepository;
 import java.math.BigDecimal;
 

@@ -1,7 +1,7 @@
 package com.neueda.app.service;
 
-import com.neueda.app.dto.InstrumentResponse;
-import com.neueda.app.exception.InstrumentNotFoundException;
+// import com.neueda.app.dto.InstrumentResponse;
+import com.neueda.app.exceptions.InstrumentNotFoundException;
 import com.neueda.app.model.Instrument;
 import com.neueda.app.repository.InstrumentRepository;
 import java.util.ArrayList;
@@ -17,14 +17,17 @@ public class InstrumentService {
     }
     
 
-    public InstrumentResponse getInstrument(String symbol) {
+    // public InstrumentResponse getInstrument(String symbol) {
+    /*
+    public void getInstrument(String symbol) {
         Instrument instrument = instrumentRepository.findBySymbol(symbol)
             .orElseThrow(() -> new InstrumentNotFoundException(
                 "Instrument not found: " + symbol
             ));
         
-        return new InstrumentResponse(instrument);
+        // return new InstrumentResponse(instrument); // DTO on another branch
     }
+    */
     
 
     public boolean isTradable(String symbol) {
@@ -37,14 +40,14 @@ public class InstrumentService {
     }
     
     
-    public List<InstrumentResponse> getAllTradable() {
+    // public List<InstrumentResponse> getAllTradable() {
+    public List<Object> getAllTradable() {
         List<Instrument> instruments = instrumentRepository.findAllTradable();
-        List<InstrumentResponse> responses = new ArrayList<>();
-        
-        for (Instrument instrument : instruments) {
-            responses.add(new InstrumentResponse(instrument));
-        }
-        
-        return responses;
+        // List<InstrumentResponse> responses = new ArrayList<>();
+        // for (Instrument instrument : instruments) {
+        //     responses.add(new InstrumentResponse(instrument));
+        // }
+        // return responses; // DTO on another branch
+        return new ArrayList<>();
     }
 }

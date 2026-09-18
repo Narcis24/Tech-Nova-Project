@@ -1,7 +1,7 @@
 package com.neueda.app.service;
 
-import com.neueda.app.dto.AccountResponse;
-import com.neueda.app.exception.*;
+// import com.neueda.app.dto.AccountResponse;
+import com.neueda.app.exceptions.*;
 import com.neueda.app.model.Account;
 import com.neueda.app.repository.AccountRepository;
 import java.math.BigDecimal;
@@ -14,11 +14,14 @@ public class AccountService {
         this.accountRepository = accountRepository;
     }
 
-    public AccountResponse getAccount(String accountId) {
+    // public AccountResponse getAccount(String accountId) {
+    /*
+    public void getAccount(String accountId) {
         Account account = accountRepository.findById(accountId)
             .orElseThrow(() -> new AccountNotFoundException("Account not found: " + accountId));
-        return new AccountResponse(account);
+        // return new AccountResponse(account); // DTO on another branch
     }
+    */
 
     public BigDecimal getAccountCashBalance(String accountId) {
         Account account = accountRepository.findById(accountId)
@@ -29,7 +32,9 @@ public class AccountService {
         return account.getCashBalance();
     }
 
-    public AccountResponse depositCash(String accountId, BigDecimal amount) {
+    // public AccountResponse depositCash(String accountId, BigDecimal amount) {
+    /*
+    public void depositCash(String accountId, BigDecimal amount) {
         Account account = accountRepository.findById(accountId)
             .orElseThrow(() -> new AccountNotFoundException(
                 "Account not found: " + accountId
@@ -39,10 +44,13 @@ public class AccountService {
         account.creditCash(amount);  // Validates amount > 0, updates balance + timestamp
         
         accountRepository.update(account);
-        return new AccountResponse(account);
+        // return new AccountResponse(account); // DTO on another branch
     }
+    */
 
-    public AccountResponse withdrawCash(String accountId, BigDecimal amount) {
+    // public AccountResponse withdrawCash(String accountId, BigDecimal amount) {
+    /*
+    public void withdrawCash(String accountId, BigDecimal amount) {
         Account account = accountRepository.findById(accountId)
             .orElseThrow(() -> new AccountNotFoundException(
                 "Account not found: " + accountId
@@ -52,8 +60,9 @@ public class AccountService {
         account.debitCash(amount);  // Throws if insufficient funds
         
         accountRepository.update(account);
-        return new AccountResponse(account);
+        // return new AccountResponse(account); // DTO on another branch
     }
+    */
     
 }
 

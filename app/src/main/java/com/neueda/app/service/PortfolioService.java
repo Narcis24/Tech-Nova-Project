@@ -1,10 +1,10 @@
 package com.neueda.app.service;
 
-import com.neueda.app.dto.PortfolioMetricsResponse;
-import com.neueda.app.dto.PortfolioSnapshotResponse;
-import com.neueda.app.dto.PositionResponse;
-import com.neueda.app.exception.AccountNotFoundException;
-import com.neueda.app.exception.TradingException;
+// import com.neueda.app.dto.PortfolioMetricsResponse;
+// import com.neueda.app.dto.PortfolioSnapshotResponse;
+// import com.neueda.app.dto.PositionResponse;
+import com.neueda.app.exceptions.AccountNotFoundException;
+import com.neueda.app.exceptions.TradingException;
 import com.neueda.app.model.Account;
 import com.neueda.app.model.Position;
 import com.neueda.app.model.PortfolioMetrics;
@@ -27,7 +27,9 @@ public class PortfolioService {
         this.priceRepository = priceRepository;
     }
 
-    public PortfolioSnapshotResponse getPortfolioSnapshot(String accountId) {
+    // public Object getPortfolioSnapshot(String accountId) {
+    /*
+    public Object getPortfolioSnapshot(String accountId) {
     
         Account account = accountRepository.findById(accountId)
             .orElseThrow(() -> new AccountNotFoundException(
@@ -62,16 +64,14 @@ public class PortfolioService {
         // Step 5: Return snapshot
         BigDecimal totalPortfolioValue = account.getCashBalance().add(totalMarketValue);
         
-        return new PortfolioSnapshotResponse(
-            accountId,
-            account.getCashBalance(),
-            totalMarketValue,
-            totalPortfolioValue,
-            positionResponses
-        );
+        // return new PortfolioSnapshotResponse(...); // DTO on another branch
+        return null;
     }
+    */
 
-    public PortfolioMetricsResponse getPortfolioMetrics(String accountId) {
+    // public Object getPortfolioMetrics(String accountId) {
+    /*
+    public Object getPortfolioMetrics(String accountId) {
         // Step 1: Fetch account
         Account account = accountRepository.findById(accountId)
             .orElseThrow(() -> new AccountNotFoundException(
@@ -127,6 +127,9 @@ public class PortfolioService {
             portfolioReturn,
             positionResponses
         );
+        
     }
+        */
+
 }
 

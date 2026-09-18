@@ -11,11 +11,12 @@ public class Position implements PositionOperations {
     private BigDecimal averageCost;
 
     public Position(String accountId, String symbol, int quantity, BigDecimal averageCost) {
-        if (quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be > 0");
+        // Allow quantity = 0 for new positions that haven't been opened yet
+        if (quantity < 0) {
+            throw new IllegalArgumentException("Quantity cannot be negative");
         }
-        if (averageCost.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Average cost must be > 0");
+        if (quantity > 0 && averageCost.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Average cost must be > 0 when quantity > 0");
         }
         
         this.accountId = accountId;

@@ -1,10 +1,10 @@
 package com.neueda.app.service;
 
 import com.neueda.app.dto.OrderResponse;
-import com.neueda.app.dto.PlaceOrderRequest;
+// import com.neueda.app.dto.PlaceOrderRequest;
 import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderStatus;
-import com.neueda.app.exception.*;
+import com.neueda.app.exceptions.*;
 import com.neueda.app.model.Account;
 import com.neueda.app.model.Instrument;
 import com.neueda.app.model.Order;
@@ -33,7 +33,9 @@ public class OrderService {
         this.instrumentRepository = instrumentRepository;
     }
 
-    public OrderResponse placeOrder(PlaceOrderRequest request) {
+    // public OrderResponse placeOrder(PlaceOrderRequest request) {
+    /*
+    public void placeOrder(Object request) {
         // Validate account exists and is ACTIVE
         Account account = accountRepository.findById(request.getAccountId())
             .orElseThrow(() -> new AccountNotFoundException(
@@ -62,9 +64,11 @@ public class OrderService {
         );
         
         orderRepository.save(order);
-        return new OrderResponse(order);
+        // return new OrderResponse(order); // DTO on another branch
     }
+    */
 
+     // public OrderResponse executeOrder(UUID orderId) {
      public OrderResponse executeOrder(UUID orderId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new TradingException("Order not found: " + orderId));
@@ -110,22 +114,30 @@ public class OrderService {
         
         order.execute();
         orderRepository.update(order);
-        return new OrderResponse(order);
+        return new OrderResponse(order.getId(), order.getAccountId(), order.getSymbol(), 
+                                  order.getSide(), order.getQuantity(), order.getPrice(), 
+                                  order.getStatus(), order.getCreatedOn(), order.getLastModified());
     }
 
 
-    public OrderResponse cancelOrder(UUID orderId) {
+    // public OrderResponse cancelOrder(UUID orderId) {
+    /*
+    public void cancelOrder(UUID orderId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new TradingException("Order not found: " + orderId));
         
         order.cancel();  // Entity handles state validation
         orderRepository.update(order);
-        return new OrderResponse(order);
+        // return new OrderResponse(order); // DTO on another branch
     }
+    */
     
-    public OrderResponse getOrder(UUID orderId) {
+    // public OrderResponse getOrder(UUID orderId) {
+    /*
+    public void getOrder(UUID orderId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new TradingException("Order not found: " + orderId));
-        return new OrderResponse(order);
+        // return new OrderResponse(order); // DTO on another branch
     }
+    */
 }
