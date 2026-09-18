@@ -1,7 +1,7 @@
 package com.neueda.app.service;
 
 import com.neueda.app.dto.OrderResponse;
-// import com.neueda.app.dto.PlaceOrderRequest;
+import com.neueda.app.dto.PlaceOrderRequest;
 import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.exceptions.*;
@@ -13,6 +13,9 @@ import com.neueda.app.repository.AccountRepository;
 import com.neueda.app.repository.InstrumentRepository;
 import com.neueda.app.repository.OrderRepository;
 import com.neueda.app.repository.PositionRepository;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -33,9 +36,7 @@ public class OrderService {
         this.instrumentRepository = instrumentRepository;
     }
 
-    // public OrderResponse placeOrder(PlaceOrderRequest request) {
-    /*
-    public void placeOrder(Object request) {
+    public OrderResponse placeOrder(PlaceOrderRequest request) {
         // Validate account exists and is ACTIVE
         Account account = accountRepository.findById(request.getAccountId())
             .orElseThrow(() -> new AccountNotFoundException(
@@ -57,18 +58,17 @@ public class OrderService {
             UUID.randomUUID(),
             request.getAccountId(),
             request.getSymbol(),
-            request.getSide(),
+            OrderSide.valueOf(request.getSide().toUpperCase()),
             request.getQuantity(),
             request.getPrice(),
-            UUID.randomUUID().toString()
+            request.getIdempotencyKey() != null ? request.getIdempotencyKey() : UUID.randomUUID().toString(),
+            LocalDateTime.now()
         );
         
         orderRepository.save(order);
-        // return new OrderResponse(order); // DTO on another branch
+        return new OrderResponse(order);
     }
-    */
 
-     // public OrderResponse executeOrder(UUID orderId) {
      public OrderResponse executeOrder(UUID orderId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new TradingException("Order not found: " + orderId));
@@ -114,30 +114,22 @@ public class OrderService {
         
         order.execute();
         orderRepository.update(order);
-        return new OrderResponse(order.getId(), order.getAccountId(), order.getSymbol(), 
-                                  order.getSide(), order.getQuantity(), order.getPrice(), 
-                                  order.getStatus(), order.getCreatedOn(), order.getLastModified());
+        return new OrderResponse(order);
     }
 
 
-    // public OrderResponse cancelOrder(UUID orderId) {
-    /*
-    public void cancelOrder(UUID orderId) {
+    public OrderResponse cancelOrder(UUID orderId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new TradingException("Order not found: " + orderId));
         
         order.cancel();  // Entity handles state validation
         orderRepository.update(order);
-        // return new OrderResponse(order); // DTO on another branch
+        return new OrderResponse(order);
     }
-    */
     
-    // public OrderResponse getOrder(UUID orderId) {
-    /*
-    public void getOrder(UUID orderId) {
+    public OrderResponse getOrder(UUID orderId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new TradingException("Order not found: " + orderId));
-        // return new OrderResponse(order); // DTO on another branch
+        return new OrderResponse(order);
     }
-    */
 }

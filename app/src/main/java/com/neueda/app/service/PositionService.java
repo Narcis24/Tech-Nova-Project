@@ -1,6 +1,6 @@
 package com.neueda.app.service;
 
-// import com.neueda.app.dto.PositionResponse;
+import com.neueda.app.dto.PositionResponse;
 import com.neueda.app.exceptions.TradingException;
 import com.neueda.app.model.Position;
 import com.neueda.app.repository.PositionRepository;
@@ -8,7 +8,7 @@ import com.neueda.app.repository.PriceRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.ArrayList;
-// import com.neueda.app.dto.PositionMetricsResponse;
+import com.neueda.app.dto.PositionMetricsResponse;
 
 
 
@@ -21,9 +21,7 @@ public class PositionService {
         this.priceRepository = priceRepository;
     }
 
-    // public PositionResponse getPosition(String accountId, String symbol) {
-    /*
-    public PositionResponse getPosition(String accountId, String symbol) {
+     public PositionResponse getPosition(String accountId, String symbol) {
         Position position = positionRepository
             .findByAccountIdAndSymbol(accountId, symbol)
             .orElseThrow(() -> new TradingException(
@@ -38,33 +36,28 @@ public class PositionService {
         BigDecimal marketValue = position.getMarketValue(currentPrice);
         BigDecimal unrealizedPnL = position.getUnrealizedPnL(currentPrice);
         
-        // return new PositionResponse(
-        //     position.getAccountId(),
-        //     position.getSymbol(),
-        //     position.getQuantity(),
-        //     position.getAverageCost(),
-        //     currentPrice,
-        //     marketValue,
-        //     unrealizedPnL
-        // ); // DTO on another branch
+        return new PositionResponse(
+            position.getAccountId(),
+            position.getSymbol(),
+            position.getQuantity(),
+            position.getAverageCost(),
+            currentPrice,
+            marketValue,
+            unrealizedPnL
+        );
     }
-    */
 
-    // public List<PositionResponse> getAccountPositions(String accountId) {
-    /*
     public List<PositionResponse> getAccountPositions(String accountId) {
         List<Position> positions = positionRepository.findByAccountId(accountId);
-        // List<PositionResponse> responses = new ArrayList<>();
-        // for (Position position : positions) {
-        //     responses.add(convertToPositionResponse(position));
-        // }
-        // return responses; // DTO on another branch
-        return new ArrayList<>();
+        List<PositionResponse> responses = new ArrayList<>();
+        
+        for (Position position : positions) {
+            responses.add(convertToPositionResponse(position));
+        }
+        
+        return responses;
     }
-    */
 
-    // private PositionResponse convertToPositionResponse(Position position) {
-    /*
     private PositionResponse convertToPositionResponse(Position position) {
         BigDecimal currentPrice = priceRepository.findLatestPrice(position.getSymbol())
             .orElse(BigDecimal.ZERO);  // Default to 0 if price not found
@@ -72,20 +65,17 @@ public class PositionService {
         BigDecimal marketValue = position.getMarketValue(currentPrice);
         BigDecimal unrealizedPnL = position.getUnrealizedPnL(currentPrice);
 
-        // return new PositionResponse(
-        //     position.getAccountId(),
-        //     position.getSymbol(),
-        //     position.getQuantity(),
-        //     position.getAverageCost(),
-        //     currentPrice,
-        //     marketValue,
-        //     unrealizedPnL
-        // ); // DTO on another branch
-    
-    */
+        return new PositionResponse(
+            position.getAccountId(),
+            position.getSymbol(),
+            position.getQuantity(),
+            position.getAverageCost(),
+            currentPrice,
+            marketValue,
+            unrealizedPnL
+        );
+    }
 
-    // public PositionMetricsResponse getPositionMetrics(String accountId, String symbol) {
-    /*
     public PositionMetricsResponse getPositionMetrics(String accountId, String symbol) {
         Position position = positionRepository
             .findByAccountIdAndSymbol(accountId, symbol)
@@ -109,19 +99,17 @@ public class PositionService {
             ? unrealizedPnL.divide(costBasis, 4, java.math.RoundingMode.HALF_UP)
             : BigDecimal.ZERO;
         
-        // return new PositionMetricsResponse(
-        //     position.getAccountId(),
-        //     position.getSymbol(),
-        //     position.getQuantity(),
-        //     position.getAverageCost(),
-        //     currentPrice,
-        //     marketValue,
-        //     unrealizedPnL,
-        //     returnPercentage
-        // ); // DTO on another branch
-        return null;
-    }
-    */
+        return new PositionMetricsResponse(
+            position.getAccountId(),
+            position.getSymbol(),
+            position.getQuantity(),
+            position.getAverageCost(),
+            currentPrice,
+            marketValue,
+            unrealizedPnL,
+            returnPercentage
+        );
+    } 
 
 }
 

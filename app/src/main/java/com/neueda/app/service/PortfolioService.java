@@ -1,8 +1,8 @@
 package com.neueda.app.service;
 
-// import com.neueda.app.dto.PortfolioMetricsResponse;
-// import com.neueda.app.dto.PortfolioSnapshotResponse;
-// import com.neueda.app.dto.PositionResponse;
+import com.neueda.app.dto.PortfolioMetricsResponse;
+import com.neueda.app.dto.PortfolioSnapshotResponse;
+import com.neueda.app.dto.PositionResponse;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.TradingException;
 import com.neueda.app.model.Account;
@@ -27,9 +27,7 @@ public class PortfolioService {
         this.priceRepository = priceRepository;
     }
 
-    // public Object getPortfolioSnapshot(String accountId) {
-    /*
-    public Object getPortfolioSnapshot(String accountId) {
+    public PortfolioSnapshotResponse getPortfolioSnapshot(String accountId) {
     
         Account account = accountRepository.findById(accountId)
             .orElseThrow(() -> new AccountNotFoundException(
@@ -64,14 +62,16 @@ public class PortfolioService {
         // Step 5: Return snapshot
         BigDecimal totalPortfolioValue = account.getCashBalance().add(totalMarketValue);
         
-        // return new PortfolioSnapshotResponse(...); // DTO on another branch
-        return null;
+        return new PortfolioSnapshotResponse(
+            accountId,
+            account.getCashBalance(),
+            totalMarketValue,
+            totalPortfolioValue,
+            positionResponses
+        );
     }
-    */
 
-    // public Object getPortfolioMetrics(String accountId) {
-    /*
-    public Object getPortfolioMetrics(String accountId) {
+    public PortfolioMetricsResponse getPortfolioMetrics(String accountId) {
         // Step 1: Fetch account
         Account account = accountRepository.findById(accountId)
             .orElseThrow(() -> new AccountNotFoundException(
@@ -127,9 +127,6 @@ public class PortfolioService {
             portfolioReturn,
             positionResponses
         );
-        
     }
-        */
-
 }
 

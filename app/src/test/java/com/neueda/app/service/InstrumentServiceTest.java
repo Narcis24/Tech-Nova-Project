@@ -2,6 +2,7 @@ package com.neueda.app.service;
 
 import com.neueda.app.exceptions.InstrumentNotFoundException;
 import com.neueda.app.enums.AssetClass;
+import com.neueda.app.dto.InstrumentResponse;
 import com.neueda.app.model.Instrument;
 import com.neueda.app.repository.InstrumentRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,10 +85,11 @@ class InstrumentServiceTest {
             .thenReturn(instruments);
 
         // Act
-        List<Object> result = instrumentService.getAllTradable();
+        List<InstrumentResponse> result = instrumentService.getAllTradable();
 
         // Assert
         assertNotNull(result);
+        assertEquals(2, result.size());
         verify(instrumentRepository, times(1)).findAllTradable();
     }
 
@@ -98,10 +100,11 @@ class InstrumentServiceTest {
             .thenReturn(new ArrayList<>());
 
         // Act
-        List<Object> result = instrumentService.getAllTradable();
+        List<InstrumentResponse> result = instrumentService.getAllTradable();
 
         // Assert
         assertNotNull(result);
+        assertEquals(0, result.size());
         verify(instrumentRepository, times(1)).findAllTradable();
     }
 
