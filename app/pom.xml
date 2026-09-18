@@ -33,20 +33,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- For validation testing -->
-        <dependency>
-            <groupId>jakarta.validation</groupId>
-            <artifactId>jakarta.validation-api</artifactId>
-            <version>3.0.2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.hibernate.validator</groupId>
-            <artifactId>hibernate-validator</artifactId>
-            <version>8.0.1.Final</version>
-            <scope>test</scope>
-        </dependency>
-
         <!-- Mockito for mocking -->
         <dependency>
             <groupId>org.mockito</groupId>
