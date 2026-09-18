@@ -5,10 +5,10 @@ import java.util.UUID;
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.model.Order;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Data
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderResponse {

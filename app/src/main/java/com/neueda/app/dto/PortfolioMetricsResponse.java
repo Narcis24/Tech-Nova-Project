@@ -3,10 +3,10 @@ package com.neueda.app.dto;
 import java.math.BigDecimal;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Data
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class PortfolioMetricsResponse {

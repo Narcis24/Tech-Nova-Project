@@ -3,10 +3,10 @@ package com.neueda.app.dto;
 import com.neueda.app.enums.AssetClass;
 import com.neueda.app.model.Instrument;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Data
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class InstrumentResponse {

@@ -4,10 +4,10 @@ import java.math.BigDecimal;
 import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.model.Account;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Data
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class AccountResponse {
