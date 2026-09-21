@@ -30,11 +30,29 @@ public class Order implements OrderOperations {
                  int quantity, BigDecimal price, String idempotencyKey, 
                  LocalDateTime createdOn) {
         // Validation
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("Order ID cannot be null");
+        }
+        if (accountId == null || accountId.isBlank()) {
+            throw new IllegalArgumentException("Account ID cannot be null");
+        }
+        if (symbol == null || symbol.isBlank()) {
+            throw new IllegalArgumentException("Symbol cannot be null");
+        }
+        if (side == null) {
+            throw new IllegalArgumentException("Side cannot be null");
+        }
         if (quantity <= 0) {
             throw new IllegalArgumentException("Quantity must be > 0");
         }
         if (price.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Price must be > 0");
+        }
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new IllegalArgumentException("IdempotencyKey cannot be null");
+        }
+        if (createdOn == null) {
+            throw new IllegalArgumentException("Creation date cannot be null");
         }
         
         this.id = id;
