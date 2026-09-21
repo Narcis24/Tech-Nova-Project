@@ -33,7 +33,7 @@ public class Account  implements AccountOperations {
         }
 
         if (lastUpdated == null) {
-            throw new IllegalArgumentException("Last updated cannot be null")
+            throw new IllegalArgumentException("Last updated cannot be null");
         }
         
         this.accountId = accountId;

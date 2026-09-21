@@ -6,7 +6,7 @@ public record Price(
     String symbol,
     BigDecimal price
 ) {
-    public Price() {
+    public Price {
         if (symbol == null || symbol.isBlank()) {
             throw new IllegalArgumentException("Symbol cannot be null");
         }

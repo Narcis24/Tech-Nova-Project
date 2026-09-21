@@ -30,7 +30,7 @@ public class Order implements OrderOperations {
                  int quantity, BigDecimal price, String idempotencyKey, 
                  LocalDateTime createdOn) {
         // Validation
-        if (id == null || id.isBlank()) {
+        if (id == null) {
             throw new IllegalArgumentException("Order ID cannot be null");
         }
         if (accountId == null || accountId.isBlank()) {
