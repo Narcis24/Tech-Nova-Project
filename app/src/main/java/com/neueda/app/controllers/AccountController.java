@@ -1,6 +1,6 @@
 
 @RequestController
-@RequestMapping("/accounts")
+@RequestMapping("api/v1/accounts")
 
 public class AccountController {
 
@@ -22,7 +22,6 @@ public class AccountController {
         BigDecimal balance = accountService.getAccountBalance(accountId);
         return ResponseEntity.ok(new BalanceResponse(balance));
     }
-
 
     @GetMapping("/{accountId}/positions")
     public ResponseEntity<PositionResponse> getAccountPositions(@PathVariable String accountId) {
