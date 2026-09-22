@@ -1,10 +1,12 @@
 package com.neueda.app;
 
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
 public class Main {
-    public static void main(String[] args) 
-    {
-        // TODO: replace <team-name> with your team's actual name
-        System.out.println("Hello world from the firm's Tech-Nova-Project Sprint 1 project skeleton");
+    public static void main(String[] args) {
+        SpringApplication.run(Main.class, args);
     }
 }
     
