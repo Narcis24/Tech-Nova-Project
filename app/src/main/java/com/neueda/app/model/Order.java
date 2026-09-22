@@ -45,6 +45,9 @@ public class Order implements OrderOperations {
         if (quantity <= 0) {
             throw new IllegalArgumentException("Quantity must be > 0");
         }
+        if (price == null) {
+            throw new IllegalArgumentException("Price cannot be null");
+        }
         if (price.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Price must be > 0");
         }

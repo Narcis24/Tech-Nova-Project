@@ -15,7 +15,7 @@ public record Instrument(
             }
 
             if (name == null || name.isBlank()) {
-                throw new IllegalArgumentException("Symbol Name cannot be null");
+                throw new IllegalArgumentException("Instrument Name cannot be null");
             }
 
             if (assetClass == null) {
