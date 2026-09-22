@@ -15,6 +15,27 @@ public class Account  implements AccountOperations {
     private LocalDateTime lastUpdated;
 
     public Account(String accountId, String holderName, BigDecimal cashBalance, AccountStatus accountStatus, LocalDateTime lastUpdated) {
+        
+        if (accountId == null || accountId.isBlank()) {
+            throw new IllegalArgumentException("Account ID cannot be null");
+        }
+
+        if (holderName == null || holderName.isBlank()) {
+            throw new IllegalArgumentException("Holder Name cannot be null");
+        }
+
+        if (cashBalance == null || cashBalance.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Cash balance must be a positive number");
+        }
+
+        if (accountStatus == null) {
+            throw new IllegalArgumentException("Account Status cannot be null");
+        }
+
+        if (lastUpdated == null) {
+            throw new IllegalArgumentException("Last updated cannot be null");
+        }
+        
         this.accountId = accountId;
         this.holderName = holderName;
         this.cashBalance = cashBalance;

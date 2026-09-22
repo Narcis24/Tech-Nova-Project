@@ -12,8 +12,18 @@ public class Position implements PositionOperations {
 
     public Position(String accountId, String symbol, int quantity, BigDecimal averageCost) {
         // Allow quantity = 0 for new positions that haven't been opened yet
+
+        if (accountId == null || accountId.isBlank()) {
+            throw new IllegalArgumentException("Account ID cannot be null");
+        }
+        if (symbol == null || symbol.isBlank()) {
+            throw new IllegalArgumentException("Symbol cannot be null");
+        }
         if (quantity < 0) {
             throw new IllegalArgumentException("Quantity cannot be negative");
+        }
+        if (averageCost == null) {
+            throw new IllegalArgumentException("Average Cost cannot be null");
         }
         if (quantity > 0 && averageCost.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Average cost must be > 0 when quantity > 0");
