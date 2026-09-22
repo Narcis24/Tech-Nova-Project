@@ -1,5 +1,6 @@
 package com.neueda.app.service;
 
+import org.springframework.stereotype.Service;
 import com.neueda.app.dto.OrderResponse;
 import com.neueda.app.dto.PlaceOrderRequest;
 import com.neueda.app.enums.OrderSide;
@@ -17,6 +18,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Service
 public class OrderService {
     
     private final OrderRepository orderRepository;
