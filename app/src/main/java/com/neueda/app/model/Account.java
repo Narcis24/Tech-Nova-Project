@@ -28,7 +28,7 @@ public class Account  implements AccountOperations {
             throw new IllegalArgumentException("Cash balance must be a positive number");
         }
 
-        if (accountStatus == null || holderName.isBlank()) {
+        if (accountStatus == null) {
             throw new IllegalArgumentException("Account Status cannot be null");
         }
 
