@@ -6,7 +6,9 @@ import java.time.LocalDateTime;
 import com.neueda.app.exceptions.AccountNotActiveException;
 import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.contract.AccountOperations;
+import lombok.Getter;
 
+@Getter
 public class Account  implements AccountOperations {
     private String accountId;
     private String firstName;
@@ -47,30 +49,6 @@ public class Account  implements AccountOperations {
         this.cashBalance = cashBalance;
         this.accountStatus = accountStatus;
         this.lastUpdated = lastUpdated;
-    }
-
-    public String getAccountId() {
-        return accountId;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public BigDecimal getCashBalance() {
-        return cashBalance;
-    }
-
-    public AccountStatus getAccountStatus() {
-        return accountStatus;
-    }
-
-    public LocalDateTime getLastUpdated() {
-        return lastUpdated;
     }
 
     /* This method will throw a custom exception if the account is not ACTIVE */

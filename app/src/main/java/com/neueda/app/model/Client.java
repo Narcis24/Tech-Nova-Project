@@ -3,7 +3,9 @@ package com.neueda.app.model;
 import java.time.LocalDate;
 import java.util.UUID;
 import com.neueda.app.enums.ClientType;
+import lombok.Getter;
 
+@Getter
 public class Client {
     private UUID clientId;
     private String firstName;
@@ -55,44 +57,16 @@ public class Client {
 
     /* ID, Name and ClientType cannot be changed as they are set during registration */
 
-    public UUID getClientId() {
-        return clientId;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public LocalDate getDateOfBirth() {
-        return dateOfBirth;
-    }
-
     public void setDateOfBirth(LocalDate dateOfBirth) {
         this.dateOfBirth = dateOfBirth;
-    }
-
-    public String getEmail() {
-        return email;
     }
 
     public void setEmail(String email) {
         this.email = email;
     }
 
-    public String getContactNumber() {
-        return contactNumber;
-    }
-
     public void setContactNumber(String contactNumber) {
         this.contactNumber = contactNumber;
-    }
-
-    public ClientType getClientType() {
-        return clientType;
     }
 
 }

@@ -3,7 +3,9 @@ package com.neueda.app.model;
 import com.neueda.app.contract.PositionOperations;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import lombok.Getter;
 
+@Getter
 public class Position implements PositionOperations {
     private final String accountId;
     private final String symbol;
@@ -33,26 +35,6 @@ public class Position implements PositionOperations {
         this.symbol = symbol;
         this.quantity = quantity;
         this.averageCost = averageCost;
-    }
-
-    @Override
-    public String getAccountId() {
-        return accountId;
-    }
-
-    @Override
-    public String getSymbol() {
-        return symbol;
-    }
-
-    @Override
-    public int getQuantity() {
-        return quantity;
-    }
-
-    @Override
-    public BigDecimal getAverageCost() {
-        return averageCost;
     }
 
     @Override

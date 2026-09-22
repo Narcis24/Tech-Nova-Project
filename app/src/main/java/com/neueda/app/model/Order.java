@@ -7,8 +7,9 @@ import java.lang.IllegalArgumentException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import lombok.Getter;
 
-
+@Getter
 public class Order implements OrderOperations {
 
     /**IMMUTABLE*/
@@ -70,55 +71,6 @@ public class Order implements OrderOperations {
         this.lastModified = createdOn;
     }
     
-    @Override
-    public UUID getId() {
-        return id;
-    }
-
-    @Override
-    public String getAccountId() {
-        return accountId;
-    }
-
-    @Override
-    public String getSymbol() {
-        return symbol;
-    }
-
-    @Override
-    public OrderSide getSide() {
-        return side;
-    }
-
-    @Override
-    public int getQuantity() {
-        return quantity;
-    }
-
-    @Override
-    public BigDecimal getPrice() {
-        return price;
-    }
-
-    @Override
-    public OrderStatus getStatus() {
-        return status;
-    }
-
-    @Override
-    public String getIdempotencyKey() {
-        return idempotencyKey;
-    }
-
-    @Override
-    public LocalDateTime getCreatedOn() {
-        return createdOn;
-    }
-
-    public LocalDateTime getLastModified() {
-        return lastModified;
-    }
-
     //BUSINESS LOGIC
 
     /**
