@@ -1,5 +1,5 @@
 
-@RequestController
+@RestController
 @RequestMapping("api/v1/accounts")
 
 public class AccountController {
