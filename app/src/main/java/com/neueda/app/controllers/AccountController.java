@@ -8,6 +8,9 @@ import java.math.BigDecimal;
 import com.neueda.app.dto.AccountResponse;
 import com.neueda.app.dto.BalanceResponse;
 import com.neueda.app.service.AccountService;
+import com.neueda.app.dto.PositionResponse;
+import com.neueda.app.dto.OrderResponse;
+
 
 @RestController
 @RequestMapping("/api/v1/accounts")
@@ -29,7 +32,7 @@ public class AccountController {
 
     @GetMapping("/{accountId}/balance") 
     public ResponseEntity<BalanceResponse> getAccountBalance(@PathVariable String accountId) {
-        BigDecimal balance = accountService.getAccountBalance(accountId);
+        BigDecimal balance = accountService.getAccountCashBalance(accountId);
         return ResponseEntity.ok(new BalanceResponse(balance));
     }
 
