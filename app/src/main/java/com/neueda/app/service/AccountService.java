@@ -1,5 +1,6 @@
 package com.neueda.app.service;
 
+import org.springframework.stereotype.Service;
 import com.neueda.app.dto.AccountResponse;
 import com.neueda.app.exceptions.*;
 import com.neueda.app.model.Account;
@@ -7,6 +8,7 @@ import com.neueda.app.repository.AccountRepository;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+@Service
 public class AccountService {
     private final AccountRepository accountRepository;
 
