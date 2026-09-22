@@ -62,10 +62,22 @@ public class Client {
     }
 
     public void setEmail(String email) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Email cannot be null or empty");
+        }
+
+        if (!email.contains("@")) {
+            throw new IllegalArgumentException("Email must be in valid format");
+        }
+
         this.email = email;
     }
 
     public void setContactNumber(String contactNumber) {
+        if (contactNumber == null || contactNumber.isBlank()) {
+            throw new IllegalArgumentException("Contact Number cannot be null or empty");
+        }
+
         this.contactNumber = contactNumber;
     }
 
