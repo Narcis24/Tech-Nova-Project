@@ -53,28 +53,18 @@ public class Client {
         this.clientType = clientType;
     }
 
+    /* ID, Name and ClientType cannot be changed as they are set during registration */
+
     public UUID getClientId() {
         return clientId;
-    }
-
-    public void setClientId(UUID clientId) {
-        this.clientId = clientId;
     }
 
     public String getFirstName() {
         return firstName;
     }
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
     public String getLastName() {
         return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
     }
 
     public LocalDate getDateOfBirth() {
@@ -103,10 +93,6 @@ public class Client {
 
     public ClientType getClientType() {
         return clientType;
-    }
-
-    public void setClientType(ClientType clientType) {
-        this.clientType = clientType;
     }
 
 }
