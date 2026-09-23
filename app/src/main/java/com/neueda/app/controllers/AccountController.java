@@ -7,8 +7,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.ResponseEntity;
 import java.math.BigDecimal;
+import java.util.List;
 import com.neueda.app.dto.AccountResponse;
 import com.neueda.app.dto.BalanceResponse;
+import com.neueda.app.dto.PositionResponse;
+import com.neueda.app.dto.OrderResponse;
 import com.neueda.app.service.AccountService;
 
 
@@ -34,5 +37,17 @@ public class AccountController {
     public ResponseEntity<BalanceResponse> getAccountBalance(@PathVariable String accountId) {
         BigDecimal balance = accountService.getAccountCashBalance(accountId);
         return ResponseEntity.ok(new BalanceResponse(balance));
+    }
+
+    @GetMapping("/{accountId}/positions")
+    public ResponseEntity<List<PositionResponse>> getAccountPositions(@PathVariable String accountId) {
+        List<PositionResponse> positionResponses = accountService.getAccountPositions(accountId);
+        return ResponseEntity.ok(positionResponses);
+    }
+
+    @GetMapping("/{accountId}/orders")
+    public ResponseEntity<List<OrderResponse>> getAccountOrders(@PathVariable String accountId) {
+        List<OrderResponse> orderResponses = accountService.getAccountOrders(accountId);
+        return ResponseEntity.ok(orderResponses);
     }
 }
