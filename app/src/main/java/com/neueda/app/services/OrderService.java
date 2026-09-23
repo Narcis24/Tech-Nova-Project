@@ -1,9 +1,9 @@
 package com.neueda.app.services;
 
+import org.springframework.stereotype.Service;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.enums.OrderSide;
-import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.exceptions.*;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Service
 public class OrderService {
     
     private final OrderRepository orderRepository;
@@ -51,11 +52,11 @@ public class OrderService {
             throw new TradingException("Instrument is not tradable: " + request.getSymbol());
         }
         
-        // Create Order entity
+        // Create Order entity with Account and Instrument objects
         Order order = new Order(
             UUID.randomUUID(),
-            request.getAccountId(),
-            request.getSymbol(),
+            account,
+            instrument,
             OrderSide.valueOf(request.getSide().toUpperCase()),
             request.getQuantity(),
             request.getPrice(),
@@ -72,26 +73,23 @@ public class OrderService {
             .orElseThrow(() -> new TradingException("Order not found: " + orderId));
         
         BigDecimal totalValue = order.getTotalValue();
+        Account account = accountRepository.findById(order.getAccountId())
+            .orElseThrow(() -> new AccountNotFoundException("Account not found"));
+        Instrument instrument = instrumentRepository.findBySymbol(order.getSymbol())
+            .orElseThrow(() -> new InstrumentNotFoundException("Instrument not found"));
         
         if (order.getSide() == OrderSide.BUY) {
             // BUY FLOW
-            Account account = accountRepository.findById(order.getAccountId())
-                .orElseThrow(() -> new AccountNotFoundException("Account not found"));
-            
             account.debitCash(totalValue);
             
             Position position = positionRepository
                 .findByAccountIdAndSymbol(order.getAccountId(), order.getSymbol())
-                .orElse(new Position(order.getAccountId(), order.getSymbol(), 0, BigDecimal.ZERO));
+                .orElse(new Position(account, instrument, 0, BigDecimal.ZERO));
             
             position.updateOnBuy(order.getQuantity(), order.getPrice());
             
-            accountRepository.update(account);
-            if (position.getQuantity() == order.getQuantity()) {
-                positionRepository.save(position);
-            } else {
-                positionRepository.update(position);
-            }
+            accountRepository.save(account);
+            positionRepository.save(position);
             
         } else {
             // SELL FLOW
@@ -101,17 +99,14 @@ public class OrderService {
             
             position.updateOnSell(order.getQuantity());
             
-            Account account = accountRepository.findById(order.getAccountId())
-                .orElseThrow(() -> new AccountNotFoundException("Account not found"));
-            
             account.creditCash(totalValue);
             
-            positionRepository.update(position);
-            accountRepository.update(account);
+            positionRepository.save(position);
+            accountRepository.save(account);
         }
         
         order.execute();
-        orderRepository.update(order);
+        orderRepository.save(order);
         return new OrderResponse(order);
     }
 
@@ -121,7 +116,7 @@ public class OrderService {
             .orElseThrow(() -> new TradingException("Order not found: " + orderId));
         
         order.cancel();  // Entity handles state validation
-        orderRepository.update(order);
+        orderRepository.save(order);
         return new OrderResponse(order);
     }
     

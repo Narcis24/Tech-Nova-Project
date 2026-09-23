@@ -1,9 +1,11 @@
 package com.neueda.app.services;
 
 import com.neueda.app.enums.AccountStatus;
+import com.neueda.app.enums.AssetClass;
 import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.models.Account;
+import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Order;
 import com.neueda.app.models.Position;
 import com.neueda.app.repositories.AccountRepository;
@@ -64,10 +66,18 @@ class OrderServiceTest {
             LocalDateTime.of(2026, 9, 17, 13, 0)
         );
 
+        Instrument instrument = new Instrument(
+            "AAPL",
+            "Apple Inc.",
+            AssetClass.EQUITY,
+            "USD",
+            true
+        );
+
         Order order = new Order(
             orderId,
-            "12345",
-            "AAPL",
+            account,
+            instrument,
             OrderSide.BUY,
             10,
             new BigDecimal("100.00"),
@@ -80,6 +90,9 @@ class OrderServiceTest {
 
         when(accountRepository.findById("12345"))
             .thenReturn(Optional.of(account));
+
+        when(instrumentRepository.findBySymbol("AAPL"))
+            .thenReturn(Optional.of(instrument));
 
         when(positionRepository.findByAccountIdAndSymbol("12345", "AAPL"))
             .thenReturn(Optional.empty());
@@ -109,10 +122,18 @@ class OrderServiceTest {
             LocalDateTime.of(2026, 9, 17, 13, 0)
         );
 
+        Instrument instrument = new Instrument(
+            "AAPL",
+            "Apple Inc.",
+            AssetClass.EQUITY,
+            "USD",
+            true
+        );
+
         Order order = new Order(
             orderId,
-            "12345",
-            "AAPL",
+            account,
+            instrument,
             OrderSide.SELL,
             10,
             new BigDecimal("100.00"),
@@ -121,8 +142,8 @@ class OrderServiceTest {
         );
 
         Position position = new Position(
-            "12345",
-            "AAPL",
+            account,
+            instrument,
             20,
             new BigDecimal("80.00")
         );
@@ -130,6 +151,10 @@ class OrderServiceTest {
         // When the service looks for the order
         when(orderRepository.findById(orderId))
             .thenReturn(Optional.of(order));
+
+        // When the service looks for the instrument
+        when(instrumentRepository.findBySymbol("AAPL"))
+            .thenReturn(Optional.of(instrument));
 
         // When the service looks for the position
         when(positionRepository.findByAccountIdAndSymbol("12345", "AAPL"))

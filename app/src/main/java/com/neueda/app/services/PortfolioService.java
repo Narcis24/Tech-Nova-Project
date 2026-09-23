@@ -4,7 +4,6 @@ import com.neueda.app.dtos.PortfolioMetricsResponse;
 import com.neueda.app.dtos.PortfolioSnapshotResponse;
 import com.neueda.app.dtos.PositionResponse;
 import com.neueda.app.exceptions.AccountNotFoundException;
-import com.neueda.app.exceptions.TradingException;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Position;
 import com.neueda.app.models.PortfolioMetrics;
@@ -40,7 +39,8 @@ public class PortfolioService {
         List<PositionResponse> positionResponses = new ArrayList<>();
         
         for (Position position : positions) {
-            BigDecimal currentPrice = priceRepository.findLatestPrice(position.getSymbol())
+            BigDecimal currentPrice = priceRepository.findBySymbol(position.getSymbol())
+                .map(p -> BigDecimal.ZERO)
                 .orElse(BigDecimal.ZERO);
             
             BigDecimal marketValue = position.getMarketValue(currentPrice);
@@ -87,7 +87,8 @@ public class PortfolioService {
         List<PositionResponse> positionResponses = new ArrayList<>();
         
         for (Position position : positions) {
-            BigDecimal currentPrice = priceRepository.findLatestPrice(position.getSymbol())
+            BigDecimal currentPrice = priceRepository.findBySymbol(position.getSymbol())
+                .map(p -> BigDecimal.ZERO)
                 .orElse(BigDecimal.ZERO);
             
             BigDecimal marketValue = position.getMarketValue(currentPrice);

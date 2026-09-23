@@ -81,7 +81,7 @@ class InstrumentServiceTest {
         instruments.add(new Instrument("AAPL", "Apple Inc.", AssetClass.EQUITY, "USD", true));
         instruments.add(new Instrument("MSFT", "Microsoft Corp.", AssetClass.EQUITY, "USD", true));
         
-        when(instrumentRepository.findAllTradable())
+        when(instrumentRepository.findByTradable(true))
             .thenReturn(instruments);
 
         // Act
@@ -90,13 +90,13 @@ class InstrumentServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals(2, result.size());
-        verify(instrumentRepository, times(1)).findAllTradable();
+        verify(instrumentRepository, times(1)).findByTradable(true);
     }
 
     @Test
     void testGetAllTradableEmpty() {
         // Arrange
-        when(instrumentRepository.findAllTradable())
+        when(instrumentRepository.findByTradable(true))
             .thenReturn(new ArrayList<>());
 
         // Act
@@ -105,7 +105,7 @@ class InstrumentServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals(0, result.size());
-        verify(instrumentRepository, times(1)).findAllTradable();
+        verify(instrumentRepository, times(1)).findByTradable(true);
     }
 
     @Test

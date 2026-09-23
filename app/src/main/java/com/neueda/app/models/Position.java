@@ -1,25 +1,55 @@
 package com.neueda.app.models;
 
 import com.neueda.app.contracts.PositionOperations;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.Column;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.FetchType;
+import lombok.NoArgsConstructor;
 import lombok.Getter;
 
+@Entity
+@Table(name = "positions")
+@IdClass(PositionKey.class)
+@NoArgsConstructor
 @Getter
 public class Position implements PositionOperations {
-    private final String accountId;
-    private final String symbol;
+    @Id
+    @Column(name="account_id")
+    private String accountId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", nullable = false, insertable = false, updatable = false)
+    private Account account;
+    
+    @Id
+    @Column(name = "symbol")
+    private String symbol;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "symbol", nullable = false, insertable = false, updatable = false)
+    private Instrument instrument;
+    
+    @Column(name = "quantity")
     private int quantity;
+    
+    @Column(name = "average_cost")
     private BigDecimal averageCost;
 
-    public Position(String accountId, String symbol, int quantity, BigDecimal averageCost) {
+    public Position(Account account, Instrument instrument, int quantity, BigDecimal averageCost) {
         // Allow quantity = 0 for new positions that haven't been opened yet
 
-        if (accountId == null || accountId.isBlank()) {
-            throw new IllegalArgumentException("Account ID cannot be null");
+        if (account == null) {
+            throw new IllegalArgumentException("Account cannot be null");
         }
-        if (symbol == null || symbol.isBlank()) {
-            throw new IllegalArgumentException("Symbol cannot be null");
+        if (instrument == null) {
+            throw new IllegalArgumentException("Instrument cannot be null");
         }
         if (quantity < 0) {
             throw new IllegalArgumentException("Quantity cannot be negative");
@@ -31,8 +61,10 @@ public class Position implements PositionOperations {
             throw new IllegalArgumentException("Average cost must be > 0 when quantity > 0");
         }
         
-        this.accountId = accountId;
-        this.symbol = symbol;
+        this.account = account;
+        this.accountId = account.getAccountId();
+        this.instrument = instrument;
+        this.symbol = instrument.getSymbol();
         this.quantity = quantity;
         this.averageCost = averageCost;
     }

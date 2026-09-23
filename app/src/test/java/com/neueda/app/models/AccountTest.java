@@ -1,7 +1,6 @@
 package com.neueda.app.models;
 
 import com.neueda.app.enums.*;
-import com.neueda.app.models.*;
 import com.neueda.app.exceptions.*;
 
 import org.junit.jupiter.api.Test;
@@ -44,7 +43,7 @@ public class AccountTest {
     void validateAccountGetters() {
         assertAll(
             () -> assertEquals(account.getAccountId(), "12345"),
-            () -> assertEquals(account.getHolderName(), "Karl Devon"),
+            () -> assertEquals(account.getFirstName(), "Karl Devon"),
             () -> assertEquals(account.getCashBalance(), new BigDecimal("2000.00")),
             () -> assertEquals(account.getAccountStatus(), AccountStatus.ACTIVE),
             () -> assertEquals(account.getLastUpdated(), LocalDateTime.of(2026,9,17,13,00))
