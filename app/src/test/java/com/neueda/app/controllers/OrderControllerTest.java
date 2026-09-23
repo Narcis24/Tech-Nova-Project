@@ -8,9 +8,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.neueda.app.dto.OrderResponse;
-import com.neueda.app.dto.PlaceOrderRequest;
-import com.neueda.app.service.OrderService;
+import com.neueda.app.dtos.OrderResponse;
+import com.neueda.app.dtos.PlaceOrderRequest;
+import com.neueda.app.services.OrderService;
 
 import java.math.BigDecimal;
 import java.util.UUID;

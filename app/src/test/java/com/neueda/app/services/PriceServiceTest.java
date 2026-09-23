@@ -1,11 +1,9 @@
-package com.neueda.app.service;
+package com.neueda.app.services;
 
 import com.neueda.app.models.Price;
 import com.neueda.app.repositories.PriceRepository;
-import com.neueda.app.services.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 
 import java.math.BigDecimal;
 import java.util.Optional;

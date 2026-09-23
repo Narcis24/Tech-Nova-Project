@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
 
-import com.neueda.app.dto.ErrorResponse;
+import com.neueda.app.dtos.ErrorResponse;
 import com.neueda.app.exceptions.AccountNotActiveException;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.DuplicateOrderException;
