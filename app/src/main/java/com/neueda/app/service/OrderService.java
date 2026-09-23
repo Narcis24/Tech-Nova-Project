@@ -53,11 +53,11 @@ public class OrderService {
             throw new TradingException("Instrument is not tradable: " + request.getSymbol());
         }
         
-        // Create Order entity
+        // Create Order entity with Account and Instrument objects
         Order order = new Order(
             UUID.randomUUID(),
-            request.getAccountId(),
-            request.getSymbol(),
+            account,
+            instrument,
             OrderSide.valueOf(request.getSide().toUpperCase()),
             request.getQuantity(),
             request.getPrice(),
@@ -74,26 +74,23 @@ public class OrderService {
             .orElseThrow(() -> new TradingException("Order not found: " + orderId));
         
         BigDecimal totalValue = order.getTotalValue();
+        Account account = accountRepository.findById(order.getAccountId())
+            .orElseThrow(() -> new AccountNotFoundException("Account not found"));
+        Instrument instrument = instrumentRepository.findBySymbol(order.getSymbol())
+            .orElseThrow(() -> new InstrumentNotFoundException("Instrument not found"));
         
         if (order.getSide() == OrderSide.BUY) {
             // BUY FLOW
-            Account account = accountRepository.findById(order.getAccountId())
-                .orElseThrow(() -> new AccountNotFoundException("Account not found"));
-            
             account.debitCash(totalValue);
             
             Position position = positionRepository
                 .findByAccountIdAndSymbol(order.getAccountId(), order.getSymbol())
-                .orElse(new Position(order.getAccountId(), order.getSymbol(), 0, BigDecimal.ZERO));
+                .orElse(new Position(account, instrument, 0, BigDecimal.ZERO));
             
             position.updateOnBuy(order.getQuantity(), order.getPrice());
             
             accountRepository.save(account);
-            if (position.getQuantity() == order.getQuantity()) {
-                positionRepository.save(position);
-            } else {
-                positionRepository.save(position);
-            }
+            positionRepository.save(position);
             
         } else {
             // SELL FLOW
@@ -102,9 +99,6 @@ public class OrderService {
                 .orElseThrow(() -> new TradingException("Position not found"));
             
             position.updateOnSell(order.getQuantity());
-            
-            Account account = accountRepository.findById(order.getAccountId())
-                .orElseThrow(() -> new AccountNotFoundException("Account not found"));
             
             account.creditCash(totalValue);
             
