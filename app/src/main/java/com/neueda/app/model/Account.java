@@ -9,9 +9,13 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import com.neueda.app.exceptions.AccountNotActiveException;
 import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.contract.AccountOperations;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
 import lombok.NoArgsConstructor;
 import lombok.Getter;
 
@@ -36,6 +40,12 @@ public class Account  implements AccountOperations {
     
     @Column(name = "last_updated")
     private LocalDateTime lastUpdated;
+
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Order> orders = new ArrayList<>();
+
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Position> positions = new ArrayList<>();
 
     public Account(String accountId, String holderName, BigDecimal cashBalance, AccountStatus accountStatus, LocalDateTime lastUpdated) {
         

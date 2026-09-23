@@ -7,6 +7,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Column;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
+import jakarta.persistence.OneToMany;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.NoArgsConstructor;
 import lombok.Getter;
 
@@ -30,6 +33,9 @@ public class Instrument {
     
     @Column(name = "tradable")
     private boolean tradable;
+
+    @OneToMany(mappedBy = "instrument")
+    private List<Position> positions = new ArrayList<>();
 
     public Instrument(String symbol, String name, AssetClass assetClass, String currency, boolean tradable) {
         if (symbol == null || symbol.isBlank()) {

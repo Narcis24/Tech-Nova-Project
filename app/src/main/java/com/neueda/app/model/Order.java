@@ -14,6 +14,9 @@ import java.lang.IllegalArgumentException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.FetchType;
 import lombok.NoArgsConstructor;
 import lombok.Getter;
 
@@ -27,8 +30,12 @@ public class Order implements OrderOperations {
     @Id
     private UUID id;
     
-    @Column(name = "account_id")
+    @Column(name = "account_id", insertable = false, updatable = false)
     private String accountId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
     
     @Column(name = "symbol")
     private String symbol;

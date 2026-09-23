@@ -9,6 +9,9 @@ import jakarta.persistence.Column;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.FetchType;
 import lombok.NoArgsConstructor;
 import lombok.Getter;
 
@@ -19,12 +22,20 @@ import lombok.Getter;
 @Getter
 public class Position implements PositionOperations {
     @Id
-    @Column(name = "account_id")
+    @Column(name="account_id", insertable = false, updatable = false)
     private String accountId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
     
     @Id
-    @Column(name = "symbol")
+    @Column(name = "symbol", insertable = false, updatable = false)
     private String symbol;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "symbol", nullable = false)
+    private Instrument instrument;
     
     @Column(name = "quantity")
     private int quantity;
