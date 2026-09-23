@@ -37,7 +37,7 @@ public class InstrumentService {
     
     
     public List<InstrumentResponse> getAllTradable() {
-        List<Instrument> instruments = instrumentRepository.findAllTradable();
+        List<Instrument> instruments = instrumentRepository.findByTradable(true);
         List<InstrumentResponse> responses = new ArrayList<>();
         
         for (Instrument instrument : instruments) {

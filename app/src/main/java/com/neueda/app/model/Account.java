@@ -12,9 +12,13 @@ import java.time.LocalDateTime;
 import com.neueda.app.exceptions.AccountNotActiveException;
 import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.contract.AccountOperations;
+import lombok.NoArgsConstructor;
+import lombok.Getter;
 
 @Entity
 @Table(name = "accounts")
+@NoArgsConstructor
+@Getter
 public class Account  implements AccountOperations {
 
     @Id

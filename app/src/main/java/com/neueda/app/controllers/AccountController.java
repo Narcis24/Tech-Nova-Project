@@ -1,4 +1,6 @@
 
+package com.neueda.app.controllers;
+
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,7 +13,7 @@ import com.neueda.app.service.AccountService;
 
 
 @RestController
-@RequestMapping("/api/v1/accounts")
+@RequestMapping("/v1/accounts")
 
 public class AccountController {
 

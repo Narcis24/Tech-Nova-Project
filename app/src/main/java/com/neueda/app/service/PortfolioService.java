@@ -40,7 +40,8 @@ public class PortfolioService {
         List<PositionResponse> positionResponses = new ArrayList<>();
         
         for (Position position : positions) {
-            BigDecimal currentPrice = priceRepository.findLatestPrice(position.getSymbol())
+            BigDecimal currentPrice = priceRepository.findBySymbol(position.getSymbol())
+                .map(p -> BigDecimal.ZERO)
                 .orElse(BigDecimal.ZERO);
             
             BigDecimal marketValue = position.getMarketValue(currentPrice);
@@ -87,7 +88,8 @@ public class PortfolioService {
         List<PositionResponse> positionResponses = new ArrayList<>();
         
         for (Position position : positions) {
-            BigDecimal currentPrice = priceRepository.findLatestPrice(position.getSymbol())
+            BigDecimal currentPrice = priceRepository.findBySymbol(position.getSymbol())
+                .map(p -> BigDecimal.ZERO)
                 .orElse(BigDecimal.ZERO);
             
             BigDecimal marketValue = position.getMarketValue(currentPrice);

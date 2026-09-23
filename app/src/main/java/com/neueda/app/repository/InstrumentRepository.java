@@ -9,5 +9,5 @@ import java.util.Optional;
 @Repository
 public interface InstrumentRepository extends JpaRepository<Instrument, String> {
     Optional<Instrument> findBySymbol(String symbol);
-    List<Instrument> findAllTradable();
+    List<Instrument> findByTradable(boolean tradable);
 }

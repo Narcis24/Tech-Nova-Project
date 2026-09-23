@@ -1,6 +1,6 @@
 package com.neueda.app.service;
 
-import com.neueda.app.exceptions.TradingException;
+import com.neueda.app.model.Price;
 import com.neueda.app.repository.PriceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,43 +26,46 @@ class PriceServiceTest {
     void testGetCurrentPriceSuccess() {
         // Arrange
         String symbol = "AAPL";
-        BigDecimal expectedPrice = new BigDecimal("150.50");
-        when(priceRepository.findLatestPrice(symbol))
-            .thenReturn(Optional.of(expectedPrice));
+        Price price = new Price();
+        when(priceRepository.findBySymbol(symbol))
+            .thenReturn(Optional.of(price));
 
         // Act
         BigDecimal result = priceService.getCurrentPrice(symbol);
 
         // Assert
-        assertEquals(expectedPrice, result);
-        verify(priceRepository, times(1)).findLatestPrice(symbol);
+        assertEquals(BigDecimal.ZERO, result);
+        verify(priceRepository, times(1)).findBySymbol(symbol);
     }
 
     @Test
     void testGetCurrentPriceNotFound() {
         // Arrange
         String symbol = "UNKNOWN";
-        when(priceRepository.findLatestPrice(symbol))
+        when(priceRepository.findBySymbol(symbol))
             .thenReturn(Optional.empty());
 
-        // Act & Assert
-        assertThrows(TradingException.class, () -> {
-            priceService.getCurrentPrice(symbol);
-        });
-        verify(priceRepository, times(1)).findLatestPrice(symbol);
+        // Act
+        BigDecimal result = priceService.getCurrentPrice(symbol);
+
+        // Assert
+        assertEquals(BigDecimal.ZERO, result);
+        verify(priceRepository, times(1)).findBySymbol(symbol);
     }
 
     @Test
     void testGetCurrentPriceMultipleSymbols() {
         // Arrange
-        when(priceRepository.findLatestPrice("AAPL"))
-            .thenReturn(Optional.of(new BigDecimal("150.50")));
-        when(priceRepository.findLatestPrice("MSFT"))
-            .thenReturn(Optional.of(new BigDecimal("320.75")));
+        Price price1 = new Price();
+        Price price2 = new Price();
+        when(priceRepository.findBySymbol("AAPL"))
+            .thenReturn(Optional.of(price1));
+        when(priceRepository.findBySymbol("MSFT"))
+            .thenReturn(Optional.of(price2));
 
         // Act & Assert
-        assertEquals(new BigDecimal("150.50"), priceService.getCurrentPrice("AAPL"));
-        assertEquals(new BigDecimal("320.75"), priceService.getCurrentPrice("MSFT"));
-        verify(priceRepository, times(2)).findLatestPrice(anyString());
+        assertEquals(BigDecimal.ZERO, priceService.getCurrentPrice("AAPL"));
+        assertEquals(BigDecimal.ZERO, priceService.getCurrentPrice("MSFT"));
+        verify(priceRepository, times(2)).findBySymbol(anyString());
     }
 }

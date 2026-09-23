@@ -9,10 +9,14 @@ import jakarta.persistence.Column;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import lombok.NoArgsConstructor;
+import lombok.Getter;
 
 @Entity
 @Table(name = "positions")
 @IdClass(PositionKey.class)
+@NoArgsConstructor
+@Getter
 public class Position implements PositionOperations {
     @Id
     @Column(name = "account_id")

@@ -9,13 +9,18 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Column;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
+import jakarta.persistence.Transient;
 import java.lang.IllegalArgumentException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import lombok.NoArgsConstructor;
+import lombok.Getter;
 
 @Entity
 @Table(name = "orders")
+@NoArgsConstructor
+@Getter
 public class Order implements OrderOperations {
 
     /**IMMUTABLE*/
@@ -49,11 +54,11 @@ public class Order implements OrderOperations {
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
     
-    @Column(name = "last_modified")
-    private LocalDateTime lastModified;
+    @Transient
+    private LocalDateTime lastModified = LocalDateTime.now();
     
-    @Column(name = "rejection_reason")
-    private String rejectionReason;       
+    @Transient
+    private String rejectionReason = "";       
 
     public Order(UUID id, String accountId, String symbol, OrderSide side, 
                  int quantity, BigDecimal price, String idempotencyKey, 

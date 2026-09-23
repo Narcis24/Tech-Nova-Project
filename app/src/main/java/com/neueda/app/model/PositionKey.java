@@ -2,13 +2,12 @@ package com.neueda.app.model;
 
 import java.io.Serializable;
 import java.util.Objects;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor
 public class PositionKey implements Serializable {
     private String accountId;
     private String symbol;
-
-    public PositionKey() {
-    }
 
     public PositionKey(String accountId, String symbol) {
         this.accountId = accountId;

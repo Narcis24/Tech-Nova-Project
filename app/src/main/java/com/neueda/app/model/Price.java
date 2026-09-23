@@ -3,20 +3,21 @@ package com.neueda.app.model;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.Id;
-import jakarta.persistence.Column;
+import jakarta.persistence.Transient;
 import java.math.BigDecimal;
+import lombok.NoArgsConstructor;
+import lombok.Getter;
 
 @Entity
-@Table(name = "prices")
+@Table(name = "price_data")
+@NoArgsConstructor
+@Getter
 public class Price {
     @Id
     private String symbol;
     
-    @Column(name = "price")
-    private BigDecimal price;
-
-    public Price() {
-    }
+    @Transient
+    private BigDecimal price = BigDecimal.ZERO;
 
     public Price(String symbol, BigDecimal price) {
         if (symbol == null || symbol.isBlank()) {

@@ -7,9 +7,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Column;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
+import lombok.NoArgsConstructor;
+import lombok.Getter;
 
 @Entity
 @Table(name = "instruments")
+@NoArgsConstructor
+@Getter
 public class Instrument {
     @Id
     private String symbol;
@@ -26,9 +30,6 @@ public class Instrument {
     
     @Column(name = "tradable")
     private boolean tradable;
-
-    public Instrument() {
-    }
 
     public Instrument(String symbol, String name, AssetClass assetClass, String currency, boolean tradable) {
         if (symbol == null || symbol.isBlank()) {
