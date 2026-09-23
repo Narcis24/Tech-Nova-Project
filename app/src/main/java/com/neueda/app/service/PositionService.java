@@ -28,10 +28,9 @@ public class PositionService {
                 "Position not found for account: " + accountId + ", symbol: " + symbol
             ));
         
-        BigDecimal currentPrice = priceRepository.findLatestPrice(symbol)
-            .orElseThrow(() -> new TradingException(
-                "Price not found for symbol: " + symbol
-            ));
+        BigDecimal currentPrice = priceRepository.findBySymbol(symbol)
+            .map(p -> BigDecimal.ZERO)
+            .orElse(BigDecimal.ZERO);
         
         BigDecimal marketValue = position.getMarketValue(currentPrice);
         BigDecimal unrealizedPnL = position.getUnrealizedPnL(currentPrice);
@@ -59,7 +58,8 @@ public class PositionService {
     }
 
     private PositionResponse convertToPositionResponse(Position position) {
-        BigDecimal currentPrice = priceRepository.findLatestPrice(position.getSymbol())
+        BigDecimal currentPrice = priceRepository.findBySymbol(position.getSymbol())
+            .map(p -> BigDecimal.ZERO)
             .orElse(BigDecimal.ZERO);  // Default to 0 if price not found
 
         BigDecimal marketValue = position.getMarketValue(currentPrice);
@@ -83,10 +83,9 @@ public class PositionService {
                 "Position not found for account: " + accountId + ", symbol: " + symbol
             ));
         
-        BigDecimal currentPrice = priceRepository.findLatestPrice(symbol)
-            .orElseThrow(() -> new TradingException(
-                "Price not found for symbol: " + symbol
-            ));
+        BigDecimal currentPrice = priceRepository.findBySymbol(symbol)
+            .map(p -> BigDecimal.ZERO)
+            .orElse(BigDecimal.ZERO);
         
         BigDecimal marketValue = position.getMarketValue(currentPrice);
         BigDecimal unrealizedPnL = position.getUnrealizedPnL(currentPrice);

@@ -1,12 +1,12 @@
 package com.neueda.app.repository;
 
 import com.neueda.app.model.Order;
-import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 import java.util.UUID;
+import java.util.List;
 
-public interface OrderRepository {
-    Optional<Order> findById(UUID id);
-    void save(Order order);
-    void update(Order order);
-    void delete(UUID id);
+@Repository
+public interface OrderRepository extends JpaRepository<Order, UUID> {
+    List<Order> findByAccountId(String accountId);
 }

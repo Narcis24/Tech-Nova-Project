@@ -1,11 +1,9 @@
 package com.neueda.app.repository;
 
 import com.neueda.app.model.Account;
-import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-public interface AccountRepository {
-    Optional<Account> findById(String id);
-    void save(Account account);
-    void update(Account account);
-    void delete(String id);
+@Repository
+public interface AccountRepository extends JpaRepository<Account, String> {
 }
