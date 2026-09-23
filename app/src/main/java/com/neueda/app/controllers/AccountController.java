@@ -1,19 +1,22 @@
 
+package com.neueda.app.controllers;
+
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.ResponseEntity;
 import java.math.BigDecimal;
+import java.util.List;
 import com.neueda.app.dto.AccountResponse;
 import com.neueda.app.dto.BalanceResponse;
-import com.neueda.app.service.AccountService;
 import com.neueda.app.dto.PositionResponse;
 import com.neueda.app.dto.OrderResponse;
+import com.neueda.app.service.AccountService;
 
 
 @RestController
-@RequestMapping("/api/v1/accounts")
+@RequestMapping("/v1/accounts")
 
 public class AccountController {
 
@@ -37,14 +40,14 @@ public class AccountController {
     }
 
     @GetMapping("/{accountId}/positions")
-    public ResponseEntity<PositionResponse> getAccountPositions(@PathVariable String accountId) {
-        PositionResponse positionResponse = accountService.getAccountPositions(accountId);
-        return ResponseEntity.ok(positionResponse);
+    public ResponseEntity<List<PositionResponse>> getAccountPositions(@PathVariable String accountId) {
+        List<PositionResponse> positionResponses = accountService.getAccountPositions(accountId);
+        return ResponseEntity.ok(positionResponses);
     }
 
     @GetMapping("/{accountId}/orders")
-    public ResponseEntity<OrderResponse> getAccountOrders(@PathVariable String accountId) {
-        OrderResponse orderResponse = accountService.getAccountOrders(accountId);
-        return ResponseEntity.ok(orderResponse);
+    public ResponseEntity<List<OrderResponse>> getAccountOrders(@PathVariable String accountId) {
+        List<OrderResponse> orderResponses = accountService.getAccountOrders(accountId);
+        return ResponseEntity.ok(orderResponses);
     }
 }

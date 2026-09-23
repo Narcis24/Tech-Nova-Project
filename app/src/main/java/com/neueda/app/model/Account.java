@@ -1,18 +1,51 @@
 package com.neueda.app.model;
 
 import com.neueda.app.enums.AccountStatus;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Id;
+import jakarta.persistence.Column;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import com.neueda.app.exceptions.AccountNotActiveException;
 import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.contract.AccountOperations;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
+import lombok.NoArgsConstructor;
+import lombok.Getter;
 
+@Entity
+@Table(name = "accounts")
+@NoArgsConstructor
+@Getter
 public class Account  implements AccountOperations {
+
+    @Id
     private String accountId;
+    
+    @Column(name = "holder_name")
     private String holderName;
+    
+    @Column(name = "cash_balance")
     private BigDecimal cashBalance;
+    
+    @Column(name = "status")
+    @Enumerated(EnumType.STRING)
     private AccountStatus accountStatus;
+    
+    @Column(name = "last_updated")
     private LocalDateTime lastUpdated;
+
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Order> orders = new ArrayList<>();
+
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Position> positions = new ArrayList<>();
 
     public Account(String accountId, String holderName, BigDecimal cashBalance, AccountStatus accountStatus, LocalDateTime lastUpdated) {
         

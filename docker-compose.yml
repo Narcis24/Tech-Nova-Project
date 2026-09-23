@@ -22,13 +22,18 @@ services:
 
   app:
     build: ./app
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
-      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-technova}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-technova}
       DB_USER: ${POSTGRES_USER:-technova}
       DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    ports:
+      - "${APP_PORT:-8081}:8081"
     networks:
       - tech-nova-network
 

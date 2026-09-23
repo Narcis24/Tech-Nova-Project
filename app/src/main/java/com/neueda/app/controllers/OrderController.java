@@ -1,4 +1,6 @@
 
+package com.neueda.app.controllers;
+
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,7 +14,7 @@ import com.neueda.app.service.OrderService;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/orders")
+@RequestMapping("/v1/orders")
 
 public class OrderController {
 

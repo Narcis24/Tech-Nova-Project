@@ -17,10 +17,10 @@ public class InstrumentResponse {
     private boolean tradable;
     
     public InstrumentResponse(Instrument instrument) {
-        this.symbol = instrument.symbol();
-        this.name = instrument.name();
-        this.assetClass = instrument.assetClass();
-        this.currency = instrument.currency();
-        this.tradable = instrument.tradable();
+        this.symbol = instrument.getSymbol();
+        this.name = instrument.getName();
+        this.assetClass = instrument.getAssetClass();
+        this.currency = instrument.getCurrency();
+        this.tradable = instrument.isTradable();
     }
 }
