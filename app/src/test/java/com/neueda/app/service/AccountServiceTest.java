@@ -4,6 +4,9 @@ import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.model.Account;
 import com.neueda.app.repository.AccountRepository;
+import com.neueda.app.repository.OrderRepository;
+import com.neueda.app.repository.PositionRepository;
+import com.neueda.app.repository.PriceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,12 +20,18 @@ import static org.mockito.Mockito.*;
 class AccountServiceTest {
 
     private AccountRepository accountRepository;
+    private OrderRepository orderRepository;
+    private PositionRepository positionRepository;
+    private PriceRepository priceRepository;
     private AccountService accountService;
 
     @BeforeEach
     void setUp() {
         accountRepository = mock(AccountRepository.class);
-        accountService = new AccountService(accountRepository);
+        orderRepository = mock(OrderRepository.class);
+        positionRepository = mock(PositionRepository.class);
+        priceRepository = mock(PriceRepository.class);
+        accountService = new AccountService(accountRepository, orderRepository, positionRepository, priceRepository);
     }
 
     @Test
