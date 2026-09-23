@@ -1,9 +1,11 @@
-package com.neueda.app.config;
+package com.neueda.app.configs;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+
 
 import com.neueda.app.dto.ErrorResponse;
 import com.neueda.app.exceptions.AccountNotActiveException;
@@ -126,6 +128,26 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
         ErrorResponse error = new ErrorResponse("INVALID_ARGUMENT", ex.getMessage(), 400);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Handles MethodArgumentNotValidException when request body validation fails.
+     * This occurs when @Valid annotation detects validation errors (e.g., @NotNull, @Positive, etc.).
+     * 
+     * @param ex the MethodArgumentNotValidException thrown by Spring validation
+     * @return ResponseEntity containing ErrorResponse with 400 status
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult()
+            .getFieldErrors()
+            .stream()
+            .map(error -> error.getField() + ": " + error.getDefaultMessage())
+            .findFirst()
+            .orElse("Validation failed");
+        
+        ErrorResponse error = new ErrorResponse("VALIDATION_ERROR", message, 400);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
     
