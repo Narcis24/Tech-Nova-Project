@@ -30,15 +30,19 @@ public class Order implements OrderOperations {
     @Id
     private UUID id;
     
-    @Column(name = "account_id", insertable = false, updatable = false)
+    @Column(name = "account_id")
     private String accountId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", nullable = false)
+    @JoinColumn(name = "account_id", nullable = false, insertable = false, updatable = false)
     private Account account;
     
-    @Column(name = "symbol")
+    @Column(name = "symbol", insertable = false, updatable = false)
     private String symbol;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "symbol", nullable = false)
+    private Instrument instrument;
     
     @Column(name = "side")
     @Enumerated(EnumType.STRING)
@@ -67,18 +71,18 @@ public class Order implements OrderOperations {
     @Transient
     private String rejectionReason = "";       
 
-    public Order(UUID id, String accountId, String symbol, OrderSide side, 
+    public Order(UUID id, Account account, Instrument instrument, OrderSide side, 
                  int quantity, BigDecimal price, String idempotencyKey, 
                  LocalDateTime createdOn) {
         // Validation
         if (id == null) {
             throw new IllegalArgumentException("Order ID cannot be null");
         }
-        if (accountId == null || accountId.isBlank()) {
-            throw new IllegalArgumentException("Account ID cannot be null");
+        if (account == null) {
+            throw new IllegalArgumentException("Account cannot be null");
         }
-        if (symbol == null || symbol.isBlank()) {
-            throw new IllegalArgumentException("Symbol cannot be null");
+        if (instrument == null) {
+            throw new IllegalArgumentException("Instrument cannot be null");
         }
         if (side == null) {
             throw new IllegalArgumentException("Side cannot be null");
@@ -100,8 +104,10 @@ public class Order implements OrderOperations {
         }
         
         this.id = id;
-        this.accountId = accountId;
-        this.symbol = symbol;
+        this.account = account;
+        this.accountId = account.getAccountId();
+        this.instrument = instrument;
+        this.symbol = instrument.getSymbol();
         this.side = side;
         this.quantity = quantity;
         this.price = price;
