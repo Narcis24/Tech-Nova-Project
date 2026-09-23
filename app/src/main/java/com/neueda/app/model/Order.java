@@ -3,27 +3,56 @@ package com.neueda.app.model;
 import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.contract.OrderOperations;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Id;
+import jakarta.persistence.Column;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 import java.lang.IllegalArgumentException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-
+@Entity
+@Table(name = "orders")
 public class Order implements OrderOperations {
 
     /**IMMUTABLE*/
-    private final UUID id;                      
-    private final String accountId;            
-    private final String symbol;                
-    private final OrderSide side;              
-    private final int quantity;                 
-    private final BigDecimal price;             
-    private final String idempotencyKey;        
-    private final LocalDateTime createdOn;      
+    @Id
+    private UUID id;
+    
+    @Column(name = "account_id")
+    private String accountId;
+    
+    @Column(name = "symbol")
+    private String symbol;
+    
+    @Column(name = "side")
+    @Enumerated(EnumType.STRING)
+    private OrderSide side;
+    
+    @Column(name = "quantity")
+    private int quantity;
+    
+    @Column(name = "price")
+    private BigDecimal price;
+    
+    @Column(name = "idempotency_key")
+    private String idempotencyKey;
+    
+    @Column(name = "created_on")
+    private LocalDateTime createdOn;
     
     /**MUTABLE*/
-    private OrderStatus status;                 
-    private LocalDateTime lastModified; 
+    @Column(name = "status")
+    @Enumerated(EnumType.STRING)
+    private OrderStatus status;
+    
+    @Column(name = "last_modified")
+    private LocalDateTime lastModified;
+    
+    @Column(name = "rejection_reason")
     private String rejectionReason;       
 
     public Order(UUID id, String accountId, String symbol, OrderSide side, 

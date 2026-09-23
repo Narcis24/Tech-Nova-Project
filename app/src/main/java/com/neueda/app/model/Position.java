@@ -1,13 +1,31 @@
 package com.neueda.app.model;
 
 import com.neueda.app.contract.PositionOperations;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.Column;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+@Entity
+@Table(name = "positions")
+@IdClass(PositionKey.class)
 public class Position implements PositionOperations {
-    private final String accountId;
-    private final String symbol;
+    @Id
+    @Column(name = "account_id")
+    private String accountId;
+    
+    @Id
+    @Column(name = "symbol")
+    private String symbol;
+    
+    @Column(name = "quantity")
     private int quantity;
+    
+    @Column(name = "average_cost")
     private BigDecimal averageCost;
 
     public Position(String accountId, String symbol, int quantity, BigDecimal averageCost) {

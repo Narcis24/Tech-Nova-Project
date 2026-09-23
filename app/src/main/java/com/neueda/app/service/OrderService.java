@@ -88,11 +88,11 @@ public class OrderService {
             
             position.updateOnBuy(order.getQuantity(), order.getPrice());
             
-            accountRepository.update(account);
+            accountRepository.save(account);
             if (position.getQuantity() == order.getQuantity()) {
                 positionRepository.save(position);
             } else {
-                positionRepository.update(position);
+                positionRepository.save(position);
             }
             
         } else {
@@ -108,12 +108,12 @@ public class OrderService {
             
             account.creditCash(totalValue);
             
-            positionRepository.update(position);
-            accountRepository.update(account);
+            positionRepository.save(position);
+            accountRepository.save(account);
         }
         
         order.execute();
-        orderRepository.update(order);
+        orderRepository.save(order);
         return new OrderResponse(order);
     }
 
@@ -123,7 +123,7 @@ public class OrderService {
             .orElseThrow(() -> new TradingException("Order not found: " + orderId));
         
         order.cancel();  // Entity handles state validation
-        orderRepository.update(order);
+        orderRepository.save(order);
         return new OrderResponse(order);
     }
     
