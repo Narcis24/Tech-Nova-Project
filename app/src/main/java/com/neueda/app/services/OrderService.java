@@ -41,6 +41,12 @@ public class OrderService {
         if (request.getSide() == null || request.getQuantity() == null || request.getPrice() == null) {
             throw new IllegalArgumentException("side, quantity and price are required");
         }
+        if (request.getIdempotencyKey() != null
+                && orderRepository.existsByIdempotencyKey(request.getIdempotencyKey())) {
+            throw new DuplicateOrderException(
+                "Order already submitted with idempotency key: " + request.getIdempotencyKey()
+            );
+        }
 
         // Validate account exists and is ACTIVE
         Account account = accountRepository.findById(request.getAccountId())

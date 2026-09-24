@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Order> findByAccountId(String accountId);
+    boolean existsByIdempotencyKey(String idempotencyKey);
 }
