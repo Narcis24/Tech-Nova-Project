@@ -39,6 +39,7 @@ class OrderControllerTest {
         request.setAccountId("ACC123");
         request.setSymbol("AAPL");
         request.setSide("BUY");
+        request.setOrderType("LIMIT");
         request.setQuantity(100);
         request.setPrice(new BigDecimal("150.50"));
         request.setIdempotencyKey(UUID.randomUUID().toString());

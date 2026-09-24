@@ -4,6 +4,7 @@ ALTER TABLE accounts
     ADD CONSTRAINT chk_accounts_status CHECK (status IN ('ACTIVE', 'INACTIVE', 'SUSPENDED'));
 
 ALTER TABLE orders
+    ADD CONSTRAINT chk_orders_type CHECK (order_type IN ('MARKET', 'LIMIT')),
     ADD CONSTRAINT chk_orders_quantity CHECK (quantity > 0),
     ADD CONSTRAINT chk_orders_price CHECK (price > 0),
     ADD CONSTRAINT chk_orders_status CHECK (status IN ('PENDING', 'FILLED', 'CANCELLED', 'REJECTED', 'PARTIALLY_FILLED', 'EXPIRED'));
