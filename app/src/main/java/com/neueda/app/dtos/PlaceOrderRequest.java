@@ -14,6 +14,7 @@ public class PlaceOrderRequest {
     private String accountId;
     private String symbol;
     private String side;
+    private String orderType;
     private Integer quantity;
     private BigDecimal price;
     private String idempotencyKey;

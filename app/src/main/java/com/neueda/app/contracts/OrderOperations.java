@@ -5,6 +5,7 @@ import java.util.UUID;
 import java.time.LocalDateTime;
 import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderStatus;
+import com.neueda.app.enums.OrderType;
 
 public interface OrderOperations {
     // Getters
@@ -20,6 +21,8 @@ public interface OrderOperations {
 
     BigDecimal getPrice();
 
+    OrderType getOrderType();
+
     OrderStatus getStatus();
 
     String getIdempotencyKey();
@@ -28,6 +31,8 @@ public interface OrderOperations {
     
     // Business logic
     BigDecimal getTotalValue(); 
+
+    boolean isTriggeredBy(BigDecimal marketPrice);
 
     void execute();   
 
