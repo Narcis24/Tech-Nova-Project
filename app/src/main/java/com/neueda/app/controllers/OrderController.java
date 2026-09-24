@@ -12,6 +12,7 @@ import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.services.OrderService;
 import java.util.UUID;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/v1/orders")
@@ -25,7 +26,7 @@ public class OrderController {
     }
 
    @PostMapping
-   public ResponseEntity<OrderResponse> placeOrder(@RequestBody PlaceOrderRequest orderRequest) {
+   public ResponseEntity<OrderResponse> placeOrder(@Valid @RequestBody PlaceOrderRequest orderRequest) {
        OrderResponse orderResponse = orderService.placeOrder(orderRequest);
        return ResponseEntity.ok(orderResponse);
    }
