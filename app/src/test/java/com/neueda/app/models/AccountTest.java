@@ -23,7 +23,7 @@ public class AccountTest {
     void setUp() {
         account = new Account(
             "12345", 
-            "Karl Devon", 
+            "Karl", "Devon", 
             new BigDecimal("2000.00"), 
             AccountStatus.ACTIVE,
             LocalDateTime.of(2026,9,17,13,00)
@@ -32,7 +32,7 @@ public class AccountTest {
                     
         invalidAccount = new Account(
             "123456", 
-            "Debbie Lynch", 
+            "Debbie", "Lynch", 
             new BigDecimal("2000.00"), 
             AccountStatus.INACTIVE,
             LocalDateTime.of(2026,9,17,13,00)
@@ -43,7 +43,7 @@ public class AccountTest {
     void validateAccountGetters() {
         assertAll(
             () -> assertEquals(account.getAccountId(), "12345"),
-            () -> assertEquals(account.getFirstName(), "Karl Devon"),
+            () -> assertEquals(account.getFirstName(), "Karl"),
             () -> assertEquals(account.getCashBalance(), new BigDecimal("2000.00")),
             () -> assertEquals(account.getAccountStatus(), AccountStatus.ACTIVE),
             () -> assertEquals(account.getLastUpdated(), LocalDateTime.of(2026,9,17,13,00))
@@ -62,7 +62,7 @@ public class AccountTest {
         void validateForEachStatus(AccountStatus status) {
             testValidateAccountStatus = new Account(
                 "12345", 
-                "Karl Devon", 
+                "Karl", "Devon", 
                 new BigDecimal(2000.00), 
                 status,
                 LocalDateTime.of(2026,9,17,13,00)
@@ -79,7 +79,7 @@ public class AccountTest {
         void errorMessageInExceptionMessage() {
             Account inactiveAccount = new Account(
                 "12345", 
-                "Karl Devon", 
+                "Karl", "Devon", 
                 new BigDecimal(2000.00), 
                 AccountStatus.INACTIVE,
                 LocalDateTime.of(2026,9,17,13,00)
@@ -98,14 +98,14 @@ public class AccountTest {
         void shouldReturnCorrectString() {
             Account testAccount = new Account(
                 "12345", 
-                "Karl Devon", 
+                "Karl", "Devon", 
                 new BigDecimal(2000.00), 
                 AccountStatus.ACTIVE,
                 LocalDateTime.of(2026,9,17,13,00)
             );
             String result = testAccount.toString();
 
-            assertEquals(result, "Account{accountId='12345', holderName='Karl Devon', cashBalance=2000, accountStatus=ACTIVE, lastUpdated=2026-09-17T13:00}");
+            assertEquals(result, "Account{accountId='12345', firstName='Karl', lastName='Devon', cashBalance=2000, accountStatus=ACTIVE, lastUpdated=2026-09-17T13:00}");
         }
     }
 

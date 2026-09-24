@@ -1,7 +1,8 @@
 CREATE TABLE accounts (
     id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     account_id  VARCHAR(50)  NOT NULL UNIQUE,
-    holder_name VARCHAR(255) NOT NULL,
+    first_name  VARCHAR(255) NOT NULL,
+    last_name   VARCHAR(255) NOT NULL,
     cash_balance NUMERIC     NOT NULL,
     status       VARCHAR(20) NOT NULL,
     VERSION      INT         NOT NULL DEFAULT 0,

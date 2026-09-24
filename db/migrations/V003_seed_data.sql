@@ -41,12 +41,12 @@ INSERT INTO instruments (symbol, name, asset_class, currency, tradable) VALUES
 ('GLD', 'SPDR Gold Shares', 'COMMODITY', 'USD', true),
 ('SLV', 'iShares Silver Trust', 'COMMODITY', 'USD', true);
 
-INSERT INTO accounts (account_id, holder_name, cash_balance, status, version, last_updated) VALUES
-('ACC001', 'Alice Johnson', 50000.00, 'ACTIVE', 0, NOW()),
-('ACC002', 'Brian Osei', 75000.00, 'ACTIVE', 0, NOW()),
-('ACC003', 'Carla Mendes', 100000.00, 'ACTIVE', 0, NOW()),
-('ACC004', 'David Kim', 30000.00, 'ACTIVE', 0, NOW()),
-('ACC005', 'Elena Petrova', 200000.00, 'ACTIVE', 0, NOW());
+INSERT INTO accounts (account_id, first_name, last_name, cash_balance, status, version, last_updated) VALUES
+('ACC001', 'Alice', 'Johnson', 50000.00, 'ACTIVE', 0, NOW()),
+('ACC002', 'Brian', 'Osei', 75000.00, 'ACTIVE', 0, NOW()),
+('ACC003', 'Carla', 'Mendes', 100000.00, 'ACTIVE', 0, NOW()),
+('ACC004', 'David', 'Kim', 30000.00, 'ACTIVE', 0, NOW()),
+('ACC005', 'Elena', 'Petrova', 200000.00, 'ACTIVE', 0, NOW());
 
 INSERT INTO orders (id, account_id, symbol, side, quantity, price, status, idempotency_key, created_on) VALUES
 (gen_random_uuid(), 'ACC001', 'AAPL',  'BUY', 40,  237.87, 'FILLED',    'ACC001_001', '2025-01-15 10:30:00'),

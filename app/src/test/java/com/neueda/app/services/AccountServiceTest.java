@@ -41,7 +41,7 @@ class AccountServiceTest {
         BigDecimal expectedBalance = new BigDecimal("10000.00");
         Account account = new Account(
             accountId,
-            "John Doe",
+            "John", "Doe",
             expectedBalance,
             AccountStatus.ACTIVE,
             LocalDateTime.of(2026, 9, 17, 13, 0)
@@ -78,7 +78,7 @@ class AccountServiceTest {
         String accountId = "67890";
         Account account = new Account(
             accountId,
-            "Jane Smith",
+            "Jane", "Smith",
             BigDecimal.ZERO,
             AccountStatus.ACTIVE,
             LocalDateTime.now()
@@ -99,14 +99,14 @@ class AccountServiceTest {
         // Arrange
         Account account1 = new Account(
             "ACC001",
-            "User 1",
+            "User", "1",
             new BigDecimal("5000.00"),
             AccountStatus.ACTIVE,
             LocalDateTime.now()
         );
         Account account2 = new Account(
             "ACC002",
-            "User 2",
+            "User", "2",
             new BigDecimal("15000.00"),
             AccountStatus.ACTIVE,
             LocalDateTime.now()

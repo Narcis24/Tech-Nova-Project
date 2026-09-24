@@ -60,7 +60,7 @@ class OrderServiceTest {
 
         Account account = new Account(
             "12345",
-            "Karl Devon",
+            "Karl", "Devon",
             new BigDecimal("2000.00"),
             AccountStatus.ACTIVE,
             LocalDateTime.of(2026, 9, 17, 13, 0)
@@ -116,7 +116,7 @@ class OrderServiceTest {
 
         Account account = new Account(
             "12345",
-            "Karl Devon",
+            "Karl", "Devon",
             new BigDecimal("2000.00"),
             AccountStatus.ACTIVE,
             LocalDateTime.of(2026, 9, 17, 13, 0)
@@ -181,5 +181,4 @@ class OrderServiceTest {
         assertEquals(OrderStatus.FILLED, order.getStatus());
 
     }
-    
 }

@@ -16,6 +16,7 @@ import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.contracts.AccountOperations;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Version;
 import lombok.NoArgsConstructor;
 import lombok.Getter;
 
@@ -30,6 +31,9 @@ public class Account  implements AccountOperations {
     private String firstName;
     private String lastName;
     private BigDecimal cashBalance;
+
+    @Version
+    private int version;
     
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
@@ -44,7 +48,7 @@ public class Account  implements AccountOperations {
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Position> positions = new ArrayList<>();
 
-    public Account(String accountId, String holderName, BigDecimal cashBalance, AccountStatus accountStatus, LocalDateTime lastUpdated) {
+    public Account(String accountId, String firstName, String lastName, BigDecimal cashBalance, AccountStatus accountStatus, LocalDateTime lastUpdated) {
         
         if (accountId == null || accountId.isBlank()) {
             throw new IllegalArgumentException("Account ID cannot be null");
