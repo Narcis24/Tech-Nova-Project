@@ -11,13 +11,11 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ErrorResponse {
     private String errorCode;           // e.g., "ACCOUNT_NOT_FOUND"
     private String message;              // e.g., "Account not found: ACC123"
     private int httpStatus;              // e.g., 404
     private LocalDateTime timestamp;     // When error occurred
-    private String path;                 // e.g., "/v1/orders" (optional)
 
     public ErrorResponse(String errorCode, String message, int httpStatus) {
         this.errorCode = errorCode;
@@ -26,9 +24,4 @@ public class ErrorResponse {
         this.timestamp = LocalDateTime.now();
     }
 
-    // Constructor with path
-    public ErrorResponse(String errorCode, String message, int httpStatus, String path) {
-        this(errorCode, message, httpStatus);
-        this.path = path;
-    }
 }
