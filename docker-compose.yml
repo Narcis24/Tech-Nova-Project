@@ -32,8 +32,23 @@ services:
       DB_NAME: ${POSTGRES_DB:-technova}
       DB_USER: ${POSTGRES_USER:-technova}
       DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-key-in-production}
     ports:
       - "${APP_PORT:-8081}:8081"
+    networks:
+      - tech-nova-network
+
+  auth-service:
+    build: ./auth
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-key-in-production}
+    ports:
+      - "${AUTH_PORT:-8082}:8080"
     networks:
       - tech-nova-network
 
