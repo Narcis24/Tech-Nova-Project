@@ -155,6 +155,15 @@ public class OrderService {
         return new OrderResponse(order);
     }
     
+    public OrderResponse rejectOrder(UUID orderId, String reason) {
+        Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+
+        order.reject(reason);  // Entity handles state validation
+        orderRepository.save(order);
+        return new OrderResponse(order);
+    }
+
     public OrderResponse getOrder(UUID orderId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));

@@ -32,5 +32,6 @@ public class OrderResponse {
         this.quantity = order.getQuantity();
         this.price = order.getPrice();
         this.status = order.getStatus();
+        this.message = order.getRejectionReason();
     }
 }
