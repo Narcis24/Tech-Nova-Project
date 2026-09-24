@@ -1,6 +1,7 @@
 package com.neueda.app.services;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.enums.OrderSide;
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
+@Transactional
 public class OrderService {
     
     private final OrderRepository orderRepository;
@@ -72,6 +74,9 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new TradingException("Order not found: " + orderId));
         
+        // Fails fast if the order is not PENDING, before any cash/position changes
+        order.execute();
+
         BigDecimal totalValue = order.getTotalValue();
         Account account = accountRepository.findById(order.getAccountId())
             .orElseThrow(() -> new AccountNotFoundException("Account not found"));
@@ -105,7 +110,6 @@ public class OrderService {
             accountRepository.save(account);
         }
         
-        order.execute();
         orderRepository.save(order);
         return new OrderResponse(order);
     }
