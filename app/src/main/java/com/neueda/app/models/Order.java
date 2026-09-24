@@ -3,6 +3,7 @@ package com.neueda.app.models;
 import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.contracts.OrderOperations;
+import com.neueda.app.exceptions.InvalidOrderStateException;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.Id;
@@ -167,7 +168,7 @@ public class Order implements OrderOperations {
 
     private void requirePending() {
         if (status != OrderStatus.PENDING) {
-            throw new IllegalArgumentException(
+            throw new InvalidOrderStateException(
                 "Operation not allowed. Only PENDING orders can be modified."
             );
         }
