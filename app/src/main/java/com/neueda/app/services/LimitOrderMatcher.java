@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.enums.OrderType;
 import com.neueda.app.exceptions.InvalidOrderStateException;
+import com.neueda.app.exceptions.OrderNotTriggeredException;
 import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.exceptions.TradingException;
 import com.neueda.app.models.Order;
@@ -48,6 +49,8 @@ public class LimitOrderMatcher {
                 log.warn("Skipping limit order {}: {}", order.getId(), e.getMessage());
             } catch (InvalidOrderStateException e) {
                 log.info("Limit order {} was already handled", order.getId());
+            } catch (OrderNotTriggeredException e) {
+                log.info("Limit order {} no longer triggered: {}", order.getId(), e.getMessage());
             } catch (OptimisticLockingFailureException e) {
                 log.info("Limit order {} hit a concurrent update, will retry next run", order.getId());
             } catch (TradingException e) {

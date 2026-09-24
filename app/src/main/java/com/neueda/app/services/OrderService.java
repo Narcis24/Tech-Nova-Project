@@ -107,6 +107,15 @@ public class OrderService {
         // Fails fast if the order is not PENDING, before any cash/position changes
         order.execute();
 
+        // A limit order only fills once the market has reached its limit
+        if (order.getOrderType() == OrderType.LIMIT) {
+            BigDecimal marketPrice = priceService.getCurrentPrice(order.getSymbol());
+            if (!order.isTriggeredBy(marketPrice)) {
+                throw new OrderNotTriggeredException(
+                    "Limit " + order.getPrice() + " not reached, market price is " + marketPrice);
+            }
+        }
+
         BigDecimal totalValue = order.getTotalValue();
         Account account = accountRepository.findById(order.getAccountId())
             .orElseThrow(() -> new AccountNotFoundException("Account not found"));

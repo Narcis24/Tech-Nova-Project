@@ -7,6 +7,7 @@ import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.enums.OrderType;
 import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.exceptions.InvalidOrderStateException;
+import com.neueda.app.exceptions.OrderNotTriggeredException;
 import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
@@ -97,6 +98,18 @@ class LimitOrderMatcherTest {
         when(priceService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("99.50"));
         when(orderService.executeOrder(order.getId()))
             .thenThrow(new InvalidOrderStateException("Not pending"));
+
+        matcher.matchPendingLimitOrders();
+
+        verify(orderService, never()).rejectOrder(any(), any());
+    }
+
+    @Test
+    void testDoesNotRejectOrderThatIsNoLongerTriggered() {
+        Order order = pendingLimit(OrderSide.BUY, "100.00");
+        when(priceService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("99.50"));
+        when(orderService.executeOrder(order.getId()))
+            .thenThrow(new OrderNotTriggeredException("Limit not reached"));
 
         matcher.matchPendingLimitOrders();
 

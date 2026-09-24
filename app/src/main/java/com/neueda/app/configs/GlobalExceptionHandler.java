@@ -17,6 +17,7 @@ import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.exceptions.InsufficientHoldingsException;
 import com.neueda.app.exceptions.InvalidOrderStateException;
 import com.neueda.app.exceptions.OrderNotFoundException;
+import com.neueda.app.exceptions.OrderNotTriggeredException;
 import com.neueda.app.exceptions.TradingException;
 
 /**
@@ -88,6 +89,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidOrderStateException.class)
     public ResponseEntity<ErrorResponse> handleInvalidOrderState(InvalidOrderStateException ex) {
         ErrorResponse error = new ErrorResponse("INVALID_ORDER_STATE", ex.getMessage(), 409);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Handles OrderNotTriggeredException when a limit order is asked to fill before the market
+     * has reached its limit.
+     * 
+     * @param ex the OrderNotTriggeredException thrown from the service layer
+     * @return ResponseEntity containing ErrorResponse with 409 status
+     */
+    @ExceptionHandler(OrderNotTriggeredException.class)
+    public ResponseEntity<ErrorResponse> handleOrderNotTriggered(OrderNotTriggeredException ex) {
+        ErrorResponse error = new ErrorResponse("ORDER_NOT_TRIGGERED", ex.getMessage(), 409);
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 

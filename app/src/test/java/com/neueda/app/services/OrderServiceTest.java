@@ -7,6 +7,7 @@ import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.enums.OrderType;
 import com.neueda.app.dtos.OrderResponse;
+import com.neueda.app.exceptions.OrderNotTriggeredException;
 import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.exceptions.DuplicateOrderException;
 import com.neueda.app.models.Account;
@@ -94,6 +95,8 @@ class OrderServiceTest {
             LocalDateTime.now()
         );
 
+        when(priceService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("100.00"));
+
         when(orderRepository.findById(orderId))
             .thenReturn(Optional.of(order));
 
@@ -159,6 +162,8 @@ class OrderServiceTest {
         );
 
         // When the service looks for the order
+        when(priceService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("100.00"));
+
         when(orderRepository.findById(orderId))
             .thenReturn(Optional.of(order));
 
@@ -280,5 +285,21 @@ class OrderServiceTest {
     void testPlaceOrderRejectsUnknownOrderType() {
         assertThrows(IllegalArgumentException.class, () -> orderService.placeOrder(new PlaceOrderRequest(
             "12345", "AAPL", "BUY", "STOP", 10, new BigDecimal("150.00"), "key-1")));
+    }
+
+    @Test
+    void testExecuteRefusesLimitOrderThatHasNotReachedItsLimit() {
+        UUID orderId = UUID.randomUUID();
+        Account account = activeAccount();
+        Instrument instrument = aapl();
+        Order order = new Order(orderId, account, instrument, OrderSide.BUY, OrderType.LIMIT, 10,
+            new BigDecimal("100.00"), "key-1", LocalDateTime.now());
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(priceService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("150.00"));
+
+        assertThrows(OrderNotTriggeredException.class, () -> orderService.executeOrder(orderId));
+
+        assertEquals(new BigDecimal("2000.00"), account.getCashBalance());
+        verifyNoInteractions(positionRepository);
     }
 }

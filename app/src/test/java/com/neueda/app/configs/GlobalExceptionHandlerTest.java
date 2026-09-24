@@ -19,6 +19,7 @@ import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.exceptions.InsufficientHoldingsException;
 import com.neueda.app.exceptions.InvalidOrderStateException;
 import com.neueda.app.exceptions.OrderNotFoundException;
+import com.neueda.app.exceptions.OrderNotTriggeredException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import com.neueda.app.exceptions.TradingException;
 import java.math.BigDecimal;
@@ -242,6 +243,24 @@ class GlobalExceptionHandlerTest {
             .andExpect(jsonPath("$.errorCode").value("INVALID_ORDER_STATE"))
             .andExpect(jsonPath("$.httpStatus").value(409))
             .andExpect(jsonPath("$.message").value("Only PENDING orders can be modified"))
+            .andExpect(jsonPath("$.timestamp").exists());
+    }
+
+    @Test
+    void testOrderNotTriggeredException() throws Exception {
+        when(orderService.placeOrder(any())).thenThrow(
+            new OrderNotTriggeredException("Limit 100.00 not reached, market price is 150.00")
+        );
+
+        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", "LIMIT", 100, new BigDecimal("100.00"), "id-123");
+
+        mockMvc.perform(post("/v1/orders")
+            .contentType("application/json")
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.errorCode").value("ORDER_NOT_TRIGGERED"))
+            .andExpect(jsonPath("$.httpStatus").value(409))
+            .andExpect(jsonPath("$.message").value("Limit 100.00 not reached, market price is 150.00"))
             .andExpect(jsonPath("$.timestamp").exists());
     }
 
