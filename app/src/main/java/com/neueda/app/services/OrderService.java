@@ -38,6 +38,10 @@ public class OrderService {
     }
 
     public OrderResponse placeOrder(PlaceOrderRequest request) {
+        if (request.getSide() == null || request.getQuantity() == null || request.getPrice() == null) {
+            throw new IllegalArgumentException("side, quantity and price are required");
+        }
+
         // Validate account exists and is ACTIVE
         Account account = accountRepository.findById(request.getAccountId())
             .orElseThrow(() -> new AccountNotFoundException(
@@ -72,7 +76,7 @@ public class OrderService {
 
      public OrderResponse executeOrder(UUID orderId) {
         Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new TradingException("Order not found: " + orderId));
+            .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
         
         // Fails fast if the order is not PENDING, before any cash/position changes
         order.execute();
@@ -100,7 +104,8 @@ public class OrderService {
             // SELL FLOW
             Position position = positionRepository
                 .findByAccountIdAndSymbol(order.getAccountId(), order.getSymbol())
-                .orElseThrow(() -> new TradingException("Position not found"));
+                .orElseThrow(() -> new InsufficientHoldingsException(
+                    "No position in " + order.getSymbol() + " for account " + order.getAccountId()));
             
             position.updateOnSell(order.getQuantity());
             
@@ -117,7 +122,7 @@ public class OrderService {
 
     public OrderResponse cancelOrder(UUID orderId) {
         Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new TradingException("Order not found: " + orderId));
+            .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
         
         order.cancel();  // Entity handles state validation
         orderRepository.save(order);
@@ -126,7 +131,7 @@ public class OrderService {
     
     public OrderResponse getOrder(UUID orderId) {
         Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new TradingException("Order not found: " + orderId));
+            .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
         return new OrderResponse(order);
     }
 }
