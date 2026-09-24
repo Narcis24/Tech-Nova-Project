@@ -68,7 +68,7 @@ public class OrderService {
         return new OrderResponse(order);
     }
 
-     public OrderResponse executeOrder(UUID orderId) {
+    public OrderResponse executeOrder(UUID orderId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new TradingException("Order not found: " + orderId));
         
