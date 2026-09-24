@@ -12,15 +12,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AccountResponse {
     private String accountId;
-    private String firstName;
-    private String lastName;
+    private String holderName;
     private BigDecimal cashBalance;
     private AccountStatus status;
     
     public AccountResponse(Account account) {
         this.accountId = account.getAccountId();
-        this.firstName = account.getFirstName();
-        this.lastName = account.getLastName();
+        this.holderName = account.getHolderName();
         this.cashBalance = account.getCashBalance();
         this.status = account.getAccountStatus();
     }
