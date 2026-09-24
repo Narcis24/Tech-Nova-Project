@@ -18,7 +18,6 @@ public class ErrorResponse {
     private int httpStatus;              // e.g., 404
     private LocalDateTime timestamp;     // When error occurred
     private String path;                 // e.g., "/v1/orders" (optional)
-    private String traceId;   
 
     public ErrorResponse(String errorCode, String message, int httpStatus) {
         this.errorCode = errorCode;
