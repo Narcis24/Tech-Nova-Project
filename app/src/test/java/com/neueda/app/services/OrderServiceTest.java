@@ -1,9 +1,11 @@
 package com.neueda.app.services;
 
+import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.enums.AssetClass;
 import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderStatus;
+import com.neueda.app.exceptions.DuplicateOrderException;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Order;
@@ -180,5 +182,15 @@ class OrderServiceTest {
         // Order should now be filled
         assertEquals(OrderStatus.FILLED, order.getStatus());
 
+    }
+
+    @Test
+    void testPlaceOrderRejectsReusedIdempotencyKey() {
+        PlaceOrderRequest request = new PlaceOrderRequest(
+            "12345", "AAPL", "BUY", 10, new BigDecimal("150.00"), "key-1");
+        when(orderRepository.existsByIdempotencyKey("key-1")).thenReturn(true);
+
+        assertThrows(DuplicateOrderException.class, () -> orderService.placeOrder(request));
+        verify(orderRepository, never()).save(any());
     }
 }
