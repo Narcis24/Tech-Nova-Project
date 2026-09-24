@@ -39,7 +39,7 @@ public class PortfolioService {
         List<PositionResponse> positionResponses = new ArrayList<>();
         
         for (Position position : positions) {
-            BigDecimal currentPrice = priceRepository.findBySymbol(position.getSymbol())
+            BigDecimal currentPrice = priceRepository.findFirstBySymbolOrderByTradeDateDesc(position.getSymbol())
                 .map(p -> BigDecimal.ZERO)
                 .orElse(BigDecimal.ZERO);
             
@@ -87,7 +87,7 @@ public class PortfolioService {
         List<PositionResponse> positionResponses = new ArrayList<>();
         
         for (Position position : positions) {
-            BigDecimal currentPrice = priceRepository.findBySymbol(position.getSymbol())
+            BigDecimal currentPrice = priceRepository.findFirstBySymbolOrderByTradeDateDesc(position.getSymbol())
                 .map(p -> BigDecimal.ZERO)
                 .orElse(BigDecimal.ZERO);
             
