@@ -76,8 +76,8 @@ public class Order implements OrderOperations {
     @Transient
     private LocalDateTime lastModified = LocalDateTime.now();
     
-    @Transient
-    private String rejectionReason = "";       
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
 
     public Order(UUID id, Account account, Instrument instrument, OrderSide side, 
                  OrderType orderType, int quantity, BigDecimal price, String idempotencyKey, 
