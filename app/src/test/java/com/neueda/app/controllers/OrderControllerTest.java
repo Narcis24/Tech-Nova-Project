@@ -50,7 +50,7 @@ class OrderControllerTest {
             .thenReturn(mockResponse);
 
         // STEP 3: Act - Make the HTTP POST request
-        mockMvc.perform(post("/api/v1/orders")
+        mockMvc.perform(post("/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             // STEP 4: Assert - Verify the response
