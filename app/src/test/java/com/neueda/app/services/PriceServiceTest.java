@@ -1,12 +1,7 @@
 package com.neueda.app.services;
 
-<<<<<<< HEAD:app/src/test/java/com/neueda/app/services/PriceServiceTest.java
-import com.neueda.app.exceptions.TradingException;
+import com.neueda.app.models.Price;
 import com.neueda.app.repositories.PriceRepository;
-=======
-import com.neueda.app.model.Price;
-import com.neueda.app.repository.PriceRepository;
->>>>>>> sprint-6:app/src/test/java/com/neueda/app/service/PriceServiceTest.java
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
