@@ -26,9 +26,13 @@ import lombok.Getter;
 public class Account  implements AccountOperations {
 
     @Id
+    @Column(name = "account_id")
     private String accountId;
-    private String firstName;
-    private String lastName;
+
+    @Column(name = "holder_name")
+    private String holderName;
+
+    @Column(name = "cash_balance")
     private BigDecimal cashBalance;
     
     @Column(name = "status")
@@ -50,12 +54,8 @@ public class Account  implements AccountOperations {
             throw new IllegalArgumentException("Account ID cannot be null");
         }
 
-        if (firstName == null || firstName.isBlank()) {
-            throw new IllegalArgumentException("First Name cannot be null");
-        }
-
-        if (lastName == null || lastName.isBlank()) {
-            throw new IllegalArgumentException("Last Name cannot be null");
+        if (holderName == null || holderName.isBlank()) {
+            throw new IllegalArgumentException("Holder Name cannot be null");
         }
 
         if (cashBalance == null || cashBalance.compareTo(BigDecimal.ZERO) < 0) {
@@ -71,8 +71,7 @@ public class Account  implements AccountOperations {
         }
         
         this.accountId = accountId;
-        this.firstName = firstName;
-        this.lastName = lastName;
+        this.holderName = holderName;
         this.cashBalance = cashBalance;
         this.accountStatus = accountStatus;
         this.lastUpdated = lastUpdated;
@@ -112,8 +111,7 @@ public class Account  implements AccountOperations {
     public String toString() {
         return "Account{" +
                 "accountId='" + accountId + '\'' +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
+                ", holderName='" + holderName + '\'' +
                 ", cashBalance=" + cashBalance +
                 ", accountStatus=" + accountStatus +
                 ", lastUpdated=" + lastUpdated +
