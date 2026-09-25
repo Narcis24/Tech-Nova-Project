@@ -64,8 +64,22 @@ services:
     networks:
       - tech-nova-network
 
+  # not started by `up`; run with: docker-compose --profile quality up -d sonarqube
+  sonarqube:
+    image: sonarqube:community
+    profiles: [quality]
+    ports:
+      - "${SONAR_PORT:-9000}:9000"
+    volumes:
+      - sonar_data:/opt/sonarqube/data
+      - sonar_extensions:/opt/sonarqube/extensions
+    networks:
+      - tech-nova-network
+
 volumes:
   db_data:
+  sonar_data:
+  sonar_extensions:
 
 networks:
   tech-nova-network:
