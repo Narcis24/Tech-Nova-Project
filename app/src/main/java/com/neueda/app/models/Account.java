@@ -27,8 +27,13 @@ import lombok.Getter;
 public class Account  implements AccountOperations {
 
     @Id
+    @Column(name = "account_id")
     private String accountId;
+
+    @Column(name = "holder_name")
     private String holderName;
+
+    @Column(name = "cash_balance")
     private BigDecimal cashBalance;
 
     @Version
@@ -54,7 +59,7 @@ public class Account  implements AccountOperations {
         }
 
         if (holderName == null || holderName.isBlank()) {
-            throw new IllegalArgumentException("First Name cannot be null");
+            throw new IllegalArgumentException("Holder Name cannot be null");
         }
 
         if (cashBalance == null || cashBalance.compareTo(BigDecimal.ZERO) < 0) {
