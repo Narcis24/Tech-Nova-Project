@@ -1,6 +1,6 @@
 package com.neueda.app.filter;
 
-import com.neueda.app.util.JwtUtil;
+import com.neueda.app.utils.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

@@ -24,12 +24,12 @@ import com.neueda.app.configs.JwtAuthenticationFilter;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final JwtAuthenticationHandler jwtAuthenticationHandler;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-                          CustomAuthenticationEntryPoint customAuthenticationEntryPoint) {
+                        JwtAuthenticationHandler jwtAuthenticationHandler) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.customAuthenticationEntryPoint = customAuthenticationEntryPoint;
+        this.jwtAuthenticationHandler = jwtAuthenticationHandler;
     }
 
     @Bean
@@ -60,7 +60,7 @@ public class SecurityConfig {
             )
             // Custom error handling for authentication failures (401 Unauthorized)
             .exceptionHandling()
-                .authenticationEntryPoint(customAuthenticationEntryPoint)
+                .authenticationEntryPoint(jwtAuthenticationHandler)
             .and()
             // Add JWT filter BEFORE Spring's default UsernamePasswordAuthenticationFilter
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

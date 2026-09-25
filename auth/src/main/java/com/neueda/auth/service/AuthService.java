@@ -28,7 +28,7 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername()).orElse(null);
 
-boolean isValid = user != null && passwordEncoder.matches(request.getPassword(), user.getPasswordHash());
+    boolean isValid = user != null && passwordEncoder.matches(request.getPassword(), user.getPasswordHash());
         if (!isValid) {
             throw new InvalidCredentialsException("Invalid username or password");
         }

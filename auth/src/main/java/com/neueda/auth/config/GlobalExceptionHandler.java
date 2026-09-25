@@ -6,6 +6,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import com.neueda.auth.dto.ErrorResponse;
+import com.neueda.auth.exception.InvalidCredentialsException;
+import com.neueda.auth.exception.UsernameAlreadyExistException;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,5 +39,17 @@ public class GlobalExceptionHandler {
         response.put("message", ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCredentials (InvalidCredentialsException ex) {
+        ErrorResponse error = new ErrorResponse("INVALID_CREDENTIALS", ex.getMessage(), 401);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(UsernameAlreadyExistException.class)
+    public ResponseEntity<ErrorResponse> handleExistingUsername (UsernameAlreadyExistException ex) {
+        ErrorResponse error = new ErrorResponse("USERNAME_ALREADY_EXIST", ex.getMessage(), 401);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 }
