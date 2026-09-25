@@ -48,21 +48,21 @@ INSERT INTO accounts (account_id, holder_name, cash_balance, status, version, la
 ('ACC004', 'David Kim', 30000.00, 'ACTIVE', 0, NOW()),
 ('ACC005', 'Elena Petrova', 200000.00, 'ACTIVE', 0, NOW());
 
-INSERT INTO orders (id, account_id, symbol, side, quantity, price, status, idempotency_key, created_on) VALUES
-(gen_random_uuid(), 'ACC001', 'AAPL',  'BUY', 40,  237.87, 'FILLED',    'ACC001_001', '2025-01-15 10:30:00'),
-(gen_random_uuid(), 'ACC001', 'GOOGL', 'BUY', 30,  186.47, 'FILLED',    'ACC001_002', '2025-02-10 11:15:00'),
-(gen_random_uuid(), 'ACC001', 'TLT',   'BUY', 100, 89.86,  'PENDING',   'ACC001_003', '2025-03-12 14:00:00'),
-(gen_random_uuid(), 'ACC002', 'TSLA',  'BUY', 20,  411.05, 'FILLED',    'ACC002_001', '2025-01-06 09:45:00'),
-(gen_random_uuid(), 'ACC002', 'SPY',   'BUY', 15,  583.77, 'FILLED',    'ACC002_002', '2025-03-03 13:20:00'),
-(gen_random_uuid(), 'ACC002', 'GLD',   'BUY', 25,  275.20, 'CANCELLED', 'ACC002_003', '2025-04-08 10:05:00'),
-(gen_random_uuid(), 'ACC003', 'MSFT',  'BUY', 30,  428.50, 'FILLED',    'ACC003_001', '2025-01-21 15:10:00'),
-(gen_random_uuid(), 'ACC003', 'QQQ',   'BUY', 20,  539.37, 'FILLED',    'ACC003_002', '2025-02-18 10:00:00'),
-(gen_random_uuid(), 'ACC003', 'AGG',   'BUY', 150, 97.33,  'FILLED',    'ACC003_003', '2025-05-13 11:40:00'),
-(gen_random_uuid(), 'ACC004', 'AAPL',  'BUY', 25,  232.80, 'FILLED',    'ACC004_001', '2025-02-04 09:50:00'),
-(gen_random_uuid(), 'ACC004', 'NVDA',  'BUY', 60,  115.43, 'FILLED',    'ACC004_002', '2025-03-18 14:30:00'),
-(gen_random_uuid(), 'ACC005', 'JPM',   'BUY', 50,  244.21, 'FILLED',    'ACC005_001', '2025-01-13 10:25:00'),
-(gen_random_uuid(), 'ACC005', 'VTI',   'BUY', 80,  292.95, 'FILLED',    'ACC005_002', '2025-02-25 12:00:00'),
-(gen_random_uuid(), 'ACC005', 'SLV',   'BUY', 300, 29.50,  'FILLED',    'ACC005_003', '2025-04-22 15:30:00');
+INSERT INTO orders (id, account_id, symbol, side, order_type, quantity, price, status, idempotency_key, created_on) VALUES
+(gen_random_uuid(), 'ACC001', 'AAPL',  'BUY', 'MARKET', 40,  237.87, 'FILLED',    'ACC001_001', '2025-01-15 10:30:00'),
+(gen_random_uuid(), 'ACC001', 'GOOGL', 'BUY', 'MARKET', 30,  186.47, 'FILLED',    'ACC001_002', '2025-02-10 11:15:00'),
+(gen_random_uuid(), 'ACC001', 'TLT',   'BUY', 'LIMIT',  100, 89.86,  'PENDING',   'ACC001_003', '2025-03-12 14:00:00'),
+(gen_random_uuid(), 'ACC002', 'TSLA',  'BUY', 'MARKET', 20,  411.05, 'FILLED',    'ACC002_001', '2025-01-06 09:45:00'),
+(gen_random_uuid(), 'ACC002', 'SPY',   'BUY', 'MARKET', 15,  583.77, 'FILLED',    'ACC002_002', '2025-03-03 13:20:00'),
+(gen_random_uuid(), 'ACC002', 'GLD',   'BUY', 'LIMIT',  25,  275.20, 'CANCELLED', 'ACC002_003', '2025-04-08 10:05:00'),
+(gen_random_uuid(), 'ACC003', 'MSFT',  'BUY', 'MARKET', 30,  428.50, 'FILLED',    'ACC003_001', '2025-01-21 15:10:00'),
+(gen_random_uuid(), 'ACC003', 'QQQ',   'BUY', 'MARKET', 20,  539.37, 'FILLED',    'ACC003_002', '2025-02-18 10:00:00'),
+(gen_random_uuid(), 'ACC003', 'AGG',   'BUY', 'MARKET', 150, 97.33,  'FILLED',    'ACC003_003', '2025-05-13 11:40:00'),
+(gen_random_uuid(), 'ACC004', 'AAPL',  'BUY', 'MARKET', 25,  232.80, 'FILLED',    'ACC004_001', '2025-02-04 09:50:00'),
+(gen_random_uuid(), 'ACC004', 'NVDA',  'BUY', 'MARKET', 60,  115.43, 'FILLED',    'ACC004_002', '2025-03-18 14:30:00'),
+(gen_random_uuid(), 'ACC005', 'JPM',   'BUY', 'MARKET', 50,  244.21, 'FILLED',    'ACC005_001', '2025-01-13 10:25:00'),
+(gen_random_uuid(), 'ACC005', 'VTI',   'BUY', 'MARKET', 80,  292.95, 'FILLED',    'ACC005_002', '2025-02-25 12:00:00'),
+(gen_random_uuid(), 'ACC005', 'SLV',   'BUY', 'MARKET', 300, 29.50,  'FILLED',    'ACC005_003', '2025-04-22 15:30:00');
 
 -- one position per filled order
 INSERT INTO positions (account_id, symbol, quantity, average_cost) VALUES

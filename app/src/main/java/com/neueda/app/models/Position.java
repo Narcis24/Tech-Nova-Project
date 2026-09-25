@@ -1,6 +1,7 @@
 package com.neueda.app.models;
 
 import com.neueda.app.contracts.PositionOperations;
+import com.neueda.app.exceptions.InsufficientHoldingsException;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.Id;
@@ -93,7 +94,7 @@ public class Position implements PositionOperations {
             throw new IllegalArgumentException("Quantity must be > 0");
         }
         if (quantity > this.quantity) {
-            throw new IllegalArgumentException(
+            throw new InsufficientHoldingsException(
                 "Cannot sell " + quantity + " shares. Only " + this.quantity + " held."
             );
         }

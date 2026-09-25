@@ -17,6 +17,10 @@ import com.neueda.app.exceptions.DuplicateOrderException;
 import com.neueda.app.exceptions.InstrumentNotFoundException;
 import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.exceptions.InsufficientHoldingsException;
+import com.neueda.app.exceptions.InvalidOrderStateException;
+import com.neueda.app.exceptions.OrderNotFoundException;
+import com.neueda.app.exceptions.OrderNotTriggeredException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import com.neueda.app.exceptions.TradingException;
 import java.math.BigDecimal;
 
@@ -45,6 +49,7 @@ class GlobalExceptionHandlerTest {
             "",
             "AAPL",
             "BUY",
+            "LIMIT",
             100,
             new BigDecimal("150.00"),
             "idempotency-123"
@@ -66,22 +71,22 @@ class GlobalExceptionHandlerTest {
 
     @ParameterizedTest(name = "{0}")
     @CsvSource({
-        "Empty accountId, 'accountId: Account ID is required', '', AAPL, BUY, 100, 150.00, idempotency-123",
-        "Empty symbol, 'symbol: Symbol is required', ACC123, '', BUY, 100, 150.00, idempotency-123",
-        "Empty side, 'side: Side must be BUY or SELL', ACC123, AAPL, '', 100, 150.00, idempotency-123",
-        "Null quantity, 'quantity: Quantity is required', ACC123, AAPL, BUY, , 150.00, idempotency-123",
-        "Negative quantity, 'quantity: Quantity must be positive', ACC123, AAPL, BUY, -50, 150.00, idempotency-123",
-        "Zero quantity, 'quantity: Quantity must be positive', ACC123, AAPL, BUY, 0, 150.00, idempotency-123",
-        "Null price, 'price: Price is required', ACC123, AAPL, BUY, 100, , idempotency-123",
-        "Negative price, 'price: Price must be positive', ACC123, AAPL, BUY, 100, -50.00, idempotency-123",
-        "Zero price, 'price: Price must be positive', ACC123, AAPL, BUY, 100, 0.00, idempotency-123",
-        "Empty idempotency key, 'idempotencyKey: Idempotency key is required', ACC123, AAPL, BUY, 100, 150.00, ''"
+        "Empty accountId, 'accountId: Account ID is required', '', AAPL, BUY, LIMIT, 100, 150.00, idempotency-123",
+        "Empty symbol, 'symbol: Symbol is required', ACC123, '', BUY, LIMIT, 100, 150.00, idempotency-123",
+        "Empty side, 'side: Side must be BUY or SELL', ACC123, AAPL, '', LIMIT, 100, 150.00, idempotency-123",
+        "Empty order type, 'orderType: Order type must be MARKET or LIMIT', ACC123, AAPL, BUY, '', 100, 150.00, idempotency-123",
+        "Null quantity, 'quantity: Quantity is required', ACC123, AAPL, BUY, LIMIT, , 150.00, idempotency-123",
+        "Negative quantity, 'quantity: Quantity must be positive', ACC123, AAPL, BUY, LIMIT, -50, 150.00, idempotency-123",
+        "Zero quantity, 'quantity: Quantity must be positive', ACC123, AAPL, BUY, LIMIT, 0, 150.00, idempotency-123",
+        "Negative price, 'price: Price must be positive', ACC123, AAPL, BUY, LIMIT, 100, -50.00, idempotency-123",
+        "Zero price, 'price: Price must be positive', ACC123, AAPL, BUY, LIMIT, 100, 0.00, idempotency-123",
+        "Empty idempotency key, 'idempotencyKey: Idempotency key is required', ACC123, AAPL, BUY, LIMIT, 100, 150.00, ''"
     })
-    void validationErrorsForPlaceOrderRequestTEst(String testCase, String expectedMessage, String accountId, String symbol, String side, 
+    void validationErrorsForPlaceOrderRequestTEst(String testCase, String expectedMessage, String accountId, String symbol, String side, String orderType,
                                           Integer quantity, String priceStr, String idempotencyKey) throws Exception {
         BigDecimal price = priceStr == null || priceStr.isEmpty() ? null : new BigDecimal(priceStr);
         
-        PlaceOrderRequest request = new PlaceOrderRequest(accountId, symbol, side, quantity, price, idempotencyKey);
+        PlaceOrderRequest request = new PlaceOrderRequest(accountId, symbol, side, orderType, quantity, price, idempotencyKey);
         
         mockMvc.perform(post("/v1/orders")
             .contentType("application/json")
@@ -101,7 +106,7 @@ class GlobalExceptionHandlerTest {
             new AccountNotFoundException("Account ACC123 not found")
         );
 
-        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", 100, new BigDecimal("150.00"), "id-123");
+        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", "LIMIT", 100, new BigDecimal("150.00"), "id-123");
 
         mockMvc.perform(post("/v1/orders")
             .contentType("application/json")
@@ -122,7 +127,7 @@ class GlobalExceptionHandlerTest {
             new AccountNotActiveException("Account is not in ACTIVE status")
         );
 
-        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", 100, new BigDecimal("150.00"), "id-123");
+        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", "LIMIT", 100, new BigDecimal("150.00"), "id-123");
 
         mockMvc.perform(post("/v1/orders")
             .contentType("application/json")
@@ -143,7 +148,7 @@ class GlobalExceptionHandlerTest {
             new DuplicateOrderException("Order with this idempotency key already exists")
         );
 
-        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", 100, new BigDecimal("150.00"), "id-123");
+        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", "LIMIT", 100, new BigDecimal("150.00"), "id-123");
 
         mockMvc.perform(post("/v1/orders")
             .contentType("application/json")
@@ -160,7 +165,7 @@ class GlobalExceptionHandlerTest {
             new InstrumentNotFoundException("Symbol UNKNOWN not found in market data")
         );
 
-        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "UNKNOWN", "BUY", 100, new BigDecimal("150.00"), "id-123");
+        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "UNKNOWN", "BUY", "LIMIT", 100, new BigDecimal("150.00"), "id-123");
 
         mockMvc.perform(post("/v1/orders")
             .contentType("application/json")
@@ -177,7 +182,7 @@ class GlobalExceptionHandlerTest {
             new InsufficientFundsException("Insufficient funds to complete BUY order")
         );
 
-        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", 1000, new BigDecimal("500.00"), "id-123");
+        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", "LIMIT", 1000, new BigDecimal("500.00"), "id-123");
 
         mockMvc.perform(post("/v1/orders")
             .contentType("application/json")
@@ -194,7 +199,7 @@ class GlobalExceptionHandlerTest {
             new InsufficientHoldingsException("Insufficient holdings to complete SELL order")
         );
 
-        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "SELL", 500, new BigDecimal("150.00"), "id-123");
+        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "SELL", "LIMIT", 500, new BigDecimal("150.00"), "id-123");
 
         mockMvc.perform(post("/v1/orders")
             .contentType("application/json")
@@ -206,12 +211,84 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void testOrderNotFoundException() throws Exception {
+        when(orderService.placeOrder(any())).thenThrow(
+            new OrderNotFoundException("Order not found: 123")
+        );
+
+        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", "LIMIT", 100, new BigDecimal("150.00"), "id-123");
+
+        mockMvc.perform(post("/v1/orders")
+            .contentType("application/json")
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.errorCode").value("ORDER_NOT_FOUND"))
+            .andExpect(jsonPath("$.httpStatus").value(404))
+            .andExpect(jsonPath("$.message").value("Order not found: 123"))
+            .andExpect(jsonPath("$.timestamp").exists());
+    }
+
+    @Test
+    void testInvalidOrderStateException() throws Exception {
+        when(orderService.placeOrder(any())).thenThrow(
+            new InvalidOrderStateException("Only PENDING orders can be modified")
+        );
+
+        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", "LIMIT", 100, new BigDecimal("150.00"), "id-123");
+
+        mockMvc.perform(post("/v1/orders")
+            .contentType("application/json")
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.errorCode").value("INVALID_ORDER_STATE"))
+            .andExpect(jsonPath("$.httpStatus").value(409))
+            .andExpect(jsonPath("$.message").value("Only PENDING orders can be modified"))
+            .andExpect(jsonPath("$.timestamp").exists());
+    }
+
+    @Test
+    void testOrderNotTriggeredException() throws Exception {
+        when(orderService.placeOrder(any())).thenThrow(
+            new OrderNotTriggeredException("Limit 100.00 not reached, market price is 150.00")
+        );
+
+        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", "LIMIT", 100, new BigDecimal("100.00"), "id-123");
+
+        mockMvc.perform(post("/v1/orders")
+            .contentType("application/json")
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.errorCode").value("ORDER_NOT_TRIGGERED"))
+            .andExpect(jsonPath("$.httpStatus").value(409))
+            .andExpect(jsonPath("$.message").value("Limit 100.00 not reached, market price is 150.00"))
+            .andExpect(jsonPath("$.timestamp").exists());
+    }
+
+    @Test
+    void testOptimisticLockingFailure() throws Exception {
+        when(orderService.placeOrder(any())).thenThrow(
+            new OptimisticLockingFailureException("stale")
+        );
+
+        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", "LIMIT", 100, new BigDecimal("150.00"), "id-123");
+
+        mockMvc.perform(post("/v1/orders")
+            .contentType("application/json")
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.errorCode").value("CONCURRENT_UPDATE"))
+            .andExpect(jsonPath("$.httpStatus").value(409))
+            .andExpect(jsonPath("$.message").value("Concurrent update, please retry"))
+            .andExpect(jsonPath("$.timestamp").exists());
+    }
+
+    @Test
     void testTradingException() throws Exception {
         when(orderService.placeOrder(any())).thenThrow(
             new TradingException("Trading operation failed")
         );
 
-        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", 100, new BigDecimal("150.00"), "id-123");
+        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", "LIMIT", 100, new BigDecimal("150.00"), "id-123");
 
         mockMvc.perform(post("/v1/orders")
             .contentType("application/json")
@@ -228,7 +305,7 @@ class GlobalExceptionHandlerTest {
             new IllegalArgumentException("Invalid side value provided")
         );
 
-        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", 100, new BigDecimal("150.00"), "id-123");
+        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", "LIMIT", 100, new BigDecimal("150.00"), "id-123");
 
         mockMvc.perform(post("/v1/orders")
             .contentType("application/json")
@@ -245,7 +322,7 @@ class GlobalExceptionHandlerTest {
             new RuntimeException("Unexpected internal error")
         );
 
-        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", 100, new BigDecimal("150.00"), "id-123");
+        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", "LIMIT", 100, new BigDecimal("150.00"), "id-123");
 
         mockMvc.perform(post("/v1/orders")
             .contentType("application/json")
