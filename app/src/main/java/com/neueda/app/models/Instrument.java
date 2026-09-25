@@ -8,6 +8,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.OneToMany;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.NoArgsConstructor;
@@ -19,13 +21,16 @@ import lombok.Getter;
 @Getter
 public class Instrument {
     @Id
+    @NotBlank(message = "Symbol cannot be empty")
     private String symbol;
     
     @Column(name = "name")
+    @NotBlank(message = "Instrument name cannot be empty")
     private String name;
     
     @Column(name = "asset_class")
     @Enumerated(EnumType.STRING)
+    @NotNull(message = "Asset class cannot be null")
     private AssetClass assetClass;
     
     @Column(name = "currency")
