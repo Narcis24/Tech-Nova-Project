@@ -16,6 +16,7 @@ import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.contracts.AccountOperations;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Version;
 import lombok.NoArgsConstructor;
 import lombok.Getter;
 
@@ -34,6 +35,9 @@ public class Account  implements AccountOperations {
 
     @Column(name = "cash_balance")
     private BigDecimal cashBalance;
+
+    @Version
+    private int version;
     
     @Column(name = "status")
     @Enumerated(EnumType.STRING)

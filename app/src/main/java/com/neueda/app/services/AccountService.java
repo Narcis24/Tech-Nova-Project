@@ -102,7 +102,7 @@ public class AccountService {
         return positions.stream()
             .map(position -> {
                 // Fetch current price for this position
-                BigDecimal currentPrice = priceRepository.findBySymbol(position.getSymbol())
+                BigDecimal currentPrice = priceRepository.findFirstBySymbolOrderByTradeDateDesc(position.getSymbol())
                     .map(Price::getPrice)
                     .orElse(BigDecimal.ZERO);
                 

@@ -26,11 +26,14 @@ public class PlaceOrderRequest {
     @NotBlank(message = "Side must be BUY or SELL")
     private String side;
 
+    @NotBlank(message = "Order type must be MARKET or LIMIT")
+    private String orderType;
+
     @NotNull(message = "Quantity is required")
     @Positive(message = "Quantity must be positive")
     private Integer quantity;
 
-    @NotNull(message = "Price is required")
+    /** Required for LIMIT orders and not allowed for MARKET orders, which OrderService enforces. */
     @Positive(message = "Price must be positive")
     private BigDecimal price;
 

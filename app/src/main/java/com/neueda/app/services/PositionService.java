@@ -28,7 +28,7 @@ public class PositionService {
                 "Position not found for account: " + accountId + ", symbol: " + symbol
             ));
         
-        BigDecimal currentPrice = priceRepository.findBySymbol(symbol)
+        BigDecimal currentPrice = priceRepository.findFirstBySymbolOrderByTradeDateDesc(symbol)
             .map(p -> BigDecimal.ZERO)
             .orElse(BigDecimal.ZERO);
         
@@ -58,7 +58,7 @@ public class PositionService {
     }
 
     private PositionResponse convertToPositionResponse(Position position) {
-        BigDecimal currentPrice = priceRepository.findBySymbol(position.getSymbol())
+        BigDecimal currentPrice = priceRepository.findFirstBySymbolOrderByTradeDateDesc(position.getSymbol())
             .map(p -> BigDecimal.ZERO)
             .orElse(BigDecimal.ZERO);  // Default to 0 if price not found
 
@@ -83,7 +83,7 @@ public class PositionService {
                 "Position not found for account: " + accountId + ", symbol: " + symbol
             ));
         
-        BigDecimal currentPrice = priceRepository.findBySymbol(symbol)
+        BigDecimal currentPrice = priceRepository.findFirstBySymbolOrderByTradeDateDesc(symbol)
             .map(p -> BigDecimal.ZERO)
             .orElse(BigDecimal.ZERO);
         

@@ -21,9 +21,11 @@ CREATE TABLE orders (
     account_id VARCHAR NOT NULL,
     symbol VARCHAR(20) NOT NULL,
     side VARCHAR(4) NOT NULL,
+    order_type VARCHAR(10) NOT NULL,
     quantity INT NOT NULL,
     price NUMERIC(18,2) NOT NULL,
     status VARCHAR(20) NOT NULL,
+    rejection_reason TEXT,
     idempotency_key VARCHAR(100) UNIQUE,
     created_on TIMESTAMP NOT NULL DEFAULT NOW()
 
