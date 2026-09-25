@@ -1,4 +1,4 @@
-package com.neueda.app.dtos;
+package com.neueda.auth.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;

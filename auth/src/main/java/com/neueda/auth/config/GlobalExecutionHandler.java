@@ -7,21 +7,21 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
 
-import com.neueda.app.dto.ErrorResponse;
-import com.neueda.app.exception.InvalidCredentialsException;
-import com.neueda.app.exception.UsernameAlreadyExistsException;
+import com.neueda.auth.dto.ErrorResponse;
+import com.neueda.auth.exception.InvalidCredentialsException;
+import com.neueda.auth.exception.UsernameAlreadyExistException;
 
 @RestControllerAdvice
 public class GlobalExecutionHandler {
     
-    @ExecutionHandler(InvalidCredentialsException.class)
+    @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleInvalidCredentials (InvalidCredentialsException ex) {
         ErrorResponse error = new ErrorResponse("INVALID_CREDENTIALS", ex.getMessage(), 401);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
-    @ExecutionHandler(UsernameAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleExistingUsername (UsernameAlreadyExistsException ex) {
+    @ExceptionHandler(UsernameAlreadyExistException.class)
+    public ResponseEntity<ErrorResponse> handleExistingUsername (UsernameAlreadyExistException ex) {
         ErrorResponse error = new ErrorResponse("USERNAME_ALREADY_EXIST", ex.getMessage(), 401);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
