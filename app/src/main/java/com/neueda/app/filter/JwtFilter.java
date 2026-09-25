@@ -8,6 +8,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.neueda.app.dtos.ErrorResponse;
+import org.springframework.http.MediaType;
+
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import java.util.ArrayList;
+
 import java.io.IOException;
 
 @Component
@@ -36,10 +44,19 @@ public class JwtFilter extends OncePerRequestFilter {
         String token = extractToken(request);
 
         if (token == null || !jwtUtil.isTokenValid(token)) {
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Unauthorized: Invalid or missing JWT token");
+            
+            ErrorResponse errorResponse = new ErrorResponse("UNAUTHORIZED", "Missing or invalid JWT token", 401);
+            
+            final ObjectMapper mapper = new ObjectMapper();
+            mapper.writeValue(response.getOutputStream(), errorResponse);
             return;
         }
+        String username = jwtUtil.extractUsername(token);
+        UsernamePasswordAuthenticationToken auth = 
+            new UsernamePasswordAuthenticationToken(username, null, new ArrayList<>());
+        SecurityContextHolder.getContext().setAuthentication(auth);
 
         chain.doFilter(request, response);
     }

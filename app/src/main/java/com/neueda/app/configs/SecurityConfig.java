@@ -8,8 +8,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.neueda.app.configs.JwtAuthenticationFilter;
 
+import com.neueda.app.filter.JwtFilter;
 /**
  * Security Configuration for the Trading Application
  * 
@@ -23,31 +23,12 @@ import com.neueda.app.configs.JwtAuthenticationFilter;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final JwtAuthenticationHandler jwtAuthenticationHandler;
+    private final JwtFilter jwtFilter;  // Use JwtFilter, not JwtAuthenticationFilter
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-                        JwtAuthenticationHandler jwtAuthenticationHandler) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.jwtAuthenticationHandler = jwtAuthenticationHandler;
+    public SecurityConfig(JwtFilter jwtFilter) {
+        this.jwtFilter = jwtFilter;
     }
 
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    /**
-     * Configure HTTP security for the trading application
-     * 
-     * Authorization rules:
-     * - /swagger-ui/** → Public (API documentation)
-     * - /v3/api-docs/** → Public (OpenAPI spec)
-     * - /api/* → Requires valid JWT token
-     * 
-     * JWT validation happens via JwtAuthenticationFilter
-     * If token is missing or invalid, CustomAuthenticationEntryPoint returns ErrorResponse DTO
-     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -58,15 +39,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/**").authenticated()           // Protect all trading endpoints
                 .anyRequest().authenticated()                         // Everything else needs auth
             )
-            // Custom error handling for authentication failures (401 Unauthorized)
-            .exceptionHandling()
-                .authenticationEntryPoint(jwtAuthenticationHandler)
-            .and()
-            // Add JWT filter BEFORE Spring's default UsernamePasswordAuthenticationFilter
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .formLogin().disable()      // Disable form login (we use JWT)
-            .httpBasic().disable()      // Disable HTTP Basic auth (we use JWT)
-            .csrf().disable();          // Disable CSRF (stateless JWT doesn't need it)
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+            .formLogin(form -> form.disable())
+            .httpBasic(basic -> basic.disable())
+            .csrf(csrf -> csrf.disable());      // Disable CSRF (stateless JWT doesn't need it)
         
         return http.build();
     }
