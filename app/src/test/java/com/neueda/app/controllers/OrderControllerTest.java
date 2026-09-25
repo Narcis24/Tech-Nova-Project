@@ -39,6 +39,7 @@ class OrderControllerTest {
         request.setAccountId("ACC123");
         request.setSymbol("AAPL");
         request.setSide("BUY");
+        request.setOrderType("LIMIT");
         request.setQuantity(100);
         request.setPrice(new BigDecimal("150.50"));
         request.setIdempotencyKey(UUID.randomUUID().toString());
@@ -50,7 +51,7 @@ class OrderControllerTest {
             .thenReturn(mockResponse);
 
         // STEP 3: Act - Make the HTTP POST request
-        mockMvc.perform(post("/api/v1/orders")
+        mockMvc.perform(post("/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             // STEP 4: Assert - Verify the response

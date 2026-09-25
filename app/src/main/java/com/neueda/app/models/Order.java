@@ -2,7 +2,9 @@ package com.neueda.app.models;
 
 import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderStatus;
+import com.neueda.app.enums.OrderType;
 import com.neueda.app.contracts.OrderOperations;
+import com.neueda.app.exceptions.InvalidOrderStateException;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.Id;
@@ -16,6 +18,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import java.lang.IllegalArgumentException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import jakarta.persistence.ManyToOne;
@@ -52,11 +55,16 @@ public class Order implements OrderOperations {
     @Enumerated(EnumType.STRING)
     private OrderSide side;
     
+    @Column(name = "order_type")
+    @Enumerated(EnumType.STRING)
+    private OrderType orderType;
+    
     @Column(name = "quantity")
     @Min(value = 1, message = "Quantity must be at least 1")
     @Max(value = 100000, message = "Quantity cannot exceed 100,000")
     private int quantity;
     
+    /** The limit price for LIMIT orders, the price the order was filled at for MARKET orders. */
     @Column(name = "price")
     @Positive(message = "Price must be positive")
     private BigDecimal price;
@@ -76,11 +84,11 @@ public class Order implements OrderOperations {
     @Transient
     private LocalDateTime lastModified = LocalDateTime.now();
     
-    @Transient
-    private String rejectionReason = "";       
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
 
     public Order(UUID id, Account account, Instrument instrument, OrderSide side, 
-                 int quantity, BigDecimal price, String idempotencyKey, 
+                 OrderType orderType, int quantity, BigDecimal price, String idempotencyKey, 
                  LocalDateTime createdOn) {
         // Validation
         if (id == null) {
@@ -117,8 +125,10 @@ public class Order implements OrderOperations {
         this.instrument = instrument;
         this.symbol = instrument.getSymbol();
         this.side = side;
+        this.orderType = orderType;
         this.quantity = quantity;
-        this.price = price;
+        // Same scale as the orders.price column, so cash and cost match what is stored
+        this.price = price.setScale(2, RoundingMode.HALF_UP);
         this.idempotencyKey = idempotencyKey;
         this.createdOn = createdOn;
         this.status = OrderStatus.PENDING;       // Always starts as PENDING
@@ -134,6 +144,19 @@ public class Order implements OrderOperations {
     @Override
     public BigDecimal getTotalValue() {
         return price.multiply(new BigDecimal(quantity));
+    }
+
+    /**
+     * Whether a fill is due at the given market price: always for MARKET orders,
+     * for LIMIT orders a BUY at or below its limit and a SELL at or above it.
+     */
+    @Override
+    public boolean isTriggeredBy(BigDecimal marketPrice) {
+        if (orderType == OrderType.MARKET) {
+            return true;
+        }
+        int comparison = marketPrice.compareTo(price);
+        return side == OrderSide.BUY ? comparison <= 0 : comparison >= 0;
     }
 
     /**
@@ -175,7 +198,7 @@ public class Order implements OrderOperations {
 
     private void requirePending() {
         if (status != OrderStatus.PENDING) {
-            throw new IllegalArgumentException(
+            throw new InvalidOrderStateException(
                 "Operation not allowed. Only PENDING orders can be modified."
             );
         }
@@ -188,6 +211,7 @@ public class Order implements OrderOperations {
                 ", accountId='" + accountId + '\'' +
                 ", symbol='" + symbol + '\'' +
                 ", side=" + side +
+                ", orderType=" + orderType +
                 ", quantity=" + quantity +
                 ", price=" + price +
                 ", status=" + status +
