@@ -42,3 +42,12 @@ psql -h localhost -p 5434 -U technova -d technova
 ```
 
 See [docs/database.md](docs/database.md) for the schema.
+
+## Code quality (SonarQube)
+
+```bash
+docker-compose --profile quality up -d sonarqube   # http://localhost:9000 (admin/admin, change on first login)
+# create a token in My Account > Security, then per module:
+cd app  && mvn verify sonar:sonar -Dsonar.host.url=http://localhost:9000 -Dsonar.token=<token>
+cd auth && mvn verify sonar:sonar -Dsonar.host.url=http://localhost:9000 -Dsonar.token=<token>
+```
