@@ -1,4 +1,6 @@
 app/target/
+auth/target/
+data-pipeline/target/
 .env*
 !.env.example
 app/target*
