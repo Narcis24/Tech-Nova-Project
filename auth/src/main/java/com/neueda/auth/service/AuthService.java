@@ -8,6 +8,10 @@ import com.neueda.auth.util.JwtUtil;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.neueda.auth.exception.InvalidCredentialsException;
+import com.neueda.auth.exception.UsernameAlreadyExistException;
+
+
 @Service
 public class AuthService {
 
@@ -22,11 +26,11 @@ public class AuthService {
     }
 
     public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findByUsername(request.getUsername()).orElse(null);
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new RuntimeException("Invalid password");
+boolean isValid = user != null && passwordEncoder.matches(request.getPassword(), user.getPasswordHash());
+        if (!isValid) {
+            throw new InvalidCredentialsException("Invalid username or password");
         }
 
         String token = jwtUtil.generateToken(user.getUsername());
@@ -35,7 +39,7 @@ public class AuthService {
 
     public void register(String username, String password) {
         if (userRepository.findByUsername(username).isPresent()) {
-            throw new RuntimeException("User already exists");
+            throw new UsernameAlreadyExistException("User already exists");
         }
 
         User user = new User();
