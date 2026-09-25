@@ -12,6 +12,10 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Transient;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.NotNull;
 import java.lang.IllegalArgumentException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -56,10 +60,13 @@ public class Order implements OrderOperations {
     private OrderType orderType;
     
     @Column(name = "quantity")
+    @Min(value = 1, message = "Quantity must be at least 1")
+    @Max(value = 100000, message = "Quantity cannot exceed 100,000")
     private int quantity;
     
     /** The limit price for LIMIT orders, the price the order was filled at for MARKET orders. */
     @Column(name = "price")
+    @Positive(message = "Price must be positive")
     private BigDecimal price;
     
     @Column(name = "idempotency_key")
@@ -71,6 +78,7 @@ public class Order implements OrderOperations {
     /**MUTABLE*/
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
+    @NotNull(message = "Order status cannot be null")
     private OrderStatus status;
     
     @Transient
@@ -95,11 +103,8 @@ public class Order implements OrderOperations {
         if (side == null) {
             throw new IllegalArgumentException("Side cannot be null");
         }
-        if (orderType == null) {
-            throw new IllegalArgumentException("Order type cannot be null");
-        }
-        if (quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be > 0");
+        if (quantity <= 0 || quantity > 100000) {
+            throw new IllegalArgumentException("Quantity must be between 1 and 100,000");
         }
         if (price == null) {
             throw new IllegalArgumentException("Price cannot be null");

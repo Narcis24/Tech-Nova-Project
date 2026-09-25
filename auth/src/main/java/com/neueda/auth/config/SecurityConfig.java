@@ -23,8 +23,7 @@ public class SecurityConfig {
                 .requestMatchers("/v1/auth/**").permitAll()
                 .requestMatchers("/swagger-ui/**").permitAll()
                 .requestMatchers("/v3/api-docs/**").permitAll()
-                .requestMatchers("/swagger-ui.html").permitAll()
-                .anyRequest().authenticated()
+                .anyRequest().permitAll()  // Everything else is also public
             )
             .formLogin().disable()
             .httpBasic().disable()

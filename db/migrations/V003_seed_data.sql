@@ -46,7 +46,7 @@ INSERT INTO accounts (account_id, holder_name, cash_balance, status, version, la
 ('ACC002', 'Brian Osei', 75000.00, 'ACTIVE', 0, NOW()),
 ('ACC003', 'Carla Mendes', 100000.00, 'ACTIVE', 0, NOW()),
 ('ACC004', 'David Kim', 30000.00, 'ACTIVE', 0, NOW()),
-('ACC005', 'Elena Petrova', 200000.00, 'ACTIVE', 0, NOW());
+('ACC005', 'Elena Petrova', 200000.00, 'INACTIVE', 0, NOW());
 
 INSERT INTO orders (id, account_id, symbol, side, order_type, quantity, price, status, idempotency_key, created_on) VALUES
 (gen_random_uuid(), 'ACC001', 'AAPL',  'BUY', 'MARKET', 40,  237.87, 'FILLED',    'ACC001_001', '2025-01-15 10:30:00'),

@@ -1,4 +1,4 @@
-package com.neueda.app.util;
+package com.neueda.app.utils;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
