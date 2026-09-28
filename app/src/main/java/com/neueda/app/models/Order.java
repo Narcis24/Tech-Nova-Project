@@ -29,6 +29,7 @@ import lombok.Getter;
 
 @Entity
 @Table(name = "orders")
+@NoArgsConstructor
 @Getter
 public class Order implements OrderOperations {
 
