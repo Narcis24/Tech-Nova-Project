@@ -2,6 +2,7 @@ package com.neueda.app.controllers;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -11,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.services.OrderService;
+import com.neueda.app.utils.JwtUtil;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -21,6 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(OrderController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class OrderControllerTest {
 
     @Autowired 
@@ -31,6 +34,9 @@ class OrderControllerTest {
 
     @MockBean
     private OrderService orderService;  // Fake service (no database needed)
+
+    @MockBean
+    private JwtUtil jwtUtil;  // Required by JwtFilter, which is picked up in the web slice
 
     @Test 
     void testPlaceOrder_Success() throws Exception {
