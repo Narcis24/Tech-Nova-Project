@@ -7,6 +7,8 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Column;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import jakarta.persistence.ManyToOne;
@@ -38,9 +40,11 @@ public class Position implements PositionOperations {
     private Instrument instrument;
     
     @Column(name = "quantity")
+    @PositiveOrZero(message = "Quantity cannot be negative")
     private int quantity;
     
     @Column(name = "average_cost")
+    @PositiveOrZero(message = "Average cost cannot be negative")
     private BigDecimal averageCost;
 
     public Position(Account account, Instrument instrument, int quantity, BigDecimal averageCost) {

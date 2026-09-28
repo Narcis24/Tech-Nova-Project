@@ -7,6 +7,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Column;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -28,12 +31,15 @@ public class Account  implements AccountOperations {
 
     @Id
     @Column(name = "account_id")
+    @NotBlank(message = "Account ID cannot be empty")
     private String accountId;
 
     @Column(name = "holder_name")
+    @NotBlank(message = "Holder name cannot be empty")
     private String holderName;
 
     @Column(name = "cash_balance")
+    @PositiveOrZero(message = "Cash balance cannot be negative")
     private BigDecimal cashBalance;
 
     @Version
@@ -41,6 +47,7 @@ public class Account  implements AccountOperations {
     
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
+    @NotNull(message = "Account status cannot be null")
     private AccountStatus accountStatus;
     
     @Column(name = "last_updated")
