@@ -22,13 +22,33 @@ services:
 
   app:
     build: ./app
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
-      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-technova}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-technova}
       DB_USER: ${POSTGRES_USER:-technova}
       DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-key-in-production}
+    ports:
+      - "${APP_PORT:-8081}:8081"
+    networks:
+      - tech-nova-network
+
+  auth-service:
+    build: ./auth
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-key-in-production}
+    ports:
+      - "${AUTH_PORT:-8082}:8080"
     networks:
       - tech-nova-network
 
@@ -44,8 +64,22 @@ services:
     networks:
       - tech-nova-network
 
+  # not started by `up`; run with: docker-compose --profile quality up -d sonarqube
+  sonarqube:
+    image: sonarqube:community
+    profiles: [quality]
+    ports:
+      - "${SONAR_PORT:-9000}:9000"
+    volumes:
+      - sonar_data:/opt/sonarqube/data
+      - sonar_extensions:/opt/sonarqube/extensions
+    networks:
+      - tech-nova-network
+
 volumes:
   db_data:
+  sonar_data:
+  sonar_extensions:
 
 networks:
   tech-nova-network:
