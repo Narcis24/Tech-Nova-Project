@@ -78,12 +78,12 @@ class GlobalExceptionHandlerTest {
     @ParameterizedTest(name = "{0}")
     @CsvSource({
         "Empty accountId, 'accountId: Account ID is required', '', AAPL, BUY, LIMIT, 100, 150.00, idempotency-123",
-        "Empty symbol, 'symbol: Symbol is required', ACC123, '', BUY, LIMIT, 100, 150.00, idempotency-123",
+        "Empty symbol, 'symbol: Symbol is required', ACC123, , BUY, LIMIT, 100, 150.00, idempotency-123",
         "Empty side, 'side: Side must be BUY or SELL', ACC123, AAPL, '', LIMIT, 100, 150.00, idempotency-123",
         "Empty order type, 'orderType: Order type must be MARKET or LIMIT', ACC123, AAPL, BUY, '', 100, 150.00, idempotency-123",
         "Null quantity, 'quantity: Quantity is required', ACC123, AAPL, BUY, LIMIT, , 150.00, idempotency-123",
-        "Negative quantity, 'quantity: Quantity must be positive', ACC123, AAPL, BUY, LIMIT, -50, 150.00, idempotency-123",
-        "Zero quantity, 'quantity: Quantity must be positive', ACC123, AAPL, BUY, LIMIT, 0, 150.00, idempotency-123",
+        "Negative quantity, 'quantity: Quantity must be at least 1', ACC123, AAPL, BUY, LIMIT, -50, 150.00, idempotency-123",
+        "Zero quantity, 'quantity: Quantity must be at least 1', ACC123, AAPL, BUY, LIMIT, 0, 150.00, idempotency-123",
         "Negative price, 'price: Price must be positive', ACC123, AAPL, BUY, LIMIT, 100, -50.00, idempotency-123",
         "Zero price, 'price: Price must be positive', ACC123, AAPL, BUY, LIMIT, 100, 0.00, idempotency-123",
         "Empty idempotency key, 'idempotencyKey: Idempotency key is required', ACC123, AAPL, BUY, LIMIT, 100, 150.00, ''"
@@ -168,17 +168,17 @@ class GlobalExceptionHandlerTest {
     @Test
     void testInstrumentNotFoundException() throws Exception {
         when(orderService.placeOrder(any())).thenThrow(
-            new InstrumentNotFoundException("Symbol UNKNOWN not found in market data")
+            new InstrumentNotFoundException("Symbol UNKWN not found in market data")
         );
 
-        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "UNKNOWN", "BUY", "LIMIT", 100, new BigDecimal("150.00"), "id-123");
+        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "UNKWN", "BUY", "LIMIT", 100, new BigDecimal("150.00"), "id-123");
 
         mockMvc.perform(post("/v1/orders")
             .contentType("application/json")
             .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.httpStatus").value(404))
-            .andExpect(jsonPath("$.message").value("Symbol UNKNOWN not found in market data"))
+            .andExpect(jsonPath("$.message").value("Symbol UNKWN not found in market data"))
             .andExpect(jsonPath("$.timestamp").exists());
     }
 
