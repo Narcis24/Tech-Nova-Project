@@ -51,6 +51,13 @@ services:
       - "${AUTH_PORT:-8082}:8080"
     networks:
       - tech-nova-network
+      
+  kafka:
+    image: apache/kafka:4.0.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+
 
   # not started by `up`; run with: docker-compose --profile pipeline run --rm pipeline
   pipeline:
@@ -75,6 +82,7 @@ services:
       - sonar_extensions:/opt/sonarqube/extensions
     networks:
       - tech-nova-network
+    
 
 volumes:
   db_data:
