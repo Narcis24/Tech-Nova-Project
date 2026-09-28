@@ -6,7 +6,9 @@ import com.neueda.app.models.Instrument;
 import com.neueda.app.repositories.InstrumentRepository;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.stereotype.Service;
 
+@Service
 public class InstrumentService {
     
     private InstrumentRepository instrumentRepository;
