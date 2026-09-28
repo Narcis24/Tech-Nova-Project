@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -11,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neueda.app.controllers.OrderController;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.services.OrderService;
+import com.neueda.app.utils.JwtUtil;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.AccountNotActiveException;
 import com.neueda.app.exceptions.DuplicateOrderException;
@@ -32,6 +34,7 @@ import static org.mockito.Mockito.when;
 
 
 @WebMvcTest(OrderController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class GlobalExceptionHandlerTest {
 
     @Autowired
@@ -42,6 +45,9 @@ class GlobalExceptionHandlerTest {
 
     @MockBean
     private OrderService orderService;
+
+    @MockBean
+    private JwtUtil jwtUtil;
 
     @Test
     void testValidationErrors() throws Exception {
