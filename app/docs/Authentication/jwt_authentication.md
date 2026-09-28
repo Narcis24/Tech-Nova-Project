@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **JwtAuthenticationFilter** is a Spring Security filter that validates JWT tokens on every HTTP request. It's the gatekeeper of the application, ensuring only authenticated users with valid tokens can access protected endpoints.
+The **JwtFilter** is a Spring Security filter that validates JWT tokens on every HTTP request. It's the gatekeeper of the application, ensuring only authenticated users with valid tokens can access protected endpoints.
 
 ## Why It's Important
 
@@ -31,7 +31,7 @@ The **JwtAuthenticationFilter** is a Spring Security filter that validates JWT t
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ STEP 1: JwtAuthenticationFilter intercepts request             │
+│ STEP 1: JwtFilter intercepts request             │
 │ (runs BEFORE controller)                                        │
 └──────────────────────────┬──────────────────────────────────────┘
                            │
@@ -92,7 +92,7 @@ The **JwtAuthenticationFilter** is a Spring Security filter that validates JWT t
 ### Sample Valid Token Request
 ```bash
 curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
-     http://localhost:8080/api/portfolio
+     http://localhost:8081/api/portfolio
 ```
 
 **Result:**
@@ -106,7 +106,7 @@ curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
 
 ### Missing Token Request
 ```bash
-curl http://localhost:8080/api/portfolio
+curl http://localhost:8081/api/portfolio
 ```
 
 **Result:**
@@ -163,8 +163,8 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
             .anyRequest().authenticated()                   // Everything else needs auth
         )
         .addFilterBefore(
-            jwtAuthenticationFilter, 
-            UsernamePasswordAuthenticationFilter.class      // Add before Spring's default filter
+            jwtFilter, 
+            SampleUsernamePasswordAuthenticationFilter.class      // Add before Spring's default filter
         )
         .csrf().disable();
     
