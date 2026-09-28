@@ -1,5 +1,6 @@
 package com.neueda.app.configs;
 
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -14,6 +15,9 @@ import com.neueda.app.exceptions.DuplicateOrderException;
 import com.neueda.app.exceptions.InstrumentNotFoundException;
 import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.exceptions.InsufficientHoldingsException;
+import com.neueda.app.exceptions.InvalidOrderStateException;
+import com.neueda.app.exceptions.OrderNotFoundException;
+import com.neueda.app.exceptions.OrderNotTriggeredException;
 import com.neueda.app.exceptions.TradingException;
 
 /**
@@ -60,6 +64,57 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateOrderException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateOrder(DuplicateOrderException ex) {
         ErrorResponse error = new ErrorResponse("DUPLICATE_ORDER", ex.getMessage(), 409);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Handles OrderNotFoundException when an order with the specified ID does not exist.
+     * 
+     * @param ex the OrderNotFoundException thrown from the service layer
+     * @return ResponseEntity containing ErrorResponse with 404 status
+     */
+    @ExceptionHandler(OrderNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleOrderNotFound(OrderNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse("ORDER_NOT_FOUND", ex.getMessage(), 404);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Handles InvalidOrderStateException when an order is asked to make a transition its
+     * current status does not allow (e.g. executing or cancelling an order that is not PENDING).
+     * 
+     * @param ex the InvalidOrderStateException thrown from the domain layer
+     * @return ResponseEntity containing ErrorResponse with 409 status
+     */
+    @ExceptionHandler(InvalidOrderStateException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidOrderState(InvalidOrderStateException ex) {
+        ErrorResponse error = new ErrorResponse("INVALID_ORDER_STATE", ex.getMessage(), 409);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Handles OrderNotTriggeredException when a limit order is asked to fill before the market
+     * has reached its limit.
+     * 
+     * @param ex the OrderNotTriggeredException thrown from the service layer
+     * @return ResponseEntity containing ErrorResponse with 409 status
+     */
+    @ExceptionHandler(OrderNotTriggeredException.class)
+    public ResponseEntity<ErrorResponse> handleOrderNotTriggered(OrderNotTriggeredException ex) {
+        ErrorResponse error = new ErrorResponse("ORDER_NOT_TRIGGERED", ex.getMessage(), 409);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Handles OptimisticLockingFailureException when another transaction changed the same row
+     * first (e.g. two fills on the same account). The client can retry.
+     * 
+     * @param ex the OptimisticLockingFailureException thrown by the persistence layer
+     * @return ResponseEntity containing ErrorResponse with 409 status
+     */
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handleConcurrentUpdate(OptimisticLockingFailureException ex) {
+        ErrorResponse error = new ErrorResponse("CONCURRENT_UPDATE", "Concurrent update, please retry", 409);
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
