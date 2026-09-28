@@ -26,9 +26,9 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui.html").permitAll()
                 .anyRequest().authenticated()
             )
-            .formLogin().disable()
-            .httpBasic().disable()
-            .csrf().disable();
+            .formLogin(form -> form.disable())
+            .httpBasic(basic -> basic.disable())
+            .csrf(csrf -> csrf.disable());
         
         return http.build();
     }
