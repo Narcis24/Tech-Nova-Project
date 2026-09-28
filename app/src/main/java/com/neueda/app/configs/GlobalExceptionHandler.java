@@ -18,6 +18,7 @@ import com.neueda.app.exceptions.InsufficientHoldingsException;
 import com.neueda.app.exceptions.InvalidOrderStateException;
 import com.neueda.app.exceptions.OrderNotFoundException;
 import com.neueda.app.exceptions.OrderNotTriggeredException;
+import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.exceptions.TradingException;
 
 /**
@@ -128,6 +129,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InstrumentNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleInstrumentNotFound(InstrumentNotFoundException ex) {
         ErrorResponse error = new ErrorResponse("INSTRUMENT_NOT_FOUND", ex.getMessage(), 404);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Handles PriceNotFoundException when there is no stored price data for a symbol.
+     *
+     * @param ex the PriceNotFoundException thrown from the service layer
+     * @return ResponseEntity containing ErrorResponse with 404 status
+     */
+    @ExceptionHandler(PriceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlePriceNotFound(PriceNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse("PRICE_NOT_FOUND", ex.getMessage(), 404);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
