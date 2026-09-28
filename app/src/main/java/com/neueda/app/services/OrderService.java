@@ -103,23 +103,34 @@ public OrderService(OrderRepository orderRepository,
         
         orderRepository.save(order);
         // Publish ORDER_PLACED event to Kafka
-        OrderPlacedEvent event = new OrderPlacedEvent(
-            order.getId(),
-            order.getAccountId(),
-            order.getSymbol(),
-            order.getSide().toString(),
-            order.getOrderType().toString(),
-            order.getQuantity(),
-            order.getPrice(),
-            order.getIdempotencyKey()
-        );
-        eventProducerService.publishEvent(
-            "trades",                   
-            order.getId().toString(),    
-            "ORDER_PLACED",             
-            "OrderService",            
-            event                        // payload
-        );
+        try {
+            OrderPlacedEvent event = new OrderPlacedEvent(
+                order.getId(),
+                order.getAccountId(),
+                order.getSymbol(),
+                order.getSide().toString(),
+                order.getOrderType().toString(),
+                order.getQuantity(),
+                order.getPrice(),
+                order.getIdempotencyKey()
+            );
+
+            System.out.println("Publishing ORDER_PLACED event: " + event);
+
+            eventProducerService.publishEvent(
+                "trades",
+                order.getId().toString(),
+                "ORDER_PLACED",
+                "OrderService",
+                event
+            );
+
+            System.out.println("ORDER_PLACED event published");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
 
         if (orderType == OrderType.MARKET) {
             return executeOrder(order.getId());

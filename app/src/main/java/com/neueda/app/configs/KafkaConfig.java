@@ -39,16 +39,6 @@ public class KafkaConfig {
             JsonSerializer.class
         );
 
-        // Reliability & Ordering
-        props.put(ProducerConfig.ACKS_CONFIG, "all");
-        props.put(ProducerConfig.RETRIES_CONFIG, 3);
-        
-        // Batching & Performance
-        props.put(ProducerConfig.LINGER_MS_CONFIG, 10);
-        props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
-        
-        // Idempotence (important for financial transactions)
-        props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
 
         return new DefaultKafkaProducerFactory<>(props);
     }

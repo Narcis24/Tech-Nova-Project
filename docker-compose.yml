@@ -26,6 +26,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
     environment:
       DB_HOST: db
       DB_PORT: 5432
@@ -70,9 +72,10 @@ services:
       - "9092:9092"
     healthcheck:
       test: ["CMD", "/opt/kafka/bin/kafka-broker-api-versions.sh", "--bootstrap-server", "kafka:29092"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 45s
     networks:
       - tech-nova-network
     

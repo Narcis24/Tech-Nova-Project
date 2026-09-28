@@ -6,7 +6,7 @@ BOOTSTRAP_SERVER="kafka:9092"
 
 echo "Deleting existing topics..."
 
-for topic in trades trade_events market-data; do
+for topic in trades tradeEvents marketData; do
     /opt/kafka/bin/kafka-topics.sh \
         --bootstrap-server "$BOOTSTRAP_SERVER" \
         --delete \
