@@ -1,0 +1,745 @@
+openapi: 3.0.0
+info:
+  title: Tech Nova Trading API
+  version: 1.0.0
+  description: REST API for trading platform with order management, portfolio tracking, and instrument data
+
+servers:
+  - url: http://localhost:8081/api
+    description: Local development server
+
+components:
+  schemas:
+    PlaceOrderRequest:
+      type: object
+      required:
+        - accountId
+        - symbol
+        - side
+        - quantity
+        - price
+      properties:
+        accountId:
+          type: string
+          example: "ACC001"
+        symbol:
+          type: string
+          example: "AAPL"
+        side:
+          type: string
+          enum: [BUY, SELL]
+          example: "BUY"
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          example: 100
+        price:
+          type: number
+          format: decimal
+          minimum: 0.01
+          example: 150.50
+
+    OrderResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        accountId:
+          type: string
+          example: "ACC001"
+        symbol:
+          type: string
+          example: "AAPL"
+        side:
+          type: string
+          enum: [BUY, SELL]
+        quantity:
+          type: integer
+        price:
+          type: number
+          format: decimal
+        status:
+          type: string
+          enum: [PENDING, EXECUTED, CANCELLED]
+        createdOn:
+          type: string
+          format: date-time
+
+    AccountResponse:
+      type: object
+      properties:
+        accountId:
+          type: string
+          example: "ACC001"
+        holderName:
+          type: string
+          example: "John Doe"
+        cashBalance:
+          type: number
+          format: decimal
+          example: 50000.00
+        accountStatus:
+          type: string
+          enum: [ACTIVE, INACTIVE, SUSPENDED]
+        lastUpdated:
+          type: string
+          format: date-time
+
+    BalanceResponse:
+      type: object
+      properties:
+        accountId:
+          type: string
+        cashBalance:
+          type: number
+          format: decimal
+
+    PositionResponse:
+      type: object
+      properties:
+        accountId:
+          type: string
+        symbol:
+          type: string
+        quantity:
+          type: integer
+        averageCost:
+          type: number
+          format: decimal
+        currentPrice:
+          type: number
+          format: decimal
+        currentValue:
+          type: number
+          format: decimal
+
+    PositionMetricsResponse:
+      type: object
+      properties:
+        accountId:
+          type: string
+        symbol:
+          type: string
+        quantity:
+          type: integer
+        averageCost:
+          type: number
+          format: decimal
+        currentPrice:
+          type: number
+          format: decimal
+        currentValue:
+          type: number
+          format: decimal
+        gainLoss:
+          type: number
+          format: decimal
+        gainLossPercent:
+          type: number
+          format: decimal
+
+    PortfolioSnapshotResponse:
+      type: object
+      properties:
+        accountId:
+          type: string
+        cashBalance:
+          type: number
+          format: decimal
+        totalPortfolioValue:
+          type: number
+          format: decimal
+        positions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PositionResponse'
+
+    PortfolioMetricsResponse:
+      type: object
+      properties:
+        accountId:
+          type: string
+        totalValue:
+          type: number
+          format: decimal
+        totalGainLoss:
+          type: number
+          format: decimal
+        totalReturnPercent:
+          type: number
+          format: decimal
+        assetAllocation:
+          type: object
+          additionalProperties:
+            type: number
+
+    InstrumentResponse:
+      type: object
+      properties:
+        symbol:
+          type: string
+          example: "AAPL"
+        name:
+          type: string
+          example: "Apple Inc."
+        assetClass:
+          type: string
+          enum: [STOCK, ETF, BOND, CRYPTO]
+        currency:
+          type: string
+          example: "USD"
+        tradable:
+          type: boolean
+
+    PriceResponse:
+      type: object
+      properties:
+        symbol:
+          type: string
+        price:
+          type: number
+          format: decimal
+        timestamp:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /auth/v1/auth/login
+
+security:
+  - BearerAuth: []
+
+paths:
+  /v1/accounts/{accountId}:
+    get:
+      summary: Get account details
+      tags:
+        - Accounts
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Account details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Account not found
+
+  /v1/accounts/{accountId}/balance:
+    get:
+      summary: Get account cash balance
+      tags:
+        - Accounts
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cash balance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Account not found
+
+  /v1/accounts/{accountId}/deposit:
+    post:
+      summary: Deposit cash into account
+      tags:
+        - Accounts
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: number
+                  format: decimal
+                  minimum: 0.01
+      responses:
+        '200':
+          description: Deposit successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '400':
+          description: Invalid amount
+        '401':
+          description: Unauthorized
+        '404':
+          description: Account not found
+
+  /v1/accounts/{accountId}/withdraw:
+    post:
+      summary: Withdraw cash from account
+      tags:
+        - Accounts
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: number
+                  format: decimal
+                  minimum: 0.01
+      responses:
+        '200':
+          description: Withdrawal successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '400':
+          description: 'Insufficient funds or invalid amount (INSUFFICIENT_FUNDS)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: 'Account not found (ACCOUNT_NOT_FOUND)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/accounts/{accountId}/positions:
+    get:
+      summary: Get all positions in account
+      tags:
+        - Accounts
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of positions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PositionResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Account not found
+
+  /v1/accounts/{accountId}/orders:
+    get:
+      summary: Get all orders for account
+      tags:
+        - Accounts
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Account not found
+
+  /v1/orders:
+    post:
+      summary: Place a new order
+      tags:
+        - Orders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceOrderRequest'
+      responses:
+        '200':
+          description: Order placed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '400':
+          description: 'Invalid parameters or insufficient funds (INSUFFICIENT_FUNDS, ACCOUNT_NOT_ACTIVE)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: 'Account or instrument not found (ACCOUNT_NOT_FOUND, INSTRUMENT_NOT_FOUND)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 'Duplicate order (DUPLICATE_ORDER)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/orders/{orderId}:
+    get:
+      summary: Get order details
+      tags:
+        - Orders
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Order not found
+
+  /v1/orders/{orderId}/execute:
+    post:
+      summary: Execute a pending order
+      tags:
+        - Orders
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: 'Order not found (ORDER_NOT_FOUND)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 'Order cannot be executed (INVALID_ORDER_STATE, ORDER_NOT_TRIGGERED, CONCURRENT_UPDATE)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/orders/{orderId}:
+    delete:
+      summary: Cancel an order
+      tags:
+        - Orders
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: 'Order not found (ORDER_NOT_FOUND)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 'Order cannot be cancelled (INVALID_ORDER_STATE)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/positions/{accountId}/{symbol}:
+    get:
+      summary: Get position details
+      tags:
+        - Positions
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Position details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Position not found
+
+  /v1/positions/{accountId}/{symbol}/metrics:
+    get:
+      summary: Get position performance metrics
+      tags:
+        - Positions
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Position metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionMetricsResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Position not found
+
+  /v1/portfolio/{accountId}/snapshot:
+    get:
+      summary: Get portfolio snapshot
+      tags:
+        - Portfolio
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Portfolio snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioSnapshotResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Account not found
+
+  /v1/portfolio/{accountId}/metrics:
+    get:
+      summary: Get portfolio performance metrics
+      tags:
+        - Portfolio
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Portfolio metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioMetricsResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Account not found
+
+  /v1/instruments/{symbol}:
+    get:
+      summary: Get instrument details
+      tags:
+        - Instruments
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Instrument details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstrumentResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: 'Instrument not found (INSTRUMENT_NOT_FOUND)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/instruments/tradable:
+    get:
+      summary: Get all tradable instruments
+      tags:
+        - Instruments
+      responses:
+        '200':
+          description: List of tradable instruments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InstrumentResponse'
+        '401':
+          description: Unauthorized
+
+  /v1/instruments/{symbol}/tradable:
+    get:
+      summary: Check if instrument is tradable
+      tags:
+        - Instruments
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tradability status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  symbol:
+                    type: string
+                  tradable:
+                    type: boolean
+        '401':
+          description: Unauthorized
+        '404':
+          description: 'Instrument not found (INSTRUMENT_NOT_FOUND)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/prices/{symbol}:
+    get:
+      summary: Get current price for instrument
+      tags:
+        - Prices
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Current price
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: 'Instrument or price data not found (INSTRUMENT_NOT_FOUND)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
