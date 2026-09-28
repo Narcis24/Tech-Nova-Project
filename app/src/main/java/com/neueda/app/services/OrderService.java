@@ -2,15 +2,19 @@ package com.neueda.app.services;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.neueda.app.dtos.OrderPlacedEvent;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderType;
 import com.neueda.app.exceptions.*;
+
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Order;
 import com.neueda.app.models.Position;
+
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.InstrumentRepository;
 import com.neueda.app.repositories.OrderRepository;
@@ -28,18 +32,22 @@ public class OrderService {
     private final PositionRepository positionRepository;
     private final InstrumentRepository instrumentRepository;
     private final PriceService priceService;
+    private final EventProducerService eventProducerService;
 
-    public OrderService(OrderRepository orderRepository,
-                       AccountRepository accountRepository,
-                       PositionRepository positionRepository,
-                       InstrumentRepository instrumentRepository,
-                       PriceService priceService) {
-        this.orderRepository = orderRepository;
-        this.accountRepository = accountRepository;
-        this.positionRepository = positionRepository;
-        this.instrumentRepository = instrumentRepository;
-        this.priceService = priceService;
-    }
+
+public OrderService(OrderRepository orderRepository,
+                   AccountRepository accountRepository,
+                   PositionRepository positionRepository,
+                   InstrumentRepository instrumentRepository,
+                   PriceService priceService,
+                   EventProducerService eventProducerService) {  
+    this.orderRepository = orderRepository;
+    this.accountRepository = accountRepository;
+    this.positionRepository = positionRepository;
+    this.instrumentRepository = instrumentRepository;
+    this.priceService = priceService;
+    this.eventProducerService = eventProducerService;  
+}
 
     public OrderResponse placeOrder(PlaceOrderRequest request) {
         if (request.getSide() == null || request.getOrderType() == null || request.getQuantity() == null) {
@@ -94,6 +102,25 @@ public class OrderService {
         );
         
         orderRepository.save(order);
+        // Publish ORDER_PLACED event to Kafka
+        OrderPlacedEvent event = new OrderPlacedEvent(
+            order.getId(),
+            order.getAccountId(),
+            order.getSymbol(),
+            order.getSide().toString(),
+            order.getOrderType().toString(),
+            order.getQuantity(),
+            order.getPrice(),
+            order.getIdempotencyKey()
+        );
+        eventProducerService.publishEvent(
+            "trades",                   
+            order.getId().toString(),    
+            "ORDER_PLACED",             
+            "OrderService",            
+            event                        // payload
+        );
+
         if (orderType == OrderType.MARKET) {
             return executeOrder(order.getId());
         }

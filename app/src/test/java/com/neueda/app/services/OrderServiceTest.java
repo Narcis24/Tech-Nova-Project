@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class OrderServiceTest {
@@ -48,13 +49,15 @@ class OrderServiceTest {
         positionRepository = mock(PositionRepository.class);
         instrumentRepository = mock(InstrumentRepository.class);
         priceService = mock(PriceService.class);
+        EventProducerService eventProducerService = mock(EventProducerService.class);  // ADD THIS
 
         orderService = new OrderService(
             orderRepository,
             accountRepository,
             positionRepository,
             instrumentRepository,
-            priceService
+            priceService,
+            eventProducerService  // ADD THIS
         );
     }
 
