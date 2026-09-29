@@ -2,6 +2,7 @@ package com.neueda.app.controllers;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -12,6 +13,7 @@ import com.neueda.app.dtos.PositionResponse;
 import com.neueda.app.services.PositionService;
 import com.neueda.app.dtos.PositionMetricsResponse;
 import com.neueda.app.exceptions.TradingException;
+import com.neueda.app.utils.JwtUtil;
 
 import java.util.List;
 import java.util.Collections;
@@ -21,10 +23,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import org.springframework.test.context.ActiveProfiles;
 
 @WebMvcTest(PositionController.class)
-@ActiveProfiles("test")
+@AutoConfigureMockMvc(addFilters = false)
 class PositionControllerTest {
 
     @Autowired 
@@ -34,7 +38,10 @@ class PositionControllerTest {
     private ObjectMapper objectMapper;  
 
     @MockBean
-    private PositionService positionService;  
+    private PositionService positionService;
+
+    @MockBean
+    private JwtUtil jwtUtil;  
 
     @Test 
     void testGetPosition_Success() throws Exception {
@@ -55,7 +62,12 @@ class PositionControllerTest {
   
         
         mockMvc.perform(get("/v1/positions/ACC123/AAPL"))
-        .andExpect(status().isOk());
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.accountId").value("ACC123"))
+        .andExpect(jsonPath("$.symbol").value("AAPL"))
+        .andExpect(jsonPath("$.quantity").value(100))
+        .andExpect(jsonPath("$.averageCost").value(150.00));
     }
     @Test
     void testGetPosition_NotFound() throws Exception {
@@ -83,7 +95,12 @@ class PositionControllerTest {
             .thenReturn(mockPositions);
         
         mockMvc.perform(get("/v1/positions/ACC123"))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$[0].symbol").value("AAPL"))
+            .andExpect(jsonPath("$[0].quantity").value(100))
+            .andExpect(jsonPath("$[1].symbol").value("GOOGL"))
+            .andExpect(jsonPath("$[1].quantity").value(50));
     }
 
     @Test
@@ -92,7 +109,10 @@ class PositionControllerTest {
             .thenReturn(Collections.emptyList());
         
         mockMvc.perform(get("/v1/positions/ACC123"))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test
@@ -117,7 +137,12 @@ class PositionControllerTest {
             .thenReturn(mockMetrics);
         
         mockMvc.perform(get("/v1/positions/ACC123/AAPL/metrics"))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.accountId").value("ACC123"))
+            .andExpect(jsonPath("$.symbol").value("AAPL"))
+            .andExpect(jsonPath("$.quantity").value(100))
+            .andExpect(jsonPath("$.currentPrice").value(155.00));
     }
 
     @Test
@@ -133,7 +158,10 @@ class PositionControllerTest {
             .thenReturn(mockMetrics);
         
         mockMvc.perform(get("/v1/positions/ACC123/AAPL/metrics"))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.quantity").value(0))
+            .andExpect(jsonPath("$.averageCost").value(0.00));
     }
 
     @Test
