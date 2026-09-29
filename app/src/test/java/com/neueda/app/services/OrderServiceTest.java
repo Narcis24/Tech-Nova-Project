@@ -1,12 +1,14 @@
 package com.neueda.app.services;
 
 import com.neueda.app.dtos.PlaceOrderRequest;
+import com.neueda.app.dtos.OrderResponse;
+import com.neueda.app.dtos.OrderExecutedEvent;
 import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.enums.AssetClass;
 import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.enums.OrderType;
-import com.neueda.app.dtos.OrderResponse;
+import com.neueda.app.events.EventEnvelope;
 import com.neueda.app.exceptions.OrderNotTriggeredException;
 import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.exceptions.DuplicateOrderException;
@@ -23,12 +25,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class OrderServiceTest {
@@ -57,7 +60,7 @@ class OrderServiceTest {
             positionRepository,
             instrumentRepository,
             priceService,
-            eventProducerService  // ADD THIS
+            eventProducerService  
         );
     }
 
@@ -241,35 +244,58 @@ class OrderServiceTest {
     }
 
     @Test
-    void testPlaceMarketOrderFillsImmediatelyAtLatestPrice() {
+    void testPlaceMarketOrderStaysPendingAsync() {
         Account account = activeAccount();
         stubAccountAndInstrument(account, aapl());
-        when(priceService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("150.123456"));
-        when(positionRepository.findByAccountIdAndSymbol("12345", "AAPL")).thenReturn(Optional.empty());
+        EventProducerService eventProducer = mock(EventProducerService.class);
+        
+        // Recreate service with mocked event producer
+        orderService = new OrderService(
+            orderRepository,
+            accountRepository,
+            positionRepository,
+            instrumentRepository,
+            priceService,
+            eventProducer
+        );
+
         Order[] saved = new Order[1];
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
             saved[0] = invocation.getArgument(0);
             return saved[0];
         });
-        when(orderRepository.findById(any(UUID.class))).thenAnswer(invocation -> Optional.of(saved[0]));
 
         OrderResponse response = orderService.placeOrder(new PlaceOrderRequest(
             "12345", "AAPL", "BUY", "MARKET", 10, null, "key-1"));
 
-        assertEquals(OrderStatus.FILLED, response.getStatus());
-        assertEquals(new BigDecimal("150.12"), response.getPrice());
-        assertEquals(new BigDecimal("498.80"), account.getCashBalance());
-        verify(positionRepository).save(any(Position.class));
+        // Market orders stay PENDING until ExecutionEngine processes them
+        assertEquals(OrderStatus.PENDING, response.getStatus());
+        // Market orders have null price until execution
+        assertNull(response.getPrice());
+        // Account cash is NOT changed during placeOrder (happens during execution)
+        assertEquals(new BigDecimal("2000.00"), account.getCashBalance());
+        // Should publish ORDER_PLACED event
+        verify(eventProducer, times(1)).publishEvent(
+            eq("trades"),
+            any(String.class),
+            eq("ORDER_PLACED"),
+            eq("OrderService"),
+            any()
+        );
+        // Position should NOT be created yet
+        verify(positionRepository, never()).save(any(Position.class));
     }
 
     @Test
-    void testPlaceMarketOrderFailsWithoutPriceData() {
+    void testPlaceMarketOrderNoLongerFetchesPriceSync() {
         stubAccountAndInstrument(activeAccount(), aapl());
-        when(priceService.getCurrentPrice("AAPL")).thenThrow(new PriceNotFoundException("No price data"));
+        // PriceService should NOT be called during placeOrder
+        
+        orderService.placeOrder(new PlaceOrderRequest(
+            "12345", "AAPL", "BUY", "MARKET", 10, null, "key-1"));
 
-        assertThrows(PriceNotFoundException.class, () -> orderService.placeOrder(new PlaceOrderRequest(
-            "12345", "AAPL", "BUY", "MARKET", 10, null, "key-1")));
-        verify(orderRepository, never()).save(any());
+        // Verify priceService was never called - execution engine will fetch the price
+        verifyNoInteractions(priceService);
     }
 
     @Test
@@ -304,5 +330,100 @@ class OrderServiceTest {
 
         assertEquals(new BigDecimal("2000.00"), account.getCashBalance());
         verifyNoInteractions(positionRepository);
+    }
+
+    @Test
+    void testHandleOrderExecutedProcessesBuyExecution() {
+        UUID orderId = UUID.randomUUID();
+        Account account = activeAccount();
+        Instrument instrument = aapl();
+        Order order = new Order(orderId, account, instrument, OrderSide.BUY, OrderType.MARKET,
+            10, null, "key-1", LocalDateTime.now());
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(accountRepository.findById("12345")).thenReturn(Optional.of(account));
+        when(instrumentRepository.findBySymbol("AAPL")).thenReturn(Optional.of(instrument));
+        when(positionRepository.findByAccountIdAndSymbol("12345", "AAPL")).thenReturn(Optional.empty());
+
+        OrderExecutedEvent event = new OrderExecutedEvent(
+            orderId,
+            "12345",
+            "AAPL",
+            "BUY",
+            10,
+            new BigDecimal("150.00"),
+            new BigDecimal("1500.00")
+        );
+
+        EventEnvelope<OrderExecutedEvent> envelope = new EventEnvelope<>(
+            UUID.randomUUID().toString(),
+            "ORDER_EXECUTED",
+            Instant.now(),
+            "ExecutionEngine",
+            1,
+            event
+        );
+
+        orderService.handleOrderExecuted(envelope);
+
+        // Order should be marked as FILLED
+        assertEquals(OrderStatus.FILLED, order.getStatus());
+        // Price should be set to execution price
+        assertEquals(new BigDecimal("150.00"), order.getPrice());
+        // Account cash should be debited
+        assertEquals(new BigDecimal("500.00"), account.getCashBalance());
+        // Repository saves should be called
+        verify(orderRepository).save(order);
+        verify(accountRepository).save(account);
+    }
+
+    @Test
+    void testHandleOrderExecutedProcessesSellExecution() {
+        UUID orderId = UUID.randomUUID();
+        Account account = activeAccount();
+        Instrument instrument = aapl();
+        Order order = new Order(orderId, account, instrument, OrderSide.SELL, OrderType.MARKET,
+            5, null, "key-1", LocalDateTime.now());
+
+        Position position = new Position(account, instrument, 20, new BigDecimal("100.00"));
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(accountRepository.findById("12345")).thenReturn(Optional.of(account));
+        when(instrumentRepository.findBySymbol("AAPL")).thenReturn(Optional.of(instrument));
+        when(positionRepository.findByAccountIdAndSymbol("12345", "AAPL")).thenReturn(Optional.of(position));
+
+        OrderExecutedEvent event = new OrderExecutedEvent(
+            orderId,
+            "12345",
+            "AAPL",
+            "SELL",
+            5,
+            new BigDecimal("160.00"),
+            new BigDecimal("800.00")
+        );
+
+        EventEnvelope<OrderExecutedEvent> envelope = new EventEnvelope<>(
+            UUID.randomUUID().toString(),
+            "ORDER_EXECUTED",
+            Instant.now(),
+            "ExecutionEngine",
+            1,
+            event
+        );
+
+        orderService.handleOrderExecuted(envelope);
+
+        // Order should be marked as FILLED
+        assertEquals(OrderStatus.FILLED, order.getStatus());
+        // Price should be set to execution price
+        assertEquals(new BigDecimal("160.00"), order.getPrice());
+        // Position quantity should be reduced
+        assertEquals(15, position.getQuantity());
+        // Account cash should be credited
+        assertEquals(new BigDecimal("2800.00"), account.getCashBalance());
+        // Repository saves should be called
+        verify(orderRepository).save(order);
+        verify(accountRepository).save(account);
+        verify(positionRepository).save(position);
     }
 }
