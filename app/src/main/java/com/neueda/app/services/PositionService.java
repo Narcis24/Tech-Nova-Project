@@ -9,9 +9,9 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.ArrayList;
 import com.neueda.app.dtos.PositionMetricsResponse;
+import org.springframework.stereotype.Service;
 
-
-
+@Service
 public class PositionService {
     private PositionRepository positionRepository;
     private PriceRepository priceRepository;
