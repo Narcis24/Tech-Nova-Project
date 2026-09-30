@@ -2,15 +2,19 @@ services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-technova}
       POSTGRES_USER: ${POSTGRES_USER:-technova}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./db/migrations:/docker-entrypoint-initdb.d:ro
+
     ports:
       - "${POSTGRES_PORT:-5434}:5432"
+
     healthcheck:
       test:
         [
@@ -20,17 +24,25 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
     networks:
       - tech-nova-network
 
+
+  # =========================================================
+  # Main Application
+  # =========================================================
   app:
     build: ./app
     restart: unless-stopped
+
     depends_on:
       db:
         condition: service_healthy
-      kafka-init:
-        condition: service_completed_successfully
+
+      kafka:
+        condition: service_healthy
+
     environment:
       DB_HOST: db
       DB_PORT: 5432
@@ -40,11 +52,11 @@ services:
 
       JWT_SECRET: ${JWT_SECRET:-change-this-secret-key-in-production}
 
-      # Kafka is another container on the same Docker network.
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
 
     ports:
       - "${APP_PORT:-8081}:8081"
+
     networks:
       - tech-nova-network
 
@@ -53,27 +65,30 @@ services:
     restart: unless-stopped
 
     depends_on:
-      kafka-init:
-        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
 
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
 
     networks:
       - tech-nova-network
 
-
   auth-service:
     build: ./auth
     restart: unless-stopped
+
     depends_on:
       db:
         condition: service_healthy
+
     environment:
       DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       JWT_SECRET: ${JWT_SECRET:-change-this-secret-key-in-production}
+
     ports:
       - "${AUTH_PORT:-8082}:8080"
+
     networks:
       - tech-nova-network
 
@@ -90,14 +105,13 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
 
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093
-
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092
 
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
-
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
 
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      # NewTopic beans in app create the required topics.
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
 
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
@@ -120,26 +134,9 @@ services:
       - tech-nova-network
 
 
-  kafka-init:
-    image: apache/kafka:4.0.0
-    container_name: kafka-init
-
-    depends_on:
-      kafka:
-        condition: service_healthy
-
-    volumes:
-      - ./kafka/create-topics.sh:/create-topics.sh:ro
-
-    entrypoint:
-      - /bin/bash
-      - /create-topics.sh
-
-    networks:
-      - tech-nova-network
-
   pipeline:
     build: ./data-pipeline
+
     profiles:
       - pipeline
 
@@ -153,8 +150,10 @@ services:
     networks:
       - tech-nova-network
 
+
   sonarqube:
     image: sonarqube:community
+
     profiles:
       - quality
 
