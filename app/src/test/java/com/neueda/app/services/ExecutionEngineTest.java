@@ -16,6 +16,7 @@ import com.neueda.app.repositories.InstrumentRepository;
 import com.neueda.app.repositories.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -33,7 +34,8 @@ class ExecutionEngineTest {
     private PriceService priceService;
     private EventProducerService eventProducerService;
     private ExecutionEngine executionEngine;
-
+    private ObjectMapper objectMapper;
+    
     @BeforeEach
     void setUp() {
         orderRepository = mock(OrderRepository.class);
@@ -41,14 +43,17 @@ class ExecutionEngineTest {
         priceService = mock(PriceService.class);
         eventProducerService = mock(EventProducerService.class);
 
+        // Use a real ObjectMapper for payload conversion
+        ObjectMapper objectMapper = new ObjectMapper();
+
         executionEngine = new ExecutionEngine(
             orderRepository,
             instrumentRepository,
             priceService,
-            eventProducerService
+            eventProducerService,
+            objectMapper
         );
     }
-
     @Test
     void testHandleOrderPlacedPublishesExecutedEventForMarketOrder() {
         UUID orderId = UUID.randomUUID();

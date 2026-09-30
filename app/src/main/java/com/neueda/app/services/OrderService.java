@@ -27,6 +27,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import com.neueda.app.dtos.OrderExecutedEvent;
 import com.neueda.app.events.EventEnvelope;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @Service
 @Transactional
 @Slf4j
@@ -38,22 +40,27 @@ public class OrderService {
     private final InstrumentRepository instrumentRepository;
     private final PriceService priceService;
     private final EventProducerService eventProducerService;
+    private final ObjectMapper objectMapper;
 
 
-public OrderService(OrderRepository orderRepository,
-                   AccountRepository accountRepository,
-                   PositionRepository positionRepository,
-                   InstrumentRepository instrumentRepository,
-                   PriceService priceService,
-                   EventProducerService eventProducerService) {  
-    this.orderRepository = orderRepository;
-    this.accountRepository = accountRepository;
-    this.positionRepository = positionRepository;
-    this.instrumentRepository = instrumentRepository;
-    this.priceService = priceService;
-    this.eventProducerService = eventProducerService;  
-}
+    public OrderService(
+            OrderRepository orderRepository,
+            AccountRepository accountRepository,
+            PositionRepository positionRepository,
+            InstrumentRepository instrumentRepository,
+            PriceService priceService,
+            EventProducerService eventProducerService,
+            ObjectMapper objectMapper) {
 
+        this.orderRepository = orderRepository;
+        this.accountRepository = accountRepository;
+        this.positionRepository = positionRepository;
+        this.instrumentRepository = instrumentRepository;
+        this.priceService = priceService;
+        this.eventProducerService = eventProducerService;
+        this.objectMapper = objectMapper;
+    }
+    
     public OrderResponse placeOrder(PlaceOrderRequest request) {
 
         // Validate input parameters first (before any DB lookups)
@@ -224,66 +231,172 @@ public OrderService(OrderRepository orderRepository,
      * Performs database updates: order status to FILLED, positions, and cash.
      */
     @KafkaListener(topics = "tradeEvents", groupId = "order-service")
-    public void handleOrderExecuted(EventEnvelope<OrderExecutedEvent> envelope) {
-        log.info("Received ORDER_EXECUTED event: orderId={}", envelope.payload().getOrderId());
-        
-        OrderExecutedEvent event = envelope.payload();
-        UUID orderId = event.getOrderId();
-        
+    public void handleOrderExecuted(EventEnvelope<?> envelope) {
+
+        // Kafka/Jackson may deserialize the generic payload as a LinkedHashMap.
+        // Explicitly convert it to OrderExecutedEvent.
+        OrderExecutedEvent event;
+
         try {
+            event = objectMapper.convertValue(
+                envelope.payload(),
+                OrderExecutedEvent.class
+            );
+        } catch (Exception e) {
+            log.error(
+                "Failed to deserialize ORDER_EXECUTED payload: payload={}",
+                envelope.payload(),
+                e
+            );
+            return;
+        }
+
+        UUID orderId = event.getOrderId();
+
+        log.info(
+            "Received ORDER_EXECUTED event: orderId={}",
+            orderId
+        );
+
+        try {
+            // Find the order
             Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
-            
+                .orElseThrow(() ->
+                    new OrderNotFoundException(
+                        "Order not found: " + orderId
+                    )
+                );
+
             // Mark order as FILLED
             order.execute();
-            
-            // Store the execution price
+
+            // Store actual execution price
             order.setExecutionPrice(event.getExecutionPrice());
-            
-            // Retrieve account and instrument
-            Account account = accountRepository.findById(event.getAccountId())
-                .orElseThrow(() -> new AccountNotFoundException("Account not found"));
-            Instrument instrument = instrumentRepository.findBySymbol(event.getSymbol())
-                .orElseThrow(() -> new InstrumentNotFoundException("Instrument not found"));
-            
-            // Update positions and cash based on order side
-            if (event.getSide().equals("BUY")) {
-                // BUY FLOW
+
+            // Retrieve account
+            Account account = accountRepository
+                .findById(event.getAccountId())
+                .orElseThrow(() ->
+                    new AccountNotFoundException(
+                        "Account not found: " + event.getAccountId()
+                    )
+                );
+
+            // Retrieve instrument
+            Instrument instrument = instrumentRepository
+                .findBySymbol(event.getSymbol())
+                .orElseThrow(() ->
+                    new InstrumentNotFoundException(
+                        "Instrument not found: " + event.getSymbol()
+                    )
+                );
+
+            /*
+            * BUY
+            */
+            if ("BUY".equalsIgnoreCase(event.getSide())) {
+
+                // Remove cash from account
                 account.debitCash(event.getTotalValue());
-                
+
+                // Find existing position or create a new one
                 Position position = positionRepository
-                    .findByAccountIdAndSymbol(event.getAccountId(), event.getSymbol())
-                    .orElse(new Position(account, instrument, 0, BigDecimal.ZERO));
-                
-                position.updateOnBuy(event.getQuantity(), event.getExecutionPrice());
-                
+                    .findByAccountIdAndSymbol(
+                        event.getAccountId(),
+                        event.getSymbol()
+                    )
+                    .orElse(
+                        new Position(
+                            account,
+                            instrument,
+                            0,
+                            BigDecimal.ZERO
+                        )
+                    );
+
+                // Update holdings and average price
+                position.updateOnBuy(
+                    event.getQuantity(),
+                    event.getExecutionPrice()
+                );
+
                 accountRepository.save(account);
                 positionRepository.save(position);
-                
-            } else {
-                // SELL FLOW
+
+                log.info(
+                    "BUY execution processed: orderId={}, symbol={}, quantity={}, executionPrice={}, totalValue={}",
+                    orderId,
+                    event.getSymbol(),
+                    event.getQuantity(),
+                    event.getExecutionPrice(),
+                    event.getTotalValue()
+                );
+
+            /*
+            * SELL
+            */
+            } else if ("SELL".equalsIgnoreCase(event.getSide())) {
+
+                // Position must already exist
                 Position position = positionRepository
-                    .findByAccountIdAndSymbol(event.getAccountId(), event.getSymbol())
-                    .orElseThrow(() -> new InsufficientHoldingsException(
-                        "No position in " + event.getSymbol() + " for account " + event.getAccountId()));
-                
+                    .findByAccountIdAndSymbol(
+                        event.getAccountId(),
+                        event.getSymbol()
+                    )
+                    .orElseThrow(() ->
+                        new InsufficientHoldingsException(
+                            "No position in "
+                                + event.getSymbol()
+                                + " for account "
+                                + event.getAccountId()
+                        )
+                    );
+
+                // Remove shares
                 position.updateOnSell(event.getQuantity());
-                
+
+                // Add proceeds to account
                 account.creditCash(event.getTotalValue());
-                
+
                 positionRepository.save(position);
                 accountRepository.save(account);
+
+                log.info(
+                    "SELL execution processed: orderId={}, symbol={}, quantity={}, executionPrice={}, totalValue={}",
+                    orderId,
+                    event.getSymbol(),
+                    event.getQuantity(),
+                    event.getExecutionPrice(),
+                    event.getTotalValue()
+                );
+
+            } else {
+                throw new IllegalArgumentException(
+                    "Unknown order side: " + event.getSide()
+                );
             }
-            
-            // Save the order with updated status and execution price
+
+            // Save FILLED status + execution price
             orderRepository.save(order);
-            
-            log.info("Order execution processed: orderId={}, status=FILLED, executionPrice={}", 
-                orderId, event.getExecutionPrice());
-            
+
+            log.info(
+                "Order execution processed successfully: orderId={}, status=FILLED, executionPrice={}",
+                orderId,
+                event.getExecutionPrice()
+            );
+
         } catch (Exception e) {
-            log.error("Error processing order execution: orderId={}", orderId, e);
-            throw new RuntimeException("Failed to process order execution", e);
+
+            log.error(
+                "Error processing ORDER_EXECUTED event: orderId={}",
+                orderId,
+                e
+            );
+
+            throw new RuntimeException(
+                "Failed to process order execution: " + orderId,
+                e
+            );
         }
     }
 }

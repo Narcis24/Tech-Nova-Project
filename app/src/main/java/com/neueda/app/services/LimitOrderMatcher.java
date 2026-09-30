@@ -36,7 +36,7 @@ public class LimitOrderMatcher {
         this.orderService = orderService;
     }
 
-    @Scheduled(fixedDelayString = "${orders.matcher.interval-ms}")
+    //@Scheduled(fixedDelayString = "${orders.matcher.interval-ms}")
     public void matchPendingLimitOrders() {
         for (Order order : orderRepository.findByStatusAndOrderType(OrderStatus.PENDING, OrderType.LIMIT)) {
             try {

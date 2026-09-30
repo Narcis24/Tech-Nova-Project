@@ -21,6 +21,8 @@ import com.neueda.app.repositories.InstrumentRepository;
 import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -41,18 +43,21 @@ class OrderServiceTest {
     private PositionRepository positionRepository;
     private InstrumentRepository instrumentRepository;
     private PriceService priceService;
-
     private OrderService orderService;
+    private ObjectMapper objectMapper;
+    private EventProducerService eventProducerService;
 
     @BeforeEach
     void setUp() {
-
         orderRepository = mock(OrderRepository.class);
         accountRepository = mock(AccountRepository.class);
         positionRepository = mock(PositionRepository.class);
         instrumentRepository = mock(InstrumentRepository.class);
         priceService = mock(PriceService.class);
-        EventProducerService eventProducerService = mock(EventProducerService.class);  // ADD THIS
+
+        eventProducerService = mock(EventProducerService.class);
+
+        ObjectMapper objectMapper = new ObjectMapper();
 
         orderService = new OrderService(
             orderRepository,
@@ -60,7 +65,8 @@ class OrderServiceTest {
             positionRepository,
             instrumentRepository,
             priceService,
-            eventProducerService  
+            eventProducerService,
+            objectMapper
         );
     }
 
@@ -247,34 +253,53 @@ class OrderServiceTest {
     void testPlaceMarketOrderStaysPendingAsync() {
         Account account = activeAccount();
         stubAccountAndInstrument(account, aapl());
+
         EventProducerService eventProducer = mock(EventProducerService.class);
-        
-        // Recreate service with mocked event producer
+
+        // Recreate service using THIS eventProducer mock
         orderService = new OrderService(
             orderRepository,
             accountRepository,
             positionRepository,
             instrumentRepository,
             priceService,
-            eventProducer
+            eventProducer,       // <-- FIXED
+            objectMapper
         );
 
         Order[] saved = new Order[1];
-        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
-            saved[0] = invocation.getArgument(0);
-            return saved[0];
-        });
 
-        OrderResponse response = orderService.placeOrder(new PlaceOrderRequest(
-            "12345", "AAPL", "BUY", "MARKET", 10, null, "key-1"));
+        when(orderRepository.save(any(Order.class)))
+            .thenAnswer(invocation -> {
+                saved[0] = invocation.getArgument(0);
+                return saved[0];
+            });
 
-        // Market orders stay PENDING until ExecutionEngine processes them
+        OrderResponse response = orderService.placeOrder(
+            new PlaceOrderRequest(
+                "12345",
+                "AAPL",
+                "BUY",
+                "MARKET",
+                10,
+                null,
+                "key-1"
+            )
+        );
+
+        // Market order should remain PENDING until ExecutionEngine processes it
         assertEquals(OrderStatus.PENDING, response.getStatus());
-        // Market orders have null price until execution
+
+        // Market orders have no price until ExecutionEngine determines execution price
         assertNull(response.getPrice());
-        // Account cash is NOT changed during placeOrder (happens during execution)
-        assertEquals(new BigDecimal("2000.00"), account.getCashBalance());
-        // Should publish ORDER_PLACED event
+
+        // placeOrder should NOT modify account cash
+        assertEquals(
+            new BigDecimal("2000.00"),
+            account.getCashBalance()
+        );
+
+        // Verify ORDER_PLACED was published to Kafka
         verify(eventProducer, times(1)).publishEvent(
             eq("trades"),
             any(String.class),
@@ -282,8 +307,10 @@ class OrderServiceTest {
             eq("OrderService"),
             any()
         );
-        // Position should NOT be created yet
-        verify(positionRepository, never()).save(any(Position.class));
+
+        // Position should NOT be created during placeOrder
+        verify(positionRepository, never())
+            .save(any(Position.class));
     }
 
     @Test
