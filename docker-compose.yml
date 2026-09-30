@@ -49,13 +49,16 @@ services:
       - tech-nova-network
 
   execution-engine:
-    build: ./executionEngine
+    build: ./execution-engine
     restart: unless-stopped
+
     depends_on:
       kafka-init:
         condition: service_completed_successfully
+
     environment:
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+
     networks:
       - tech-nova-network
 
