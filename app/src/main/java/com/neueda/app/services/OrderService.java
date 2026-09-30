@@ -380,6 +380,10 @@ public class OrderService {
                     );
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4620332 (Feat/90 3 kafka topics the message envelope (#105))
 =======
 
 >>>>>>> 4620332 (Feat/90 3 kafka topics the message envelope (#105))
