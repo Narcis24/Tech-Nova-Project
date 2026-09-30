@@ -37,10 +37,4 @@ public class OrderController {
        OrderResponse orderResponse = orderService.cancelOrder(UUID.fromString(orderId));
        return ResponseEntity.ok(orderResponse);
    }
-
-   @PostMapping("/execute/{orderId}")
-   public ResponseEntity<OrderResponse> executeOrder(@PathVariable String orderId) {
-       OrderResponse orderResponse = orderService.executeOrder(UUID.fromString(orderId));
-       return ResponseEntity.ok(orderResponse);
-   }
 }

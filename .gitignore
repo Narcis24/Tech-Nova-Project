@@ -1,3 +1,4 @@
+execution-engine/target/
 app/target/
 auth/target/
 data-pipeline/target/
