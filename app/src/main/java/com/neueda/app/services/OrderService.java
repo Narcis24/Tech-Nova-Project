@@ -230,11 +230,60 @@ public class OrderService {
      * Kafka listener for ORDER_EXECUTED events from ExecutionEngine.
      * Performs database updates: order status to FILLED, positions, and cash.
      */
-    @KafkaListener(topics = "tradeEvents", groupId = "order-service")
-    public void handleOrderExecuted(EventEnvelope<?> envelope) {
+    @KafkaListener(
+        topics = "tradeEvents",
+        groupId = "order-service"
+    )
+    public void handleOrderExecuted(String message) {
 
-        // Kafka/Jackson may deserialize the generic payload as a LinkedHashMap.
-        // Explicitly convert it to OrderExecutedEvent.
+        log.info(
+            "Received message from tradeEvents: {}",
+            message
+        );
+
+        /*
+        * Kafka is configured with StringDeserializer,
+        * so the message arrives here as JSON text.
+        *
+        * First convert:
+        *
+        * JSON String -> EventEnvelope
+        */
+        EventEnvelope<?> envelope;
+
+        try {
+            envelope = objectMapper.readValue(
+                message,
+                EventEnvelope.class
+            );
+        } catch (Exception e) {
+            log.error(
+                "Failed to deserialize EventEnvelope: message={}",
+                message,
+                e
+            );
+            return;
+        }
+
+        /*
+        * Only process execution events.
+        */
+        if (!"ORDER_EXECUTED".equals(envelope.eventType())) {
+            log.debug(
+                "Ignoring event type: {}",
+                envelope.eventType()
+            );
+            return;
+        }
+
+        /*
+        * Because EventEnvelope<?> is generic, Jackson will normally
+        * deserialize payload as a LinkedHashMap.
+        *
+        * Convert:
+        *
+        * LinkedHashMap -> OrderExecutedEvent
+        */
         OrderExecutedEvent event;
 
         try {
@@ -259,7 +308,10 @@ public class OrderService {
         );
 
         try {
-            // Find the order
+
+            /*
+            * Find the original order.
+            */
             Order order = orderRepository.findById(orderId)
                 .orElseThrow(() ->
                     new OrderNotFoundException(
@@ -267,39 +319,60 @@ public class OrderService {
                     )
                 );
 
-            // Mark order as FILLED
+            /*
+            * Mark order as FILLED.
+            */
             order.execute();
 
-            // Store actual execution price
-            order.setExecutionPrice(event.getExecutionPrice());
+            /*
+            * Store the actual execution price returned
+            * by the execution engine.
+            */
+            order.setExecutionPrice(
+                event.getExecutionPrice()
+            );
 
-            // Retrieve account
+            /*
+            * Retrieve account.
+            */
             Account account = accountRepository
                 .findById(event.getAccountId())
                 .orElseThrow(() ->
                     new AccountNotFoundException(
-                        "Account not found: " + event.getAccountId()
-                    )
-                );
-
-            // Retrieve instrument
-            Instrument instrument = instrumentRepository
-                .findBySymbol(event.getSymbol())
-                .orElseThrow(() ->
-                    new InstrumentNotFoundException(
-                        "Instrument not found: " + event.getSymbol()
+                        "Account not found: "
+                            + event.getAccountId()
                     )
                 );
 
             /*
+            * Retrieve instrument.
+            */
+            Instrument instrument = instrumentRepository
+                .findBySymbol(event.getSymbol())
+                .orElseThrow(() ->
+                    new InstrumentNotFoundException(
+                        "Instrument not found: "
+                            + event.getSymbol()
+                    )
+                );
+
+            /*
+            * ==========================================
             * BUY
+            * ==========================================
             */
             if ("BUY".equalsIgnoreCase(event.getSide())) {
 
-                // Remove cash from account
-                account.debitCash(event.getTotalValue());
+                /*
+                * Remove cash from the account.
+                */
+                account.debitCash(
+                    event.getTotalValue()
+                );
 
-                // Find existing position or create a new one
+                /*
+                * Find an existing position or create one.
+                */
                 Position position = positionRepository
                     .findByAccountIdAndSymbol(
                         event.getAccountId(),
@@ -314,7 +387,9 @@ public class OrderService {
                         )
                     );
 
-                // Update holdings and average price
+                /*
+                * Update quantity and average price.
+                */
                 position.updateOnBuy(
                     event.getQuantity(),
                     event.getExecutionPrice()
@@ -333,11 +408,15 @@ public class OrderService {
                 );
 
             /*
+            * ==========================================
             * SELL
+            * ==========================================
             */
             } else if ("SELL".equalsIgnoreCase(event.getSide())) {
 
-                // Position must already exist
+                /*
+                * Position must already exist.
+                */
                 Position position = positionRepository
                     .findByAccountIdAndSymbol(
                         event.getAccountId(),
@@ -352,11 +431,19 @@ public class OrderService {
                         )
                     );
 
-                // Remove shares
-                position.updateOnSell(event.getQuantity());
+                /*
+                * Remove shares.
+                */
+                position.updateOnSell(
+                    event.getQuantity()
+                );
 
-                // Add proceeds to account
-                account.creditCash(event.getTotalValue());
+                /*
+                * Add proceeds to account.
+                */
+                account.creditCash(
+                    event.getTotalValue()
+                );
 
                 positionRepository.save(position);
                 accountRepository.save(account);
@@ -371,12 +458,16 @@ public class OrderService {
                 );
 
             } else {
+
                 throw new IllegalArgumentException(
-                    "Unknown order side: " + event.getSide()
+                    "Unknown order side: "
+                        + event.getSide()
                 );
             }
 
-            // Save FILLED status + execution price
+            /*
+            * Save FILLED status + execution price.
+            */
             orderRepository.save(order);
 
             log.info(
@@ -394,7 +485,8 @@ public class OrderService {
             );
 
             throw new RuntimeException(
-                "Failed to process order execution: " + orderId,
+                "Failed to process order execution: "
+                    + orderId,
                 e
             );
         }

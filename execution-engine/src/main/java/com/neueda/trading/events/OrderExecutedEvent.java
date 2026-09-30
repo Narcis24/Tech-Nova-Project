@@ -5,10 +5,11 @@ import java.util.UUID;
 
 public record OrderExecutedEvent(
     UUID orderId,
-    UUID accountId,
+    String accountId,
     String symbol,
     String side,
-    Integer quantity,
+    int quantity,
     BigDecimal executionPrice,
     BigDecimal totalValue
-) {}
+) {
+}

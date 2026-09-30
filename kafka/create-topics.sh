@@ -2,7 +2,7 @@
 
 set -e
 
-BOOTSTRAP_SERVER="kafka:9092"
+BOOTSTRAP_SERVER="kafka:29092"
 
 echo "Deleting existing topics..."
 
@@ -15,9 +15,10 @@ done
 
 echo "Creating topics..."
 
- /opt/kafka/bin/kafka-topics.sh \
+/opt/kafka/bin/kafka-topics.sh \
     --bootstrap-server "$BOOTSTRAP_SERVER" \
     --create \
+    --if-not-exists \
     --topic trades \
     --partitions 3 \
     --replication-factor 1
@@ -25,6 +26,7 @@ echo "Creating topics..."
 /opt/kafka/bin/kafka-topics.sh \
     --bootstrap-server "$BOOTSTRAP_SERVER" \
     --create \
+    --if-not-exists \
     --topic tradeEvents \
     --partitions 3 \
     --replication-factor 1
@@ -32,6 +34,7 @@ echo "Creating topics..."
 /opt/kafka/bin/kafka-topics.sh \
     --bootstrap-server "$BOOTSTRAP_SERVER" \
     --create \
+    --if-not-exists \
     --topic marketData \
     --partitions 3 \
     --replication-factor 1

@@ -1,61 +1,90 @@
 package com.neueda.trading.engine;
 
-import com.neueda.trading.events.EventEnvelope;
-import lombok.extern.slf4j.Slf4j;
+import java.time.Instant;
+import java.util.UUID;
 
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-import java.util.UUID;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.neueda.trading.events.EventEnvelope;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
 public class EventProducerService {
 
-    private final KafkaTemplate<String, EventEnvelope<?>> kafkaTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final ObjectMapper objectMapper;
 
     public EventProducerService(
-            KafkaTemplate<String, EventEnvelope<?>> kafkaTemplate) {
+            KafkaTemplate<String, String> kafkaTemplate,
+            ObjectMapper objectMapper) {
 
         this.kafkaTemplate = kafkaTemplate;
+        this.objectMapper = objectMapper;
     }
 
-    public <T> void publishEvent(
+    public void publishEvent(
             String topic,
             String key,
             String eventType,
             String source,
-            T payload) {
+            Object payload) {
 
-        EventEnvelope<T> event = new EventEnvelope<>(
-            UUID.randomUUID().toString(),
-            eventType,
-            Instant.now(),
-            source,
-            1,
-            payload
-        );
+        EventEnvelope<Object> envelope =
+            new EventEnvelope<>(
+                UUID.randomUUID().toString(),   // <-- FIXED
+                eventType,
+                Instant.now(),
+                source,
+                1,
+                payload
+            );
 
-        kafkaTemplate.send(topic, key, event)
-            .whenComplete((result, ex) -> {
+        try {
 
-                if (ex == null) {
-                    log.info(
-                        "Published event: type={}, topic={}, key={}",
-                        eventType,
-                        topic,
-                        key
-                    );
-                } else {
-                    log.error(
-                        "Failed to publish event: type={}, topic={}, key={}",
-                        eventType,
-                        topic,
-                        key,
-                        ex
-                    );
-                }
-            });
+            // Convert the envelope object to JSON
+            String json =
+                objectMapper.writeValueAsString(envelope);
+
+            log.info(
+                "Publishing event: type={}, topic={}, key={}",
+                eventType,
+                topic,
+                key
+            );
+
+            // Kafka uses StringSerializer,
+            // so send the JSON String.
+            kafkaTemplate.send(
+                topic,
+                key,
+                json
+            );
+
+            log.info(
+                "Published event: type={}, topic={}, key={}",
+                eventType,
+                topic,
+                key
+            );
+
+        } catch (Exception e) {
+
+            log.error(
+                "Failed to publish event: type={}, topic={}, key={}",
+                eventType,
+                topic,
+                key,
+                e
+            );
+
+            throw new RuntimeException(
+                "Failed to publish Kafka event",
+                e
+            );
+        }
     }
 }

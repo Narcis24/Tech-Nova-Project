@@ -1,11 +1,10 @@
 package com.neueda.trading.engine;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neueda.trading.events.EventEnvelope;
@@ -33,31 +32,100 @@ public class ExecutionEngine {
         topics = "trades",
         groupId = "execution-engine"
     )
-    public void handleOrderPlaced(EventEnvelope<?> envelope) {
+    public void handleOrderPlaced(String message) {
 
+        log.info("Received message from trades topic: {}", message);
+
+        /*
+         * Kafka is configured with StringDeserializer,
+         * so the incoming Kafka value is JSON represented
+         * as a String.
+         *
+         * Convert the JSON string into our EventEnvelope.
+         */
+        EventEnvelope<?> envelope;
+
+        try {
+            envelope = objectMapper.readValue(
+                message,
+                EventEnvelope.class
+            );
+        } catch (Exception e) {
+
+            log.error(
+                "Failed to deserialize Kafka message into EventEnvelope: {}",
+                message,
+                e
+            );
+
+            throw new RuntimeException(
+                "Failed to deserialize EventEnvelope",
+                e
+            );
+        }
+
+        /*
+         * This consumer only handles ORDER_PLACED events.
+         */
         if (!"ORDER_PLACED".equals(envelope.eventType())) {
+
+            log.debug(
+                "Ignoring event type: {}",
+                envelope.eventType()
+            );
+
             return;
         }
 
-        OrderPlacedEvent event = objectMapper.convertValue(
-            envelope.payload(),
-            OrderPlacedEvent.class
-        );
+        /*
+         * EventEnvelope<?> means Jackson will normally deserialize
+         * payload as a Map.
+         *
+         * Convert that Map into OrderPlacedEvent.
+         */
+        OrderPlacedEvent event;
+
+        try {
+            event = objectMapper.convertValue(
+                envelope.payload(),
+                OrderPlacedEvent.class
+            );
+        } catch (Exception e) {
+
+            log.error(
+                "Failed to convert payload into OrderPlacedEvent: {}",
+                envelope.payload(),
+                e
+            );
+
+            throw new RuntimeException(
+                "Failed to deserialize OrderPlacedEvent",
+                e
+            );
+        }
 
         log.info(
-            "Received ORDER_PLACED: orderId={}, symbol={}, quantity={}",
+            "Received ORDER_PLACED: orderId={}, accountId={}, symbol={}, side={}, orderType={}, quantity={}, price={}",
             event.getOrderId(),
+            event.getAccountId(),
             event.getSymbol(),
-            event.getQuantity()
+            event.getSide(),
+            event.getOrderType(),
+            event.getQuantity(),
+            event.getPrice()
         );
 
         /*
-         * TEMPORARY execution logic.
+         * TEMPORARY EXECUTION LOGIC
          *
-         * LIMIT  -> supplied limit price
-         * MARKET -> fixed test price
+         * LIMIT:
+         * Use the supplied limit price.
          *
-         * Replace this later with a real market-price source.
+         * MARKET:
+         * Use a fixed simulated price of 100.00.
+         *
+         * Later this can be replaced with a market-data service
+         * or marketData Kafka topic.
          */
         BigDecimal executionPrice =
             event.getPrice() != null
@@ -69,10 +137,34 @@ public class ExecutionEngine {
                 BigDecimal.valueOf(event.getQuantity())
             );
 
+        log.info(
+            "Executing order: orderId={}, executionPrice={}, totalValue={}",
+            event.getOrderId(),
+            executionPrice,
+            totalValue
+        );
+
+        /*
+         * Build the result that will be sent back to app/.
+         *
+         * NOTE:
+         * Your Kafka example showed:
+         *
+         * accountId = "ACC003"
+         *
+         * That is NOT a UUID.
+         *
+         * Therefore DO NOT do:
+         *
+         * UUID.fromString(event.getAccountId())
+         *
+         * unless OrderExecutedEvent specifically requires UUID
+         * and your account IDs are actually UUIDs.
+         */
         OrderExecutedEvent executedEvent =
             new OrderExecutedEvent(
                 event.getOrderId(),
-                UUID.fromString(event.getAccountId()),
+                event.getAccountId(),
                 event.getSymbol(),
                 event.getSide(),
                 event.getQuantity(),
@@ -80,6 +172,12 @@ public class ExecutionEngine {
                 totalValue
             );
 
+        /*
+         * Send result back to Kafka.
+         *
+         * app/ listens to tradeEvents and handles the
+         * account/order/position database updates.
+         */
         eventProducerService.publishEvent(
             "tradeEvents",
             event.getOrderId().toString(),
@@ -89,9 +187,10 @@ public class ExecutionEngine {
         );
 
         log.info(
-            "Published ORDER_EXECUTED: orderId={}, executionPrice={}",
+            "Published ORDER_EXECUTED: orderId={}, executionPrice={}, totalValue={}",
             event.getOrderId(),
-            executionPrice
+            executionPrice,
+            totalValue
         );
     }
 }
