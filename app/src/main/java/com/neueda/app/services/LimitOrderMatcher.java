@@ -29,7 +29,7 @@ public class LimitOrderMatcher {
         this.priceRepository = priceRepository;
     }
 
-    @Scheduled(fixedDelayString = "${orders.matcher.interval-ms}")
+    //@Scheduled(fixedDelayString = "${orders.matcher.interval-ms}")
     public void matchPendingLimitOrders() {
         // Limit order matching is now handled by the execution-engine.
         // This method is kept for backward compatibility but is a no-op.

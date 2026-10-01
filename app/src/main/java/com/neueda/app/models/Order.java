@@ -65,7 +65,7 @@ public class Order implements OrderOperations {
     private int quantity;
     
     /** The limit price for LIMIT orders, the price the order was filled at for MARKET orders. */
-    @Column(name = "price")
+    @Column(name = "price", nullable = true)
     @Positive(message = "Price must be positive")
     private BigDecimal price;
     
@@ -109,10 +109,11 @@ public class Order implements OrderOperations {
         if (quantity <= 0 || quantity > 100000) {
             throw new IllegalArgumentException("Quantity must be between 1 and 100,000");
         }
-        if (price == null) {
-            throw new IllegalArgumentException("Price cannot be null");
+        // MARKET orders can have null price (set during execution), LIMIT orders require price
+        if (orderType == OrderType.LIMIT && price == null) {
+            throw new IllegalArgumentException("Price is required for LIMIT orders");
         }
-        if (price.compareTo(BigDecimal.ZERO) <= 0) {
+        if (price != null && price.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Price must be > 0");
         }
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
@@ -131,7 +132,8 @@ public class Order implements OrderOperations {
         this.orderType = orderType;
         this.quantity = quantity;
         // Same scale as the orders.price column, so cash and cost match what is stored
-        this.price = price.setScale(2, RoundingMode.HALF_UP);
+        // Price can be null for MARKET orders (set during execution)
+        this.price = price != null ? price.setScale(2, RoundingMode.HALF_UP) : null;
         this.idempotencyKey = idempotencyKey;
         this.createdOn = createdOn;
         this.status = OrderStatus.PENDING;       // Always starts as PENDING
@@ -143,9 +145,13 @@ public class Order implements OrderOperations {
     /**
      * Calculates total order value (quantity * price).
      * Used for cash debit/credit.
+     * Note: price may be null for MARKET orders until execution.
      */
     @Override
     public BigDecimal getTotalValue() {
+        if (price == null) {
+            throw new IllegalStateException("Cannot calculate total value: price is null (MARKET order not yet executed)");
+        }
         return price.multiply(new BigDecimal(quantity));
     }
 
@@ -160,6 +166,17 @@ public class Order implements OrderOperations {
         }
         int comparison = marketPrice.compareTo(price);
         return side == OrderSide.BUY ? comparison <= 0 : comparison >= 0;
+    }
+
+    /**
+     * Sets the execution price for the order.
+     * Called by ExecutionEngine after determining the execution price.
+     */
+    public void setExecutionPrice(BigDecimal executionPrice) {
+        if (executionPrice == null || executionPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Execution price must be > 0");
+        }
+        this.price = executionPrice.setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
