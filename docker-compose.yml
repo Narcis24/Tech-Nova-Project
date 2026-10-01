@@ -60,10 +60,6 @@ services:
     networks:
       - tech-nova-network
 
-
-  # =========================================================
-  # Execution Engine
-  # =========================================================
   execution-engine:
     build: ./execution-engine
     restart: unless-stopped
@@ -78,10 +74,6 @@ services:
     networks:
       - tech-nova-network
 
-
-  # =========================================================
-  # Auth Service
-  # =========================================================
   auth-service:
     build: ./auth
     restart: unless-stopped
@@ -100,10 +92,6 @@ services:
     networks:
       - tech-nova-network
 
-
-  # =========================================================
-  # Kafka
-  # =========================================================
   kafka:
     image: apache/kafka:4.0.0
     container_name: kafka
@@ -146,9 +134,6 @@ services:
       - tech-nova-network
 
 
-  # =========================================================
-  # Data Pipeline
-  # =========================================================
   pipeline:
     build: ./data-pipeline
 
@@ -166,9 +151,6 @@ services:
       - tech-nova-network
 
 
-  # =========================================================
-  # SonarQube
-  # =========================================================
   sonarqube:
     image: sonarqube:community
 
