@@ -7,7 +7,7 @@ ALTER TABLE orders
     ADD CONSTRAINT chk_orders_type CHECK (order_type IN ('MARKET', 'LIMIT')),
     ADD CONSTRAINT chk_orders_quantity CHECK (quantity > 0),
     ADD CONSTRAINT chk_orders_price CHECK (price > 0),
-    ADD CONSTRAINT chk_orders_status CHECK (status IN ('PENDING', 'FILLED', 'CANCELLED', 'REJECTED', 'PARTIALLY_FILLED', 'EXPIRED'));
+    ADD CONSTRAINT chk_orders_status CHECK (status IN ('PENDING', 'PUBLISHED', 'FILLED', 'CANCELLED', 'REJECTED', 'PARTIALLY_FILLED', 'EXPIRED'));
 
 ALTER TABLE positions
     ADD CONSTRAINT chk_positions_quantity CHECK (quantity >= 0),

@@ -3,7 +3,6 @@ package com.neueda.app.controllers;
 
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,18 +35,6 @@ public class OrderController {
    @DeleteMapping("/{orderId}")
    public ResponseEntity<OrderResponse> cancelOrder(@PathVariable String orderId) {
        OrderResponse orderResponse = orderService.cancelOrder(UUID.fromString(orderId));
-       return ResponseEntity.ok(orderResponse);
-   }
-
-   @PostMapping("/execute/{orderId}")
-   public ResponseEntity<OrderResponse> executeOrder(@PathVariable String orderId) {
-       OrderResponse orderResponse = orderService.executeOrder(UUID.fromString(orderId));
-       return ResponseEntity.ok(orderResponse);
-   }
-
-   @GetMapping("/{orderId}")
-   public ResponseEntity<OrderResponse> getOrder(@PathVariable String orderId) {
-       OrderResponse orderResponse = orderService.getOrder(UUID.fromString(orderId));
        return ResponseEntity.ok(orderResponse);
    }
 }

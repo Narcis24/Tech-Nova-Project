@@ -207,6 +207,30 @@ public class Order implements OrderOperations {
         }
     }
 
+    /**
+     * Sets the order status directly. Used for state transitions managed externally.
+     */
+    public void setStatus(OrderStatus newStatus) {
+        this.status = newStatus;
+        this.lastModified = LocalDateTime.now();
+    }
+
+    /**
+     * Sets the rejection reason.
+     */
+    public void setRejectionReason(String reason) {
+        this.rejectionReason = reason;
+    }
+
+    /**
+     * Sets the execution price for the order.
+     * Used when an order is filled to record the actual execution price.
+     */
+    public void setExecutionPrice(BigDecimal executionPrice) {
+        this.price = executionPrice.setScale(2, RoundingMode.HALF_UP);
+        this.lastModified = LocalDateTime.now();
+    }
+
     @Override
     public String toString() {
         return "Order{" +

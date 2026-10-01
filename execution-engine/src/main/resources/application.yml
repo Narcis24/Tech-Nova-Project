@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: execution-engine
+
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka:29092}
+
+    producer:
+      acks: all
+
+      # We manually convert EventEnvelope -> JSON String
+      # inside EventProducerService.
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+      properties:
+        enable.idempotence: true
+
+    consumer:
+      group-id: execution-engine
+      auto-offset-reset: earliest
+
+      # ExecutionEngine receives JSON from Kafka as a String,
+      # then ObjectMapper converts it to EventEnvelope.
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+
+server:
+  port: ${SERVER_PORT:8082}
+  shutdown: graceful
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+
+engine:
+  min-delay: ${ENGINE_MIN_DELAY:500ms}
+  max-delay: ${ENGINE_MAX_DELAY:2000ms}
+  max-price-improvement-bps: ${ENGINE_MAX_PRICE_IMPROVEMENT_BPS:50}
+  venue: SIM
+
+  topics:
+    orders: order-request
+    executions: order-execution
+    partitions: 3

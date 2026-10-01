@@ -2,15 +2,19 @@ package com.neueda.app.services;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.neueda.app.dtos.OrderPlacedEvent;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderType;
 import com.neueda.app.exceptions.*;
+
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Order;
 import com.neueda.app.models.Position;
+
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.InstrumentRepository;
 import com.neueda.app.repositories.OrderRepository;
@@ -18,9 +22,12 @@ import com.neueda.app.repositories.PositionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.annotation.KafkaListener;
 
 @Service
 @Transactional
+@Slf4j
 public class OrderService {
     
     private final OrderRepository orderRepository;
@@ -28,20 +35,31 @@ public class OrderService {
     private final PositionRepository positionRepository;
     private final InstrumentRepository instrumentRepository;
     private final PriceService priceService;
+    private final EventProducerService eventProducerService;
+    private final OrderSettlementService orderSettlementService;
 
-    public OrderService(OrderRepository orderRepository,
-                       AccountRepository accountRepository,
-                       PositionRepository positionRepository,
-                       InstrumentRepository instrumentRepository,
-                       PriceService priceService) {
+
+    public OrderService(
+            OrderRepository orderRepository,
+            AccountRepository accountRepository,
+            PositionRepository positionRepository,
+            InstrumentRepository instrumentRepository,
+            PriceService priceService,
+            EventProducerService eventProducerService,
+            OrderSettlementService orderSettlementService) {
+
         this.orderRepository = orderRepository;
         this.accountRepository = accountRepository;
         this.positionRepository = positionRepository;
         this.instrumentRepository = instrumentRepository;
         this.priceService = priceService;
+        this.eventProducerService = eventProducerService;
+        this.orderSettlementService = orderSettlementService;
     }
-
+    
     public OrderResponse placeOrder(PlaceOrderRequest request) {
+
+        // Validate input parameters first (before any DB lookups)
         if (request.getSide() == null || request.getOrderType() == null || request.getQuantity() == null) {
             throw new IllegalArgumentException("side, orderType and quantity are required");
         }
@@ -52,6 +70,8 @@ public class OrderService {
         if (orderType == OrderType.MARKET && request.getPrice() != null) {
             throw new IllegalArgumentException("price must not be set for MARKET orders");
         }
+        
+        // Check for duplicate idempotency key before looking up resources
         if (request.getIdempotencyKey() != null
                 && orderRepository.existsByIdempotencyKey(request.getIdempotencyKey())) {
             throw new DuplicateOrderException(
@@ -59,14 +79,13 @@ public class OrderService {
             );
         }
 
-        // Validate account exists and is ACTIVE
+        // Now look up resources after validation
         Account account = accountRepository.findById(request.getAccountId())
             .orElseThrow(() -> new AccountNotFoundException(
                 "Account not found: " + request.getAccountId()
             ));
         account.validateStatus();
         
-        // Validate instrument exists and is tradable
         Instrument instrument = instrumentRepository.findBySymbol(request.getSymbol())
             .orElseThrow(() -> new InstrumentNotFoundException(
                 "Instrument not found: " + request.getSymbol()
@@ -75,10 +94,13 @@ public class OrderService {
             throw new TradingException("Instrument is not tradable: " + request.getSymbol());
         }
         
-        // A MARKET order trades at the latest price, a LIMIT order at the price it was placed with
-        BigDecimal price = orderType == OrderType.MARKET
-            ? priceService.getCurrentPrice(instrument.getSymbol())
-            : request.getPrice();
+        // For LIMIT orders, use the price from the request
+        // For MARKET orders, price is null (will be set during execution by ExecutionEngine)
+        // This enables asynchronous execution: OrderService publishes to Kafka immediately,
+        // ExecutionEngine fetches live market price and determines actual execution price later
+        BigDecimal price = orderType == OrderType.LIMIT
+            ? request.getPrice()
+            : null;
 
         // Create Order entity with Account and Instrument objects
         Order order = new Order(
@@ -94,9 +116,30 @@ public class OrderService {
         );
         
         orderRepository.save(order);
-        if (orderType == OrderType.MARKET) {
-            return executeOrder(order.getId());
-        }
+        
+        // Publish ORDER_PLACED event to Kafka (asynchronous execution will happen in ExecutionEngine)
+        OrderPlacedEvent event = new OrderPlacedEvent(
+            order.getId(),
+            order.getAccountId(),
+            order.getSymbol(),
+            order.getSide().toString(),
+            order.getOrderType().toString(),
+            order.getQuantity(),
+            order.getPrice(),  // null for MARKET, limit price for LIMIT
+            order.getIdempotencyKey()
+        );
+
+        log.info("Publishing ORDER_PLACED event: orderId={}, orderType={}, symbol={}", 
+            order.getId(), orderType, order.getSymbol());
+
+        eventProducerService.publishEvent(
+            "order-request",
+            order.getId().toString(),
+            "ORDER_PLACED",
+            "OrderService",
+            event
+        );
+
         return new OrderResponse(order);
     }
 
@@ -177,5 +220,18 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
         return new OrderResponse(order);
+    }
+
+    /**
+     * Kafka listener for ORDER_EXECUTED events from ExecutionEngine.
+     * Performs database updates: order status to FILLED, positions, and cash.
+     */
+    @KafkaListener(
+        topics = "order-execution",
+        groupId = "order-service"
+    )
+    public void handleOrderExecuted(String message) {
+        log.info("Received message from order-execution topic");
+        orderSettlementService.processKafkaMessage(message);
     }
 }

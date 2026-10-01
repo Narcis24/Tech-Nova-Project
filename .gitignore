@@ -1,6 +1,8 @@
+execution-engine/target/
 app/target/
 auth/target/
 data-pipeline/target/
+execution-engine/target/
 .env*
 !.env.example
 app/target*
