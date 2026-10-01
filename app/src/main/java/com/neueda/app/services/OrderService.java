@@ -241,14 +241,6 @@ public class OrderService {
             message
         );
 
-        /*
-        * Kafka is configured with StringDeserializer,
-        * so the message arrives here as JSON text.
-        *
-        * First convert:
-        *
-        * JSON String -> EventEnvelope
-        */
         EventEnvelope<?> envelope;
 
         try {
@@ -265,9 +257,6 @@ public class OrderService {
             return;
         }
 
-        /*
-        * Only process execution events.
-        */
         if (!"ORDER_EXECUTED".equals(envelope.eventType())) {
             log.debug(
                 "Ignoring event type: {}",
@@ -276,14 +265,6 @@ public class OrderService {
             return;
         }
 
-        /*
-        * Because EventEnvelope<?> is generic, Jackson will normally
-        * deserialize payload as a LinkedHashMap.
-        *
-        * Convert:
-        *
-        * LinkedHashMap -> OrderExecutedEvent
-        */
         OrderExecutedEvent event;
 
         try {
@@ -309,9 +290,6 @@ public class OrderService {
 
         try {
 
-            /*
-            * Find the original order.
-            */
             Order order = orderRepository.findById(orderId)
                 .orElseThrow(() ->
                     new OrderNotFoundException(
@@ -319,22 +297,14 @@ public class OrderService {
                     )
                 );
 
-            /*
-            * Mark order as FILLED.
-            */
+
             order.execute();
 
-            /*
-            * Store the actual execution price returned
-            * by the execution engine.
-            */
+
             order.setExecutionPrice(
                 event.getExecutionPrice()
             );
 
-            /*
-            * Retrieve account.
-            */
             Account account = accountRepository
                 .findById(event.getAccountId())
                 .orElseThrow(() ->
@@ -344,9 +314,6 @@ public class OrderService {
                     )
                 );
 
-            /*
-            * Retrieve instrument.
-            */
             Instrument instrument = instrumentRepository
                 .findBySymbol(event.getSymbol())
                 .orElseThrow(() ->
@@ -356,23 +323,12 @@ public class OrderService {
                     )
                 );
 
-            /*
-            * ==========================================
-            * BUY
-            * ==========================================
-            */
             if ("BUY".equalsIgnoreCase(event.getSide())) {
 
-                /*
-                * Remove cash from the account.
-                */
                 account.debitCash(
                     event.getTotalValue()
                 );
 
-                /*
-                * Find an existing position or create one.
-                */
                 Position position = positionRepository
                     .findByAccountIdAndSymbol(
                         event.getAccountId(),
@@ -387,9 +343,6 @@ public class OrderService {
                         )
                     );
 
-                /*
-                * Update quantity and average price.
-                */
                 position.updateOnBuy(
                     event.getQuantity(),
                     event.getExecutionPrice()
@@ -407,11 +360,6 @@ public class OrderService {
                     event.getTotalValue()
                 );
 
-            /*
-            * ==========================================
-            * SELL
-            * ==========================================
-            */
             } else if ("SELL".equalsIgnoreCase(event.getSide())) {
 
                 /*
@@ -431,16 +379,10 @@ public class OrderService {
                         )
                     );
 
-                /*
-                * Remove shares.
-                */
                 position.updateOnSell(
                     event.getQuantity()
                 );
 
-                /*
-                * Add proceeds to account.
-                */
                 account.creditCash(
                     event.getTotalValue()
                 );
@@ -465,9 +407,6 @@ public class OrderService {
                 );
             }
 
-            /*
-            * Save FILLED status + execution price.
-            */
             orderRepository.save(order);
 
             log.info(
