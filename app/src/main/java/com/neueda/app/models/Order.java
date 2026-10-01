@@ -222,6 +222,15 @@ public class Order implements OrderOperations {
         this.rejectionReason = reason;
     }
 
+    /**
+     * Sets the execution price for the order.
+     * Used when an order is filled to record the actual execution price.
+     */
+    public void setExecutionPrice(BigDecimal executionPrice) {
+        this.price = executionPrice.setScale(2, RoundingMode.HALF_UP);
+        this.lastModified = LocalDateTime.now();
+    }
+
     @Override
     public String toString() {
         return "Order{" +

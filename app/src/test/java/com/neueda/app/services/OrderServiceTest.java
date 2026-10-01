@@ -37,6 +37,8 @@ class OrderServiceTest {
     private PositionRepository positionRepository;
     private InstrumentRepository instrumentRepository;
     private PriceService priceService;
+    private EventProducerService eventProducerService;
+    private OrderSettlementService orderSettlementService;
 
     private OrderService orderService;
 
@@ -48,13 +50,17 @@ class OrderServiceTest {
         positionRepository = mock(PositionRepository.class);
         instrumentRepository = mock(InstrumentRepository.class);
         priceService = mock(PriceService.class);
+        eventProducerService = mock(EventProducerService.class);
+        orderSettlementService = mock(OrderSettlementService.class);
 
         orderService = new OrderService(
             orderRepository,
             accountRepository,
             positionRepository,
             instrumentRepository,
-            priceService
+            priceService,
+            eventProducerService,
+            orderSettlementService
         );
     }
 
