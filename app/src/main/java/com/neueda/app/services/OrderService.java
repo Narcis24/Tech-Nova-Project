@@ -2,19 +2,15 @@ package com.neueda.app.services;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.neueda.app.dtos.OrderPlacedEvent;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderType;
 import com.neueda.app.exceptions.*;
-
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Order;
 import com.neueda.app.models.Position;
-
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.InstrumentRepository;
 import com.neueda.app.repositories.OrderRepository;
@@ -22,16 +18,9 @@ import com.neueda.app.repositories.PositionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.annotation.KafkaListener;
-import com.neueda.app.dtos.OrderExecutedEvent;
-import com.neueda.app.events.EventEnvelope;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 @Transactional
-@Slf4j
 public class OrderService {
     
     private final OrderRepository orderRepository;
@@ -39,31 +28,20 @@ public class OrderService {
     private final PositionRepository positionRepository;
     private final InstrumentRepository instrumentRepository;
     private final PriceService priceService;
-    private final EventProducerService eventProducerService;
-    private final ObjectMapper objectMapper;
 
-
-    public OrderService(
-            OrderRepository orderRepository,
-            AccountRepository accountRepository,
-            PositionRepository positionRepository,
-            InstrumentRepository instrumentRepository,
-            PriceService priceService,
-            EventProducerService eventProducerService,
-            ObjectMapper objectMapper) {
-
+    public OrderService(OrderRepository orderRepository,
+                       AccountRepository accountRepository,
+                       PositionRepository positionRepository,
+                       InstrumentRepository instrumentRepository,
+                       PriceService priceService) {
         this.orderRepository = orderRepository;
         this.accountRepository = accountRepository;
         this.positionRepository = positionRepository;
         this.instrumentRepository = instrumentRepository;
         this.priceService = priceService;
-        this.eventProducerService = eventProducerService;
-        this.objectMapper = objectMapper;
     }
-    
-    public OrderResponse placeOrder(PlaceOrderRequest request) {
 
-        // Validate input parameters first (before any DB lookups)
+    public OrderResponse placeOrder(PlaceOrderRequest request) {
         if (request.getSide() == null || request.getOrderType() == null || request.getQuantity() == null) {
             throw new IllegalArgumentException("side, orderType and quantity are required");
         }
@@ -74,8 +52,6 @@ public class OrderService {
         if (orderType == OrderType.MARKET && request.getPrice() != null) {
             throw new IllegalArgumentException("price must not be set for MARKET orders");
         }
-        
-        // Check for duplicate idempotency key before looking up resources
         if (request.getIdempotencyKey() != null
                 && orderRepository.existsByIdempotencyKey(request.getIdempotencyKey())) {
             throw new DuplicateOrderException(
@@ -83,13 +59,14 @@ public class OrderService {
             );
         }
 
-        // Now look up resources after validation
+        // Validate account exists and is ACTIVE
         Account account = accountRepository.findById(request.getAccountId())
             .orElseThrow(() -> new AccountNotFoundException(
                 "Account not found: " + request.getAccountId()
             ));
         account.validateStatus();
         
+        // Validate instrument exists and is tradable
         Instrument instrument = instrumentRepository.findBySymbol(request.getSymbol())
             .orElseThrow(() -> new InstrumentNotFoundException(
                 "Instrument not found: " + request.getSymbol()
@@ -98,13 +75,10 @@ public class OrderService {
             throw new TradingException("Instrument is not tradable: " + request.getSymbol());
         }
         
-        // For LIMIT orders, use the price from the request
-        // For MARKET orders, price is null (will be set during execution by ExecutionEngine)
-        // This enables asynchronous execution: OrderService publishes to Kafka immediately,
-        // ExecutionEngine fetches live market price and determines actual execution price later
-        BigDecimal price = orderType == OrderType.LIMIT
-            ? request.getPrice()
-            : null;
+        // A MARKET order trades at the latest price, a LIMIT order at the price it was placed with
+        BigDecimal price = orderType == OrderType.MARKET
+            ? priceService.getCurrentPrice(instrument.getSymbol())
+            : request.getPrice();
 
         // Create Order entity with Account and Instrument objects
         Order order = new Order(
@@ -120,30 +94,9 @@ public class OrderService {
         );
         
         orderRepository.save(order);
-        
-        // Publish ORDER_PLACED event to Kafka (asynchronous execution will happen in ExecutionEngine)
-        OrderPlacedEvent event = new OrderPlacedEvent(
-            order.getId(),
-            order.getAccountId(),
-            order.getSymbol(),
-            order.getSide().toString(),
-            order.getOrderType().toString(),
-            order.getQuantity(),
-            order.getPrice(),  // null for MARKET, limit price for LIMIT
-            order.getIdempotencyKey()
-        );
-
-        log.info("Publishing ORDER_PLACED event: orderId={}, orderType={}, symbol={}", 
-            order.getId(), orderType, order.getSymbol());
-
-        eventProducerService.publishEvent(
-            "trades",
-            order.getId().toString(),
-            "ORDER_PLACED",
-            "OrderService",
-            event
-        );
-
+        if (orderType == OrderType.MARKET) {
+            return executeOrder(order.getId());
+        }
         return new OrderResponse(order);
     }
 
@@ -224,211 +177,5 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
         return new OrderResponse(order);
-    }
-
-    /**
-     * Kafka listener for ORDER_EXECUTED events from ExecutionEngine.
-     * Performs database updates: order status to FILLED, positions, and cash.
-     */
-    @KafkaListener(
-        topics = "tradeEvents",
-        groupId = "order-service"
-    )
-    public void handleOrderExecuted(String message) {
-
-        log.info(
-            "Received message from tradeEvents: {}",
-            message
-        );
-
-        EventEnvelope<?> envelope;
-
-        try {
-            envelope = objectMapper.readValue(
-                message,
-                EventEnvelope.class
-            );
-        } catch (Exception e) {
-            log.error(
-                "Failed to deserialize EventEnvelope: message={}",
-                message,
-                e
-            );
-            return;
-        }
-
-        if (!"ORDER_EXECUTED".equals(envelope.eventType())) {
-            log.debug(
-                "Ignoring event type: {}",
-                envelope.eventType()
-            );
-            return;
-        }
-
-        OrderExecutedEvent event;
-
-        try {
-            event = objectMapper.convertValue(
-                envelope.payload(),
-                OrderExecutedEvent.class
-            );
-        } catch (Exception e) {
-            log.error(
-                "Failed to deserialize ORDER_EXECUTED payload: payload={}",
-                envelope.payload(),
-                e
-            );
-            return;
-        }
-
-        UUID orderId = event.getOrderId();
-
-        log.info(
-            "Received ORDER_EXECUTED event: orderId={}",
-            orderId
-        );
-
-        try {
-
-            Order order = orderRepository.findById(orderId)
-                .orElseThrow(() ->
-                    new OrderNotFoundException(
-                        "Order not found: " + orderId
-                    )
-                );
-
-
-            order.execute();
-
-
-            order.setExecutionPrice(
-                event.getExecutionPrice()
-            );
-
-            Account account = accountRepository
-                .findById(event.getAccountId())
-                .orElseThrow(() ->
-                    new AccountNotFoundException(
-                        "Account not found: "
-                            + event.getAccountId()
-                    )
-                );
-
-            Instrument instrument = instrumentRepository
-                .findBySymbol(event.getSymbol())
-                .orElseThrow(() ->
-                    new InstrumentNotFoundException(
-                        "Instrument not found: "
-                            + event.getSymbol()
-                    )
-                );
-
-            if ("BUY".equalsIgnoreCase(event.getSide())) {
-
-                account.debitCash(
-                    event.getTotalValue()
-                );
-
-                Position position = positionRepository
-                    .findByAccountIdAndSymbol(
-                        event.getAccountId(),
-                        event.getSymbol()
-                    )
-                    .orElse(
-                        new Position(
-                            account,
-                            instrument,
-                            0,
-                            BigDecimal.ZERO
-                        )
-                    );
-
-                position.updateOnBuy(
-                    event.getQuantity(),
-                    event.getExecutionPrice()
-                );
-
-                accountRepository.save(account);
-                positionRepository.save(position);
-
-                log.info(
-                    "BUY execution processed: orderId={}, symbol={}, quantity={}, executionPrice={}, totalValue={}",
-                    orderId,
-                    event.getSymbol(),
-                    event.getQuantity(),
-                    event.getExecutionPrice(),
-                    event.getTotalValue()
-                );
-
-            } else if ("SELL".equalsIgnoreCase(event.getSide())) {
-
-                /*
-                * Position must already exist.
-                */
-                Position position = positionRepository
-                    .findByAccountIdAndSymbol(
-                        event.getAccountId(),
-                        event.getSymbol()
-                    )
-                    .orElseThrow(() ->
-                        new InsufficientHoldingsException(
-                            "No position in "
-                                + event.getSymbol()
-                                + " for account "
-                                + event.getAccountId()
-                        )
-                    );
-
-
-                position.updateOnSell(
-                    event.getQuantity()
-                );
-
-                account.creditCash(
-                    event.getTotalValue()
-                );
-
-                positionRepository.save(position);
-                accountRepository.save(account);
-
-                log.info(
-                    "SELL execution processed: orderId={}, symbol={}, quantity={}, executionPrice={}, totalValue={}",
-                    orderId,
-                    event.getSymbol(),
-                    event.getQuantity(),
-                    event.getExecutionPrice(),
-                    event.getTotalValue()
-                );
-
-            } else {
-
-                throw new IllegalArgumentException(
-                    "Unknown order side: "
-                        + event.getSide()
-                );
-            }
-
-            orderRepository.save(order);
-
-            log.info(
-                "Order execution processed successfully: orderId={}, status=FILLED, executionPrice={}",
-                orderId,
-                event.getExecutionPrice()
-            );
-
-        } catch (Exception e) {
-
-            log.error(
-                "Error processing ORDER_EXECUTED event: orderId={}",
-                orderId,
-                e
-            );
-
-            throw new RuntimeException(
-                "Failed to process order execution: "
-                    + orderId,
-                e
-            );
-        }
     }
 }
