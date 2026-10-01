@@ -4,6 +4,7 @@ package com.neueda.app.exceptions;
  * Exception thrown when an order with the specified ID does not exist.
  */
 public class OrderNotFoundException extends TradingException {
+    public static final String MESSAGE = "Order not found: ";
 
     public OrderNotFoundException(String message) {
         super(message);

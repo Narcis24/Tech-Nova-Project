@@ -28,7 +28,9 @@ public class SecurityConfig {
             )
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())
-            .csrf(csrf -> csrf.disable());
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers("/v1/**")  // Disable CSRF only for stateless API endpoints
+            );
         
         return http.build();
     }

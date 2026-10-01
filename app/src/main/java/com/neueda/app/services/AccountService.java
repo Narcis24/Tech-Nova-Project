@@ -31,26 +31,23 @@ public class AccountService {
         this.priceRepository = priceRepository;
     }
 
+    private Account getAccountOrThrow(String accountId) {
+        return accountRepository.findById(accountId)
+            .orElseThrow(() -> new AccountNotFoundException(AccountNotFoundException.MESSAGE + accountId));
+    }
+
     public AccountResponse getAccount(String accountId) {
-        Account account = accountRepository.findById(accountId)
-            .orElseThrow(() -> new AccountNotFoundException("Account not found: " + accountId));
+        Account account = getAccountOrThrow(accountId);
         return new AccountResponse(account);
     }
 
     public BigDecimal getAccountCashBalance(String accountId) {
-        Account account = accountRepository.findById(accountId)
-            .orElseThrow(() -> new AccountNotFoundException(
-                "Account not found: " + accountId
-            ));
-        
+        Account account = getAccountOrThrow(accountId);
         return account.getCashBalance();
     }
 
     public AccountResponse depositCash(String accountId, BigDecimal amount) {
-        Account account = accountRepository.findById(accountId)
-            .orElseThrow(() -> new AccountNotFoundException(
-                "Account not found: " + accountId
-            ));
+        Account account = getAccountOrThrow(accountId);
         
         account.validateStatus();  // Throws if not ACTIVE
         account.creditCash(amount);  // Validates amount > 0, updates balance + timestamp
@@ -60,10 +57,7 @@ public class AccountService {
     }
 
     public AccountResponse withdrawCash(String accountId, BigDecimal amount) {
-        Account account = accountRepository.findById(accountId)
-                    .orElseThrow(() -> new AccountNotFoundException(
-                "Account not found: " + accountId
-            ));
+        Account account = getAccountOrThrow(accountId);
         
         account.validateStatus();  // Throws if not ACTIVE
         account.debitCash(amount);  // Throws if insufficient funds
@@ -74,10 +68,7 @@ public class AccountService {
 
     public List<OrderResponse> getAccountOrders(String accountId) {
         // Verify account exists
-        accountRepository.findById(accountId)
-            .orElseThrow(() -> new AccountNotFoundException(
-                "Account not found: " + accountId
-            ));
+        getAccountOrThrow(accountId);
         
         // Retrieve all orders for the account
         List<Order> orders = orderRepository.findByAccountId(accountId);
@@ -90,10 +81,7 @@ public class AccountService {
 
     public List<PositionResponse> getAccountPositions(String accountId) {
         // Verify account exists
-        accountRepository.findById(accountId)
-            .orElseThrow(() -> new AccountNotFoundException(
-                "Account not found: " + accountId
-            ));
+        getAccountOrThrow(accountId);
         
         // Retrieve all positions for the account
         List<Position> positions = positionRepository.findByAccountId(accountId);

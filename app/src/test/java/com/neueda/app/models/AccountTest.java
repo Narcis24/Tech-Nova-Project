@@ -87,7 +87,7 @@ public class AccountTest {
             
             AccountNotActiveException exception = assertThrows(
                 AccountNotActiveException.class,
-                () -> inactiveAccount.validateStatus());
+                inactiveAccount::validateStatus);
             
             assertTrue(exception.getMessage().contains("12345"));
                 assertTrue(exception.getMessage().contains("INACTIVE"));

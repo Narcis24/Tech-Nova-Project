@@ -2,7 +2,7 @@ package com.neueda.app.services;
 
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
-import com.neueda.app.enums.OrderSide;
+
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.enums.AssetClass;
@@ -16,8 +16,8 @@ import com.neueda.app.repositories.InstrumentRepository;
 import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
 import com.neueda.app.repositories.PriceRepository;
-import com.neueda.app.services.OrderService;
-import com.neueda.app.services.PriceService;
+
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

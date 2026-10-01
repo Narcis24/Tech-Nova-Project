@@ -56,7 +56,12 @@ public class OrderService {
         this.eventProducerService = eventProducerService;
         this.orderSettlementService = orderSettlementService;
     }
-    
+
+    private Order getOrderOrThrow(UUID orderId) {
+        return orderRepository.findById(orderId)
+            .orElseThrow(() -> new OrderNotFoundException(OrderNotFoundException.MESSAGE + orderId));
+    }
+
     public OrderResponse placeOrder(PlaceOrderRequest request) {
 
         // Validate input parameters first (before any DB lookups)
@@ -144,8 +149,7 @@ public class OrderService {
     }
 
     public OrderResponse executeOrder(UUID orderId) {
-        Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+        Order order = getOrderOrThrow(orderId);
         
         // Fails fast if the order is not PENDING, before any cash/position changes
         order.execute();
@@ -199,8 +203,7 @@ public class OrderService {
 
 
     public OrderResponse cancelOrder(UUID orderId) {
-        Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+        Order order = getOrderOrThrow(orderId);
         
         order.cancel();  // Entity handles state validation
         orderRepository.save(order);
@@ -208,8 +211,7 @@ public class OrderService {
     }
     
     public OrderResponse rejectOrder(UUID orderId, String reason) {
-        Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+        Order order = getOrderOrThrow(orderId);
 
         order.reject(reason);  // Entity handles state validation
         orderRepository.save(order);
@@ -217,8 +219,7 @@ public class OrderService {
     }
 
     public OrderResponse getOrder(UUID orderId) {
-        Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+        Order order = getOrderOrThrow(orderId);
         return new OrderResponse(order);
     }
 

@@ -270,27 +270,31 @@ class OrderServiceTest {
         stubAccountAndInstrument(activeAccount(), aapl());
         when(priceService.getCurrentPrice("AAPL")).thenThrow(new PriceNotFoundException("No price data"));
 
-        assertThrows(PriceNotFoundException.class, () -> orderService.placeOrder(new PlaceOrderRequest(
-            "12345", "AAPL", "BUY", "MARKET", 10, null, "key-1")));
+        PlaceOrderRequest request = new PlaceOrderRequest(
+            "12345", "AAPL", "BUY", "MARKET", 10, null, "key-1");
+        assertThrows(PriceNotFoundException.class, () -> orderService.placeOrder(request));
         verify(orderRepository, never()).save(any());
     }
 
     @Test
     void testPlaceLimitOrderRequiresPrice() {
-        assertThrows(IllegalArgumentException.class, () -> orderService.placeOrder(new PlaceOrderRequest(
-            "12345", "AAPL", "BUY", "LIMIT", 10, null, "key-1")));
+        PlaceOrderRequest request = new PlaceOrderRequest(
+            "12345", "AAPL", "BUY", "LIMIT", 10, null, "key-1");
+        assertThrows(IllegalArgumentException.class, () -> orderService.placeOrder(request));
     }
 
     @Test
     void testPlaceMarketOrderRejectsPrice() {
-        assertThrows(IllegalArgumentException.class, () -> orderService.placeOrder(new PlaceOrderRequest(
-            "12345", "AAPL", "BUY", "MARKET", 10, new BigDecimal("150.00"), "key-1")));
+        PlaceOrderRequest request = new PlaceOrderRequest(
+            "12345", "AAPL", "BUY", "MARKET", 10, new BigDecimal("150.00"), "key-1");
+        assertThrows(IllegalArgumentException.class, () -> orderService.placeOrder(request));
     }
 
     @Test
     void testPlaceOrderRejectsUnknownOrderType() {
-        assertThrows(IllegalArgumentException.class, () -> orderService.placeOrder(new PlaceOrderRequest(
-            "12345", "AAPL", "BUY", "STOP", 10, new BigDecimal("150.00"), "key-1")));
+        PlaceOrderRequest request = new PlaceOrderRequest(
+            "12345", "AAPL", "BUY", "STOP", 10, new BigDecimal("150.00"), "key-1");
+        assertThrows(IllegalArgumentException.class, () -> orderService.placeOrder(request));
     }
 
     @Test

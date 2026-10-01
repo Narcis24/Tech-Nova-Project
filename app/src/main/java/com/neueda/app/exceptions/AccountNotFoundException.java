@@ -4,6 +4,7 @@ package com.neueda.app.exceptions;
  * Exception thrown when an account with the specified ID does not exist.
  */
 public class AccountNotFoundException extends TradingException {
+    public static final String MESSAGE = "Account not found: ";
 
     public AccountNotFoundException(String message) {
         super(message);

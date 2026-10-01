@@ -43,7 +43,8 @@ class PriceServiceTest {
 
     @Test
     void testPriceRejectsNonPositivePrice() {
+        LocalDate date = LocalDate.of(2026, 9, 22);
         assertThrows(IllegalArgumentException.class,
-            () -> new Price("AAPL", LocalDate.of(2026, 9, 22), BigDecimal.ZERO));
+            () -> new Price("AAPL", date, BigDecimal.ZERO));
     }
 }
