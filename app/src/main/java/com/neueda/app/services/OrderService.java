@@ -378,15 +378,7 @@ public class OrderService {
                                 + event.getAccountId()
                         )
                     );
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-
->>>>>>> 4620332 (Feat/90 3 kafka topics the message envelope (#105))
-=======
-
->>>>>>> 4620332 (Feat/90 3 kafka topics the message envelope (#105))
+                    
                 position.updateOnSell(
                     event.getQuantity()
                 );
