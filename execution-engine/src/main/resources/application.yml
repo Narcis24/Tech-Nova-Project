@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: execution-engine
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      properties:
+        enable.idempotence: true
+    consumer:
+      group-id: execution-engine
+      auto-offset-reset: earliest
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  port: ${SERVER_PORT:8082}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+engine:
+  min-delay: ${ENGINE_MIN_DELAY:500ms}
+  max-delay: ${ENGINE_MAX_DELAY:2000ms}
+  max-price-improvement-bps: ${ENGINE_MAX_PRICE_IMPROVEMENT_BPS:50}
+  venue: SIM
+  topics:
+    orders: order-requests
+    executions: order-executions
+    partitions: 3

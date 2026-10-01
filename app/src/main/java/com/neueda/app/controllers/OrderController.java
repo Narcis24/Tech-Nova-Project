@@ -44,10 +44,4 @@ public class OrderController {
        OrderResponse orderResponse = orderService.executeOrder(UUID.fromString(orderId));
        return ResponseEntity.ok(orderResponse);
    }
-
-   @GetMapping("/{orderId}")
-   public ResponseEntity<OrderResponse> getOrder(@PathVariable String orderId) {
-       OrderResponse orderResponse = orderService.getOrder(UUID.fromString(orderId));
-       return ResponseEntity.ok(orderResponse);
-   }
 }
