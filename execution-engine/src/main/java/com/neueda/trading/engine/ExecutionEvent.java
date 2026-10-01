@@ -3,6 +3,7 @@ package com.neueda.trading.engine;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import com.neueda.trading.enums.Side;
 
 /** Message written to the {@code executions} topic: a full fill of one order. */
 public record ExecutionEvent(

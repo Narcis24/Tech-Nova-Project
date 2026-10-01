@@ -1,7 +1,9 @@
 /home/ec2-user/Group-Project/Tech-Nova-Project/execution-engine/src/main/java/com/neueda/trading/ExecutionEngineApplication.java
+/home/ec2-user/Group-Project/Tech-Nova-Project/execution-engine/src/main/java/com/neueda/trading/engine/EngineConfig.java
 /home/ec2-user/Group-Project/Tech-Nova-Project/execution-engine/src/main/java/com/neueda/trading/engine/EngineProperties.java
 /home/ec2-user/Group-Project/Tech-Nova-Project/execution-engine/src/main/java/com/neueda/trading/engine/EventProducerService.java
 /home/ec2-user/Group-Project/Tech-Nova-Project/execution-engine/src/main/java/com/neueda/trading/engine/ExecutionEngine.java
+/home/ec2-user/Group-Project/Tech-Nova-Project/execution-engine/src/main/java/com/neueda/trading/engine/ExecutionEvent.java
 /home/ec2-user/Group-Project/Tech-Nova-Project/execution-engine/src/main/java/com/neueda/trading/enums/Side.java
 /home/ec2-user/Group-Project/Tech-Nova-Project/execution-engine/src/main/java/com/neueda/trading/events/EventEnvelope.java
 /home/ec2-user/Group-Project/Tech-Nova-Project/execution-engine/src/main/java/com/neueda/trading/events/OrderExecutedEvent.java
