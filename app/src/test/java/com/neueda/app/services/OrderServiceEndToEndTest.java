@@ -1,8 +1,8 @@
-package com.neueda.app.service;
+package com.neueda.app.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
+import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.enums.AssetClass;
@@ -16,22 +16,20 @@ import com.neueda.app.repositories.InstrumentRepository;
 import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
 import com.neueda.app.repositories.PriceRepository;
-import com.neueda.app.services.EventProducerService;
 import com.neueda.app.services.OrderService;
 import com.neueda.app.services.PriceService;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.test.context.ActiveProfiles;
+
+//  JPA EntityManager manages the DB conn and hanles
+//      - Saving / Retrieving / Updating / Deleting 
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -41,37 +39,13 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({
-    OrderService.class,
-    PriceService.class,
-    OrderServiceEndToEndTest.TestConfig.class
-})
+@Import({OrderService.class, PriceService.class})
+// Uses application-test.properties imports for Integration Testing
 @ActiveProfiles("test")
 @DisplayName("OrderService End-to-End Integration Tests")
 public class OrderServiceEndToEndTest {
 
-    /*
-     * OrderService publishes Kafka events when an order is placed.
-     *
-     * This test is testing OrderService + JPA, not Kafka itself,
-     * so we provide a mock EventProducerService.
-     */
-    @MockBean
-    private EventProducerService eventProducerService;
-
-    /*
-     * ObjectMapper is now required by OrderService for converting
-     * Kafka EventEnvelope payloads.
-     */
-    @TestConfiguration
-    static class TestConfig {
-
-        @Bean
-        ObjectMapper objectMapper() {
-            return new ObjectMapper();
-        }
-    }
-
+    // Injects a connection to the repos
     @Autowired
     private TestEntityManager entityManager;
 
@@ -98,7 +72,7 @@ public class OrderServiceEndToEndTest {
 
     @BeforeEach
     void setUp() {
-
+        // Create test account
         testAccount = new Account(
             UUID.randomUUID().toString(),
             "Test Trader",
@@ -106,9 +80,9 @@ public class OrderServiceEndToEndTest {
             AccountStatus.ACTIVE,
             LocalDateTime.now()
         );
-
         accountRepository.save(testAccount);
 
+        // Create test instrument
         testInstrument = new Instrument(
             "AAPL",
             "Apple Inc.",
@@ -116,7 +90,6 @@ public class OrderServiceEndToEndTest {
             "USD",
             true
         );
-
         instrumentRepository.save(testInstrument);
 
         entityManager.flush();
