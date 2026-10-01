@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
+import com.neueda.app.exceptions.OrderNotFoundException;
 import com.neueda.app.services.OrderService;
 import com.neueda.app.utils.JwtUtil;
 
@@ -19,7 +20,9 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(OrderController.class)
@@ -62,6 +65,31 @@ class OrderControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
             // STEP 4: Assert - Verify the response
             .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetOrder_Success() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        OrderResponse mockResponse = new OrderResponse(
+            orderId, "ACC123", "AAPL", "BUY", null, 100,
+            new BigDecimal("150.00"), null, null
+        );
+
+        when(orderService.getOrder(orderId)).thenReturn(mockResponse);
+
+        mockMvc.perform(get("/v1/orders/{orderId}", orderId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.orderId").value(orderId.toString()));
+    }
+
+    @Test
+    void testGetOrder_NotFound() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        when(orderService.getOrder(orderId))
+            .thenThrow(new OrderNotFoundException("Order not found: " + orderId));
+
+        mockMvc.perform(get("/v1/orders/{orderId}", orderId))
+            .andExpect(status().isNotFound());
     }
 
 }

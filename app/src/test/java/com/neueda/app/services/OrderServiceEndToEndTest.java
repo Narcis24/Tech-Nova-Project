@@ -1,4 +1,4 @@
-package com.neueda.app.service;
+package com.neueda.app.services;
 
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
