@@ -49,10 +49,3 @@ ALTER TABLE orders
 ALTER TABLE positions
     ADD CONSTRAINT fk_positions_account_id FOREIGN KEY (account_id) REFERENCES accounts(account_id),
     ADD CONSTRAINT fk_positions_symbol FOREIGN KEY (symbol) REFERENCES instruments(symbol);
-
-
--- Migration: Make order price nullable for MARKET orders
--- MARKET orders don't have an execution price until ExecutionEngine processes them
--- LIMIT orders have a price from the start
-ALTER TABLE orders
-    ALTER COLUMN price DROP NOT NULL;
