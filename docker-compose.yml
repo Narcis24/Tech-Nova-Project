@@ -133,6 +133,22 @@ services:
     networks:
       - tech-nova-network
 
+  kafka-ui:
+    image: kafbat/kafka-ui:latest
+    container_name: tech-nova-kafka-ui
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+    environment:
+      KAFKA_CLUSTERS_0_NAME: tech-nova
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+
+    ports:
+      - ${KAFKA_UI_PORT:-8090}:8080
+    restart: unless-stopped
+    networks:
+      - tech-nova-network
 
   pipeline:
     build: ./data-pipeline
