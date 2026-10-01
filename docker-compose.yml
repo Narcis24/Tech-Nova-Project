@@ -142,7 +142,7 @@ services:
 
     environment:
       KAFKA_CLUSTERS_0_NAME: tech-nova
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
 
     ports:
       - ${KAFKA_UI_PORT:-8090}:8080
