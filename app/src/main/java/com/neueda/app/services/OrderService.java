@@ -24,10 +24,6 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
-import com.neueda.app.dtos.OrderExecutedEvent;
-import com.neueda.app.events.EventEnvelope;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 @Transactional
@@ -40,7 +36,7 @@ public class OrderService {
     private final InstrumentRepository instrumentRepository;
     private final PriceService priceService;
     private final EventProducerService eventProducerService;
-    private final ObjectMapper objectMapper;
+    private final OrderSettlementService orderSettlementService;
 
 
     public OrderService(
@@ -50,7 +46,7 @@ public class OrderService {
             InstrumentRepository instrumentRepository,
             PriceService priceService,
             EventProducerService eventProducerService,
-            ObjectMapper objectMapper) {
+            OrderSettlementService orderSettlementService) {
 
         this.orderRepository = orderRepository;
         this.accountRepository = accountRepository;
@@ -58,7 +54,7 @@ public class OrderService {
         this.instrumentRepository = instrumentRepository;
         this.priceService = priceService;
         this.eventProducerService = eventProducerService;
-        this.objectMapper = objectMapper;
+        this.orderSettlementService = orderSettlementService;
     }
     
     public OrderResponse placeOrder(PlaceOrderRequest request) {
@@ -235,199 +231,7 @@ public class OrderService {
         groupId = "order-service"
     )
     public void handleOrderExecuted(String message) {
-
-        log.info(
-            "Received message from tradeEvents: {}",
-            message
-        );
-
-        EventEnvelope<?> envelope;
-
-        try {
-            envelope = objectMapper.readValue(
-                message,
-                EventEnvelope.class
-            );
-        } catch (Exception e) {
-            log.error(
-                "Failed to deserialize EventEnvelope: message={}",
-                message,
-                e
-            );
-            return;
-        }
-
-        if (!"ORDER_EXECUTED".equals(envelope.eventType())) {
-            log.debug(
-                "Ignoring event type: {}",
-                envelope.eventType()
-            );
-            return;
-        }
-
-        OrderExecutedEvent event;
-
-        try {
-            event = objectMapper.convertValue(
-                envelope.payload(),
-                OrderExecutedEvent.class
-            );
-        } catch (Exception e) {
-            log.error(
-                "Failed to deserialize ORDER_EXECUTED payload: payload={}",
-                envelope.payload(),
-                e
-            );
-            return;
-        }
-
-        UUID orderId = event.getOrderId();
-
-        log.info(
-            "Received ORDER_EXECUTED event: orderId={}",
-            orderId
-        );
-
-        try {
-
-            Order order = orderRepository.findById(orderId)
-                .orElseThrow(() ->
-                    new OrderNotFoundException(
-                        "Order not found: " + orderId
-                    )
-                );
-
-
-            order.execute();
-
-
-            order.setExecutionPrice(
-                event.getExecutionPrice()
-            );
-
-            Account account = accountRepository
-                .findById(event.getAccountId())
-                .orElseThrow(() ->
-                    new AccountNotFoundException(
-                        "Account not found: "
-                            + event.getAccountId()
-                    )
-                );
-
-            Instrument instrument = instrumentRepository
-                .findBySymbol(event.getSymbol())
-                .orElseThrow(() ->
-                    new InstrumentNotFoundException(
-                        "Instrument not found: "
-                            + event.getSymbol()
-                    )
-                );
-
-            if ("BUY".equalsIgnoreCase(event.getSide())) {
-
-                account.debitCash(
-                    event.getTotalValue()
-                );
-
-                Position position = positionRepository
-                    .findByAccountIdAndSymbol(
-                        event.getAccountId(),
-                        event.getSymbol()
-                    )
-                    .orElse(
-                        new Position(
-                            account,
-                            instrument,
-                            0,
-                            BigDecimal.ZERO
-                        )
-                    );
-
-                position.updateOnBuy(
-                    event.getQuantity(),
-                    event.getExecutionPrice()
-                );
-
-                accountRepository.save(account);
-                positionRepository.save(position);
-
-                log.info(
-                    "BUY execution processed: orderId={}, symbol={}, quantity={}, executionPrice={}, totalValue={}",
-                    orderId,
-                    event.getSymbol(),
-                    event.getQuantity(),
-                    event.getExecutionPrice(),
-                    event.getTotalValue()
-                );
-
-            } else if ("SELL".equalsIgnoreCase(event.getSide())) {
-
-                /*
-                * Position must already exist.
-                */
-                Position position = positionRepository
-                    .findByAccountIdAndSymbol(
-                        event.getAccountId(),
-                        event.getSymbol()
-                    )
-                    .orElseThrow(() ->
-                        new InsufficientHoldingsException(
-                            "No position in "
-                                + event.getSymbol()
-                                + " for account "
-                                + event.getAccountId()
-                        )
-                    );
-                    
-                position.updateOnSell(
-                    event.getQuantity()
-                );
-
-                account.creditCash(
-                    event.getTotalValue()
-                );
-
-                positionRepository.save(position);
-                accountRepository.save(account);
-
-                log.info(
-                    "SELL execution processed: orderId={}, symbol={}, quantity={}, executionPrice={}, totalValue={}",
-                    orderId,
-                    event.getSymbol(),
-                    event.getQuantity(),
-                    event.getExecutionPrice(),
-                    event.getTotalValue()
-                );
-
-            } else {
-
-                throw new IllegalArgumentException(
-                    "Unknown order side: "
-                        + event.getSide()
-                );
-            }
-
-            orderRepository.save(order);
-
-            log.info(
-                "Order execution processed successfully: orderId={}, status=FILLED, executionPrice={}",
-                orderId,
-                event.getExecutionPrice()
-            );
-
-        } catch (Exception e) {
-
-            log.error(
-                "Error processing ORDER_EXECUTED event: orderId={}",
-                orderId,
-                e
-            );
-
-            throw new RuntimeException(
-                "Failed to process order execution: "
-                    + orderId,
-                e
-            );
-        }
+        log.info("Received message from order-execution topic");
+        orderSettlementService.processKafkaMessage(message);
     }
 }
