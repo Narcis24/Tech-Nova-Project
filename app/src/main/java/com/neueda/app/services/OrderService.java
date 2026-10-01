@@ -137,7 +137,7 @@ public class OrderService {
             order.getId(), orderType, order.getSymbol());
 
         eventProducerService.publishEvent(
-            "trades",
+            "order-request",
             order.getId().toString(),
             "ORDER_PLACED",
             "OrderService",
@@ -231,7 +231,7 @@ public class OrderService {
      * Performs database updates: order status to FILLED, positions, and cash.
      */
     @KafkaListener(
-        topics = "tradeEvents",
+        topics = "order-execution",
         groupId = "order-service"
     )
     public void handleOrderExecuted(String message) {

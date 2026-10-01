@@ -29,12 +29,12 @@ public class ExecutionEngine {
     }
 
     @KafkaListener(
-        topics = "trades",
+        topics = "order-request",
         groupId = "execution-engine"
     )
     public void handleOrderPlaced(String message) {
 
-        log.info("Received message from trades topic: {}", message);
+        log.info("Received message from order-request topic: {}", message);
 
         /*
          * Kafka is configured with StringDeserializer,
@@ -175,11 +175,11 @@ public class ExecutionEngine {
         /*
          * Send result back to Kafka.
          *
-         * app/ listens to tradeEvents and handles the
+         * app/ listens to order-execution and handles the
          * account/order/position database updates.
          */
         eventProducerService.publishEvent(
-            "tradeEvents",
+            "order-execution",
             event.getOrderId().toString(),
             "ORDER_EXECUTED",
             "ExecutionEngine",

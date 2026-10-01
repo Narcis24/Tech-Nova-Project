@@ -63,20 +63,20 @@ public class KafkaConfig {
     }
 
     @Bean
-    public NewTopic tradesTopic() {
+    public NewTopic orderRequestTopic() {
 
         return TopicBuilder
-            .name("trades")
+            .name("order-request")
             .partitions(3)
             .replicas(1)
             .build();
     }
 
     @Bean
-    public NewTopic tradeEventsTopic() {
+    public NewTopic orderExecutionTopic() {
 
         return TopicBuilder
-            .name("tradeEvents")
+            .name("order-execution")
             .partitions(3)
             .replicas(1)
             .build();

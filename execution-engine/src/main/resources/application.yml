@@ -49,6 +49,6 @@ engine:
   venue: SIM
 
   topics:
-    orders: trades
-    executions: tradeEvents
+    orders: order-request
+    executions: order-execution
     partitions: 3
