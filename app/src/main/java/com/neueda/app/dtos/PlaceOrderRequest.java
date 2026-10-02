@@ -45,7 +45,6 @@ public class PlaceOrderRequest {
     private Integer quantity;
 
     /** Required for LIMIT orders and not allowed for MARKET orders, which OrderService enforces. */
-    @Positive(message = "Price must be positive")
     private BigDecimal price;
 
     @NotBlank(message = "Idempotency key is required")
