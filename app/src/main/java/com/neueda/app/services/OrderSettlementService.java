@@ -18,6 +18,7 @@ import com.neueda.app.repositories.InstrumentRepository;
 import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,6 +63,10 @@ public class OrderSettlementService {
      *
      * @param message the JSON Kafka message
      */
+    @KafkaListener(
+        topics = "order-execution",
+        groupId = "order-settlement"
+    )
     public void processKafkaMessage(String message) {
         log.info("Processing order execution message from Kafka");
 
@@ -116,6 +121,12 @@ public class OrderSettlementService {
                     .orElseThrow(() -> new OrderNotFoundException(
                             "Order not found: " + orderId
                     ));
+
+            // The engine can redeliver a fill (see execution-engine README), so skip it
+            if (order.getStatus() == OrderStatus.FILLED) {
+                log.warn("Ignoring duplicate ORDER_EXECUTED event: orderId={}", orderId);
+                return;
+            }
 
             order.execute();
             order.setExecutionPrice(event.getExecutionPrice());
