@@ -23,6 +23,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -66,6 +67,10 @@ public class OrderServiceEndToEndTest {
 
     @Autowired
     private OrderService orderService;
+
+    // Kafka publishing is out of scope here
+    @MockBean
+    private EventProducerService eventProducerService;
 
     private Account testAccount;
     private Instrument testInstrument;
