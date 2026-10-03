@@ -23,7 +23,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.annotation.KafkaListener;
 
 @Service
 @Transactional
@@ -36,7 +35,6 @@ public class OrderService {
     private final InstrumentRepository instrumentRepository;
     private final PriceService priceService;
     private final EventProducerService eventProducerService;
-    private final OrderSettlementService orderSettlementService;
 
 
     public OrderService(
@@ -45,8 +43,7 @@ public class OrderService {
             PositionRepository positionRepository,
             InstrumentRepository instrumentRepository,
             PriceService priceService,
-            EventProducerService eventProducerService,
-            OrderSettlementService orderSettlementService) {
+            EventProducerService eventProducerService) {
 
         this.orderRepository = orderRepository;
         this.accountRepository = accountRepository;
@@ -54,7 +51,6 @@ public class OrderService {
         this.instrumentRepository = instrumentRepository;
         this.priceService = priceService;
         this.eventProducerService = eventProducerService;
-        this.orderSettlementService = orderSettlementService;
     }
     
     public OrderResponse placeOrder(PlaceOrderRequest request) {
@@ -95,12 +91,11 @@ public class OrderService {
         }
         
         // For LIMIT orders, use the price from the request
-        // For MARKET orders, price is null (will be set during execution by ExecutionEngine)
-        // This enables asynchronous execution: OrderService publishes to Kafka immediately,
-        // ExecutionEngine fetches live market price and determines actual execution price later
+        // For MARKET orders, use the latest stored price as the reference price
+        // (throws PriceNotFoundException if none). ExecutionEngine decides the actual fill price.
         BigDecimal price = orderType == OrderType.LIMIT
             ? request.getPrice()
-            : null;
+            : priceService.getCurrentPrice(request.getSymbol());
 
         // Create Order entity with Account and Instrument objects
         Order order = new Order(
@@ -125,7 +120,7 @@ public class OrderService {
             order.getSide().toString(),
             order.getOrderType().toString(),
             order.getQuantity(),
-            order.getPrice(),  // null for MARKET, limit price for LIMIT
+            order.getPrice(),  // reference price for MARKET, limit price for LIMIT
             order.getIdempotencyKey()
         );
 
@@ -220,18 +215,5 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
         return new OrderResponse(order);
-    }
-
-    /**
-     * Kafka listener for ORDER_EXECUTED events from ExecutionEngine.
-     * Performs database updates: order status to FILLED, positions, and cash.
-     */
-    @KafkaListener(
-        topics = "order-execution",
-        groupId = "order-service"
-    )
-    public void handleOrderExecuted(String message) {
-        log.info("Received message from order-execution topic");
-        orderSettlementService.processKafkaMessage(message);
     }
 }
