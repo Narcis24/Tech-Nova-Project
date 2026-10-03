@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
  * Validation Rules:
  * - quantity: 1 to 100,000 shares
  * - symbol: 3-5 characters (e.g., AAPL, MSFT)
- * - price: Must be positive (checked at controller level against market price)
+ * - price: Must be positive when given (null is allowed for MARKET orders)
  */
 @Getter
 @Setter
@@ -45,6 +45,7 @@ public class PlaceOrderRequest {
     private Integer quantity;
 
     /** Required for LIMIT orders and not allowed for MARKET orders, which OrderService enforces. */
+    @Positive(message = "Price must be positive")
     private BigDecimal price;
 
     @NotBlank(message = "Idempotency key is required")
