@@ -21,6 +21,7 @@ import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 
@@ -53,13 +54,31 @@ public class OrderService {
         this.eventProducerService = eventProducerService;
     }
     
+    /** Parses the order type without leaking the enum's class name on bad input. */
+    private OrderType parseOrderType(String value) {
+        try {
+            return OrderType.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("orderType must be one of " + Arrays.toString(OrderType.values()));
+        }
+    }
+
+    /** Parses the order side without leaking the enum's class name on bad input. */
+    private OrderSide parseOrderSide(String value) {
+        try {
+            return OrderSide.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("side must be one of " + Arrays.toString(OrderSide.values()));
+        }
+    }
+
     public OrderResponse placeOrder(PlaceOrderRequest request) {
 
         // Validate input parameters first (before any DB lookups)
         if (request.getSide() == null || request.getOrderType() == null || request.getQuantity() == null) {
             throw new IllegalArgumentException("side, orderType and quantity are required");
         }
-        OrderType orderType = OrderType.valueOf(request.getOrderType().toUpperCase());
+        OrderType orderType = parseOrderType(request.getOrderType());
         if (orderType == OrderType.LIMIT && request.getPrice() == null) {
             throw new IllegalArgumentException("price is required for LIMIT orders");
         }
@@ -102,7 +121,7 @@ public class OrderService {
             UUID.randomUUID(),
             account,
             instrument,
-            OrderSide.valueOf(request.getSide().toUpperCase()),
+            parseOrderSide(request.getSide()),
             orderType,
             request.getQuantity(),
             price,
