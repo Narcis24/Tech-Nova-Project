@@ -116,21 +116,34 @@ public class ExecutionEngine {
         );
 
         /*
-         * TEMPORARY EXECUTION LOGIC
+         * EXECUTION PRICE = PRICE-AT-PLACEMENT
          *
-         * LIMIT:
-         * Use the supplied limit price.
+         * The app stamps a price into every ORDER_PLACED event:
+         *   LIMIT  -> the client's limit price
+         *   MARKET -> the latest stored price captured at placement time
          *
-         * MARKET:
-         * Use a fixed simulated price of 100.00.
+         * We fill at that price. There is no separate market-data lookup
+         * here yet, so the fill reflects the price when the order was
+         * placed, not a fresh quote. This is acceptable while fills are
+         * instantaneous; replace with a live market-data service / topic
+         * (and slippage) once orders can rest before filling.
          *
-         * Later this can be replaced with a market-data service
-         * or marketData Kafka topic.
+         * A null price should never reach us. Rather than invent a fill at
+         * an arbitrary number, fail loudly so the order is not settled wrongly.
          */
-        BigDecimal executionPrice =
-            event.getPrice() != null
-                ? event.getPrice()
-                : new BigDecimal("100.00");
+        if (event.getPrice() == null) {
+            log.error(
+                "ORDER_PLACED has no price; refusing to fill: orderId={}, symbol={}, orderType={}",
+                event.getOrderId(),
+                event.getSymbol(),
+                event.getOrderType()
+            );
+            throw new IllegalStateException(
+                "Cannot execute order without a price: " + event.getOrderId()
+            );
+        }
+
+        BigDecimal executionPrice = event.getPrice();
 
         BigDecimal totalValue =
             executionPrice.multiply(
