@@ -131,7 +131,7 @@ public class OrderSettlementService {
             order.execute();
             order.setExecutionPrice(event.getExecutionPrice());
 
-            Account account = accountRepository.findById(event.getAccountId())
+            Account account = accountRepository.findByIdForUpdate(event.getAccountId())
                     .orElseThrow(() -> new AccountNotFoundException(
                             "Account not found: " + event.getAccountId()
                     ));
