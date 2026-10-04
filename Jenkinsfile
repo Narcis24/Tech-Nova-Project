@@ -1,5 +1,9 @@
 pipeline {
     agent any
+    environment {
+        // the jenkins user has no JAVA_HOME, so Maven would fall back to Java 17 from /etc/java/maven.conf
+        JAVA_HOME = '/usr/lib/jvm/java-21-amazon-corretto.x86_64'
+    }
     stages {
         stage('Checkout') {
             steps {
