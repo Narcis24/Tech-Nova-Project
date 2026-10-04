@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,9 +35,11 @@ public class PlaceOrderRequest {
     private String symbol;
 
     @NotBlank(message = "Side must be BUY or SELL")
+    @Pattern(regexp = "(?i)BUY|SELL", message = "Side must be one of [BUY, SELL]")
     private String side;
 
     @NotBlank(message = "Order type must be MARKET or LIMIT")
+    @Pattern(regexp = "(?i)MARKET|LIMIT", message = "Order type must be one of [MARKET, LIMIT]")
     private String orderType;
 
     @NotNull(message = "Quantity is required")
