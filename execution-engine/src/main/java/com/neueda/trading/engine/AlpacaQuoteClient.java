@@ -34,6 +34,10 @@ public class AlpacaQuoteClient implements QuoteClient {
             .retrieve()
             .body(JsonNode.class);
 
+        if (body == null) {
+            throw new IllegalStateException("Alpaca returned an empty response for " + symbols.size() + " symbols");
+        }
+
         Instant now = Instant.now();
         List<Quote> quotes = new ArrayList<>();
         body.path("quotes").fields().forEachRemaining(e -> quotes.add(new Quote(
