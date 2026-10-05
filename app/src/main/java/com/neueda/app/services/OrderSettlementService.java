@@ -3,7 +3,6 @@ package com.neueda.app.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neueda.app.dtos.OrderExecutedEvent;
 import com.neueda.app.enums.OrderSide;
-import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.events.EventEnvelope;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.InstrumentNotFoundException;
@@ -11,7 +10,6 @@ import com.neueda.app.exceptions.InsufficientHoldingsException;
 import com.neueda.app.exceptions.OrderNotFoundException;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
-import com.neueda.app.models.Order;
 import com.neueda.app.models.Position;
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.InstrumentRepository;
@@ -23,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.UUID;
 
 /**
@@ -117,19 +116,17 @@ public class OrderSettlementService {
         log.info("Received ORDER_EXECUTED event: orderId={}", orderId);
 
         try {
-            Order order = orderRepository.findById(orderId)
-                    .orElseThrow(() -> new OrderNotFoundException(
-                            "Order not found: " + orderId
-                    ));
-
-            // The engine can redeliver a fill (see execution-engine README), so skip it
-            if (order.getStatus() == OrderStatus.FILLED) {
+            // Guard: only one delivery can move the order out of PENDING. It is the first
+            // write, so a duplicate stops here before touching cash or positions.
+            int updated = orderRepository.fillIfPending(
+                    orderId, event.getExecutionPrice().setScale(2, RoundingMode.HALF_UP));
+            if (updated == 0) {
+                if (!orderRepository.existsById(orderId)) {
+                    throw new OrderNotFoundException("Order not found: " + orderId);
+                }
                 log.warn("Ignoring duplicate ORDER_EXECUTED event: orderId={}", orderId);
                 return;
             }
-
-            order.execute();
-            order.setExecutionPrice(event.getExecutionPrice());
 
             Account account = accountRepository.findByIdForUpdate(event.getAccountId())
                     .orElseThrow(() -> new AccountNotFoundException(
@@ -166,8 +163,6 @@ public class OrderSettlementService {
                     "Unknown order side: " + event.getSide()
                 );
             }
-
-            orderRepository.save(order);
 
             log.info(
                 "Order execution processed successfully: orderId={}, status=FILLED, executionPrice={}",
