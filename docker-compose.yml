@@ -145,7 +145,7 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
 
     ports:
-      - ${KAFKA_UI_PORT:-8090}:8080
+      - ${KAFKA_UI_PORT:-8085}:8080
     restart: unless-stopped
     networks:
       - tech-nova-network
@@ -168,13 +168,16 @@ services:
 
 
   sonarqube:
-    image: sonarqube:community
+    image: sonarqube:26.9.0.129388-community
 
     profiles:
       - quality
 
+    environment:
+      SONAR_WEB_PORT: 8083
+
     ports:
-      - "${SONAR_PORT:-9000}:9000"
+      - "${SONAR_PORT:-8083}:8083"
 
     volumes:
       - sonar_data:/opt/sonarqube/data

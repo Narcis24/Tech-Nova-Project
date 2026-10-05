@@ -6,6 +6,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 
 import com.neueda.app.dtos.ErrorResponse;
@@ -219,6 +222,51 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
     
+    /**
+     * Handles HandlerMethodValidationException when a constraint on a controller method
+     * parameter fails (e.g. @Size on a symbol path variable).
+     *
+     * @param ex the HandlerMethodValidationException thrown by Spring validation
+     * @return ResponseEntity containing ErrorResponse with 400 status
+     */
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ErrorResponse> handleParameterValidation(HandlerMethodValidationException ex) {
+        String message = ex.getAllErrors()
+            .stream()
+            .map(error -> error.getDefaultMessage())
+            .findFirst()
+            .orElse("Validation failed");
+
+        ErrorResponse error = new ErrorResponse("VALIDATION_ERROR", message, 400);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Handles NoResourceFoundException when no endpoint matches the request path
+     * (e.g. unknown paths, or "/v1/instruments/." which normalizes to "/v1/instruments/").
+     *
+     * @param ex the NoResourceFoundException thrown by Spring MVC
+     * @return ResponseEntity containing ErrorResponse with 404 status
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException ex) {
+        ErrorResponse error = new ErrorResponse("NOT_FOUND", "Resource not found", 404);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Handles HttpRequestMethodNotSupportedException when an endpoint exists but does not
+     * support the HTTP method used.
+     *
+     * @param ex the HttpRequestMethodNotSupportedException thrown by Spring MVC
+     * @return ResponseEntity containing ErrorResponse with 405 status
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        ErrorResponse error = new ErrorResponse("METHOD_NOT_ALLOWED", "Method " + ex.getMethod() + " not allowed", 405);
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(error);
+    }
+
     /**
      * Fallback/Catch-all handler for ANY exception not handled by more specific handlers.
      * This includes Java built-in exceptions like NullPointerException, 

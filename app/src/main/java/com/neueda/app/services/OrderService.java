@@ -21,9 +21,9 @@ import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.annotation.KafkaListener;
 
 @Service
 @Transactional
@@ -36,7 +36,6 @@ public class OrderService {
     private final InstrumentRepository instrumentRepository;
     private final PriceService priceService;
     private final EventProducerService eventProducerService;
-    private final OrderSettlementService orderSettlementService;
 
 
     public OrderService(
@@ -45,8 +44,7 @@ public class OrderService {
             PositionRepository positionRepository,
             InstrumentRepository instrumentRepository,
             PriceService priceService,
-            EventProducerService eventProducerService,
-            OrderSettlementService orderSettlementService) {
+            EventProducerService eventProducerService) {
 
         this.orderRepository = orderRepository;
         this.accountRepository = accountRepository;
@@ -54,16 +52,33 @@ public class OrderService {
         this.instrumentRepository = instrumentRepository;
         this.priceService = priceService;
         this.eventProducerService = eventProducerService;
-        this.orderSettlementService = orderSettlementService;
     }
     
+    /** Parses the order type without leaking the enum's class name on bad input. */
+    private OrderType parseOrderType(String value) {
+        try {
+            return OrderType.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("orderType must be one of " + Arrays.toString(OrderType.values()));
+        }
+    }
+
+    /** Parses the order side without leaking the enum's class name on bad input. */
+    private OrderSide parseOrderSide(String value) {
+        try {
+            return OrderSide.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("side must be one of " + Arrays.toString(OrderSide.values()));
+        }
+    }
+
     public OrderResponse placeOrder(PlaceOrderRequest request) {
 
         // Validate input parameters first (before any DB lookups)
         if (request.getSide() == null || request.getOrderType() == null || request.getQuantity() == null) {
             throw new IllegalArgumentException("side, orderType and quantity are required");
         }
-        OrderType orderType = OrderType.valueOf(request.getOrderType().toUpperCase());
+        OrderType orderType = parseOrderType(request.getOrderType());
         if (orderType == OrderType.LIMIT && request.getPrice() == null) {
             throw new IllegalArgumentException("price is required for LIMIT orders");
         }
@@ -95,19 +110,18 @@ public class OrderService {
         }
         
         // For LIMIT orders, use the price from the request
-        // For MARKET orders, price is null (will be set during execution by ExecutionEngine)
-        // This enables asynchronous execution: OrderService publishes to Kafka immediately,
-        // ExecutionEngine fetches live market price and determines actual execution price later
+        // For MARKET orders, use the latest stored price as the reference price
+        // (throws PriceNotFoundException if none). ExecutionEngine decides the actual fill price.
         BigDecimal price = orderType == OrderType.LIMIT
             ? request.getPrice()
-            : null;
+            : priceService.getCurrentPrice(request.getSymbol());
 
         // Create Order entity with Account and Instrument objects
         Order order = new Order(
             UUID.randomUUID(),
             account,
             instrument,
-            OrderSide.valueOf(request.getSide().toUpperCase()),
+            parseOrderSide(request.getSide()),
             orderType,
             request.getQuantity(),
             price,
@@ -125,7 +139,7 @@ public class OrderService {
             order.getSide().toString(),
             order.getOrderType().toString(),
             order.getQuantity(),
-            order.getPrice(),  // null for MARKET, limit price for LIMIT
+            order.getPrice(),  // reference price for MARKET, limit price for LIMIT
             order.getIdempotencyKey()
         );
 
@@ -220,18 +234,5 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
         return new OrderResponse(order);
-    }
-
-    /**
-     * Kafka listener for ORDER_EXECUTED events from ExecutionEngine.
-     * Performs database updates: order status to FILLED, positions, and cash.
-     */
-    @KafkaListener(
-        topics = "order-execution",
-        groupId = "order-service"
-    )
-    public void handleOrderExecuted(String message) {
-        log.info("Received message from order-execution topic");
-        orderSettlementService.processKafkaMessage(message);
     }
 }

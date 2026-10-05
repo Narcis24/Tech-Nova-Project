@@ -1,6 +1,7 @@
 package com.neueda.app.services;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.neueda.app.dtos.AccountResponse;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PositionResponse;
@@ -46,8 +47,9 @@ public class AccountService {
         return account.getCashBalance();
     }
 
+    @Transactional
     public AccountResponse depositCash(String accountId, BigDecimal amount) {
-        Account account = accountRepository.findById(accountId)
+        Account account = accountRepository.findByIdForUpdate(accountId)
             .orElseThrow(() -> new AccountNotFoundException(
                 "Account not found: " + accountId
             ));
@@ -59,8 +61,9 @@ public class AccountService {
         return new AccountResponse(account);
     }
 
+    @Transactional
     public AccountResponse withdrawCash(String accountId, BigDecimal amount) {
-        Account account = accountRepository.findById(accountId)
+        Account account = accountRepository.findByIdForUpdate(accountId)
                     .orElseThrow(() -> new AccountNotFoundException(
                 "Account not found: " + accountId
             ));
