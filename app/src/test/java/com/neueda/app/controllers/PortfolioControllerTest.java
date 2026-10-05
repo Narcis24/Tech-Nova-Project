@@ -41,7 +41,6 @@ class PortfolioGlobalExceptionHandler {
 
 public class PortfolioControllerTest {
     private MockMvc mockMvc;
-    private ObjectMapper objectMapper;
 
     @Mock
     private PortfolioService portfolioService;
@@ -49,7 +48,6 @@ public class PortfolioControllerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        objectMapper = new ObjectMapper();
         PortfolioController controller = new PortfolioController(portfolioService);
         mockMvc = standaloneSetup(controller)
             .setControllerAdvice(new PortfolioGlobalExceptionHandler())
