@@ -74,6 +74,30 @@ public class OrderService {
         }
     }
 
+    private void requireCanCover(Account account, Order order) {
+        if (order.getSide() == OrderSide.BUY) {
+            requireCash(account, order);
+        } else {
+            requireShares(order);
+        }
+    }
+
+    private void requireCash(Account account, Order order) {
+        if (account.getCashBalance().compareTo(order.getTotalValue()) < 0) {
+            throw new InsufficientFundsException("Account " + account.getAccountId() + " has $"
+                + account.getCashBalance() + " but order requires $" + order.getTotalValue());
+        }
+    }
+
+    private void requireShares(Order order) {
+        int held = positionRepository.findByAccountIdAndSymbol(order.getAccountId(), order.getSymbol())
+            .map(Position::getQuantity).orElse(0);
+        if (held < order.getQuantity()) {
+            throw new InsufficientHoldingsException("Cannot sell " + order.getQuantity()
+                + " shares of " + order.getSymbol() + ". Only " + held + " held.");
+        }
+    }
+
     public OrderResponse placeOrder(PlaceOrderRequest request) {
 
         // Validate input parameters first (before any DB lookups)
@@ -132,19 +156,7 @@ public class OrderService {
         );
         
         // Fail fast on what we can already see. Settlement re-checks at the real fill price.
-        if (order.getSide() == OrderSide.BUY) {
-            if (account.getCashBalance().compareTo(order.getTotalValue()) < 0) {
-                throw new InsufficientFundsException("Account " + account.getAccountId() + " has $"
-                    + account.getCashBalance() + " but order requires $" + order.getTotalValue());
-            }
-        } else {
-            int held = positionRepository.findByAccountIdAndSymbol(order.getAccountId(), order.getSymbol())
-                .map(Position::getQuantity).orElse(0);
-            if (held < order.getQuantity()) {
-                throw new InsufficientHoldingsException("Cannot sell " + order.getQuantity()
-                    + " shares of " + order.getSymbol() + ". Only " + held + " held.");
-            }
-        }
+        requireCanCover(account, order);
 
         orderRepository.save(order);
         

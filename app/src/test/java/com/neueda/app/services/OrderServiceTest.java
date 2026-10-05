@@ -94,8 +94,10 @@ class OrderServiceTest {
     void testPlaceBuyRejectedWhenCashIsShort() {
         stubAccountAndInstrument(activeAccount(), aapl());
 
-        assertThrows(InsufficientFundsException.class, () -> orderService.placeOrder(new PlaceOrderRequest(
-            "12345", "AAPL", "BUY", "LIMIT", 100, new BigDecimal("150.00"), "key-cash")));
+        PlaceOrderRequest request = new PlaceOrderRequest(
+            "12345", "AAPL", "BUY", "LIMIT", 100, new BigDecimal("150.00"), "key-cash");
+
+        assertThrows(InsufficientFundsException.class, () -> orderService.placeOrder(request));
 
         verify(orderRepository, never()).save(any(Order.class));
         verifyNoInteractions(eventProducerService);
@@ -105,8 +107,10 @@ class OrderServiceTest {
     void testPlaceSellRejectedWithoutEnoughShares() {
         stubAccountAndInstrument(activeAccount(), aapl());
 
-        assertThrows(InsufficientHoldingsException.class, () -> orderService.placeOrder(new PlaceOrderRequest(
-            "12345", "AAPL", "SELL", "LIMIT", 10, new BigDecimal("150.00"), "key-sell")));
+        PlaceOrderRequest request = new PlaceOrderRequest(
+            "12345", "AAPL", "SELL", "LIMIT", 10, new BigDecimal("150.00"), "key-sell");
+
+        assertThrows(InsufficientHoldingsException.class, () -> orderService.placeOrder(request));
 
         verify(orderRepository, never()).save(any(Order.class));
         verifyNoInteractions(eventProducerService);
