@@ -37,6 +37,7 @@ class OrderServiceTest {
     private PositionRepository positionRepository;
     private InstrumentRepository instrumentRepository;
     private PriceService priceService;
+    private EventProducerService eventProducerService;
 
     private OrderService orderService;
 
@@ -48,13 +49,15 @@ class OrderServiceTest {
         positionRepository = mock(PositionRepository.class);
         instrumentRepository = mock(InstrumentRepository.class);
         priceService = mock(PriceService.class);
+        eventProducerService = mock(EventProducerService.class);
 
         orderService = new OrderService(
             orderRepository,
             accountRepository,
             positionRepository,
             instrumentRepository,
-            priceService
+            priceService,
+            eventProducerService
         );
     }
 
@@ -238,25 +241,23 @@ class OrderServiceTest {
     }
 
     @Test
-    void testPlaceMarketOrderFillsImmediatelyAtLatestPrice() {
+    void testPlaceMarketOrderUsesLatestPriceAndStaysPending() {
         Account account = activeAccount();
         stubAccountAndInstrument(account, aapl());
         when(priceService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("150.123456"));
-        when(positionRepository.findByAccountIdAndSymbol("12345", "AAPL")).thenReturn(Optional.empty());
-        Order[] saved = new Order[1];
-        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
-            saved[0] = invocation.getArgument(0);
-            return saved[0];
-        });
-        when(orderRepository.findById(any(UUID.class))).thenAnswer(invocation -> Optional.of(saved[0]));
 
         OrderResponse response = orderService.placeOrder(new PlaceOrderRequest(
             "12345", "AAPL", "BUY", "MARKET", 10, null, "key-1"));
 
-        assertEquals(OrderStatus.FILLED, response.getStatus());
+        // Filling happens later, when settlement receives the engine's ORDER_EXECUTED event
+        assertEquals(OrderStatus.PENDING, response.getStatus());
+        assertEquals(OrderType.MARKET, response.getOrderType());
         assertEquals(new BigDecimal("150.12"), response.getPrice());
-        assertEquals(new BigDecimal("498.80"), account.getCashBalance());
-        verify(positionRepository).save(any(Position.class));
+        assertEquals(new BigDecimal("2000.00"), account.getCashBalance());
+        verify(orderRepository, times(1)).save(any(Order.class));
+        verify(eventProducerService).publishEvent(
+            eq("order-request"), anyString(), eq("ORDER_PLACED"), anyString(), any());
+        verifyNoInteractions(positionRepository);
     }
 
     @Test

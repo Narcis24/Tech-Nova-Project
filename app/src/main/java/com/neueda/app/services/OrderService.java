@@ -2,25 +2,32 @@ package com.neueda.app.services;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.neueda.app.dtos.OrderPlacedEvent;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderType;
 import com.neueda.app.exceptions.*;
+
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Order;
 import com.neueda.app.models.Position;
+
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.InstrumentRepository;
 import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional
+@Slf4j
 public class OrderService {
     
     private final OrderRepository orderRepository;
@@ -28,30 +35,58 @@ public class OrderService {
     private final PositionRepository positionRepository;
     private final InstrumentRepository instrumentRepository;
     private final PriceService priceService;
+    private final EventProducerService eventProducerService;
 
-    public OrderService(OrderRepository orderRepository,
-                       AccountRepository accountRepository,
-                       PositionRepository positionRepository,
-                       InstrumentRepository instrumentRepository,
-                       PriceService priceService) {
+
+    public OrderService(
+            OrderRepository orderRepository,
+            AccountRepository accountRepository,
+            PositionRepository positionRepository,
+            InstrumentRepository instrumentRepository,
+            PriceService priceService,
+            EventProducerService eventProducerService) {
+
         this.orderRepository = orderRepository;
         this.accountRepository = accountRepository;
         this.positionRepository = positionRepository;
         this.instrumentRepository = instrumentRepository;
         this.priceService = priceService;
+        this.eventProducerService = eventProducerService;
+    }
+    
+    /** Parses the order type without leaking the enum's class name on bad input. */
+    private OrderType parseOrderType(String value) {
+        try {
+            return OrderType.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("orderType must be one of " + Arrays.toString(OrderType.values()));
+        }
+    }
+
+    /** Parses the order side without leaking the enum's class name on bad input. */
+    private OrderSide parseOrderSide(String value) {
+        try {
+            return OrderSide.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("side must be one of " + Arrays.toString(OrderSide.values()));
+        }
     }
 
     public OrderResponse placeOrder(PlaceOrderRequest request) {
+
+        // Validate input parameters first (before any DB lookups)
         if (request.getSide() == null || request.getOrderType() == null || request.getQuantity() == null) {
             throw new IllegalArgumentException("side, orderType and quantity are required");
         }
-        OrderType orderType = OrderType.valueOf(request.getOrderType().toUpperCase());
+        OrderType orderType = parseOrderType(request.getOrderType());
         if (orderType == OrderType.LIMIT && request.getPrice() == null) {
             throw new IllegalArgumentException("price is required for LIMIT orders");
         }
         if (orderType == OrderType.MARKET && request.getPrice() != null) {
             throw new IllegalArgumentException("price must not be set for MARKET orders");
         }
+        
+        // Check for duplicate idempotency key before looking up resources
         if (request.getIdempotencyKey() != null
                 && orderRepository.existsByIdempotencyKey(request.getIdempotencyKey())) {
             throw new DuplicateOrderException(
@@ -59,14 +94,13 @@ public class OrderService {
             );
         }
 
-        // Validate account exists and is ACTIVE
+        // Now look up resources after validation
         Account account = accountRepository.findById(request.getAccountId())
             .orElseThrow(() -> new AccountNotFoundException(
                 "Account not found: " + request.getAccountId()
             ));
         account.validateStatus();
         
-        // Validate instrument exists and is tradable
         Instrument instrument = instrumentRepository.findBySymbol(request.getSymbol())
             .orElseThrow(() -> new InstrumentNotFoundException(
                 "Instrument not found: " + request.getSymbol()
@@ -75,17 +109,19 @@ public class OrderService {
             throw new TradingException("Instrument is not tradable: " + request.getSymbol());
         }
         
-        // A MARKET order trades at the latest price, a LIMIT order at the price it was placed with
-        BigDecimal price = orderType == OrderType.MARKET
-            ? priceService.getCurrentPrice(instrument.getSymbol())
-            : request.getPrice();
+        // For LIMIT orders, use the price from the request
+        // For MARKET orders, use the latest stored price as the reference price
+        // (throws PriceNotFoundException if none). ExecutionEngine decides the actual fill price.
+        BigDecimal price = orderType == OrderType.LIMIT
+            ? request.getPrice()
+            : priceService.getCurrentPrice(request.getSymbol());
 
         // Create Order entity with Account and Instrument objects
         Order order = new Order(
             UUID.randomUUID(),
             account,
             instrument,
-            OrderSide.valueOf(request.getSide().toUpperCase()),
+            parseOrderSide(request.getSide()),
             orderType,
             request.getQuantity(),
             price,
@@ -94,9 +130,30 @@ public class OrderService {
         );
         
         orderRepository.save(order);
-        if (orderType == OrderType.MARKET) {
-            return executeOrder(order.getId());
-        }
+        
+        // Publish ORDER_PLACED event to Kafka (asynchronous execution will happen in ExecutionEngine)
+        OrderPlacedEvent event = new OrderPlacedEvent(
+            order.getId(),
+            order.getAccountId(),
+            order.getSymbol(),
+            order.getSide().toString(),
+            order.getOrderType().toString(),
+            order.getQuantity(),
+            order.getPrice(),  // reference price for MARKET, limit price for LIMIT
+            order.getIdempotencyKey()
+        );
+
+        log.info("Publishing ORDER_PLACED event: orderId={}, orderType={}, symbol={}", 
+            order.getId(), orderType, order.getSymbol());
+
+        eventProducerService.publishEvent(
+            "order-request",
+            order.getId().toString(),
+            "ORDER_PLACED",
+            "OrderService",
+            event
+        );
+
         return new OrderResponse(order);
     }
 

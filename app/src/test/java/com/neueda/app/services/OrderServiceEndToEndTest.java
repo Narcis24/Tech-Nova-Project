@@ -1,4 +1,4 @@
-package com.neueda.app.service;
+package com.neueda.app.services;
 
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
@@ -10,16 +10,20 @@ import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Order;
 import com.neueda.app.models.Position;
+import com.neueda.app.models.Price;
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.InstrumentRepository;
 import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
+import com.neueda.app.repositories.PriceRepository;
 import com.neueda.app.services.OrderService;
+import com.neueda.app.services.PriceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -29,13 +33,14 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import(OrderService.class)
+@Import({OrderService.class, PriceService.class})
 // Uses application-test.properties imports for Integration Testing
 @ActiveProfiles("test")
 @DisplayName("OrderService End-to-End Integration Tests")
@@ -58,7 +63,14 @@ public class OrderServiceEndToEndTest {
     private PositionRepository positionRepository;
 
     @Autowired
+    private PriceRepository priceRepository;
+
+    @Autowired
     private OrderService orderService;
+
+    // Kafka publishing is out of scope here
+    @MockBean
+    private EventProducerService eventProducerService;
 
     private Account testAccount;
     private Instrument testInstrument;
@@ -98,6 +110,7 @@ public class OrderServiceEndToEndTest {
             testAccount.getAccountId(),
             "AAPL",
             "BUY",
+            "LIMIT",
             100,
             new BigDecimal("150.00"),
             "buy-order-001"
@@ -108,7 +121,8 @@ public class OrderServiceEndToEndTest {
 
         UUID orderID = response.getOrderId();
 
-        // 2. Execute Order 
+        // 2. Execute Order
+        priceRepository.save(new Price("AAPL", LocalDate.now(), new BigDecimal("145.00")));
         OrderResponse executeResponse = orderService.executeOrder(orderID);
         assertNotNull(executeResponse);
         assertEquals(OrderStatus.FILLED, executeResponse.getStatus());
@@ -146,6 +160,7 @@ public class OrderServiceEndToEndTest {
             testAccount.getAccountId(),
             "AAPL",
             "SELL",
+            "LIMIT",
             50,
             new BigDecimal("160.00"),
             "sell-order-001"
@@ -154,6 +169,7 @@ public class OrderServiceEndToEndTest {
         OrderResponse placeResponse = orderService.placeOrder(sellRequest);
         UUID orderId = placeResponse.getOrderId();
 
+        priceRepository.save(new Price("AAPL", LocalDate.now(), new BigDecimal("165.00")));
         OrderResponse executeResponse = orderService.executeOrder(orderId);
         assertEquals(OrderStatus.FILLED, executeResponse.getStatus());
 
@@ -176,6 +192,7 @@ public class OrderServiceEndToEndTest {
             testAccount.getAccountId(),
             "AAPL",
             "BUY",
+            "LIMIT",
             50,
             new BigDecimal("150.00"),
             "cancel-order-001"
@@ -204,7 +221,7 @@ public class OrderServiceEndToEndTest {
     void testGetOrderDetails() {
         // Place order
         PlaceOrderRequest request = new PlaceOrderRequest(
-            testAccount.getAccountId(), "AAPL", "BUY", 100,
+            testAccount.getAccountId(), "AAPL", "BUY", "LIMIT", 100,
             new BigDecimal("150.00"), "get-order-001"
         );
         OrderResponse placeResponse = orderService.placeOrder(request);
@@ -220,9 +237,11 @@ public class OrderServiceEndToEndTest {
     @Test
     @DisplayName("E2E: Verify Position Average")
     void testMultipleBuyOrders() {
+        priceRepository.save(new Price("AAPL", LocalDate.now(), new BigDecimal("140.00")));
+
         // Buy order 1
         PlaceOrderRequest request1 = new PlaceOrderRequest(
-            testAccount.getAccountId(), "AAPL", "BUY", 50,
+            testAccount.getAccountId(), "AAPL", "BUY", "LIMIT", 50,
             new BigDecimal("150.00"), "buy-001"
         );
         OrderResponse response1 = orderService.placeOrder(request1);
@@ -230,7 +249,7 @@ public class OrderServiceEndToEndTest {
 
         // Buy order 2
         PlaceOrderRequest request2 = new PlaceOrderRequest(
-            testAccount.getAccountId(), "AAPL", "BUY", 30,
+            testAccount.getAccountId(), "AAPL", "BUY", "LIMIT", 30,
             new BigDecimal("155.00"), "buy-002"
         );
         OrderResponse response2 = orderService.placeOrder(request2);
