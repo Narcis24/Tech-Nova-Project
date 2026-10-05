@@ -19,11 +19,11 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     boolean existsByIdempotencyKey(String idempotencyKey);
 
     /**
-     * Guarded PENDING -> FILLED transition. Returns the rows changed: 0 means the order
-     * was no longer PENDING (already filled, cancelled or rejected), i.e. a duplicate.
+     * Guarded status transition. Returns the rows changed: 0 means the order was not in
+     * the {@code from} status, e.g. a fill that was already applied.
      */
     @Modifying
-    @Query("update Order o set o.status = com.neueda.app.enums.OrderStatus.FILLED, o.price = :price "
-         + "where o.id = :id and o.status = com.neueda.app.enums.OrderStatus.PENDING")
-    int fillIfPending(@Param("id") UUID id, @Param("price") BigDecimal price);
+    @Query("update Order o set o.status = :to, o.price = :price where o.id = :id and o.status = :from")
+    int transition(@Param("id") UUID id, @Param("from") OrderStatus from,
+                   @Param("to") OrderStatus to, @Param("price") BigDecimal price);
 }

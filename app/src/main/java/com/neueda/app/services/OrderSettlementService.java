@@ -2,7 +2,7 @@ package com.neueda.app.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neueda.app.dtos.OrderExecutedEvent;
-import com.neueda.app.enums.OrderSide;
+import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.events.EventEnvelope;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.InstrumentNotFoundException;
@@ -118,13 +118,14 @@ public class OrderSettlementService {
         try {
             // Guard: only one delivery can move the order out of PENDING. It is the first
             // write, so a duplicate stops here before touching cash or positions.
-            int updated = orderRepository.fillIfPending(
-                    orderId, event.getExecutionPrice().setScale(2, RoundingMode.HALF_UP));
+            int updated = orderRepository.transition(
+                    orderId, OrderStatus.PENDING, OrderStatus.FILLED,
+                    event.getExecutionPrice().setScale(2, RoundingMode.HALF_UP));
             if (updated == 0) {
                 if (!orderRepository.existsById(orderId)) {
                     throw new OrderNotFoundException("Order not found: " + orderId);
                 }
-                log.warn("Ignoring duplicate ORDER_EXECUTED event: orderId={}", orderId);
+                log.warn("Ignoring ORDER_EXECUTED, order is not PENDING (duplicate or already closed): orderId={}", orderId);
                 return;
             }
 

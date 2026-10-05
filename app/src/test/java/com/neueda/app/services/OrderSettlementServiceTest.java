@@ -2,7 +2,10 @@ package com.neueda.app.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neueda.app.dtos.OrderExecutedEvent;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.neueda.app.enums.AccountStatus;
+import com.neueda.app.enums.OrderStatus;
+import com.neueda.app.events.EventEnvelope;
 import com.neueda.app.exceptions.OrderNotFoundException;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
@@ -13,7 +16,7 @@ import com.neueda.app.repositories.PositionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Method;
+import java.time.Instant;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -31,6 +34,7 @@ class OrderSettlementServiceTest {
     private AccountRepository accountRepository;
     private PositionRepository positionRepository;
     private InstrumentRepository instrumentRepository;
+    private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
     private OrderSettlementService service;
     private UUID orderId;
     private OrderExecutedEvent event;
@@ -42,24 +46,20 @@ class OrderSettlementServiceTest {
         positionRepository = mock(PositionRepository.class);
         instrumentRepository = mock(InstrumentRepository.class);
         service = new OrderSettlementService(orderRepository, accountRepository,
-                positionRepository, instrumentRepository, new ObjectMapper());
+                positionRepository, instrumentRepository, mapper);
         orderId = UUID.randomUUID();
         event = new OrderExecutedEvent(orderId, "ACC1", "AAPL", "BUY", 2, PRICE, new BigDecimal("300.00"));
     }
 
     private void settle() throws Exception {
-        Method m = OrderSettlementService.class.getDeclaredMethod("processOrderExecution", OrderExecutedEvent.class);
-        m.setAccessible(true);
-        try {
-            m.invoke(service, event);
-        } catch (java.lang.reflect.InvocationTargetException e) {
-            throw (Exception) e.getCause();
-        }
+        EventEnvelope<OrderExecutedEvent> envelope = new EventEnvelope<>(
+                "e1", "ORDER_EXECUTED", Instant.now(), "test", 1, event);
+        service.processKafkaMessage(mapper.writeValueAsString(envelope));
     }
 
     @Test
     void duplicateFillStopsAtTheGuardWithoutTouchingCashOrPositions() throws Exception {
-        when(orderRepository.fillIfPending(orderId, PRICE)).thenReturn(0);
+        when(orderRepository.transition(orderId, OrderStatus.PENDING, OrderStatus.FILLED, PRICE)).thenReturn(0);
         when(orderRepository.existsById(orderId)).thenReturn(true);
 
         settle();
@@ -69,7 +69,7 @@ class OrderSettlementServiceTest {
 
     @Test
     void unknownOrderIsAnError() {
-        when(orderRepository.fillIfPending(orderId, PRICE)).thenReturn(0);
+        when(orderRepository.transition(orderId, OrderStatus.PENDING, OrderStatus.FILLED, PRICE)).thenReturn(0);
         when(orderRepository.existsById(orderId)).thenReturn(false);
 
         Exception e = assertThrows(Exception.class, this::settle);
@@ -81,7 +81,7 @@ class OrderSettlementServiceTest {
     void firstFillMovesCashAndPositionAfterTheGuard() throws Exception {
         Account account = new Account("ACC1", "Test", new BigDecimal("1000.00"),
                 AccountStatus.ACTIVE, LocalDateTime.now());
-        when(orderRepository.fillIfPending(orderId, PRICE)).thenReturn(1);
+        when(orderRepository.transition(orderId, OrderStatus.PENDING, OrderStatus.FILLED, PRICE)).thenReturn(1);
         when(accountRepository.findByIdForUpdate("ACC1")).thenReturn(Optional.of(account));
         when(instrumentRepository.findBySymbol("AAPL")).thenReturn(Optional.of(mock(Instrument.class)));
         when(positionRepository.findByAccountIdAndSymbol(any(), any())).thenReturn(Optional.empty());
