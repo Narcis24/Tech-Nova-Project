@@ -6,3 +6,4 @@ execution-engine/target/
 .env*
 !.env.example
 app/target*
+.vscode/

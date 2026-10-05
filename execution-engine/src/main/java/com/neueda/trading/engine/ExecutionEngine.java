@@ -146,18 +146,7 @@ public class ExecutionEngine {
 
         /*
          * Build the result that will be sent back to app/.
-         *
-         * NOTE:
-         * Your Kafka example showed:
-         *
-         * accountId = "ACC003"
-         *
-         * That is NOT a UUID.
-         *
-         * Therefore DO NOT do:
-         *
-         * UUID.fromString(event.getAccountId())
-         *
+
          * unless OrderExecutedEvent specifically requires UUID
          * and your account IDs are actually UUIDs.
          */
