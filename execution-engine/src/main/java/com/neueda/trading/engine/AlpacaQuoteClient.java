@@ -10,7 +10,10 @@ import org.springframework.web.client.RestClient;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-/** Alpaca market data, latest quotes for many symbols in one request (IEX feed). */
+/**
+ * Alpaca market data, latest quotes for many symbols in one request (IEX feed).
+ * Alpaca writes class shares as BRK.B, our instruments as BRK-B, so symbols are translated both ways.
+ */
 @Component
 public class AlpacaQuoteClient implements QuoteClient {
 
@@ -27,14 +30,14 @@ public class AlpacaQuoteClient implements QuoteClient {
     @Override
     public List<Quote> latest(List<String> symbols) {
         JsonNode body = http.get()
-            .uri("/v2/stocks/quotes/latest?feed=iex&symbols={symbols}", String.join(",", symbols))
+            .uri("/v2/stocks/quotes/latest?feed=iex&symbols={symbols}", String.join(",", symbols).replace('-', '.'))
             .retrieve()
             .body(JsonNode.class);
 
         Instant now = Instant.now();
         List<Quote> quotes = new ArrayList<>();
         body.path("quotes").fields().forEachRemaining(e -> quotes.add(new Quote(
-            e.getKey(),
+            e.getKey().replace('.', '-'),
             new BigDecimal(e.getValue().path("bp").asText("0")),
             new BigDecimal(e.getValue().path("ap").asText("0")),
             now)));
