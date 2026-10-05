@@ -24,7 +24,7 @@ public class PriceController {
     }
 
     @GetMapping("/{symbol}")
-    public ResponseEntity<PriceResponse> getPrice(@PathVariable @Size(min = 3, max = 5, message = "Symbol must be between 3 and 5 characters") String symbol) {
+    public ResponseEntity<PriceResponse> getPrice(@PathVariable @Size(min = 1, max = 10, message = "Symbol must be between 1 and 10 characters") String symbol) {
         return ResponseEntity.ok(new PriceResponse(symbol, priceService.getCurrentPrice(symbol)));
     }
 }

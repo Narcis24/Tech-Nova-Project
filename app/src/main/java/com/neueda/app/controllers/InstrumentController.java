@@ -30,12 +30,12 @@ public class InstrumentController {
     }
 
     @GetMapping("/{symbol}")
-    public ResponseEntity<InstrumentResponse> getInstrument(@PathVariable @Size(min = 3, max = 5, message = "Symbol must be between 3 and 5 characters") String symbol) {
+    public ResponseEntity<InstrumentResponse> getInstrument(@PathVariable @Size(min = 1, max = 10, message = "Symbol must be between 1 and 10 characters") String symbol) {
         return ResponseEntity.ok(instrumentService.getInstrument(symbol));
     }
 
     @GetMapping("/{symbol}/tradable")
-    public ResponseEntity<Boolean> isTradable(@PathVariable @Size(min = 3, max = 5, message = "Symbol must be between 3 and 5 characters") String symbol) {
+    public ResponseEntity<Boolean> isTradable(@PathVariable @Size(min = 1, max = 10, message = "Symbol must be between 1 and 10 characters") String symbol) {
         return ResponseEntity.ok(instrumentService.isTradable(symbol));
     }
 }

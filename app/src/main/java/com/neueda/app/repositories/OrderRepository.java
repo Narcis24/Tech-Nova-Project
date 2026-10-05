@@ -26,4 +26,10 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     @Query("update Order o set o.status = :to, o.price = :price where o.id = :id and o.status = :from")
     int transition(@Param("id") UUID id, @Param("from") OrderStatus from,
                    @Param("to") OrderStatus to, @Param("price") BigDecimal price);
+
+    /** Guarded rejection with a reason, same 0-rows-means-not-in-{@code from} contract as transition. */
+    @Modifying
+    @Query("update Order o set o.status = :to, o.rejectionReason = :reason where o.id = :id and o.status = :from")
+    int reject(@Param("id") UUID id, @Param("from") OrderStatus from,
+               @Param("to") OrderStatus to, @Param("reason") String reason);
 }
