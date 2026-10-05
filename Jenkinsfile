@@ -21,11 +21,14 @@ pipeline {
         }
         stage('Smoke Test') {
             steps {
-                sh 'docker-compose up -d'
-                sh 'sleep 20'  // Wait for PostgreSQL, Kafka, and app to start
-                sh 'docker-compose exec -T app curl -f http://localhost:8081/api/actuator/health || exit 1'
+                sh '''
+                    export POSTGRES_PASSWORD=test-password
+                    docker-compose up -d
+                    sleep 60
+                    docker-compose exec -T app curl -f http://localhost:8081/api/actuator/health || exit 1
+                    docker-compose down
+                '''
                 sh 'docker run --rm --entrypoint python tech-nova-pipeline:latest -c "import load"'
-                sh 'docker-compose down'
             }
         }
         stage('SonarQube') {
