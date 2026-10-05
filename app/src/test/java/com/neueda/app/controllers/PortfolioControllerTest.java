@@ -8,10 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neueda.app.dtos.ErrorResponse;
 import com.neueda.app.dtos.PortfolioMetricsResponse;
 import com.neueda.app.dtos.PortfolioSnapshotResponse;
@@ -39,7 +37,7 @@ class PortfolioGlobalExceptionHandler {
     }
 }
 
-public class PortfolioControllerTest {
+class PortfolioControllerTest {
     private MockMvc mockMvc;
 
     @Mock
