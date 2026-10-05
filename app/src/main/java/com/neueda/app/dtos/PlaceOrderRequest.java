@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
  * 
  * Validation Rules:
  * - quantity: 1 to 100,000 shares
- * - symbol: 3-5 characters (e.g., AAPL, MSFT)
+ * - symbol: 1-10 characters (e.g., V, AAPL, BRK-B)
  * - price: Must be positive when given (null is allowed for MARKET orders)
  */
 @Getter
@@ -31,7 +31,7 @@ public class PlaceOrderRequest {
     private String accountId;
 
     @NotBlank(message = "Symbol is required")
-    @Size(min = 3, max = 5, message = "Symbol must be between 3 and 5 characters")
+    @Size(min = 1, max = 10, message = "Symbol must be between 1 and 10 characters")
     private String symbol;
 
     @NotBlank(message = "Side must be one of [BUY, SELL]")
