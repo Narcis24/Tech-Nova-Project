@@ -2,6 +2,7 @@ package com.neueda.app.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neueda.app.dtos.OrderExecutedEvent;
+import com.neueda.app.dtos.OrderRejectedEvent;
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.events.EventEnvelope;
 import com.neueda.app.exceptions.AccountNotFoundException;
@@ -25,7 +26,7 @@ import java.math.RoundingMode;
 import java.util.UUID;
 
 /**
- * Processes ORDER_EXECUTED events from the execution-engine via Kafka.
+ * Processes ORDER_EXECUTED and ORDER_REJECTED events from the execution-engine via Kafka.
  * Handles deserialization of Kafka messages and updates order status, 
  * positions, and cash balance based on filled trades.
  * 
@@ -80,6 +81,11 @@ public class OrderSettlementService {
             return;
         }
 
+        if ("ORDER_REJECTED".equals(envelope.eventType())) {
+            processOrderRejection(envelope);
+            return;
+        }
+
         if (!"ORDER_EXECUTED".equals(envelope.eventType())) {
             log.debug("Ignoring event type: {}", envelope.eventType());
             return;
@@ -97,6 +103,28 @@ public class OrderSettlementService {
         }
 
         processOrderExecution(event);
+    }
+
+    /**
+     * Resolves a PENDING order the engine could not price: PENDING -> REJECTED with the reason.
+     * An order that is no longer PENDING is left alone.
+     */
+    private void processOrderRejection(EventEnvelope<?> envelope) {
+        OrderRejectedEvent event;
+        try {
+            event = objectMapper.convertValue(envelope.payload(), OrderRejectedEvent.class);
+        } catch (Exception e) {
+            log.error("Failed to deserialize ORDER_REJECTED payload: payload={}", envelope.payload(), e);
+            return;
+        }
+
+        int updated = orderRepository.reject(event.getOrderId(), OrderStatus.PENDING,
+                OrderStatus.REJECTED, event.getReason());
+        if (updated == 0) {
+            log.warn("Ignoring ORDER_REJECTED, order is not PENDING or unknown: orderId={}", event.getOrderId());
+            return;
+        }
+        log.info("Order rejected: orderId={}, reason={}", event.getOrderId(), event.getReason());
     }
 
     /**

@@ -91,4 +91,18 @@ class OrderSettlementServiceTest {
         assertEquals(new BigDecimal("700.00"), account.getCashBalance());
         verify(positionRepository).save(any());
     }
+
+    @Test
+    void rejectionResolvesAPendingOrderWithTheReason() throws Exception {
+        when(orderRepository.reject(orderId, OrderStatus.PENDING, OrderStatus.REJECTED, "No fresh quote"))
+                .thenReturn(1);
+        com.neueda.app.dtos.OrderRejectedEvent rejected =
+                new com.neueda.app.dtos.OrderRejectedEvent(orderId, "ACC1", "AAPL", "No fresh quote");
+
+        service.processKafkaMessage(mapper.writeValueAsString(
+                new EventEnvelope<>("e2", "ORDER_REJECTED", Instant.now(), "test", 1, rejected)));
+
+        verify(orderRepository).reject(orderId, OrderStatus.PENDING, OrderStatus.REJECTED, "No fresh quote");
+        verifyNoInteractions(accountRepository, positionRepository);
+    }
 }
