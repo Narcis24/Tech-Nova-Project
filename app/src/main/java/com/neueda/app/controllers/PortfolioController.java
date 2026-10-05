@@ -13,7 +13,7 @@ import org.springframework.http.ResponseEntity;
 import java.math.BigDecimal;
 import java.util.List;
 
-import com.neueda.app.dtos.PortfolioMetricResponse;
+import com.neueda.app.dtos.PortfolioMetricsResponse;
 import com.neueda.app.dtos.PortfolioSnapshotResponse;
 
 import com.neueda.app.services.PortfolioService;
@@ -23,7 +23,7 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/v1/accounts")
 
-public class AccountController {
+public class PortfolioController {
 
 
     private final PortfolioService portfolioService;
