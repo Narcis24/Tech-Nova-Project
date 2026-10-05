@@ -11,6 +11,7 @@ import java.util.UUID;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neueda.trading.events.EventEnvelope;
 import com.neueda.trading.events.OrderPlacedEvent;
@@ -65,7 +66,7 @@ public class ExecutionEngine {
                 message,
                 EventEnvelope.class
             );
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
 
             log.error(
                 "Failed to deserialize Kafka message into EventEnvelope: {}",
@@ -73,7 +74,7 @@ public class ExecutionEngine {
                 e
             );
 
-            throw new RuntimeException(
+            throw new EventProcessingException(
                 "Failed to deserialize EventEnvelope",
                 e
             );
@@ -105,7 +106,7 @@ public class ExecutionEngine {
                 envelope.payload(),
                 OrderPlacedEvent.class
             );
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
 
             log.error(
                 "Failed to convert payload into OrderPlacedEvent: {}",
@@ -113,7 +114,7 @@ public class ExecutionEngine {
                 e
             );
 
-            throw new RuntimeException(
+            throw new EventProcessingException(
                 "Failed to deserialize OrderPlacedEvent",
                 e
             );
@@ -138,7 +139,7 @@ public class ExecutionEngine {
      * separate schedule. Own consumer group: every executor instance needs every quote.
      */
     @KafkaListener(topics = MarketDataPoller.TOPIC, groupId = "execution-engine-quotes")
-    public void onQuote(String message) throws Exception {
+    public void onQuote(String message) throws JsonProcessingException {
         Quote quote = objectMapper.treeToValue(objectMapper.readTree(message).path("payload"), Quote.class);
         quoteCache.put(quote);
         recheckResting(quote);
@@ -158,9 +159,9 @@ public class ExecutionEngine {
                 : new FillRule.Wait());
 
         switch (decision) {
-            case FillRule.Fill fill -> publishFill(event, fill.price());
-            case FillRule.Reject reject -> publishReject(event, reject.reason());
-            case FillRule.Wait wait -> {
+            case FillRule.Fill(BigDecimal price) -> publishFill(event, price);
+            case FillRule.Reject(String reason) -> publishReject(event, reason);
+            case FillRule.Wait() -> {
                 resting.put(event.getOrderId(), event);
                 log.info("Resting LIMIT order: orderId={}, symbol={}", event.getOrderId(), event.getSymbol());
             }
@@ -170,9 +171,9 @@ public class ExecutionEngine {
     private synchronized void recheckResting(Quote quote) {
         for (OrderPlacedEvent order : List.copyOf(resting.values())) {
             if (order.getSymbol().equals(quote.symbol())
-                    && FillRule.decide(order, quote) instanceof FillRule.Fill fill) {
+                    && FillRule.decide(order, quote) instanceof FillRule.Fill(BigDecimal price)) {
                 resting.remove(order.getOrderId());
-                publishFill(order, fill.price());
+                publishFill(order, price);
             }
         }
     }

@@ -24,7 +24,7 @@ public class KafkaConfig {
     public CommonErrorHandler kafkaErrorHandler(KafkaTemplate<String, String> template) {
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(
             template,
-            (record, ex) -> new TopicPartition(record.topic() + DLT_SUFFIX, record.partition()));
+            (failed, ex) -> new TopicPartition(failed.topic() + DLT_SUFFIX, failed.partition()));
         return new DefaultErrorHandler(recoverer, new FixedBackOff(1000L, 3));
     }
 

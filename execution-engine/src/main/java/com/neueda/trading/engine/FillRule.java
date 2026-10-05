@@ -38,9 +38,8 @@ public final class FillRule {
         boolean market = "MARKET".equals(order.getOrderType());
         BigDecimal price = usable(buy ? quote.ask() : quote.bid());
         if (price == null) {
-            return market
-                ? new Reject("No usable " + (buy ? "ask" : "bid") + " for " + quote.symbol())
-                : new Wait();
+            String side = buy ? "ask" : "bid";
+            return market ? new Reject("No usable " + side + " for " + quote.symbol()) : new Wait();
         }
         return market || crosses(buy, price, order.getPrice()) ? new Fill(price) : new Wait();
     }
