@@ -29,29 +29,41 @@ public final class FillRule {
     }
 
     public static Decision decide(OrderPlacedEvent order, Quote quote) {
-        boolean buy = "BUY".equals(order.getSide());
-        if (!buy && !"SELL".equals(order.getSide())) {
-            return new Reject("Unknown side: " + order.getSide());
-        }
-        boolean market = "MARKET".equals(order.getOrderType());
-        boolean limit = "LIMIT".equals(order.getOrderType());
-        if (!market && !(limit && order.getPrice() != null)) {
-            return new Reject("Invalid order: type=" + order.getOrderType() + ", limit=" + order.getPrice());
+        String problem = problemWith(order);
+        if (problem != null) {
+            return new Reject(problem);
         }
 
-        BigDecimal price = buy ? quote.ask() : quote.bid();
-        if (price == null || price.signum() <= 0) {
+        boolean buy = "BUY".equals(order.getSide());
+        boolean market = "MARKET".equals(order.getOrderType());
+        BigDecimal price = usable(buy ? quote.ask() : quote.bid());
+        if (price == null) {
             return market
                 ? new Reject("No usable " + (buy ? "ask" : "bid") + " for " + quote.symbol())
                 : new Wait();
         }
-        price = price.setScale(2, RoundingMode.HALF_UP);
+        return market || crosses(buy, price, order.getPrice()) ? new Fill(price) : new Wait();
+    }
 
-        if (market) {
-            return new Fill(price);
+    /** Why the order can never be filled, or null if it is well formed. */
+    private static String problemWith(OrderPlacedEvent order) {
+        if (!"BUY".equals(order.getSide()) && !"SELL".equals(order.getSide())) {
+            return "Unknown side: " + order.getSide();
         }
-        int cmp = price.compareTo(order.getPrice());
-        boolean crosses = buy ? cmp <= 0 : cmp >= 0;
-        return crosses ? new Fill(price) : new Wait();
+        boolean validLimit = "LIMIT".equals(order.getOrderType()) && order.getPrice() != null;
+        if (!"MARKET".equals(order.getOrderType()) && !validLimit) {
+            return "Invalid order: type=" + order.getOrderType() + ", limit=" + order.getPrice();
+        }
+        return null;
+    }
+
+    /** The price at 2 decimals, or null if the quote has no usable price on this side. */
+    private static BigDecimal usable(BigDecimal price) {
+        return price == null || price.signum() <= 0 ? null : price.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private static boolean crosses(boolean buy, BigDecimal price, BigDecimal limit) {
+        int cmp = price.compareTo(limit);
+        return buy ? cmp <= 0 : cmp >= 0;
     }
 }
