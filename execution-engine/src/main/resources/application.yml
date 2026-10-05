@@ -52,3 +52,12 @@ engine:
     orders: order-request
     executions: order-execution
     partitions: 3
+
+# 36 symbols -> 2 batches of up to 25; every 120s = 720 cycles/day -> 1,440 requests/day (quota 2,000)
+market-data:
+  interval-seconds: ${MARKET_DATA_INTERVAL_SECONDS:120}
+  daily-quota: 2000
+  max-quote-age-seconds: 600
+  key-id: ${ALPACA_KEY_ID:}
+  secret-key: ${ALPACA_SECRET_KEY:}
+  symbols: AAPL,MSFT,NVDA,AMZN,GOOGL,META,TSLA,AVGO,JPM,LLY,V,XOM,UNH,MA,JNJ,PG,HD,COST,ABBV,WMT,KO,PEP,BAC,CVX,SPY,QQQ,IWM,DIA,VTI,EFA,XLK,XLE,TLT,IEF,AGG,LQD,GLD,SLV

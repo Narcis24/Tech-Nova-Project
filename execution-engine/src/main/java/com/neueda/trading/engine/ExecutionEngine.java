@@ -1,7 +1,9 @@
 package com.neueda.trading.engine;
 
 import java.math.BigDecimal;
-import java.util.UUID;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
@@ -10,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neueda.trading.events.EventEnvelope;
 import com.neueda.trading.events.OrderPlacedEvent;
 import com.neueda.trading.events.OrderExecutedEvent;
+import com.neueda.trading.events.OrderRejectedEvent;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,13 +22,19 @@ public class ExecutionEngine {
 
     private final ObjectMapper objectMapper;
     private final EventProducerService eventProducerService;
+    private final QuoteCache quoteCache;
+    private final MarketDataProperties props;
 
     public ExecutionEngine(
             ObjectMapper objectMapper,
-            EventProducerService eventProducerService) {
+            EventProducerService eventProducerService,
+            QuoteCache quoteCache,
+            MarketDataProperties props) {
 
         this.objectMapper = objectMapper;
         this.eventProducerService = eventProducerService;
+        this.quoteCache = quoteCache;
+        this.props = props;
     }
 
     @KafkaListener(
@@ -116,34 +125,30 @@ public class ExecutionEngine {
         );
 
         /*
-         * EXECUTION PRICE = PRICE-AT-PLACEMENT
-         *
-         * The app stamps a price into every ORDER_PLACED event:
-         *   LIMIT  -> the client's limit price
-         *   MARKET -> the latest stored price captured at placement time
-         *
-         * We fill at that price. There is no separate market-data lookup
-         * here yet, so the fill reflects the price when the order was
-         * placed, not a fresh quote. This is acceptable while fills are
-         * instantaneous; replace with a live market-data service / topic
-         * (and slippage) once orders can rest before filling.
-         *
-         * A null price should never reach us. Rather than invent a fill at
-         * an arbitrary number, fail loudly so the order is not settled wrongly.
+         * Price against the latest live quote. Anything that cannot be priced is
+         * rejected, so the order is always resolved and never left PENDING.
          */
-        if (event.getPrice() == null) {
-            log.error(
-                "ORDER_PLACED has no price; refusing to fill: orderId={}, symbol={}, orderType={}",
-                event.getOrderId(),
-                event.getSymbol(),
-                event.getOrderType()
+        Optional<Quote> quote = quoteCache.fresh(
+            event.getSymbol(), Instant.now(), Duration.ofSeconds(props.maxQuoteAgeSeconds()));
+
+        FillRule.Decision decision = quote
+            .<FillRule.Decision>map(q -> FillRule.decide(event, q))
+            .orElseGet(() -> new FillRule.Reject("No fresh quote for " + event.getSymbol()));
+
+        if (decision instanceof FillRule.Reject reject) {
+            log.info("Rejecting order: orderId={}, reason={}", event.getOrderId(), reject.reason());
+            eventProducerService.publishEvent(
+                "order-execution",
+                event.getOrderId().toString(),
+                "ORDER_REJECTED",
+                "ExecutionEngine",
+                new OrderRejectedEvent(
+                    event.getOrderId(), event.getAccountId(), event.getSymbol(), reject.reason())
             );
-            throw new IllegalStateException(
-                "Cannot execute order without a price: " + event.getOrderId()
-            );
+            return;
         }
 
-        BigDecimal executionPrice = event.getPrice();
+        BigDecimal executionPrice = ((FillRule.Fill) decision).price();
 
         BigDecimal totalValue =
             executionPrice.multiply(
@@ -157,23 +162,6 @@ public class ExecutionEngine {
             totalValue
         );
 
-        /*
-         * Build the result that will be sent back to app/.
-         *
-         * NOTE:
-         * Your Kafka example showed:
-         *
-         * accountId = "ACC003"
-         *
-         * That is NOT a UUID.
-         *
-         * Therefore DO NOT do:
-         *
-         * UUID.fromString(event.getAccountId())
-         *
-         * unless OrderExecutedEvent specifically requires UUID
-         * and your account IDs are actually UUIDs.
-         */
         OrderExecutedEvent executedEvent =
             new OrderExecutedEvent(
                 event.getOrderId(),
@@ -185,12 +173,6 @@ public class ExecutionEngine {
                 totalValue
             );
 
-        /*
-         * Send result back to Kafka.
-         *
-         * app/ listens to order-execution and handles the
-         * account/order/position database updates.
-         */
         eventProducerService.publishEvent(
             "order-execution",
             event.getOrderId().toString(),
