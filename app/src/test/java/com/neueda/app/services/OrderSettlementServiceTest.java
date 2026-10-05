@@ -1,0 +1,94 @@
+package com.neueda.app.services;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.neueda.app.dtos.OrderExecutedEvent;
+import com.neueda.app.enums.AccountStatus;
+import com.neueda.app.exceptions.OrderNotFoundException;
+import com.neueda.app.models.Account;
+import com.neueda.app.models.Instrument;
+import com.neueda.app.repositories.AccountRepository;
+import com.neueda.app.repositories.InstrumentRepository;
+import com.neueda.app.repositories.OrderRepository;
+import com.neueda.app.repositories.PositionRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+class OrderSettlementServiceTest {
+
+    private static final BigDecimal PRICE = new BigDecimal("150.00");
+
+    private OrderRepository orderRepository;
+    private AccountRepository accountRepository;
+    private PositionRepository positionRepository;
+    private InstrumentRepository instrumentRepository;
+    private OrderSettlementService service;
+    private UUID orderId;
+    private OrderExecutedEvent event;
+
+    @BeforeEach
+    void setUp() {
+        orderRepository = mock(OrderRepository.class);
+        accountRepository = mock(AccountRepository.class);
+        positionRepository = mock(PositionRepository.class);
+        instrumentRepository = mock(InstrumentRepository.class);
+        service = new OrderSettlementService(orderRepository, accountRepository,
+                positionRepository, instrumentRepository, new ObjectMapper());
+        orderId = UUID.randomUUID();
+        event = new OrderExecutedEvent(orderId, "ACC1", "AAPL", "BUY", 2, PRICE, new BigDecimal("300.00"));
+    }
+
+    private void settle() throws Exception {
+        Method m = OrderSettlementService.class.getDeclaredMethod("processOrderExecution", OrderExecutedEvent.class);
+        m.setAccessible(true);
+        try {
+            m.invoke(service, event);
+        } catch (java.lang.reflect.InvocationTargetException e) {
+            throw (Exception) e.getCause();
+        }
+    }
+
+    @Test
+    void duplicateFillStopsAtTheGuardWithoutTouchingCashOrPositions() throws Exception {
+        when(orderRepository.fillIfPending(orderId, PRICE)).thenReturn(0);
+        when(orderRepository.existsById(orderId)).thenReturn(true);
+
+        settle();
+
+        verifyNoInteractions(accountRepository, positionRepository, instrumentRepository);
+    }
+
+    @Test
+    void unknownOrderIsAnError() {
+        when(orderRepository.fillIfPending(orderId, PRICE)).thenReturn(0);
+        when(orderRepository.existsById(orderId)).thenReturn(false);
+
+        Exception e = assertThrows(Exception.class, this::settle);
+        assertInstanceOf(OrderNotFoundException.class, e.getCause());
+        verifyNoInteractions(accountRepository, positionRepository);
+    }
+
+    @Test
+    void firstFillMovesCashAndPositionAfterTheGuard() throws Exception {
+        Account account = new Account("ACC1", "Test", new BigDecimal("1000.00"),
+                AccountStatus.ACTIVE, LocalDateTime.now());
+        when(orderRepository.fillIfPending(orderId, PRICE)).thenReturn(1);
+        when(accountRepository.findByIdForUpdate("ACC1")).thenReturn(Optional.of(account));
+        when(instrumentRepository.findBySymbol("AAPL")).thenReturn(Optional.of(mock(Instrument.class)));
+        when(positionRepository.findByAccountIdAndSymbol(any(), any())).thenReturn(Optional.empty());
+
+        settle();
+
+        assertEquals(new BigDecimal("700.00"), account.getCashBalance());
+        verify(positionRepository).save(any());
+    }
+}
