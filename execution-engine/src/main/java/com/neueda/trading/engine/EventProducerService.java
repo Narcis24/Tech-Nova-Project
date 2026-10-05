@@ -12,7 +12,7 @@ import com.neueda.trading.events.EventEnvelope;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
-@Slf4j
+@Slf4j //Creates a logger for you
 public class EventProducerService {
 
     private final KafkaTemplate<String, String> kafkaTemplate;

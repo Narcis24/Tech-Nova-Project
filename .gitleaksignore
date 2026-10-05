@@ -1,0 +1,26 @@
+# Known false positives: example values in docs (idempotency keys, truncated/invalid sample JWTs).
+# Generated with: gitleaks detect --report-format json; each line is a finding's Fingerprint.
+23c3e5774939925579ade08bccb685848c3b796d:app/docs/Authentication/jwt_authentication.md:curl-auth-header:122
+23c3e5774939925579ade08bccb685848c3b796d:app/docs/Authentication/jwt_authentication.md:curl-auth-header:94
+6abe3e62b7d48ddae97ff216905c677f360bfe1e:app/docs/JWT Documentation/JWT_AUTH_FILTER.md:curl-auth-header:122
+6abe3e62b7d48ddae97ff216905c677f360bfe1e:app/docs/JWT Documentation/JWT_AUTH_FILTER.md:curl-auth-header:94
+6ac7402553ae5105bc813a018a6b94917ad8d177:E2E_TESTING_GUIDE.md:generic-api-key:289
+6ac7402553ae5105bc813a018a6b94917ad8d177:E2E_TESTING_GUIDE.md:generic-api-key:303
+6ac7402553ae5105bc813a018a6b94917ad8d177:E2E_TESTING_GUIDE.md:generic-api-key:306
+6ac7402553ae5105bc813a018a6b94917ad8d177:E2E_TESTING_GUIDE.md:generic-api-key:598
+9a69b22efbe96c2837bd190795773704b2392533:E2E_TESTING_GUIDE.md:generic-api-key:289
+9a69b22efbe96c2837bd190795773704b2392533:E2E_TESTING_GUIDE.md:generic-api-key:303
+9a69b22efbe96c2837bd190795773704b2392533:E2E_TESTING_GUIDE.md:generic-api-key:306
+9a69b22efbe96c2837bd190795773704b2392533:E2E_TESTING_GUIDE.md:generic-api-key:598
+9aa6650e53c8f04f678971453d76eb29e43390e0:app/docs/Authentication/jwt_authentication.md:curl-auth-header:122
+9aa6650e53c8f04f678971453d76eb29e43390e0:app/docs/Authentication/jwt_authentication.md:curl-auth-header:94
+def332eda4da1691d051f131f512b01eb663b939:docs/JWT_AUTH_FILTER.md:curl-auth-header:122
+def332eda4da1691d051f131f512b01eb663b939:docs/JWT_AUTH_FILTER.md:curl-auth-header:94
+dfaf235580f49b8046b7a263706b45e4266efc91:E2E_TESTING_GUIDE.md:generic-api-key:289
+dfaf235580f49b8046b7a263706b45e4266efc91:E2E_TESTING_GUIDE.md:generic-api-key:303
+dfaf235580f49b8046b7a263706b45e4266efc91:E2E_TESTING_GUIDE.md:generic-api-key:306
+dfaf235580f49b8046b7a263706b45e4266efc91:E2E_TESTING_GUIDE.md:generic-api-key:598
+e4c25849c6ae6e8f9265085c796b2a59b7595f7d:E2E_TESTING_GUIDE.md:generic-api-key:289
+e4c25849c6ae6e8f9265085c796b2a59b7595f7d:E2E_TESTING_GUIDE.md:generic-api-key:303
+e4c25849c6ae6e8f9265085c796b2a59b7595f7d:E2E_TESTING_GUIDE.md:generic-api-key:306
+e4c25849c6ae6e8f9265085c796b2a59b7595f7d:E2E_TESTING_GUIDE.md:generic-api-key:598
