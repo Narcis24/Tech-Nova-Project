@@ -168,7 +168,7 @@ services:
 
 
   sonarqube:
-    image: sonarqube:community
+    image: sonarqube:26.9.0.129388-community
 
     profiles:
       - quality
