@@ -1,15 +1,22 @@
 package com.neueda.trading.engine;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neueda.trading.events.EventEnvelope;
 import com.neueda.trading.events.OrderPlacedEvent;
 import com.neueda.trading.events.OrderExecutedEvent;
+import com.neueda.trading.events.OrderRejectedEvent;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,13 +26,22 @@ public class ExecutionEngine {
 
     private final ObjectMapper objectMapper;
     private final EventProducerService eventProducerService;
+    private final QuoteCache quoteCache;
+    private final MarketDataProperties props;
+
+    // LIMIT orders waiting for the market, by order id. In memory: lost on restart.
+    private final Map<UUID, OrderPlacedEvent> resting = new HashMap<>();
 
     public ExecutionEngine(
             ObjectMapper objectMapper,
-            EventProducerService eventProducerService) {
+            EventProducerService eventProducerService,
+            QuoteCache quoteCache,
+            MarketDataProperties props) {
 
         this.objectMapper = objectMapper;
         this.eventProducerService = eventProducerService;
+        this.quoteCache = quoteCache;
+        this.props = props;
     }
 
     @KafkaListener(
@@ -50,7 +66,7 @@ public class ExecutionEngine {
                 message,
                 EventEnvelope.class
             );
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
 
             log.error(
                 "Failed to deserialize Kafka message into EventEnvelope: {}",
@@ -58,7 +74,7 @@ public class ExecutionEngine {
                 e
             );
 
-            throw new RuntimeException(
+            throw new EventProcessingException(
                 "Failed to deserialize EventEnvelope",
                 e
             );
@@ -90,7 +106,7 @@ public class ExecutionEngine {
                 envelope.payload(),
                 OrderPlacedEvent.class
             );
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
 
             log.error(
                 "Failed to convert payload into OrderPlacedEvent: {}",
@@ -98,7 +114,7 @@ public class ExecutionEngine {
                 e
             );
 
-            throw new RuntimeException(
+            throw new EventProcessingException(
                 "Failed to deserialize OrderPlacedEvent",
                 e
             );
@@ -115,66 +131,72 @@ public class ExecutionEngine {
             event.getPrice()
         );
 
-        /*
-         * EXECUTION PRICE = PRICE-AT-PLACEMENT
-         *
-         * The app stamps a price into every ORDER_PLACED event:
-         *   LIMIT  -> the client's limit price
-         *   MARKET -> the latest stored price captured at placement time
-         *
-         * We fill at that price. There is no separate market-data lookup
-         * here yet, so the fill reflects the price when the order was
-         * placed, not a fresh quote. This is acceptable while fills are
-         * instantaneous; replace with a live market-data service / topic
-         * (and slippage) once orders can rest before filling.
-         *
-         * A null price should never reach us. Rather than invent a fill at
-         * an arbitrary number, fail loudly so the order is not settled wrongly.
-         */
-        if (event.getPrice() == null) {
-            log.error(
-                "ORDER_PLACED has no price; refusing to fill: orderId={}, symbol={}, orderType={}",
-                event.getOrderId(),
-                event.getSymbol(),
-                event.getOrderType()
-            );
-            throw new IllegalStateException(
-                "Cannot execute order without a price: " + event.getOrderId()
-            );
+        handle(event);
+    }
+
+    /**
+     * Every new quote re-checks the LIMIT orders resting on that symbol, so there is no
+     * separate schedule. Own consumer group: every executor instance needs every quote.
+     */
+    @KafkaListener(topics = MarketDataPoller.TOPIC, groupId = "execution-engine-quotes")
+    public void onQuote(String message) throws JsonProcessingException {
+        Quote quote = objectMapper.treeToValue(objectMapper.readTree(message).path("payload"), Quote.class);
+        quoteCache.put(quote);
+        recheckResting(quote);
+    }
+
+    /**
+     * Fills what it can, rests a LIMIT that has not crossed yet, rejects what can never be
+     * priced, so an order is never left PENDING without a reason.
+     */
+    synchronized void handle(OrderPlacedEvent event) {
+        boolean market = "MARKET".equals(event.getOrderType());
+        FillRule.Decision decision = quoteCache
+            .fresh(event.getSymbol(), Instant.now(), Duration.ofSeconds(props.maxQuoteAgeSeconds()))
+            .<FillRule.Decision>map(q -> FillRule.decide(event, q))
+            .orElseGet(() -> market
+                ? new FillRule.Reject("No fresh quote for " + event.getSymbol())
+                : new FillRule.Wait());
+
+        switch (decision) {
+            case FillRule.Fill(BigDecimal price) -> publishFill(event, price);
+            case FillRule.Reject(String reason) -> publishReject(event, reason);
+            case FillRule.Wait() -> {
+                resting.put(event.getOrderId(), event);
+                log.info("Resting LIMIT order: orderId={}, symbol={}", event.getOrderId(), event.getSymbol());
+            }
         }
+    }
 
-        BigDecimal executionPrice = event.getPrice();
+    private synchronized void recheckResting(Quote quote) {
+        for (OrderPlacedEvent order : List.copyOf(resting.values())) {
+            if (order.getSymbol().equals(quote.symbol())
+                    && FillRule.decide(order, quote) instanceof FillRule.Fill(BigDecimal price)) {
+                resting.remove(order.getOrderId());
+                publishFill(order, price);
+            }
+        }
+    }
 
-        BigDecimal totalValue =
-            executionPrice.multiply(
-                BigDecimal.valueOf(event.getQuantity())
-            );
-
-        log.info(
-            "Executing order: orderId={}, executionPrice={}, totalValue={}",
-            event.getOrderId(),
-            executionPrice,
-            totalValue
+    private void publishReject(OrderPlacedEvent event, String reason) {
+        log.info("Rejecting order: orderId={}, reason={}", event.getOrderId(), reason);
+        eventProducerService.publishEvent(
+            "order-execution",
+            event.getOrderId().toString(),
+            "ORDER_REJECTED",
+            "ExecutionEngine",
+            new OrderRejectedEvent(event.getOrderId(), event.getAccountId(), event.getSymbol(), reason)
         );
+    }
 
-        /*
-         * Build the result that will be sent back to app/.
-         *
-         * NOTE:
-         * Your Kafka example showed:
-         *
-         * accountId = "ACC003"
-         *
-         * That is NOT a UUID.
-         *
-         * Therefore DO NOT do:
-         *
-         * UUID.fromString(event.getAccountId())
-         *
-         * unless OrderExecutedEvent specifically requires UUID
-         * and your account IDs are actually UUIDs.
-         */
-        OrderExecutedEvent executedEvent =
+    private void publishFill(OrderPlacedEvent event, BigDecimal executionPrice) {
+        BigDecimal totalValue = executionPrice.multiply(BigDecimal.valueOf(event.getQuantity()));
+
+        eventProducerService.publishEvent(
+            "order-execution",
+            event.getOrderId().toString(),
+            "ORDER_EXECUTED",
+            "ExecutionEngine",
             new OrderExecutedEvent(
                 event.getOrderId(),
                 event.getAccountId(),
@@ -183,20 +205,7 @@ public class ExecutionEngine {
                 event.getQuantity(),
                 executionPrice,
                 totalValue
-            );
-
-        /*
-         * Send result back to Kafka.
-         *
-         * app/ listens to order-execution and handles the
-         * account/order/position database updates.
-         */
-        eventProducerService.publishEvent(
-            "order-execution",
-            event.getOrderId().toString(),
-            "ORDER_EXECUTED",
-            "ExecutionEngine",
-            executedEvent
+            )
         );
 
         log.info(

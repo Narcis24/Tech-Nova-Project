@@ -70,6 +70,8 @@ services:
 
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ALPACA_KEY_ID: ${ALPACA_KEY_ID:-}
+      ALPACA_SECRET_KEY: ${ALPACA_SECRET_KEY:-}
 
     networks:
       - tech-nova-network

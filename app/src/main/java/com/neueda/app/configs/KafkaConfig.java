@@ -139,7 +139,7 @@ public class KafkaConfig {
     public NewTopic marketDataTopic() {
 
         return TopicBuilder
-            .name("marketData")
+            .name("market-data")
             .partitions(3)
             .replicas(1)
             .build();
