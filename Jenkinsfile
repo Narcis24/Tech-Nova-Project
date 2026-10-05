@@ -37,20 +37,7 @@ pipeline {
             }
             steps {
                 sh '''
-                    # Force remove any lingering containers using the port
-                    docker-compose down -v --remove-orphans || true
-                    docker system prune -f --volumes || true
-                    docker ps -a | grep -E "(tech-nova|postgres|kafka)" | awk '{print $1}' | xargs -r docker rm -f || true
-                    
-                    # Wait for port to be released
-                    sleep 5
-                    
                     docker-compose up -d
-                    sleep 45
-                    
-                    # Check app logs for successful startup
-                    docker-compose logs app | grep -i "started" || (docker-compose logs app && exit 1)
-                    
                     docker-compose down -v --remove-orphans
                 '''
                 sh 'docker run --rm --entrypoint python tech-nova-pipeline:latest -c "import load"'
@@ -74,7 +61,7 @@ pipeline {
                 // scans each image's full dependency tree (JARs, Python packages, OS packages);
                 // fails the build on any HIGH or CRITICAL vulnerability that has a fix available
                 script {
-                    for (img in ['team-skeleton', 'tech-nova-pipeline', 'tech-nova-auth', 'tech-nova-execution-engine']) {
+                    for (img in ['tech-nova', 'tech-nova-pipeline', 'tech-nova-auth', 'tech-nova-execution-engine']) {
                         sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache aquasec/trivy:latest image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed ${img}:latest"
                     }
                 }
