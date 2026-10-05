@@ -13,7 +13,9 @@ import com.neueda.app.repositories.PriceRepository;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.stereotype.Service;
 
+@Service
 public class PortfolioService {
     
     private AccountRepository accountRepository;
