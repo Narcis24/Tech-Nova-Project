@@ -157,61 +157,6 @@ public class OrderService {
         return new OrderResponse(order);
     }
 
-    public OrderResponse executeOrder(UUID orderId) {
-        Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
-        
-        // Fails fast if the order is not PENDING, before any cash/position changes
-        order.execute();
-
-        // A limit order only fills once the market has reached its limit
-        if (order.getOrderType() == OrderType.LIMIT) {
-            BigDecimal marketPrice = priceService.getCurrentPrice(order.getSymbol());
-            if (!order.isTriggeredBy(marketPrice)) {
-                throw new OrderNotTriggeredException(
-                    "Limit " + order.getPrice() + " not reached, market price is " + marketPrice);
-            }
-        }
-
-        BigDecimal totalValue = order.getTotalValue();
-        Account account = accountRepository.findById(order.getAccountId())
-            .orElseThrow(() -> new AccountNotFoundException("Account not found"));
-        Instrument instrument = instrumentRepository.findBySymbol(order.getSymbol())
-            .orElseThrow(() -> new InstrumentNotFoundException("Instrument not found"));
-        
-        if (order.getSide() == OrderSide.BUY) {
-            // BUY FLOW
-            account.debitCash(totalValue);
-            
-            Position position = positionRepository
-                .findByAccountIdAndSymbol(order.getAccountId(), order.getSymbol())
-                .orElse(new Position(account, instrument, 0, BigDecimal.ZERO));
-            
-            position.updateOnBuy(order.getQuantity(), order.getPrice());
-            
-            accountRepository.save(account);
-            positionRepository.save(position);
-            
-        } else {
-            // SELL FLOW
-            Position position = positionRepository
-                .findByAccountIdAndSymbol(order.getAccountId(), order.getSymbol())
-                .orElseThrow(() -> new InsufficientHoldingsException(
-                    "No position in " + order.getSymbol() + " for account " + order.getAccountId()));
-            
-            position.updateOnSell(order.getQuantity());
-            
-            account.creditCash(totalValue);
-            
-            positionRepository.save(position);
-            accountRepository.save(account);
-        }
-        
-        orderRepository.save(order);
-        return new OrderResponse(order);
-    }
-
-
     public OrderResponse cancelOrder(UUID orderId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
