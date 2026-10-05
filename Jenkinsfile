@@ -21,9 +21,11 @@ pipeline {
         }
         stage('Smoke Test') {
             steps {
-                sh 'docker run --rm tech-nova:latest'
-                // imports dependencies and compiles load.py without hitting Yahoo or a database
+                sh 'docker-compose up -d'
+                sh 'sleep 20'  // Wait for PostgreSQL, Kafka, and app to start
+                sh 'docker-compose exec -T app curl -f http://localhost:8081/api/actuator/health || exit 1'
                 sh 'docker run --rm --entrypoint python tech-nova-pipeline:latest -c "import load"'
+                sh 'docker-compose down'
             }
         }
         stage('SonarQube') {
