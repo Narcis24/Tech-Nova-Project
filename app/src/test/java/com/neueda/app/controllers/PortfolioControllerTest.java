@@ -12,16 +12,17 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.neueda.app.dtos.ErrorResponse;
 import com.neueda.app.dtos.PortfolioMetricsResponse;
 import com.neueda.app.dtos.PortfolioSnapshotResponse;
 import com.neueda.app.dtos.PositionResponse;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.services.PortfolioService;
+import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -32,11 +33,13 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standal
 @RestControllerAdvice
 class PortfolioGlobalExceptionHandler {
     @ExceptionHandler(AccountNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public void handleAccountNotFound(AccountNotFoundException ex) {}
+    public ResponseEntity<ErrorResponse> handleAccountNotFound(AccountNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse("ACCOUNT_NOT_FOUND", ex.getMessage(), 404);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
 }
 
-class PortfolioControllerTest {
+public class PortfolioControllerTest {
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
 
