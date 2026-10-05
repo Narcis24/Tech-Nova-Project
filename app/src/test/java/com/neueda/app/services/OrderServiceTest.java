@@ -10,6 +10,8 @@ import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.exceptions.OrderNotTriggeredException;
 import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.exceptions.DuplicateOrderException;
+import com.neueda.app.exceptions.InsufficientFundsException;
+import com.neueda.app.exceptions.InsufficientHoldingsException;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Order;
@@ -86,6 +88,28 @@ class OrderServiceTest {
     private void stubAccountAndInstrument(Account account, Instrument instrument) {
         when(accountRepository.findById("12345")).thenReturn(Optional.of(account));
         when(instrumentRepository.findBySymbol("AAPL")).thenReturn(Optional.of(instrument));
+    }
+
+    @Test
+    void testPlaceBuyRejectedWhenCashIsShort() {
+        stubAccountAndInstrument(activeAccount(), aapl());
+
+        assertThrows(InsufficientFundsException.class, () -> orderService.placeOrder(new PlaceOrderRequest(
+            "12345", "AAPL", "BUY", "LIMIT", 100, new BigDecimal("150.00"), "key-cash")));
+
+        verify(orderRepository, never()).save(any(Order.class));
+        verifyNoInteractions(eventProducerService);
+    }
+
+    @Test
+    void testPlaceSellRejectedWithoutEnoughShares() {
+        stubAccountAndInstrument(activeAccount(), aapl());
+
+        assertThrows(InsufficientHoldingsException.class, () -> orderService.placeOrder(new PlaceOrderRequest(
+            "12345", "AAPL", "SELL", "LIMIT", 10, new BigDecimal("150.00"), "key-sell")));
+
+        verify(orderRepository, never()).save(any(Order.class));
+        verifyNoInteractions(eventProducerService);
     }
 
     @Test

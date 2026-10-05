@@ -13,6 +13,8 @@ import com.neueda.app.exceptions.*;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Order;
+import com.neueda.app.exceptions.InsufficientHoldingsException;
+import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.models.Position;
 
 import com.neueda.app.repositories.AccountRepository;
@@ -129,6 +131,21 @@ public class OrderService {
             LocalDateTime.now()
         );
         
+        // Fail fast on what we can already see. Settlement re-checks at the real fill price.
+        if (order.getSide() == OrderSide.BUY) {
+            if (account.getCashBalance().compareTo(order.getTotalValue()) < 0) {
+                throw new InsufficientFundsException("Account " + account.getAccountId() + " has $"
+                    + account.getCashBalance() + " but order requires $" + order.getTotalValue());
+            }
+        } else {
+            int held = positionRepository.findByAccountIdAndSymbol(order.getAccountId(), order.getSymbol())
+                .map(Position::getQuantity).orElse(0);
+            if (held < order.getQuantity()) {
+                throw new InsufficientHoldingsException("Cannot sell " + order.getQuantity()
+                    + " shares of " + order.getSymbol() + ". Only " + held + " held.");
+            }
+        }
+
         orderRepository.save(order);
         
         // Publish ORDER_PLACED event to Kafka (asynchronous execution will happen in ExecutionEngine)

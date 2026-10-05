@@ -24,6 +24,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class OrderSettlementServiceTest {
@@ -121,5 +122,20 @@ class OrderSettlementServiceTest {
 
         assertEquals(new BigDecimal("1300.00"), account.getCashBalance());
         verify(position).updateOnSell(2);
+    }
+
+    @Test
+    void fillThatCashCannotCoverIsRejectedNotRetried() throws Exception {
+        Account poor = new Account("ACC1", "Test", new BigDecimal("100.00"),
+                AccountStatus.ACTIVE, LocalDateTime.now());
+        when(orderRepository.transition(orderId, OrderStatus.PENDING, OrderStatus.FILLED, PRICE)).thenReturn(1);
+        when(accountRepository.findByIdForUpdate("ACC1")).thenReturn(Optional.of(poor));
+        when(instrumentRepository.findBySymbol("AAPL")).thenReturn(Optional.of(mock(Instrument.class)));
+
+        settle();
+
+        assertEquals(new BigDecimal("100.00"), poor.getCashBalance());
+        verify(orderRepository).reject(eq(orderId), eq(OrderStatus.FILLED), eq(OrderStatus.REJECTED), any());
+        verify(positionRepository, never()).save(any());
     }
 }

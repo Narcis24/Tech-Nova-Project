@@ -106,7 +106,7 @@ fresh quote (`market-data.max-quote-age-seconds`), or a malformed order, is publ
 `ORDER_REJECTED`, which the app turns into a REJECTED order. A resting order that was
 cancelled in the meantime is harmless: the app ignores a fill for an order that is no longer PENDING.
 
-**Quota:** requests/day = ceil(symbols / 25) x ceil(86400 / interval). 36 symbols at the
+**Quota:** requests/day = ceil(symbols / 25) x ceil(86400 / interval). 38 symbols at the
 default 120 s is 2 x 720 = 1,440 of the 2,000 allowed. Startup fails if the configured
 symbols and interval would exceed `market-data.daily-quota`.
 

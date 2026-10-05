@@ -7,6 +7,7 @@ import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.events.EventEnvelope;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.InstrumentNotFoundException;
+import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.exceptions.InsufficientHoldingsException;
 import com.neueda.app.exceptions.OrderNotFoundException;
 import com.neueda.app.models.Account;
@@ -199,6 +200,11 @@ public class OrderSettlementService {
                 event.getExecutionPrice()
             );
 
+        } catch (InsufficientFundsException | InsufficientHoldingsException e) {
+            // The fill cannot be settled. Nothing else was written, so flip the guard's FILLED
+            // back and resolve the order as REJECTED instead of leaving it for the dead-letter topic.
+            log.warn("Rejecting unsettleable fill: orderId={}, reason={}", orderId, e.getMessage());
+            orderRepository.reject(orderId, OrderStatus.FILLED, OrderStatus.REJECTED, e.getMessage());
         } catch (Exception e) {
             log.error("Error processing ORDER_EXECUTED event: orderId={}", orderId, e);
             throw new RuntimeException("Failed to process order execution: " + orderId, e);
