@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.ResponseEntity;
+import jakarta.validation.constraints.Size;
 import com.neueda.app.dtos.PriceResponse;
 import com.neueda.app.services.PriceService;
 
@@ -23,7 +24,7 @@ public class PriceController {
     }
 
     @GetMapping("/{symbol}")
-    public ResponseEntity<PriceResponse> getPrice(@PathVariable String symbol) {
+    public ResponseEntity<PriceResponse> getPrice(@PathVariable @Size(min = 3, max = 5, message = "Symbol must be between 3 and 5 characters") String symbol) {
         return ResponseEntity.ok(new PriceResponse(symbol, priceService.getCurrentPrice(symbol)));
     }
 }

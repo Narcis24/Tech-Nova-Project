@@ -79,8 +79,8 @@ class GlobalExceptionHandlerTest {
     @CsvSource({
         "Empty accountId, 'accountId: Account ID is required', '', AAPL, BUY, LIMIT, 100, 150.00, idempotency-123",
         "Empty symbol, 'symbol: Symbol is required', ACC123, , BUY, LIMIT, 100, 150.00, idempotency-123",
-        "Empty side, 'side: Side must be BUY or SELL', ACC123, AAPL, '', LIMIT, 100, 150.00, idempotency-123",
-        "Empty order type, 'orderType: Order type must be MARKET or LIMIT', ACC123, AAPL, BUY, '', 100, 150.00, idempotency-123",
+        "Empty side, 'side: Side must be one of [BUY, SELL]', ACC123, AAPL, '', LIMIT, 100, 150.00, idempotency-123",
+        "Empty order type, 'orderType: Order type must be one of [MARKET, LIMIT]', ACC123, AAPL, BUY, '', 100, 150.00, idempotency-123",
         "Null quantity, 'quantity: Quantity is required', ACC123, AAPL, BUY, LIMIT, , 150.00, idempotency-123",
         "Negative quantity, 'quantity: Quantity must be at least 1', ACC123, AAPL, BUY, LIMIT, -50, 150.00, idempotency-123",
         "Zero quantity, 'quantity: Quantity must be at least 1', ACC123, AAPL, BUY, LIMIT, 0, 150.00, idempotency-123",

@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.ResponseEntity;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import com.neueda.app.dtos.PositionResponse;
 import com.neueda.app.dtos.PositionMetricsResponse;
@@ -20,7 +21,7 @@ public class PositionController {
     }
 
     @GetMapping("/{accountId}/{symbol}")
-    public ResponseEntity<PositionResponse> getPosition(@PathVariable String accountId ,@PathVariable String symbol){
+    public ResponseEntity<PositionResponse> getPosition(@PathVariable String accountId ,@PathVariable @Size(min = 3, max = 5, message = "Symbol must be between 3 and 5 characters") String symbol){
         PositionResponse positionResponse = positionService.getPosition(accountId,symbol);
         return ResponseEntity.ok(positionResponse);
     }
@@ -32,7 +33,7 @@ public class PositionController {
     } 
 
     @GetMapping("/{accountId}/{symbol}/metrics")
-    public ResponseEntity<PositionMetricsResponse> getPositionMetrics(@PathVariable String accountId,@PathVariable String symbol ){
+    public ResponseEntity<PositionMetricsResponse> getPositionMetrics(@PathVariable String accountId,@PathVariable @Size(min = 3, max = 5, message = "Symbol must be between 3 and 5 characters") String symbol ){
         PositionMetricsResponse positionMetricsResponse = positionService.getPositionMetrics(accountId,symbol);
         return ResponseEntity.ok(positionMetricsResponse);
     }
