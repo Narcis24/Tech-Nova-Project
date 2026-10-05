@@ -94,7 +94,6 @@ services:
 
   kafka:
     image: apache/kafka:4.0.0
-    container_name: kafka
     restart: unless-stopped
 
     environment:
@@ -135,7 +134,6 @@ services:
 
   kafka-ui:
     image: kafbat/kafka-ui:latest
-    container_name: tech-nova-kafka-ui
     depends_on:
       kafka:
         condition: service_healthy

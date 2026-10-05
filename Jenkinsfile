@@ -20,13 +20,26 @@ pipeline {
             }
         }
         stage('Smoke Test') {
+            environment {
+                POSTGRES_PASSWORD = credentials('postgres-password')
+            }
             steps {
                 sh '''
-                    export POSTGRES_PASSWORD=test-password
+                    # Force remove any lingering containers using the port
+                    docker-compose down -v --remove-orphans || true
+                    docker system prune -f --volumes || true
+                    docker ps -a | grep -E "(tech-nova|postgres|kafka)" | awk '{print $1}' | xargs -r docker rm -f || true
+                    
+                    # Wait for port to be released
+                    sleep 5
+                    
                     docker-compose up -d
                     sleep 60
-                    docker-compose exec -T app curl -f http://localhost:8081/api/actuator/health || exit 1
-                    docker-compose down
+                    
+                    # Check app logs for successful startup
+                    docker-compose logs app | grep -i "started" || (docker-compose logs app && exit 1)
+                    
+                    docker-compose down -v --remove-orphans
                 '''
                 sh 'docker run --rm --entrypoint python tech-nova-pipeline:latest -c "import load"'
             }
