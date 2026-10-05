@@ -99,9 +99,12 @@ request, and publishes one `MARKET_DATA` message per symbol to `market-data`, ke
 
 `ExecutionEngine` prices each `ORDER_PLACED` with `FillRule.decide(order, quote)`, a pure
 function: a BUY trades at the ask and a SELL at the bid; a MARKET order fills there, a LIMIT
-order only if that price is at or better than its limit. An order with no fresh quote
-(`market-data.max-quote-age-seconds`) or that fails the rule is published as `ORDER_REJECTED`,
-which the app turns into a REJECTED order, so nothing is left PENDING.
+order only if that price is at or better than its limit. A LIMIT that has not crossed yet
+(or has no quote yet) rests in memory; every new quote for its symbol re-checks it, so there
+is no extra schedule. Resting orders are lost if the executor restarts. A MARKET order with no
+fresh quote (`market-data.max-quote-age-seconds`), or a malformed order, is published as
+`ORDER_REJECTED`, which the app turns into a REJECTED order. A resting order that was
+cancelled in the meantime is harmless: the app ignores a fill for an order that is no longer PENDING.
 
 **Quota:** requests/day = ceil(symbols / 25) x ceil(86400 / interval). 36 symbols at the
 default 120 s is 2 x 720 = 1,440 of the 2,000 allowed. Startup fails if the configured

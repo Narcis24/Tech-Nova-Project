@@ -75,7 +75,7 @@ class MarketDataTest {
 
     @Test
     void cacheIgnoresStaleQuotes() {
-        QuoteCache cache = new QuoteCache(new com.fasterxml.jackson.databind.ObjectMapper());
+        QuoteCache cache = new QuoteCache();
         Instant now = Instant.now();
         cache.put(new Quote("AAPL", BigDecimal.ONE, BigDecimal.TEN, now.minusSeconds(700)));
 

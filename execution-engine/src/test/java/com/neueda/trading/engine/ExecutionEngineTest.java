@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.math.BigDecimal;
@@ -34,7 +35,7 @@ class ExecutionEngineTest {
     @BeforeEach
     void setUp() {
         producer = mock(EventProducerService.class);
-        cache = new QuoteCache(mapper);
+        cache = new QuoteCache();
         MarketDataProperties props =
             new MarketDataProperties(List.of("AAPL"), 120, 25, 2000, 600, "http://x", "", "");
         engine = new ExecutionEngine(mapper, producer, cache, props);
@@ -72,12 +73,45 @@ class ExecutionEngineTest {
     }
 
     @Test
-    void limitThatDoesNotCrossIsRejected() throws Exception {
+    void limitThatDoesNotCrossRestsThenFillsWhenAQuoteCrossesIt() throws Exception {
         cache.put(new Quote("AAPL", new BigDecimal("99.50"), new BigDecimal("100.50"), Instant.now()));
 
         place("LIMIT", "90.00");
 
-        verify(producer).publishEvent(any(), any(), eq("ORDER_REJECTED"), any(), any());
-        verify(producer, never()).publishEvent(any(), any(), eq("ORDER_EXECUTED"), any(), any());
+        verify(producer, never()).publishEvent(any(), any(), any(), any(), any());
+
+        // market drops: ask 89.00 is at or below the 90.00 limit
+        engine.onQuote(quoteMessage("88.50", "89.00"));
+
+        ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
+        verify(producer).publishEvent(eq("order-execution"), eq(orderId.toString()),
+            eq("ORDER_EXECUTED"), any(), payload.capture());
+        assertEquals(new BigDecimal("89.00"), ((OrderExecutedEvent) payload.getValue()).executionPrice());
+
+        // filled once: a further quote does not fill it again
+        engine.onQuote(quoteMessage("80.00", "81.00"));
+        verify(producer, times(1)).publishEvent(any(), any(), eq("ORDER_EXECUTED"), any(), any());
+    }
+
+    @Test
+    void limitWithNoQuoteYetRests() throws Exception {
+        place("LIMIT", "90.00");
+
+        verify(producer, never()).publishEvent(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void quotesForOtherSymbolsDoNotFillRestingOrders() throws Exception {
+        place("LIMIT", "90.00");
+
+        engine.onQuote(mapper.writeValueAsString(new EventEnvelope<>("q", "MARKET_DATA", Instant.now(), "p", 1,
+            new Quote("MSFT", new BigDecimal("1.00"), new BigDecimal("1.00"), Instant.now()))));
+
+        verify(producer, never()).publishEvent(any(), any(), any(), any(), any());
+    }
+
+    private String quoteMessage(String bid, String ask) throws Exception {
+        return mapper.writeValueAsString(new EventEnvelope<>("q", "MARKET_DATA", Instant.now(), "p", 1,
+            new Quote("AAPL", new BigDecimal(bid), new BigDecimal(ask), Instant.now())));
     }
 }

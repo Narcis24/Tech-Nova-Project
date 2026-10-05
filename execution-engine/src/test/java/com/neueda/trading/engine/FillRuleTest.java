@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import com.neueda.trading.engine.FillRule.Decision;
 import com.neueda.trading.engine.FillRule.Fill;
 import com.neueda.trading.engine.FillRule.Reject;
+import com.neueda.trading.engine.FillRule.Wait;
 import com.neueda.trading.events.OrderPlacedEvent;
 
 class FillRuleTest {
@@ -46,8 +47,8 @@ class FillRuleTest {
     }
 
     @Test
-    void limitBuyBelowAskIsRejected() {
-        assertInstanceOf(Reject.class, FillRule.decide(order("BUY", "LIMIT", "100.49"), QUOTE));
+    void limitBuyBelowAskWaits() {
+        assertInstanceOf(Wait.class, FillRule.decide(order("BUY", "LIMIT", "100.49"), QUOTE));
     }
 
     @Test
@@ -57,14 +58,15 @@ class FillRuleTest {
     }
 
     @Test
-    void limitSellAboveBidIsRejected() {
-        assertInstanceOf(Reject.class, FillRule.decide(order("SELL", "LIMIT", "99.51"), QUOTE));
+    void limitSellAboveBidWaits() {
+        assertInstanceOf(Wait.class, FillRule.decide(order("SELL", "LIMIT", "99.51"), QUOTE));
     }
 
     @Test
-    void zeroOrMissingQuoteSideIsRejected() {
+    void marketOrderWithoutUsableQuoteSideIsRejectedButLimitWaits() {
         Quote noAsk = new Quote("AAPL", new BigDecimal("99.50"), BigDecimal.ZERO, Instant.now());
         assertInstanceOf(Reject.class, FillRule.decide(order("BUY", "MARKET", null), noAsk));
+        assertInstanceOf(Wait.class, FillRule.decide(order("BUY", "LIMIT", "100.00"), noAsk));
         Quote noBid = new Quote("AAPL", null, new BigDecimal("100.50"), Instant.now());
         assertInstanceOf(Reject.class, FillRule.decide(order("SELL", "MARKET", null), noBid));
     }

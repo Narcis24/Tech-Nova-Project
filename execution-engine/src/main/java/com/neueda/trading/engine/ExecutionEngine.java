@@ -3,7 +3,10 @@ package com.neueda.trading.engine;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Optional;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
@@ -24,6 +27,9 @@ public class ExecutionEngine {
     private final EventProducerService eventProducerService;
     private final QuoteCache quoteCache;
     private final MarketDataProperties props;
+
+    // LIMIT orders waiting for the market, by order id. In memory: lost on restart.
+    private final Map<UUID, OrderPlacedEvent> resting = new HashMap<>();
 
     public ExecutionEngine(
             ObjectMapper objectMapper,
@@ -124,45 +130,72 @@ public class ExecutionEngine {
             event.getPrice()
         );
 
-        /*
-         * Price against the latest live quote. Anything that cannot be priced is
-         * rejected, so the order is always resolved and never left PENDING.
-         */
-        Optional<Quote> quote = quoteCache.fresh(
-            event.getSymbol(), Instant.now(), Duration.ofSeconds(props.maxQuoteAgeSeconds()));
+        handle(event);
+    }
 
-        FillRule.Decision decision = quote
+    /**
+     * Every new quote re-checks the LIMIT orders resting on that symbol, so there is no
+     * separate schedule. Own consumer group: every executor instance needs every quote.
+     */
+    @KafkaListener(topics = MarketDataPoller.TOPIC, groupId = "execution-engine-quotes")
+    public void onQuote(String message) throws Exception {
+        Quote quote = objectMapper.treeToValue(objectMapper.readTree(message).path("payload"), Quote.class);
+        quoteCache.put(quote);
+        recheckResting(quote);
+    }
+
+    /**
+     * Fills what it can, rests a LIMIT that has not crossed yet, rejects what can never be
+     * priced, so an order is never left PENDING without a reason.
+     */
+    synchronized void handle(OrderPlacedEvent event) {
+        boolean market = "MARKET".equals(event.getOrderType());
+        FillRule.Decision decision = quoteCache
+            .fresh(event.getSymbol(), Instant.now(), Duration.ofSeconds(props.maxQuoteAgeSeconds()))
             .<FillRule.Decision>map(q -> FillRule.decide(event, q))
-            .orElseGet(() -> new FillRule.Reject("No fresh quote for " + event.getSymbol()));
+            .orElseGet(() -> market
+                ? new FillRule.Reject("No fresh quote for " + event.getSymbol())
+                : new FillRule.Wait());
 
-        if (decision instanceof FillRule.Reject reject) {
-            log.info("Rejecting order: orderId={}, reason={}", event.getOrderId(), reject.reason());
-            eventProducerService.publishEvent(
-                "order-execution",
-                event.getOrderId().toString(),
-                "ORDER_REJECTED",
-                "ExecutionEngine",
-                new OrderRejectedEvent(
-                    event.getOrderId(), event.getAccountId(), event.getSymbol(), reject.reason())
-            );
-            return;
+        switch (decision) {
+            case FillRule.Fill fill -> publishFill(event, fill.price());
+            case FillRule.Reject reject -> publishReject(event, reject.reason());
+            case FillRule.Wait wait -> {
+                resting.put(event.getOrderId(), event);
+                log.info("Resting LIMIT order: orderId={}, symbol={}", event.getOrderId(), event.getSymbol());
+            }
         }
+    }
 
-        BigDecimal executionPrice = ((FillRule.Fill) decision).price();
+    private synchronized void recheckResting(Quote quote) {
+        for (OrderPlacedEvent order : List.copyOf(resting.values())) {
+            if (order.getSymbol().equals(quote.symbol())
+                    && FillRule.decide(order, quote) instanceof FillRule.Fill fill) {
+                resting.remove(order.getOrderId());
+                publishFill(order, fill.price());
+            }
+        }
+    }
 
-        BigDecimal totalValue =
-            executionPrice.multiply(
-                BigDecimal.valueOf(event.getQuantity())
-            );
-
-        log.info(
-            "Executing order: orderId={}, executionPrice={}, totalValue={}",
-            event.getOrderId(),
-            executionPrice,
-            totalValue
+    private void publishReject(OrderPlacedEvent event, String reason) {
+        log.info("Rejecting order: orderId={}, reason={}", event.getOrderId(), reason);
+        eventProducerService.publishEvent(
+            "order-execution",
+            event.getOrderId().toString(),
+            "ORDER_REJECTED",
+            "ExecutionEngine",
+            new OrderRejectedEvent(event.getOrderId(), event.getAccountId(), event.getSymbol(), reason)
         );
+    }
 
-        OrderExecutedEvent executedEvent =
+    private void publishFill(OrderPlacedEvent event, BigDecimal executionPrice) {
+        BigDecimal totalValue = executionPrice.multiply(BigDecimal.valueOf(event.getQuantity()));
+
+        eventProducerService.publishEvent(
+            "order-execution",
+            event.getOrderId().toString(),
+            "ORDER_EXECUTED",
+            "ExecutionEngine",
             new OrderExecutedEvent(
                 event.getOrderId(),
                 event.getAccountId(),
@@ -171,14 +204,7 @@ public class ExecutionEngine {
                 event.getQuantity(),
                 executionPrice,
                 totalValue
-            );
-
-        eventProducerService.publishEvent(
-            "order-execution",
-            event.getOrderId().toString(),
-            "ORDER_EXECUTED",
-            "ExecutionEngine",
-            executedEvent
+            )
         );
 
         log.info(
