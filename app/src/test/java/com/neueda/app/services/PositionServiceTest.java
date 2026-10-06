@@ -2,7 +2,11 @@ package com.neueda.app.services;
 
 import com.neueda.app.dtos.PositionMetricsResponse;
 import com.neueda.app.dtos.PositionResponse;
+import com.neueda.app.enums.AccountStatus;
+import com.neueda.app.enums.AssetClass;
 import com.neueda.app.exceptions.TradingException;
+import com.neueda.app.models.Account;
+import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Position;
 import com.neueda.app.models.Price;
 import com.neueda.app.repositories.PositionRepository;
@@ -12,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -167,8 +172,8 @@ class PositionServiceTest {
 
         when(positionRepository.findByAccountId(accountId))
             .thenReturn(positions);
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL"))
-            .thenReturn(Optional.of(new Price("AAPL", LocalDate.now(), new BigDecimal("160.00"))));
+        when(priceRepository.findLatestBySymbols(List.of("AAPL")))
+            .thenReturn(List.of(new Price("AAPL", LocalDate.now(), new BigDecimal("160.00"))));
 
         // Act
         List<PositionResponse> result = positionService.getAccountPositions(accountId);
@@ -232,8 +237,11 @@ class PositionServiceTest {
 
         when(positionRepository.findByAccountId(accountId))
             .thenReturn(positions);
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc(anyString()))
-            .thenReturn(Optional.of(new Price("SYMBOL", LocalDate.now(), new BigDecimal("100.00"))));
+        when(priceRepository.findLatestBySymbols(anyList()))
+            .thenReturn(List.of(
+                new Price("AAPL", LocalDate.now(), new BigDecimal("100.00")),
+                new Price("GOOGL", LocalDate.now(), new BigDecimal("100.00")),
+                new Price("MSFT", LocalDate.now(), new BigDecimal("100.00"))));
 
         // Act
         List<PositionResponse> result = positionService.getAccountPositions(accountId);
@@ -263,8 +271,8 @@ class PositionServiceTest {
 
         when(positionRepository.findByAccountId(accountId))
             .thenReturn(positions);
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL"))
-            .thenReturn(Optional.empty());
+        when(priceRepository.findLatestBySymbols(List.of("AAPL")))
+            .thenReturn(List.of());
 
         // Act
         List<PositionResponse> result = positionService.getAccountPositions(accountId);
@@ -473,5 +481,54 @@ class PositionServiceTest {
         assertEquals(10000, result.getQuantity());
         assertEquals(new BigDecimal("1650000.00"), result.getMarketValue());
         assertTrue(result.getReturnPercentage().compareTo(BigDecimal.ZERO) > 0);
+    }
+
+    // ========== Valuation Tests (real Position, real PositionValuator) ==========
+
+    /** 10 AAPL bought at 100, now trading at 150. */
+    private void givenTenAaplBoughtAt100TradingAt150() {
+        Account account = new Account("ACC1", "Test Holder", new BigDecimal("1000"),
+            AccountStatus.ACTIVE, LocalDateTime.now());
+        Instrument aapl = new Instrument("AAPL", "Apple Inc.", AssetClass.EQUITY, "USD", true);
+        Position position = new Position(account, aapl, 10, new BigDecimal("100"));
+
+        when(positionRepository.findByAccountIdAndSymbol("ACC1", "AAPL")).thenReturn(Optional.of(position));
+        when(positionRepository.findByAccountId("ACC1")).thenReturn(List.of(position));
+        Price aaplPrice = new Price("AAPL", LocalDate.now(), new BigDecimal("150"));
+        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL")).thenReturn(Optional.of(aaplPrice));
+        when(priceRepository.findLatestBySymbols(List.of("AAPL"))).thenReturn(List.of(aaplPrice));
+    }
+
+    @Test
+    void getPositionUsesLatestPrice() {
+        givenTenAaplBoughtAt100TradingAt150();
+
+        PositionResponse response = positionService.getPosition("ACC1", "AAPL");
+
+        assertEquals(0, new BigDecimal("150").compareTo(response.getCurrentPrice()));
+        assertEquals(0, new BigDecimal("1500").compareTo(response.getMarketValue()));
+        assertEquals(0, new BigDecimal("500").compareTo(response.getUnrealizedPnL()));
+    }
+
+    @Test
+    void getAccountPositionsUsesLatestPrice() {
+        givenTenAaplBoughtAt100TradingAt150();
+
+        List<PositionResponse> responses = positionService.getAccountPositions("ACC1");
+
+        assertEquals(0, new BigDecimal("150").compareTo(responses.get(0).getCurrentPrice()));
+        assertEquals(0, new BigDecimal("1500").compareTo(responses.get(0).getMarketValue()));
+    }
+
+    @Test
+    void getPositionMetricsUsesLatestPrice() {
+        givenTenAaplBoughtAt100TradingAt150();
+
+        PositionMetricsResponse metrics = positionService.getPositionMetrics("ACC1", "AAPL");
+
+        assertEquals(0, new BigDecimal("150").compareTo(metrics.getCurrentPrice()));
+        assertEquals(0, new BigDecimal("500").compareTo(metrics.getUnrealizedPnL()));
+        // 500 gain on a 1,000 cost basis
+        assertEquals(0, new BigDecimal("0.5").compareTo(metrics.getReturnPercentage()));
     }
 }
