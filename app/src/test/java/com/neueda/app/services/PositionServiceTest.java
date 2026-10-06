@@ -32,7 +32,8 @@ class PositionServiceTest {
     void setUp() {
         positionRepository = mock(PositionRepository.class);
         priceRepository = mock(PriceRepository.class);
-        positionService = new PositionService(positionRepository, priceRepository);
+        // Real valuator over the mocked prices, so these tests still check the valuation math
+        positionService = new PositionService(positionRepository, new PositionValuator(priceRepository));
 
         // 10 AAPL bought at 100, now trading at 150
         Account account = new Account("ACC1", "Test Holder", new BigDecimal("1000"),
@@ -42,8 +43,9 @@ class PositionServiceTest {
 
         when(positionRepository.findByAccountIdAndSymbol("ACC1", "AAPL")).thenReturn(Optional.of(position));
         when(positionRepository.findByAccountId("ACC1")).thenReturn(List.of(position));
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL"))
-            .thenReturn(Optional.of(new Price("AAPL", LocalDate.now(), new BigDecimal("150"))));
+        Price aaplPrice = new Price("AAPL", LocalDate.now(), new BigDecimal("150"));
+        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL")).thenReturn(Optional.of(aaplPrice));
+        when(priceRepository.findLatestBySymbols(List.of("AAPL"))).thenReturn(List.of(aaplPrice));
     }
 
     @Test

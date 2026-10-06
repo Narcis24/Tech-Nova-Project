@@ -3,114 +3,59 @@ package com.neueda.app.services;
 import com.neueda.app.dtos.PositionResponse;
 import com.neueda.app.exceptions.TradingException;
 import com.neueda.app.models.Position;
-import com.neueda.app.models.Price;
 import com.neueda.app.repositories.PositionRepository;
-import com.neueda.app.repositories.PriceRepository;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
-import java.util.ArrayList;
 import com.neueda.app.dtos.PositionMetricsResponse;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PositionService {
-    private PositionRepository positionRepository;
-    private PriceRepository priceRepository;
+    private final PositionRepository positionRepository;
+    private final PositionValuator positionValuator;
 
-    public PositionService(PositionRepository positionRepository, PriceRepository priceRepository) {
+    public PositionService(PositionRepository positionRepository, PositionValuator positionValuator) {
         this.positionRepository = positionRepository;
-        this.priceRepository = priceRepository;
+        this.positionValuator = positionValuator;
     }
 
-     public PositionResponse getPosition(String accountId, String symbol) {
-        Position position = positionRepository
-            .findByAccountIdAndSymbol(accountId, symbol)
-            .orElseThrow(() -> new TradingException(
-                "Position not found for account: " + accountId + ", symbol: " + symbol
-            ));
-        
-        BigDecimal currentPrice = priceRepository.findFirstBySymbolOrderByTradeDateDesc(symbol)
-            .map(Price::getPrice)
-            .orElse(BigDecimal.ZERO);
-        
-        BigDecimal marketValue = position.getMarketValue(currentPrice);
-        BigDecimal unrealizedPnL = position.getUnrealizedPnL(currentPrice);
-        
-        return new PositionResponse(
-            position.getAccountId(),
-            position.getSymbol(),
-            position.getQuantity(),
-            position.getAverageCost(),
-            currentPrice,
-            marketValue,
-            unrealizedPnL
-        );
+    public PositionResponse getPosition(String accountId, String symbol) {
+        return positionValuator.value(findPosition(accountId, symbol));
     }
 
     public List<PositionResponse> getAccountPositions(String accountId) {
-        List<Position> positions = positionRepository.findByAccountId(accountId);
-        List<PositionResponse> responses = new ArrayList<>();
-        
-        for (Position position : positions) {
-            responses.add(convertToPositionResponse(position));
-        }
-        
-        return responses;
-    }
-
-    private PositionResponse convertToPositionResponse(Position position) {
-        BigDecimal currentPrice = priceRepository.findFirstBySymbolOrderByTradeDateDesc(position.getSymbol())
-            .map(Price::getPrice)
-            .orElse(BigDecimal.ZERO);  // Default to 0 if price not found
-
-        BigDecimal marketValue = position.getMarketValue(currentPrice);
-        BigDecimal unrealizedPnL = position.getUnrealizedPnL(currentPrice);
-
-        return new PositionResponse(
-            position.getAccountId(),
-            position.getSymbol(),
-            position.getQuantity(),
-            position.getAverageCost(),
-            currentPrice,
-            marketValue,
-            unrealizedPnL
-        );
+        return positionValuator.valueAll(positionRepository.findByAccountId(accountId));
     }
 
     public PositionMetricsResponse getPositionMetrics(String accountId, String symbol) {
-        Position position = positionRepository
-            .findByAccountIdAndSymbol(accountId, symbol)
-            .orElseThrow(() -> new TradingException(
-                "Position not found for account: " + accountId + ", symbol: " + symbol
-            ));
-        
-        BigDecimal currentPrice = priceRepository.findFirstBySymbolOrderByTradeDateDesc(symbol)
-            .map(Price::getPrice)
-            .orElse(BigDecimal.ZERO);
-        
-        BigDecimal marketValue = position.getMarketValue(currentPrice);
-        BigDecimal unrealizedPnL = position.getUnrealizedPnL(currentPrice);
-        
+        PositionResponse position = positionValuator.value(findPosition(accountId, symbol));
+
         // Calculate return% = unrealizedPnL / (quantity * averageCost)
         BigDecimal costBasis = position.getAverageCost()
             .multiply(new BigDecimal(position.getQuantity()));
-        
+
         BigDecimal returnPercentage = costBasis.compareTo(BigDecimal.ZERO) > 0
-            ? unrealizedPnL.divide(costBasis, 4, java.math.RoundingMode.HALF_UP)
+            ? position.getUnrealizedPnL().divide(costBasis, 4, RoundingMode.HALF_UP)
             : BigDecimal.ZERO;
-        
+
         return new PositionMetricsResponse(
             position.getAccountId(),
             position.getSymbol(),
             position.getQuantity(),
             position.getAverageCost(),
-            currentPrice,
-            marketValue,
-            unrealizedPnL,
+            position.getCurrentPrice(),
+            position.getMarketValue(),
+            position.getUnrealizedPnL(),
             returnPercentage
         );
-    } 
+    }
 
+    private Position findPosition(String accountId, String symbol) {
+        return positionRepository
+            .findByAccountIdAndSymbol(accountId, symbol)
+            .orElseThrow(() -> new TradingException(
+                "Position not found for account: " + accountId + ", symbol: " + symbol
+            ));
+    }
 }
-
-
