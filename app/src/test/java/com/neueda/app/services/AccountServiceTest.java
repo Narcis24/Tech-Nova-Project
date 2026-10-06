@@ -14,6 +14,7 @@ import com.neueda.app.models.Price;
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
+import com.neueda.app.repositories.PriceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +33,7 @@ class AccountServiceTest {
     private AccountRepository accountRepository;
     private OrderRepository orderRepository;
     private PositionRepository positionRepository;
-    private PositionValuator positionValuator;
+    private PriceRepository priceRepository;
     private AccountService accountService;
 
     @BeforeEach
@@ -40,8 +41,9 @@ class AccountServiceTest {
         accountRepository = mock(AccountRepository.class);
         orderRepository = mock(OrderRepository.class);
         positionRepository = mock(PositionRepository.class);
-        positionValuator = mock(PositionValuator.class);
-        accountService = new AccountService(accountRepository, orderRepository, positionRepository, positionValuator);
+        priceRepository = mock(PriceRepository.class);
+        // Real valuator over the mocked prices, so these tests still check the valuation math
+        accountService = new AccountService(accountRepository, orderRepository, positionRepository, new PositionValuator(priceRepository));
     }
 
     // ========== getAccount Tests ==========
