@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
@@ -25,20 +26,24 @@ public class AuthServiceTest {
     @Mock
     private JwtUtil jwtUtil;
 
+    @Spy
+    private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
     @InjectMocks
     private AuthService authService;
-
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Test
     public void testRegisterAndLogin() {
         String username = "testuser";
         String password = "password123";
 
+        // Hash before stubbing: calling the spy inside when(...) would interrupt the stubbing
+        String hash = passwordEncoder.encode(password);
+
         // Mock: user doesn't exist initially, then exists after registration
         when(userRepository.findByUsername(username))
             .thenReturn(Optional.empty())  // For register() check
-            .thenReturn(Optional.of(new User(username, passwordEncoder.encode(password))));  // For login()
+            .thenReturn(Optional.of(new User(username, hash)));  // For login()
         
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(jwtUtil.generateToken(username)).thenReturn("mock-jwt-token");
@@ -62,9 +67,8 @@ public class AuthServiceTest {
         String correctPassword = "correctpass";
         String wrongPassword = "wrongpass";
 
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(
-            new User(username, passwordEncoder.encode(correctPassword))
-        ));
+        String hash = passwordEncoder.encode(correctPassword);
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(new User(username, hash)));
 
         LoginRequest request = new LoginRequest(username, wrongPassword);
         assertThrows(RuntimeException.class, () -> authService.login(request));

@@ -6,7 +6,8 @@ import java.util.UUID;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.neueda.trading.events.EventEnvelope;
 
 import lombok.extern.slf4j.Slf4j;
@@ -71,7 +72,7 @@ public class EventProducerService {
                 key
             );
 
-        } catch (Exception e) {
+        } catch (JacksonException e) {
 
             log.error(
                 "Failed to publish event: type={}, topic={}, key={}",
@@ -81,7 +82,7 @@ public class EventProducerService {
                 e
             );
 
-            throw new RuntimeException(
+            throw new EventProcessingException(
                 "Failed to publish Kafka event",
                 e
             );

@@ -26,15 +26,27 @@ pipeline {
         }
         stage('Unit Tests') {
             steps {
-                // fails the build on test failures; uses the in-memory H2 database, no Postgres or Kafka needed
+                // fails the build on test failures; app uses the in-memory H2 database, no Postgres or Kafka needed
                 sh 'mvn -B -f app/pom.xml test'
                 sh 'mvn -B -f auth/pom.xml test'
+                sh 'mvn -B -f execution-engine/pom.xml test'
             }
         }
         stage('Smoke Test') {
             steps {
                 // imports dependencies and compiles load.py without hitting Yahoo or a database
                 sh 'docker run --rm --entrypoint python tech-nova-pipeline:latest -c "import load"'
+            }
+        }
+        stage('E2E Tests') {
+            steps {
+                // the whole system in containers, driven over HTTP; reuses the images built above
+                sh 'mvn -B -f e2e/pom.xml verify -De2e.image.app=team-skeleton:latest -De2e.image.auth=tech-nova-auth:latest -De2e.image.engine=tech-nova-execution-engine:latest'
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'e2e/target/e2e-logs/*.log', allowEmptyArchive: true
+                }
             }
         }
         stage('SonarQube') {

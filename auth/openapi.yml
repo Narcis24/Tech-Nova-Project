@@ -103,7 +103,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '401':
+        '409':
           description: 'Username already exists (USERNAME_ALREADY_EXIST)'
           content:
             application/json:

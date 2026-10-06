@@ -1,5 +1,6 @@
 package com.neueda.app.services;
 
+import com.neueda.app.dtos.AccountResponse;
 import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.models.Account;
@@ -9,12 +10,14 @@ import com.neueda.app.repositories.PositionRepository;
 import com.neueda.app.repositories.PriceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class AccountServiceTest {
@@ -120,5 +123,19 @@ class AccountServiceTest {
         // Act & Assert
         assertEquals(new BigDecimal("5000.00"), accountService.getAccountCashBalance("ACC001"));
         assertEquals(new BigDecimal("15000.00"), accountService.getAccountCashBalance("ACC002"));
+    }
+
+    @Test
+    void testOpenAccountCreatesEmptyActiveAccountForOwner() {
+        when(accountRepository.save(any(Account.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        AccountResponse response = accountService.openAccount("alice_user", "Alice");
+
+        ArgumentCaptor<Account> saved = ArgumentCaptor.forClass(Account.class);
+        verify(accountRepository).save(saved.capture());
+        assertTrue(saved.getValue().isOwnedBy("alice_user"));
+        assertTrue(response.getAccountId().matches("ACC-[0-9A-F]{8}"), response.getAccountId());
+        assertEquals(0, BigDecimal.ZERO.compareTo(response.getCashBalance()));
+        assertEquals(AccountStatus.ACTIVE, response.getStatus());
     }
 }

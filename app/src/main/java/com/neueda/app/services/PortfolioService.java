@@ -6,6 +6,7 @@ import com.neueda.app.dtos.PositionResponse;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Position;
+import com.neueda.app.models.Price;
 import com.neueda.app.models.PortfolioMetrics;
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.PositionRepository;
@@ -13,7 +14,9 @@ import com.neueda.app.repositories.PriceRepository;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.stereotype.Service;
 
+@Service
 public class PortfolioService {
     
     private AccountRepository accountRepository;
@@ -40,7 +43,7 @@ public class PortfolioService {
         
         for (Position position : positions) {
             BigDecimal currentPrice = priceRepository.findFirstBySymbolOrderByTradeDateDesc(position.getSymbol())
-                .map(p -> BigDecimal.ZERO)
+                .map(Price::getPrice)
                 .orElse(BigDecimal.ZERO);
             
             BigDecimal marketValue = position.getMarketValue(currentPrice);
@@ -88,7 +91,7 @@ public class PortfolioService {
         
         for (Position position : positions) {
             BigDecimal currentPrice = priceRepository.findFirstBySymbolOrderByTradeDateDesc(position.getSymbol())
-                .map(p -> BigDecimal.ZERO)
+                .map(Price::getPrice)
                 .orElse(BigDecimal.ZERO);
             
             BigDecimal marketValue = position.getMarketValue(currentPrice);

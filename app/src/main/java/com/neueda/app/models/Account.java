@@ -18,7 +18,6 @@ import com.neueda.app.exceptions.AccountNotActiveException;
 import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.contracts.AccountOperations;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Version;
 import lombok.NoArgsConstructor;
 import lombok.Getter;
@@ -53,10 +52,15 @@ public class Account  implements AccountOperations {
     @Column(name = "last_updated")
     private LocalDateTime lastUpdated;
 
-    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    // Username from auth-service; null for the unclaimed seed accounts, which nobody can reach
+    @Column(name = "owner_username")
+    private String ownerUsername;
+
+    // Read-only views: no cascade, so changing or deleting an account never touches order history
+    @OneToMany(mappedBy = "account")
     private List<Order> orders = new ArrayList<>();
 
-    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "account")
     private List<Position> positions = new ArrayList<>();
 
     public Account(String accountId, String holderName, BigDecimal cashBalance, AccountStatus accountStatus, LocalDateTime lastUpdated) {
@@ -88,6 +92,20 @@ public class Account  implements AccountOperations {
         this.lastUpdated = lastUpdated;
     }
 
+    /** A new, empty, ACTIVE account belonging to the given user. */
+    public static Account open(String accountId, String holderName, String ownerUsername) {
+        if (ownerUsername == null || ownerUsername.isBlank()) {
+            throw new IllegalArgumentException("Owner cannot be null");
+        }
+        Account account = new Account(accountId, holderName, BigDecimal.ZERO, AccountStatus.ACTIVE, LocalDateTime.now());
+        account.ownerUsername = ownerUsername;
+        return account;
+    }
+
+    public boolean isOwnedBy(String username) {
+        return ownerUsername != null && ownerUsername.equals(username);
+    }
+
     /* This method will throw a custom exception if the account is not ACTIVE */
     public void validateStatus() {
         if (accountStatus != AccountStatus.ACTIVE) {
@@ -99,6 +117,10 @@ public class Account  implements AccountOperations {
 
     /* This method will throw a custom exception if the account has insufficient funds */
     public void debitCash(BigDecimal amount) {
+        // A negative debit would add cash, so only positive amounts are allowed (as for creditCash)
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Debit amount must be positive");
+        }
         if (cashBalance.compareTo(amount) < 0) {
             throw new InsufficientFundsException(
                 "Account " + accountId + " has $" + cashBalance + 
@@ -111,7 +133,7 @@ public class Account  implements AccountOperations {
 
     
     public void creditCash(BigDecimal amount) {
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Credit amount must be positive");
         }
         this.cashBalance = cashBalance.add(amount);

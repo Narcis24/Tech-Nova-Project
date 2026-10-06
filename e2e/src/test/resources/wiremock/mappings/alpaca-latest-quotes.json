@@ -1,0 +1,16 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/v2/stocks/quotes/latest"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "quotes": {
+        "AAPL": { "ap": 200.00, "bp": 199.90 },
+        "MSFT": { "ap": 400.00, "bp": 399.90 }
+      }
+    }
+  }
+}

@@ -50,7 +50,7 @@ services:
       DB_USER: ${POSTGRES_USER:-technova}
       DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
 
-      JWT_SECRET: ${JWT_SECRET:-change-this-secret-key-in-production}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
 
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
 
@@ -70,6 +70,8 @@ services:
 
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ALPACA_KEY_ID: ${ALPACA_KEY_ID:-}
+      ALPACA_SECRET_KEY: ${ALPACA_SECRET_KEY:-}
 
     networks:
       - tech-nova-network
@@ -83,8 +85,12 @@ services:
         condition: service_healthy
 
     environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-technova}
+      DB_USER: ${POSTGRES_USER:-technova}
       DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
-      JWT_SECRET: ${JWT_SECRET:-change-this-secret-key-in-production}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
 
     ports:
       - "${AUTH_PORT:-8082}:8080"

@@ -22,14 +22,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.dao.OptimisticLockingFailureException;
+import com.neueda.app.exceptions.InvalidOrderStateException;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 //  JPA EntityManager manages the DB conn and hanles
 //      - Saving / Retrieving / Updating / Deleting 
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
 
 import java.math.BigDecimal;
@@ -69,7 +71,7 @@ public class OrderServiceEndToEndTest {
     private OrderService orderService;
 
     // Kafka publishing is out of scope here
-    @MockBean
+    @MockitoBean
     private EventProducerService eventProducerService;
 
     private Account testAccount;
@@ -101,88 +103,6 @@ public class OrderServiceEndToEndTest {
     }
 
     // ==================== WORKFLOW TESTS ====================
-
-    @Test
-    @DisplayName("E2E: Complete BUY workflow - Place -> Execute -> Verify")
-    void testCompleteBuyWorkflow() {
-        // 1. Place Order
-        PlaceOrderRequest placeRequest = new PlaceOrderRequest(
-            testAccount.getAccountId(),
-            "AAPL",
-            "BUY",
-            "LIMIT",
-            100,
-            new BigDecimal("150.00"),
-            "buy-order-001"
-        );
-
-        OrderResponse response = orderService.placeOrder(placeRequest);
-        assertNotNull(response.getAccountId());
-
-        UUID orderID = response.getOrderId();
-
-        // 2. Execute Order
-        priceRepository.save(new Price("AAPL", LocalDate.now(), new BigDecimal("145.00")));
-        OrderResponse executeResponse = orderService.executeOrder(orderID);
-        assertNotNull(executeResponse);
-        assertEquals(OrderStatus.FILLED, executeResponse.getStatus());
-
-        // 3. Verify Account Balance Changes
-        Account updatedAccountBalance = accountRepository.findById(testAccount.getAccountId()).orElseThrow();
-        BigDecimal expectedBalance = new BigDecimal("50000.00")
-            .subtract(new BigDecimal("150.00").multiply(new BigDecimal("100")));
-        assertEquals(expectedBalance, updatedAccountBalance.getCashBalance());
-
-        // 4. Verify Position has been created.
-        Position position = positionRepository.findByAccountIdAndSymbol(testAccount.getAccountId(), "AAPL")
-                                        .orElseThrow();
-        
-        assertEquals(100, position.getQuantity());
-        assertEquals(new BigDecimal("150.00"), position.getAverageCost());                     
-
-    }
-
-    @Test
-    @DisplayName("E2E: Complete SELL workflow - Place -> Execute -> Verify")
-    void testCompleteSellWorkflow() {
-        // Setup: Create initial position
-        Position initialPosition = new Position(
-            testAccount,
-            testInstrument,
-            100,
-            new BigDecimal("150.00")
-        );
-        positionRepository.save(initialPosition);
-        entityManager.flush();
-
-        // Step 1: Place Sell Order
-        PlaceOrderRequest sellRequest = new PlaceOrderRequest(
-            testAccount.getAccountId(),
-            "AAPL",
-            "SELL",
-            "LIMIT",
-            50,
-            new BigDecimal("160.00"),
-            "sell-order-001"
-        );
-
-        OrderResponse placeResponse = orderService.placeOrder(sellRequest);
-        UUID orderId = placeResponse.getOrderId();
-
-        priceRepository.save(new Price("AAPL", LocalDate.now(), new BigDecimal("165.00")));
-        OrderResponse executeResponse = orderService.executeOrder(orderId);
-        assertEquals(OrderStatus.FILLED, executeResponse.getStatus());
-
-        Account updatedAccount = accountRepository.findById(testAccount.getAccountId()).orElseThrow();
-        BigDecimal expectedBalance = new BigDecimal("50000.00")
-            .add(new BigDecimal("160.00").multiply(new BigDecimal("50")));
-        assertEquals(expectedBalance, updatedAccount.getCashBalance());
-
-        Position updatedPosition = positionRepository
-            .findByAccountIdAndSymbol(testAccount.getAccountId(), "AAPL")
-            .orElseThrow();
-        assertEquals(50, updatedPosition.getQuantity());
-    }
 
     @Test
     @DisplayName("E2E: Cancel order workflow - Place -> Cancel -> Verify")
@@ -217,6 +137,48 @@ public class OrderServiceEndToEndTest {
     }
 
     @Test
+    @DisplayName("E2E: Cancel after the fill was settled is refused and leaves the order FILLED")
+    void testCancelLosesToFill() {
+        PlaceOrderRequest placeRequest = new PlaceOrderRequest(
+            testAccount.getAccountId(), "AAPL", "BUY", "LIMIT", 10,
+            new BigDecimal("150.00"), "cancel-after-fill-001");
+        UUID orderId = orderService.placeOrder(placeRequest).getOrderId();
+        entityManager.flush();
+
+        // Settlement's guarded transition reaches the row first
+        assertEquals(1, orderRepository.transition(orderId, OrderStatus.PENDING, OrderStatus.FILLED,
+            new BigDecimal("149.00")));
+
+        assertThrows(InvalidOrderStateException.class, () -> orderService.cancelOrder(orderId));
+
+        entityManager.clear();
+        assertEquals(OrderStatus.FILLED, orderRepository.findById(orderId).orElseThrow().getStatus());
+    }
+
+    @Test
+    @DisplayName("E2E: Saving a stale copy of an order fails instead of overwriting its status")
+    void testStaleOrderSaveIsRejected() {
+        PlaceOrderRequest placeRequest = new PlaceOrderRequest(
+            testAccount.getAccountId(), "AAPL", "BUY", "LIMIT", 10,
+            new BigDecimal("150.00"), "stale-save-001");
+        UUID orderId = orderService.placeOrder(placeRequest).getOrderId();
+        entityManager.flush();
+        entityManager.clear();
+
+        Order stale = orderRepository.findById(orderId).orElseThrow();
+        entityManager.detach(stale);
+
+        // Another writer moves the order on and bumps its version
+        orderRepository.transition(orderId, OrderStatus.PENDING, OrderStatus.FILLED, new BigDecimal("149.00"));
+
+        stale.cancel();
+        assertThrows(OptimisticLockingFailureException.class, () -> {
+            orderRepository.save(stale);
+            entityManager.flush();
+        });
+    }
+
+    @Test
     @DisplayName("E2E: Get order details")
     void testGetOrderDetails() {
         // Place order
@@ -233,32 +195,4 @@ public class OrderServiceEndToEndTest {
         assertEquals(OrderStatus.PENDING, getResponse.getStatus());
     }
 
-    // ================= TESTING POSITION AVERAGE =================
-    @Test
-    @DisplayName("E2E: Verify Position Average")
-    void testMultipleBuyOrders() {
-        priceRepository.save(new Price("AAPL", LocalDate.now(), new BigDecimal("140.00")));
-
-        // Buy order 1
-        PlaceOrderRequest request1 = new PlaceOrderRequest(
-            testAccount.getAccountId(), "AAPL", "BUY", "LIMIT", 50,
-            new BigDecimal("150.00"), "buy-001"
-        );
-        OrderResponse response1 = orderService.placeOrder(request1);
-        orderService.executeOrder(response1.getOrderId());
-
-        // Buy order 2
-        PlaceOrderRequest request2 = new PlaceOrderRequest(
-            testAccount.getAccountId(), "AAPL", "BUY", "LIMIT", 30,
-            new BigDecimal("155.00"), "buy-002"
-        );
-        OrderResponse response2 = orderService.placeOrder(request2);
-        orderService.executeOrder(response2.getOrderId());
-
-        // Verify position averaged
-        Position position = positionRepository
-            .findByAccountIdAndSymbol(testAccount.getAccountId(), "AAPL")
-            .orElseThrow();
-        assertEquals(80, position.getQuantity());
-    }
 }

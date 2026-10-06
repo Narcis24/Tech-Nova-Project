@@ -1,8 +1,9 @@
-execution-engine/target/
-app/target/
-auth/target/
-data-pipeline/target/
-execution-engine/target/
+# Maven build output, in any module
+target/
+
+# Local env files hold secrets; only the example is tracked
 .env*
 !.env.example
-app/target*
+
+# Python
+__pycache__/

@@ -7,12 +7,15 @@ import com.neueda.app.dtos.OrderPlacedEvent;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.enums.OrderSide;
+import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.enums.OrderType;
 import com.neueda.app.exceptions.*;
 
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Order;
+import com.neueda.app.exceptions.InsufficientHoldingsException;
+import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.models.Position;
 
 import com.neueda.app.repositories.AccountRepository;
@@ -69,6 +72,30 @@ public class OrderService {
             return OrderSide.valueOf(value.toUpperCase());
         } catch (IllegalArgumentException ex) {
             throw new IllegalArgumentException("side must be one of " + Arrays.toString(OrderSide.values()));
+        }
+    }
+
+    private void requireCanCover(Account account, Order order) {
+        if (order.getSide() == OrderSide.BUY) {
+            requireCash(account, order);
+        } else {
+            requireShares(order);
+        }
+    }
+
+    private void requireCash(Account account, Order order) {
+        if (account.getCashBalance().compareTo(order.getTotalValue()) < 0) {
+            throw new InsufficientFundsException("Account " + account.getAccountId() + " has $"
+                + account.getCashBalance() + " but order requires $" + order.getTotalValue());
+        }
+    }
+
+    private void requireShares(Order order) {
+        int held = positionRepository.findByAccountIdAndSymbol(order.getAccountId(), order.getSymbol())
+            .map(Position::getQuantity).orElse(0);
+        if (held < order.getQuantity()) {
+            throw new InsufficientHoldingsException("Cannot sell " + order.getQuantity()
+                + " shares of " + order.getSymbol() + ". Only " + held + " held.");
         }
     }
 
@@ -129,6 +156,9 @@ public class OrderService {
             LocalDateTime.now()
         );
         
+        // Fail fast on what we can already see. Settlement re-checks at the real fill price.
+        requireCanCover(account, order);
+
         orderRepository.save(order);
         
         // Publish ORDER_PLACED event to Kafka (asynchronous execution will happen in ExecutionEngine)
@@ -157,67 +187,16 @@ public class OrderService {
         return new OrderResponse(order);
     }
 
-    public OrderResponse executeOrder(UUID orderId) {
-        Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
-        
-        // Fails fast if the order is not PENDING, before any cash/position changes
-        order.execute();
-
-        // A limit order only fills once the market has reached its limit
-        if (order.getOrderType() == OrderType.LIMIT) {
-            BigDecimal marketPrice = priceService.getCurrentPrice(order.getSymbol());
-            if (!order.isTriggeredBy(marketPrice)) {
-                throw new OrderNotTriggeredException(
-                    "Limit " + order.getPrice() + " not reached, market price is " + marketPrice);
-            }
-        }
-
-        BigDecimal totalValue = order.getTotalValue();
-        Account account = accountRepository.findById(order.getAccountId())
-            .orElseThrow(() -> new AccountNotFoundException("Account not found"));
-        Instrument instrument = instrumentRepository.findBySymbol(order.getSymbol())
-            .orElseThrow(() -> new InstrumentNotFoundException("Instrument not found"));
-        
-        if (order.getSide() == OrderSide.BUY) {
-            // BUY FLOW
-            account.debitCash(totalValue);
-            
-            Position position = positionRepository
-                .findByAccountIdAndSymbol(order.getAccountId(), order.getSymbol())
-                .orElse(new Position(account, instrument, 0, BigDecimal.ZERO));
-            
-            position.updateOnBuy(order.getQuantity(), order.getPrice());
-            
-            accountRepository.save(account);
-            positionRepository.save(position);
-            
-        } else {
-            // SELL FLOW
-            Position position = positionRepository
-                .findByAccountIdAndSymbol(order.getAccountId(), order.getSymbol())
-                .orElseThrow(() -> new InsufficientHoldingsException(
-                    "No position in " + order.getSymbol() + " for account " + order.getAccountId()));
-            
-            position.updateOnSell(order.getQuantity());
-            
-            account.creditCash(totalValue);
-            
-            positionRepository.save(position);
-            accountRepository.save(account);
-        }
-        
-        orderRepository.save(order);
-        return new OrderResponse(order);
-    }
-
-
     public OrderResponse cancelOrder(UUID orderId) {
+        // Guarded like settlement: only a PENDING order can move, so whichever of cancel and
+        // fill reaches the row first wins and the other sees 0 rows, instead of overwriting it.
+        int updated = orderRepository.changeStatus(orderId, OrderStatus.PENDING, OrderStatus.CANCELLED);
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
-        
-        order.cancel();  // Entity handles state validation
-        orderRepository.save(order);
+        if (updated == 0) {
+            throw new InvalidOrderStateException(
+                "Operation not allowed. Only PENDING orders can be modified. Order is " + order.getStatus());
+        }
         return new OrderResponse(order);
     }
     
