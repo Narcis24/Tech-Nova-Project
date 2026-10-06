@@ -17,8 +17,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.neueda.trading.events.EventEnvelope;
 import com.neueda.trading.events.OrderExecutedEvent;
 import com.neueda.trading.events.OrderPlacedEvent;
@@ -26,7 +26,7 @@ import com.neueda.trading.events.OrderRejectedEvent;
 
 class ExecutionEngineTest {
 
-    private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private final ObjectMapper mapper = JsonMapper.builder().build();
     private final UUID orderId = UUID.randomUUID();
     private EventProducerService producer;
     private QuoteCache cache;

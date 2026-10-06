@@ -8,7 +8,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Alpaca market data, latest quotes for many symbols in one request (IEX feed).
@@ -40,7 +40,7 @@ public class AlpacaQuoteClient implements QuoteClient {
 
         Instant now = Instant.now();
         List<Quote> quotes = new ArrayList<>();
-        body.path("quotes").fields().forEachRemaining(e -> quotes.add(new Quote(
+        body.path("quotes").properties().forEach(e -> quotes.add(new Quote(
             e.getKey().replace('.', '-'),
             new BigDecimal(e.getValue().path("bp").asText("0")),
             new BigDecimal(e.getValue().path("ap").asText("0")),

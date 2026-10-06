@@ -24,14 +24,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.OptimisticLockingFailureException;
 import com.neueda.app.exceptions.InvalidOrderStateException;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 //  JPA EntityManager manages the DB conn and hanles
 //      - Saving / Retrieving / Updating / Deleting 
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
 
 import java.math.BigDecimal;
@@ -71,7 +71,7 @@ public class OrderServiceEndToEndTest {
     private OrderService orderService;
 
     // Kafka publishing is out of scope here
-    @MockBean
+    @MockitoBean
     private EventProducerService eventProducerService;
 
     private Account testAccount;
