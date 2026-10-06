@@ -146,6 +146,16 @@ public class AccountTest {
         }
 
         @Test
+        void testNegativeOrZeroDebitIsRejected() {
+            assertThrows(IllegalArgumentException.class,
+                    () -> account.debitCash(new BigDecimal("-100.00")));
+            assertThrows(IllegalArgumentException.class,
+                    () -> account.debitCash(BigDecimal.ZERO));
+
+            assertEquals(new BigDecimal("2000.00"), account.getCashBalance());
+        }
+
+        @Test
         void testLastUpdatedChangesAfterDebit() {
 
             LocalDateTime before = LocalDateTime.now();

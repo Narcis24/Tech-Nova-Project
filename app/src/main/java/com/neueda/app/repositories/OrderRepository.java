@@ -23,13 +23,21 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
      * the {@code from} status, e.g. a fill that was already applied.
      */
     @Modifying
-    @Query("update Order o set o.status = :to, o.price = :price where o.id = :id and o.status = :from")
+    @Query("update Order o set o.status = :to, o.price = :price, o.version = o.version + 1 where o.id = :id and o.status = :from")
     int transition(@Param("id") UUID id, @Param("from") OrderStatus from,
                    @Param("to") OrderStatus to, @Param("price") BigDecimal price);
 
     /** Guarded rejection with a reason, same 0-rows-means-not-in-{@code from} contract as transition. */
     @Modifying
-    @Query("update Order o set o.status = :to, o.rejectionReason = :reason where o.id = :id and o.status = :from")
+    @Query("update Order o set o.status = :to, o.rejectionReason = :reason, o.version = o.version + 1 where o.id = :id and o.status = :from")
     int reject(@Param("id") UUID id, @Param("from") OrderStatus from,
                @Param("to") OrderStatus to, @Param("reason") String reason);
+
+    /**
+     * Guarded status change, same 0-rows-means-not-in-{@code from} contract as transition.
+     * Clears the persistence context so a following findById sees the new status.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update Order o set o.status = :to, o.version = o.version + 1 where o.id = :id and o.status = :from")
+    int changeStatus(@Param("id") UUID id, @Param("from") OrderStatus from, @Param("to") OrderStatus to);
 }

@@ -33,7 +33,7 @@ docs/
 ### Setup
 
 ```bash
-cp .env.example .env            # set POSTGRES_PASSWORD
+cp .env.example .env            # set POSTGRES_PASSWORD and JWT_SECRET
 ./db/scripts/reset.sh           # fresh db + prices (pass e.g. 2020-01-01 for more history)
 docker-compose up -d --build
 

@@ -26,9 +26,10 @@ pipeline {
         }
         stage('Unit Tests') {
             steps {
-                // fails the build on test failures; uses the in-memory H2 database, no Postgres or Kafka needed
+                // fails the build on test failures; app uses the in-memory H2 database, no Postgres or Kafka needed
                 sh 'mvn -B -f app/pom.xml test'
                 sh 'mvn -B -f auth/pom.xml test'
+                sh 'mvn -B -f execution-engine/pom.xml test'
             }
         }
         stage('Smoke Test') {

@@ -7,6 +7,7 @@ import com.neueda.app.dtos.OrderPlacedEvent;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.enums.OrderSide;
+import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.enums.OrderType;
 import com.neueda.app.exceptions.*;
 
@@ -187,11 +188,15 @@ public class OrderService {
     }
 
     public OrderResponse cancelOrder(UUID orderId) {
+        // Guarded like settlement: only a PENDING order can move, so whichever of cancel and
+        // fill reaches the row first wins and the other sees 0 rows, instead of overwriting it.
+        int updated = orderRepository.changeStatus(orderId, OrderStatus.PENDING, OrderStatus.CANCELLED);
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
-        
-        order.cancel();  // Entity handles state validation
-        orderRepository.save(order);
+        if (updated == 0) {
+            throw new InvalidOrderStateException(
+                "Operation not allowed. Only PENDING orders can be modified. Order is " + order.getStatus());
+        }
         return new OrderResponse(order);
     }
     

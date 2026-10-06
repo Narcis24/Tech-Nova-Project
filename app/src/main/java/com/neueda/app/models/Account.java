@@ -18,7 +18,6 @@ import com.neueda.app.exceptions.AccountNotActiveException;
 import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.contracts.AccountOperations;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Version;
 import lombok.NoArgsConstructor;
 import lombok.Getter;
@@ -53,10 +52,11 @@ public class Account  implements AccountOperations {
     @Column(name = "last_updated")
     private LocalDateTime lastUpdated;
 
-    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    // Read-only views: no cascade, so changing or deleting an account never touches order history
+    @OneToMany(mappedBy = "account")
     private List<Order> orders = new ArrayList<>();
 
-    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "account")
     private List<Position> positions = new ArrayList<>();
 
     public Account(String accountId, String holderName, BigDecimal cashBalance, AccountStatus accountStatus, LocalDateTime lastUpdated) {
@@ -99,6 +99,10 @@ public class Account  implements AccountOperations {
 
     /* This method will throw a custom exception if the account has insufficient funds */
     public void debitCash(BigDecimal amount) {
+        // A negative debit would add cash, so only positive amounts are allowed (as for creditCash)
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Debit amount must be positive");
+        }
         if (cashBalance.compareTo(amount) < 0) {
             throw new InsufficientFundsException(
                 "Account " + accountId + " has $" + cashBalance + 
@@ -111,7 +115,7 @@ public class Account  implements AccountOperations {
 
     
     public void creditCash(BigDecimal amount) {
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Credit amount must be positive");
         }
         this.cashBalance = cashBalance.add(amount);

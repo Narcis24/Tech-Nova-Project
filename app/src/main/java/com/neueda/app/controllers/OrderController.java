@@ -1,4 +1,3 @@
-
 package com.neueda.app.controllers;
 
 import org.springframework.web.bind.annotation.RestController;
@@ -39,8 +38,8 @@ public class OrderController {
    }
 
    @DeleteMapping("/{orderId}")
-   public ResponseEntity<OrderResponse> cancelOrder(@PathVariable String orderId) {
-       OrderResponse orderResponse = orderService.cancelOrder(UUID.fromString(orderId));
+   public ResponseEntity<OrderResponse> cancelOrder(@PathVariable UUID orderId) {
+       OrderResponse orderResponse = orderService.cancelOrder(orderId);
        return ResponseEntity.ok(orderResponse);
    }
 }
