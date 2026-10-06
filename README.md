@@ -63,12 +63,6 @@ mvn -f e2e/pom.xml verify      # first run builds the service images (~3 min), t
 Container logs land in `e2e/target/e2e-logs/`. To reuse prebuilt images instead of building, pass
 `-De2e.image.app=... -De2e.image.auth=... -De2e.image.engine=...`.
 
-Data pipeline tests (pytest in the pipeline image, against a throwaway Postgres; Yahoo is faked):
-
-```bash
-data-pipeline/tests/run.sh
-```
-
 ## Code quality (SonarQube)
 
 ```bash

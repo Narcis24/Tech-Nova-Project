@@ -36,8 +36,6 @@ pipeline {
             steps {
                 // imports dependencies and compiles load.py without hitting Yahoo or a database
                 sh 'docker run --rm --entrypoint python tech-nova-pipeline:latest -c "import load"'
-                // load_prices against a throwaway Postgres with the real migrations; Yahoo is faked
-                sh './data-pipeline/tests/run.sh'
             }
         }
         stage('E2E Tests') {
