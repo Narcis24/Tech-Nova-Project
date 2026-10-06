@@ -7,7 +7,6 @@ import com.neueda.app.models.Account;
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
-import com.neueda.app.repositories.PriceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -25,7 +24,7 @@ class AccountServiceTest {
     private AccountRepository accountRepository;
     private OrderRepository orderRepository;
     private PositionRepository positionRepository;
-    private PriceRepository priceRepository;
+    private PositionValuator positionValuator;
     private AccountService accountService;
 
     @BeforeEach
@@ -33,8 +32,8 @@ class AccountServiceTest {
         accountRepository = mock(AccountRepository.class);
         orderRepository = mock(OrderRepository.class);
         positionRepository = mock(PositionRepository.class);
-        priceRepository = mock(PriceRepository.class);
-        accountService = new AccountService(accountRepository, orderRepository, positionRepository, priceRepository);
+        positionValuator = mock(PositionValuator.class);
+        accountService = new AccountService(accountRepository, orderRepository, positionRepository, positionValuator);
     }
 
     @Test
