@@ -1,7 +1,7 @@
 package com.neueda.app.services;
 
 import com.neueda.app.dtos.PositionResponse;
-import com.neueda.app.exceptions.TradingException;
+import com.neueda.app.exceptions.PositionNotFoundException;
 import com.neueda.app.models.Position;
 import com.neueda.app.repositories.PositionRepository;
 import java.math.BigDecimal;
@@ -54,7 +54,7 @@ public class PositionService {
     private Position findPosition(String accountId, String symbol) {
         return positionRepository
             .findByAccountIdAndSymbol(accountId, symbol)
-            .orElseThrow(() -> new TradingException(
+            .orElseThrow(() -> new PositionNotFoundException(
                 "Position not found for account: " + accountId + ", symbol: " + symbol
             ));
     }
