@@ -16,6 +16,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 
 import com.neueda.app.dtos.ErrorResponse;
+import com.neueda.app.exceptions.AccountAccessDeniedException;
 import com.neueda.app.exceptions.AccountNotActiveException;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.DuplicateOrderException;
@@ -51,6 +52,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
     
+    /**
+     * Handles AccountAccessDeniedException when the caller does not own the account.
+     *
+     * @param ex the AccountAccessDeniedException thrown by AccountAccess
+     * @return ResponseEntity containing ErrorResponse with 403 status
+     */
+    @ExceptionHandler(AccountAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccountAccessDenied(AccountAccessDeniedException ex) {
+        ErrorResponse error = new ErrorResponse("ACCESS_DENIED", ex.getMessage(), 403);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
     /**
      * Handles AccountNotActiveException when an account is not in ACTIVE status.
      * 

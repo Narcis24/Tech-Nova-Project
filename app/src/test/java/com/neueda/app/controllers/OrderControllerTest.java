@@ -1,5 +1,7 @@
 package com.neueda.app.controllers;
 
+import com.neueda.app.services.AccountAccess;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -35,6 +37,9 @@ class OrderControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;  // Converts Java objects to JSON
+
+    @MockBean
+    private AccountAccess accountAccess;  // permits everything; ownership is tested in AccountAccessTest
 
     @MockBean
     private OrderService orderService;  // Fake service (no database needed)

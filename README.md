@@ -36,6 +36,9 @@ docs/
 cp .env.example .env            # set POSTGRES_PASSWORD and JWT_SECRET
 ./db/scripts/reset.sh           # fresh db + prices (pass e.g. 2020-01-01 for more history)
 docker-compose up -d --build
+# accounts belong to the user who opened them (POST /api/v1/accounts); to use the seed
+# accounts ACC001-ACC005, register a user and claim them:
+./db/scripts/claim-seed-accounts.sh <username>
 
 # Connect to database (optional for direct access)
 psql -h localhost -p 5434 -U technova -d technova

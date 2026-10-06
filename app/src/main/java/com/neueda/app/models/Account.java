@@ -52,6 +52,10 @@ public class Account  implements AccountOperations {
     @Column(name = "last_updated")
     private LocalDateTime lastUpdated;
 
+    // Username from auth-service; null for the unclaimed seed accounts, which nobody can reach
+    @Column(name = "owner_username")
+    private String ownerUsername;
+
     // Read-only views: no cascade, so changing or deleting an account never touches order history
     @OneToMany(mappedBy = "account")
     private List<Order> orders = new ArrayList<>();
@@ -86,6 +90,20 @@ public class Account  implements AccountOperations {
         this.cashBalance = cashBalance;
         this.accountStatus = accountStatus;
         this.lastUpdated = lastUpdated;
+    }
+
+    /** A new, empty, ACTIVE account belonging to the given user. */
+    public static Account open(String accountId, String holderName, String ownerUsername) {
+        if (ownerUsername == null || ownerUsername.isBlank()) {
+            throw new IllegalArgumentException("Owner cannot be null");
+        }
+        Account account = new Account(accountId, holderName, BigDecimal.ZERO, AccountStatus.ACTIVE, LocalDateTime.now());
+        account.ownerUsername = ownerUsername;
+        return account;
+    }
+
+    public boolean isOwnedBy(String username) {
+        return ownerUsername != null && ownerUsername.equals(username);
     }
 
     /* This method will throw a custom exception if the account is not ACTIVE */
