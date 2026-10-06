@@ -35,7 +35,8 @@ class PortfolioServiceTest {
         accountRepository = mock(AccountRepository.class);
         positionRepository = mock(PositionRepository.class);
         priceRepository = mock(PriceRepository.class);
-        portfolioService = new PortfolioService(accountRepository, positionRepository, priceRepository);
+        // Real valuator over the mocked prices, so these tests still check the valuation math
+        portfolioService = new PortfolioService(accountRepository, positionRepository, new PositionValuator(priceRepository));
 
         // 1,000 cash + 10 AAPL bought at 100, now trading at 150
         Account account = new Account("ACC1", "Test Holder", new BigDecimal("1000"),
@@ -45,8 +46,8 @@ class PortfolioServiceTest {
 
         when(accountRepository.findById("ACC1")).thenReturn(Optional.of(account));
         when(positionRepository.findByAccountId("ACC1")).thenReturn(List.of(position));
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL"))
-            .thenReturn(Optional.of(new Price("AAPL", LocalDate.now(), new BigDecimal("150"))));
+        when(priceRepository.findLatestBySymbols(List.of("AAPL")))
+            .thenReturn(List.of(new Price("AAPL", LocalDate.now(), new BigDecimal("150"))));
     }
 
     @Test
@@ -70,7 +71,7 @@ class PortfolioServiceTest {
 
     @Test
     void positionWithoutPriceIsValuedAtZero() {
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL")).thenReturn(Optional.empty());
+        when(priceRepository.findLatestBySymbols(List.of("AAPL"))).thenReturn(List.of());
 
         PortfolioSnapshotResponse snapshot = portfolioService.getPortfolioSnapshot("ACC1");
 
