@@ -7,7 +7,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.web.servlet.MockMvc;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.neueda.app.controllers.OrderController;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.services.AccountAccess;

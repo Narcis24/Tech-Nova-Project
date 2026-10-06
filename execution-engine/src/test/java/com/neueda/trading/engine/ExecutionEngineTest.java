@@ -1,6 +1,7 @@
 package com.neueda.trading.engine;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -11,14 +12,15 @@ import static org.mockito.Mockito.verify;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.neueda.trading.events.EventEnvelope;
 import com.neueda.trading.events.OrderExecutedEvent;
 import com.neueda.trading.events.OrderPlacedEvent;
@@ -26,7 +28,7 @@ import com.neueda.trading.events.OrderRejectedEvent;
 
 class ExecutionEngineTest {
 
-    private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private final ObjectMapper mapper = JsonMapper.builder().build();
     private final UUID orderId = UUID.randomUUID();
     private EventProducerService producer;
     private QuoteCache cache;
@@ -56,6 +58,16 @@ class ExecutionEngineTest {
         verify(producer).publishEvent(eq("order-execution"), eq(orderId.toString()),
             eq("ORDER_REJECTED"), any(), payload.capture());
         assertEquals(orderId, ((OrderRejectedEvent) payload.getValue()).orderId());
+    }
+
+    @Test
+    void malformedPayloadFailsTheRecordInsteadOfBeingSkipped() {
+        // the error handler retries, then dead-letters the record; it must not vanish silently
+        String bad = mapper.writeValueAsString(new EventEnvelope<>("e1", "ORDER_PLACED", Instant.now(), "app", 1,
+            Map.of("orderId", "not-a-uuid")));
+
+        assertThrows(EventProcessingException.class, () -> engine.handleOrderPlaced(bad));
+        verify(producer, never()).publishEvent(any(), any(), any(), any(), any());
     }
 
     @Test

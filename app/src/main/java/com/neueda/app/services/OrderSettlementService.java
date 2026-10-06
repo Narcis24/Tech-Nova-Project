@@ -1,6 +1,6 @@
 package com.neueda.app.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.neueda.app.dtos.OrderExecutedEvent;
 import com.neueda.app.dtos.OrderRejectedEvent;
 import com.neueda.app.enums.OrderStatus;

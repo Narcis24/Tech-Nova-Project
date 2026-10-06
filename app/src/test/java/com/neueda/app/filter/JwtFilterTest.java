@@ -4,7 +4,7 @@ import com.neueda.app.utils.JwtUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import tools.jackson.databind.json.JsonMapper;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -21,7 +21,7 @@ class JwtFilterTest {
     @BeforeEach
     void setUp() {
         jwtUtil = mock(JwtUtil.class);
-        filter = new JwtFilter(jwtUtil, Jackson2ObjectMapperBuilder.json().build());
+        filter = new JwtFilter(jwtUtil, JsonMapper.builder().build());
     }
 
     @AfterEach

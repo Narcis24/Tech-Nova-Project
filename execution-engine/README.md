@@ -15,7 +15,7 @@ endpoint used by the Docker health check.
 ```
 execution-engine/
 ├── Dockerfile                        # multi-stage: Maven build, then JRE 21 runtime
-├── pom.xml                           # Spring Boot 3.5, Spring Kafka
+├── pom.xml                           # Spring Boot 4.1, Spring Kafka
 └── src/
     ├── main/java/com/neueda/trading/
     │   ├── ExecutionEngineApplication.java

@@ -27,6 +27,12 @@ class AuthE2ETest extends E2ETestBase {
     }
 
     @Test
+    @DisplayName("App serves its OpenAPI docs without a token")
+    void apiDocsArePublic() {
+        given().baseUri(Stack.appUrl()).get("/v3/api-docs").then().statusCode(200);
+    }
+
+    @Test
     @DisplayName("App refuses a token whose signature was tampered with")
     void tamperedTokenIsRefused() {
         String tampered = me.token().substring(0, me.token().length() - 4) + "AAAA";

@@ -1,8 +1,8 @@
 package com.neueda.app.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.neueda.app.dtos.OrderExecutedEvent;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.events.EventEnvelope;
@@ -35,7 +35,7 @@ class OrderSettlementServiceTest {
     private AccountRepository accountRepository;
     private PositionRepository positionRepository;
     private InstrumentRepository instrumentRepository;
-    private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private final ObjectMapper mapper = JsonMapper.builder().build();
     private OrderSettlementService service;
     private UUID orderId;
     private OrderExecutedEvent event;

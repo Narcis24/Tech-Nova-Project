@@ -7,7 +7,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringSerializer;
 
-import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
+import org.springframework.boot.kafka.autoconfigure.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -19,7 +19,7 @@ import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.CommonErrorHandler;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
-import org.springframework.kafka.support.serializer.JsonSerializer;
+import org.springframework.kafka.support.serializer.JacksonJsonSerializer;
 import org.springframework.util.backoff.FixedBackOff;
 
 import java.util.HashMap;
@@ -50,11 +50,11 @@ public class KafkaConfig {
 
         props.put(
             ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-            JsonSerializer.class
+            JacksonJsonSerializer.class
         );
 
         props.put(
-            JsonSerializer.ADD_TYPE_INFO_HEADERS,
+            JacksonJsonSerializer.ADD_TYPE_INFO_HEADERS,
             false
         );
 
