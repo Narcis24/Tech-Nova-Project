@@ -35,7 +35,8 @@ class PortfolioServiceTest {
         accountRepository = mock(AccountRepository.class);
         positionRepository = mock(PositionRepository.class);
         priceRepository = mock(PriceRepository.class);
-        portfolioService = new PortfolioService(accountRepository, positionRepository, priceRepository);
+        // Real valuator over the mocked prices, so these tests still check the valuation math
+        portfolioService = new PortfolioService(accountRepository, positionRepository, new PositionValuator(priceRepository));
     }
 
     // ========== getPortfolioSnapshot Tests ==========

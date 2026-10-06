@@ -5,28 +5,26 @@ import com.neueda.app.dtos.PortfolioSnapshotResponse;
 import com.neueda.app.dtos.PositionResponse;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.models.Account;
-import com.neueda.app.models.Position;
-import com.neueda.app.models.Price;
+
 import com.neueda.app.models.PortfolioMetrics;
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.PositionRepository;
-import com.neueda.app.repositories.PriceRepository;
 import java.math.BigDecimal;
-import java.util.ArrayList;
+
 import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PortfolioService {
     
-    private AccountRepository accountRepository;
-    private PositionRepository positionRepository;
-    private PriceRepository priceRepository;
+    private final AccountRepository accountRepository;
+    private final PositionRepository positionRepository;
+    private final PositionValuator positionValuator;
 
-    public PortfolioService(AccountRepository accountRepository, PositionRepository positionRepository, PriceRepository priceRepository) {
+    public PortfolioService(AccountRepository accountRepository, PositionRepository positionRepository, PositionValuator positionValuator) {
         this.accountRepository = accountRepository;
         this.positionRepository = positionRepository;
-        this.priceRepository = priceRepository;
+        this.positionValuator = positionValuator;
     }
 
     public PortfolioSnapshotResponse getPortfolioSnapshot(String accountId) {
@@ -36,33 +34,13 @@ public class PortfolioService {
                 "Account not found: " + accountId
             ));
         
-        List<Position> positions = positionRepository.findByAccountId(accountId);
-        
+        List<PositionResponse> positionResponses = positionValuator.valueAll(positionRepository.findByAccountId(accountId));
+
         BigDecimal totalMarketValue = BigDecimal.ZERO;
-        List<PositionResponse> positionResponses = new ArrayList<>();
-        
-        for (Position position : positions) {
-            BigDecimal currentPrice = priceRepository.findFirstBySymbolOrderByTradeDateDesc(position.getSymbol())
-                .map(Price::getPrice)
-                .orElse(BigDecimal.ZERO);
-            
-            BigDecimal marketValue = position.getMarketValue(currentPrice);
-            BigDecimal unrealizedPnL = position.getUnrealizedPnL(currentPrice);
-            
-            totalMarketValue = totalMarketValue.add(marketValue);
-            
-            positionResponses.add(new PositionResponse(
-                position.getAccountId(),
-                position.getSymbol(),
-                position.getQuantity(),
-                position.getAverageCost(),
-                currentPrice,
-                marketValue,
-                unrealizedPnL
-            ));
+        for (PositionResponse position : positionResponses) {
+            totalMarketValue = totalMarketValue.add(position.getMarketValue());
         }
-        
-        // Step 5: Return snapshot
+        // Return snapshot
         BigDecimal totalPortfolioValue = account.getCashBalance().add(totalMarketValue);
         
         return new PortfolioSnapshotResponse(
@@ -81,36 +59,17 @@ public class PortfolioService {
                 "Account not found: " + accountId
             ));
         
-        // Step 2: Fetch all positions
-        List<Position> positions = positionRepository.findByAccountId(accountId);
-        
+        // Step 2: Value all positions (one price query)
+        List<PositionResponse> positionResponses = positionValuator.valueAll(positionRepository.findByAccountId(accountId));
+
         // Step 3: Calculate totals
         BigDecimal totalMarketValue = BigDecimal.ZERO;
         BigDecimal totalUnrealizedPnL = BigDecimal.ZERO;
-        List<PositionResponse> positionResponses = new ArrayList<>();
-        
-        for (Position position : positions) {
-            BigDecimal currentPrice = priceRepository.findFirstBySymbolOrderByTradeDateDesc(position.getSymbol())
-                .map(Price::getPrice)
-                .orElse(BigDecimal.ZERO);
-            
-            BigDecimal marketValue = position.getMarketValue(currentPrice);
-            BigDecimal unrealizedPnL = position.getUnrealizedPnL(currentPrice);
-            
-            totalMarketValue = totalMarketValue.add(marketValue);
-            totalUnrealizedPnL = totalUnrealizedPnL.add(unrealizedPnL);
-            
-            positionResponses.add(new PositionResponse(
-                position.getAccountId(),
-                position.getSymbol(),
-                position.getQuantity(),
-                position.getAverageCost(),
-                currentPrice,
-                marketValue,
-                unrealizedPnL
-            ));
+        for (PositionResponse position : positionResponses) {
+            totalMarketValue = totalMarketValue.add(position.getMarketValue());
+            totalUnrealizedPnL = totalUnrealizedPnL.add(position.getUnrealizedPnL());
         }
-        
+
         // Step 4: Create PortfolioMetrics entity
         PortfolioMetrics metrics = new PortfolioMetrics(
             totalMarketValue,
