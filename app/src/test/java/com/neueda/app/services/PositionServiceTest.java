@@ -29,7 +29,8 @@ class PositionServiceTest {
     void setUp() {
         positionRepository = mock(PositionRepository.class);
         priceRepository = mock(PriceRepository.class);
-        positionService = new PositionService(positionRepository, priceRepository);
+        // Real valuator over the mocked prices, so these tests still check the valuation math
+        positionService = new PositionService(positionRepository, new PositionValuator(priceRepository));
     }
 
     // ========== getPosition Tests ==========
