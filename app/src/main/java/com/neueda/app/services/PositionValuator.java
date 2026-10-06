@@ -28,7 +28,7 @@ public class PositionValuator {
         BigDecimal price = priceRepository.findFirstBySymbolOrderByTradeDateDesc(position.getSymbol())
             .map(Price::getPrice)
             .orElse(null);
-        return value(position, price);
+        return toPositionResponse(position, price);
     }
 
     /** Values many positions, fetching all their prices in one query. */
@@ -41,11 +41,11 @@ public class PositionValuator {
             .stream()
             .collect(Collectors.toMap(Price::getSymbol, Price::getPrice));
         return positions.stream()
-            .map(position -> value(position, prices.get(position.getSymbol())))
+            .map(position -> toPositionResponse(position, prices.get(position.getSymbol())))
             .toList();
     }
 
-    private PositionResponse value(Position position, BigDecimal price) {
+    private PositionResponse toPositionResponse(Position position, BigDecimal price) {
         // No price data: valued at 0, as before. Story 8 changes this here, once.
         BigDecimal currentPrice = price != null ? price : BigDecimal.ZERO;
         return new PositionResponse(
