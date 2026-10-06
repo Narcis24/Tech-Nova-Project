@@ -12,6 +12,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Transient;
+import jakarta.persistence.Version;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
@@ -86,6 +87,11 @@ public class Order implements OrderOperations {
     
     @Column(name = "rejection_reason")
     private String rejectionReason;
+
+    /** Optimistic lock: a save from a stale copy fails instead of overwriting a newer status. */
+    @Version
+    @Column(name = "version")
+    private Integer version;
 
     public Order(UUID id, Account account, Instrument instrument, OrderSide side, 
                  OrderType orderType, int quantity, BigDecimal price, String idempotencyKey, 

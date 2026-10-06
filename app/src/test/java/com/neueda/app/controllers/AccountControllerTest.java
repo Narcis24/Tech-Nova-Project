@@ -1,16 +1,20 @@
 package com.neueda.app.controllers;
 
+import com.neueda.app.services.AccountAccess;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.neueda.app.dtos.AccountResponse;
 import com.neueda.app.dtos.CashAmountRequest;
+import com.neueda.app.dtos.OpenAccountRequest;
+import com.neueda.app.exceptions.AccountAccessDeniedException;
 import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.InsufficientFundsException;
@@ -21,6 +25,9 @@ import java.math.BigDecimal;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -36,10 +43,13 @@ class AccountControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
+    private AccountAccess accountAccess;  // permits everything; ownership is tested in AccountAccessTest
+
+    @MockitoBean
     private AccountService accountService;
 
-    @MockBean
+    @MockitoBean
     private JwtUtil jwtUtil;
 
     @Test
@@ -94,5 +104,40 @@ class AccountControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new CashAmountRequest(new BigDecimal("100.00")))))
             .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testOpenAccount_CreatesAccountForCaller() throws Exception {
+        when(accountAccess.currentUser()).thenReturn("alice_user");
+        when(accountService.openAccount("alice_user", "Alice"))
+            .thenReturn(new AccountResponse("ACC-1A2B3C4D", "Alice", BigDecimal.ZERO, AccountStatus.ACTIVE));
+
+        mockMvc.perform(post("/v1/accounts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new OpenAccountRequest("Alice"))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.accountId").value("ACC-1A2B3C4D"));
+    }
+
+    @Test
+    void testOpenAccount_RequiresHolderName() throws Exception {
+        mockMvc.perform(post("/v1/accounts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new OpenAccountRequest(""))))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testSomeoneElsesAccount_Forbidden() throws Exception {
+        doThrow(new AccountAccessDeniedException("Account ACC123 does not belong to you"))
+            .when(accountAccess).requireOwned("ACC123");
+
+        mockMvc.perform(post("/v1/accounts/{accountId}/deposit", "ACC123")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new CashAmountRequest(new BigDecimal("50.00")))))
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.errorCode").value("ACCESS_DENIED"));
+
+        verify(accountService, never()).depositCash(any(), any());
     }
 }

@@ -1,6 +1,10 @@
 package com.neueda.app.configs;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -12,6 +16,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 
 import com.neueda.app.dtos.ErrorResponse;
+import com.neueda.app.exceptions.AccountAccessDeniedException;
 import com.neueda.app.exceptions.AccountNotActiveException;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.DuplicateOrderException;
@@ -32,6 +37,7 @@ import com.neueda.app.exceptions.TradingException;
  * user-friendly error responses.
  */
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
     
     /**
@@ -46,6 +52,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
     
+    /**
+     * Handles AccountAccessDeniedException when the caller does not own the account.
+     *
+     * @param ex the AccountAccessDeniedException thrown by AccountAccess
+     * @return ResponseEntity containing ErrorResponse with 403 status
+     */
+    @ExceptionHandler(AccountAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccountAccessDenied(AccountAccessDeniedException ex) {
+        ErrorResponse error = new ErrorResponse("ACCESS_DENIED", ex.getMessage(), 403);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
     /**
      * Handles AccountNotActiveException when an account is not in ACTIVE status.
      * 
@@ -268,6 +286,34 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles a path or query parameter that cannot be converted to its type,
+     * e.g. an order id that is not a UUID.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        ErrorResponse error = new ErrorResponse("INVALID_ARGUMENT", "Invalid value for " + ex.getName(), 400);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /** Handles a request body that is missing or is not valid JSON. */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleUnreadableBody(HttpMessageNotReadableException ex) {
+        ErrorResponse error = new ErrorResponse("MALFORMED_REQUEST", "Request body is missing or malformed", 400);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Handles a write rejected by a database constraint that a service check did not catch first,
+     * e.g. two concurrent requests that both passed a uniqueness check.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        log.warn("Database constraint violation: {}", ex.getMostSpecificCause().getMessage());
+        ErrorResponse error = new ErrorResponse("CONFLICT", "The request conflicts with existing data", 409);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * Fallback/Catch-all handler for ANY exception not handled by more specific handlers.
      * This includes Java built-in exceptions like NullPointerException, 
      * IllegalArgumentException, ArrayIndexOutOfBoundsException, etc.
@@ -283,6 +329,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+        log.error("Unhandled exception", ex);
         ErrorResponse error = new ErrorResponse("INTERNAL_ERROR", "An unexpected error occurred", 500);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }

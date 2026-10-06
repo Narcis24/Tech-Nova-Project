@@ -22,14 +22,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.dao.OptimisticLockingFailureException;
+import com.neueda.app.exceptions.InvalidOrderStateException;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 //  JPA EntityManager manages the DB conn and hanles
 //      - Saving / Retrieving / Updating / Deleting 
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
 
 import java.math.BigDecimal;
@@ -69,7 +71,7 @@ public class OrderServiceEndToEndTest {
     private OrderService orderService;
 
     // Kafka publishing is out of scope here
-    @MockBean
+    @MockitoBean
     private EventProducerService eventProducerService;
 
     private Account testAccount;
@@ -132,6 +134,48 @@ public class OrderServiceEndToEndTest {
         // Step 5: Verify Account Balance remains the same
         Account account = accountRepository.findById(testAccount.getAccountId()).orElseThrow();
         assertEquals(new BigDecimal("50000.00"), account.getCashBalance());
+    }
+
+    @Test
+    @DisplayName("E2E: Cancel after the fill was settled is refused and leaves the order FILLED")
+    void testCancelLosesToFill() {
+        PlaceOrderRequest placeRequest = new PlaceOrderRequest(
+            testAccount.getAccountId(), "AAPL", "BUY", "LIMIT", 10,
+            new BigDecimal("150.00"), "cancel-after-fill-001");
+        UUID orderId = orderService.placeOrder(placeRequest).getOrderId();
+        entityManager.flush();
+
+        // Settlement's guarded transition reaches the row first
+        assertEquals(1, orderRepository.transition(orderId, OrderStatus.PENDING, OrderStatus.FILLED,
+            new BigDecimal("149.00")));
+
+        assertThrows(InvalidOrderStateException.class, () -> orderService.cancelOrder(orderId));
+
+        entityManager.clear();
+        assertEquals(OrderStatus.FILLED, orderRepository.findById(orderId).orElseThrow().getStatus());
+    }
+
+    @Test
+    @DisplayName("E2E: Saving a stale copy of an order fails instead of overwriting its status")
+    void testStaleOrderSaveIsRejected() {
+        PlaceOrderRequest placeRequest = new PlaceOrderRequest(
+            testAccount.getAccountId(), "AAPL", "BUY", "LIMIT", 10,
+            new BigDecimal("150.00"), "stale-save-001");
+        UUID orderId = orderService.placeOrder(placeRequest).getOrderId();
+        entityManager.flush();
+        entityManager.clear();
+
+        Order stale = orderRepository.findById(orderId).orElseThrow();
+        entityManager.detach(stale);
+
+        // Another writer moves the order on and bumps its version
+        orderRepository.transition(orderId, OrderStatus.PENDING, OrderStatus.FILLED, new BigDecimal("149.00"));
+
+        stale.cancel();
+        assertThrows(OptimisticLockingFailureException.class, () -> {
+            orderRepository.save(stale);
+            entityManager.flush();
+        });
     }
 
     @Test

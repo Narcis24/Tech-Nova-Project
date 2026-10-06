@@ -1,4 +1,3 @@
-
 package com.neueda.app.controllers;
 
 import org.springframework.web.bind.annotation.RestController;
@@ -11,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.http.ResponseEntity;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
+import com.neueda.app.services.AccountAccess;
 import com.neueda.app.services.OrderService;
 import java.util.UUID;
 import jakarta.validation.Valid;
@@ -21,26 +21,31 @@ import jakarta.validation.Valid;
 public class OrderController {
 
     private final OrderService orderService;
+    private final AccountAccess accountAccess;
 
-    public OrderController(OrderService orderService) {
+    public OrderController(OrderService orderService, AccountAccess accountAccess) {
         this.orderService = orderService;
+        this.accountAccess = accountAccess;
     }
 
    @PostMapping
    public ResponseEntity<OrderResponse> placeOrder(@Valid @RequestBody PlaceOrderRequest orderRequest) {
+       accountAccess.requireOwned(orderRequest.getAccountId());
        OrderResponse orderResponse = orderService.placeOrder(orderRequest);
        return ResponseEntity.ok(orderResponse);
    }
 
    @GetMapping("/{orderId}")
    public ResponseEntity<OrderResponse> getOrder(@PathVariable UUID orderId) {
+       accountAccess.requireOwnedOrder(orderId);
        OrderResponse orderResponse = orderService.getOrder(orderId);
        return ResponseEntity.ok(orderResponse);
    }
 
    @DeleteMapping("/{orderId}")
-   public ResponseEntity<OrderResponse> cancelOrder(@PathVariable String orderId) {
-       OrderResponse orderResponse = orderService.cancelOrder(UUID.fromString(orderId));
+   public ResponseEntity<OrderResponse> cancelOrder(@PathVariable UUID orderId) {
+       accountAccess.requireOwnedOrder(orderId);
+       OrderResponse orderResponse = orderService.cancelOrder(orderId);
        return ResponseEntity.ok(orderResponse);
    }
 }

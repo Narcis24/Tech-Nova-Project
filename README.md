@@ -16,10 +16,13 @@
 ## Layout
 
 ```
-app/             Java application
-data-pipeline/   loads market data from Yahoo Finance
-db/migrations/   schema, applied on first db start
-db/scripts/      reset.sh, checks.sql
+app/               Java application
+auth/              login and JWT issuing
+execution-engine/  prices and fills orders from market data
+e2e/               end-to-end tests across all services
+data-pipeline/     loads market data from Yahoo Finance
+db/migrations/     schema, applied on first db start
+db/scripts/        reset.sh, checks.sql
 docs/
 ```
 
@@ -33,15 +36,32 @@ docs/
 ### Setup
 
 ```bash
-cp .env.example .env            # set POSTGRES_PASSWORD
+cp .env.example .env            # set POSTGRES_PASSWORD and JWT_SECRET
 ./db/scripts/reset.sh           # fresh db + prices (pass e.g. 2020-01-01 for more history)
 docker-compose up -d --build
+# accounts belong to the user who opened them (POST /api/v1/accounts); to use the seed
+# accounts ACC001-ACC005, register a user and claim them:
+./db/scripts/claim-seed-accounts.sh <username>
 
 # Connect to database (optional for direct access)
 psql -h localhost -p 5434 -U technova -d technova
 ```
 
 See [docs/database.md](docs/database.md) for the schema.
+
+## End-to-end tests
+
+`e2e/` runs the real services, Postgres and Kafka in containers (Testcontainers) and drives them
+over HTTP: register and log in, place orders, wait for the execution engine to fill them through
+Kafka, and check cash and positions. Only Alpaca is stubbed (WireMock, fixed quotes). Needs Docker,
+nothing else; random host ports, so it runs alongside a local docker-compose stack.
+
+```bash
+mvn -f e2e/pom.xml verify      # first run builds the service images (~3 min), then ~1 min
+```
+
+Container logs land in `e2e/target/e2e-logs/`. To reuse prebuilt images instead of building, pass
+`-De2e.image.app=... -De2e.image.auth=... -De2e.image.engine=...`.
 
 ## Code quality (SonarQube)
 

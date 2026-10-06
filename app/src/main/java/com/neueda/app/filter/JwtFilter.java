@@ -8,13 +8,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.neueda.app.dtos.ErrorResponse;
 import org.springframework.http.MediaType;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import java.util.ArrayList;
+import java.util.List;
 
 import java.io.IOException;
 
@@ -22,24 +23,28 @@ import java.io.IOException;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    // Spring's mapper: it has the java.time module that ErrorResponse's timestamp needs
+    private final ObjectMapper objectMapper;
 
-    public JwtFilter(JwtUtil jwtUtil) {
+    public JwtFilter(JwtUtil jwtUtil, ObjectMapper objectMapper) {
         this.jwtUtil = jwtUtil;
+        this.objectMapper = objectMapper;
+    }
+
+    /** Public API docs, matched as prefixes of the path after the context path (/api). */
+    private static final List<String> PUBLIC_PATH_PREFIXES = List.of("/swagger-ui", "/v3/api-docs");
+
+    /** Skips JWT validation only for the public docs; everything else needs a token. */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI().substring(request.getContextPath().length());
+        return PUBLIC_PATH_PREFIXES.stream().anyMatch(path::startsWith);
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
             HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-
-        String path = request.getRequestURI();
-
-        // Skip JWT validation for swagger, actuator, and auth endpoints
-        if (path.contains("swagger") || path.contains("v3/api-docs") || 
-            path.contains("actuator") || path.contains("auth")) {
-            chain.doFilter(request, response);
-            return;
-        }
 
         String token = extractToken(request);
 
@@ -49,8 +54,7 @@ public class JwtFilter extends OncePerRequestFilter {
             
             ErrorResponse errorResponse = new ErrorResponse("UNAUTHORIZED", "Missing or invalid JWT token", 401);
             
-            final ObjectMapper mapper = new ObjectMapper();
-            mapper.writeValue(response.getOutputStream(), errorResponse);
+            objectMapper.writeValue(response.getOutputStream(), errorResponse);
             return;
         }
         String username = jwtUtil.extractUsername(token);

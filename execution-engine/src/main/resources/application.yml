@@ -25,9 +25,6 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
-  jackson:
-    serialization:
-      write-dates-as-timestamps: false
 
 
 server:
@@ -41,17 +38,6 @@ management:
       exposure:
         include: health,info
 
-
-engine:
-  min-delay: ${ENGINE_MIN_DELAY:500ms}
-  max-delay: ${ENGINE_MAX_DELAY:2000ms}
-  max-price-improvement-bps: ${ENGINE_MAX_PRICE_IMPROVEMENT_BPS:50}
-  venue: SIM
-
-  topics:
-    orders: order-request
-    executions: order-execution
-    partitions: 3
 
 # Keep in sync with the instruments table (db/migrations/V003_seed_data.sql).
 # 39 symbols -> 2 batches of up to 25; every 120s = 720 cycles/day -> 1,440 requests/day (quota 2,000)

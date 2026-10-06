@@ -1,12 +1,11 @@
 # Execution Engine
 
-A small Spring Boot service that stands in for a real exchange. It is step
-2 of the order flow (see [`../docs/event-flow.md`](../docs/event-flow.md)):
+A small Spring Boot service that stands in for a real exchange:
 
-1. Read an accepted order from the `orders` topic.
-2. "Send it to the market": wait a random delay, then fill the whole order
-   at a price at or better than its limit.
-3. Write the fill to the `executions` topic, keyed by account.
+1. Read `ORDER_PLACED` events from the `order-request` topic.
+2. Price them against live quotes from the `market-data` topic (see below).
+3. Publish `ORDER_EXECUTED` or `ORDER_REJECTED` to `order-execution`, keyed by order id,
+   where the app settles or rejects the order.
 
 It has no database and no REST API of its own, only an actuator health
 endpoint used by the Docker health check.
@@ -16,71 +15,49 @@ endpoint used by the Docker health check.
 ```
 execution-engine/
 ├── Dockerfile                        # multi-stage: Maven build, then JRE 21 runtime
-├── pom.xml                           # Spring Boot 3.5, Spring Kafka
+├── pom.xml                           # Spring Boot 4.1, Spring Kafka
 └── src/
-    ├── main/java/com/neueda/trading/engine/
+    ├── main/java/com/neueda/trading/
     │   ├── ExecutionEngineApplication.java
-    │   ├── OrderListener.java         # @KafkaListener on orders, publishes to executions
-    │   ├── SimulatedMarket.java       # fill delay and fill price
-    │   ├── EngineProperties.java      # engine.* settings, validated on startup
-    │   ├── EngineConfig.java          # beans + topic declarations
-    │   ├── Pauser.java                # the wait, as an interface tests can skip
-    │   ├── OrderEvent.java            # message contract: orders topic
-    │   ├── ExecutionEvent.java        # message contract: executions topic
-    │   └── Side.java
+    │   ├── engine/
+    │   │   ├── ExecutionEngine.java       # @KafkaListeners for orders and quotes, resting LIMIT orders
+    │   │   ├── FillRule.java              # pure fill/wait/reject decision for an order and a quote
+    │   │   ├── MarketDataPoller.java      # scheduled Alpaca fetch, publishes to market-data
+    │   │   ├── AlpacaQuoteClient.java     # QuoteClient for Alpaca's latest-quotes endpoint
+    │   │   ├── QuoteCache.java            # latest quote per symbol
+    │   │   ├── MarketDataProperties.java  # market-data.* settings, quota checked on startup
+    │   │   ├── EventProducerService.java  # wraps payloads in EventEnvelope and sends them
+    │   │   └── KafkaConfig.java           # retry + dead-letter handler, topic declarations
+    │   ├── events/                        # message contracts (EventEnvelope, OrderPlacedEvent, ...)
+    │   └── enums/Side.java
     ├── main/resources/application.yml
     └── test/java/com/neueda/trading/engine/
-        ├── SimulatedMarketTest.java   # price never worse than limit, delays in range
-        ├── EnginePropertiesTest.java
-        ├── OrderListenerTest.java     # listener logic with a mocked KafkaTemplate
-        └── ExecutionEngineKafkaTest.java  # whole service against an in-process Kafka
+        ├── FillRuleTest.java
+        ├── ExecutionEngineTest.java
+        └── MarketDataTest.java
 ```
-
-## The simulated market
-
-Every order is treated as a limit order and filled in full:
-
-- **Delay:** uniformly random between `engine.min-delay` and
-  `engine.max-delay` (default 500 ms to 2 s), so fills visibly lag orders.
-- **Price:** a random improvement of 0 to `engine.max-price-improvement-bps`
-  basis points (default 50, i.e. 0.5%). A BUY fills at or below its limit
-  and a SELL at or above it, so a trader never pays more, or receives less,
-  than they asked for. Prices are rounded to 2 decimal places.
-
-`SimulatedMarket` takes its random generator and clock through the
-constructor, so tests pin both and assert exact results.
 
 ## Reliability
 
-The listener sends the fill and waits for Kafka to acknowledge it before
-returning, so the order's offset is only committed once its fill is safely
-on `executions`. If the engine stops mid-order, it works that order again
-on restart. That can produce a duplicate fill, which the order service
-ignores. Unreadable messages are logged and skipped.
-
-The listener runs one consumer thread per partition (3), so up to three
-accounts' orders are worked at once.
+A listener that throws is retried 3 times, 1 second apart, then the message goes to
+`<topic>-dlt`. Sends are not awaited, so a failed send is only logged. LIMIT orders that
+are waiting for the market live in memory and are lost if the engine restarts.
 
 ## Configuration
 
 | Property | Env var | Default |
 |----------|---------|---------|
-| `spring.kafka.bootstrap-servers` | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:9094` |
-| `engine.min-delay` | `ENGINE_MIN_DELAY` | `500ms` |
-| `engine.max-delay` | `ENGINE_MAX_DELAY` | `2000ms` |
-| `engine.max-price-improvement-bps` | `ENGINE_MAX_PRICE_IMPROVEMENT_BPS` | `50` |
+| `spring.kafka.bootstrap-servers` | `SPRING_KAFKA_BOOTSTRAP_SERVERS` | `kafka:29092` |
+| `market-data.interval-seconds` | `MARKET_DATA_INTERVAL_SECONDS` | `120` |
+| `market-data.key-id` | `ALPACA_KEY_ID` | empty |
+| `market-data.secret-key` | `ALPACA_SECRET_KEY` | empty |
 | `server.port` | `SERVER_PORT` | `8082` |
-
-In `docker-compose.yml` the engine talks to `kafka:9092`, and the three
-`ENGINE_*` values come from `.env`. Set both delays to `0ms` for instant
-fills, or both to `10s` to have time to watch orders sit at `NEW`.
 
 ## Building and running
 
 ```bash
 cd execution-engine
-mvn test               # unit tests + an in-process Kafka test; no Docker needed
-mvn spring-boot:run    # against Kafka on localhost:9094 (docker-compose up -d kafka)
+mvn test               # unit tests, no Kafka or Docker needed
 ```
 
 Through Docker, it runs as the `execution-engine` service:

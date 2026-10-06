@@ -11,8 +11,8 @@ import java.util.UUID;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.neueda.trading.events.EventEnvelope;
 import com.neueda.trading.events.OrderPlacedEvent;
 import com.neueda.trading.events.OrderExecutedEvent;
@@ -66,7 +66,7 @@ public class ExecutionEngine {
                 message,
                 EventEnvelope.class
             );
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
 
             log.error(
                 "Failed to deserialize Kafka message into EventEnvelope: {}",
@@ -106,7 +106,7 @@ public class ExecutionEngine {
                 envelope.payload(),
                 OrderPlacedEvent.class
             );
-        } catch (IllegalArgumentException e) {
+        } catch (JacksonException e) {
 
             log.error(
                 "Failed to convert payload into OrderPlacedEvent: {}",
@@ -139,7 +139,7 @@ public class ExecutionEngine {
      * separate schedule. Own consumer group: every executor instance needs every quote.
      */
     @KafkaListener(topics = MarketDataPoller.TOPIC, groupId = "execution-engine-quotes")
-    public void onQuote(String message) throws JsonProcessingException {
+    public void onQuote(String message) {
         Quote quote = objectMapper.treeToValue(objectMapper.readTree(message).path("payload"), Quote.class);
         quoteCache.put(quote);
         recheckResting(quote);

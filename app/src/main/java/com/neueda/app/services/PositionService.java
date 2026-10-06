@@ -3,6 +3,7 @@ package com.neueda.app.services;
 import com.neueda.app.dtos.PositionResponse;
 import com.neueda.app.exceptions.TradingException;
 import com.neueda.app.models.Position;
+import com.neueda.app.models.Price;
 import com.neueda.app.repositories.PositionRepository;
 import com.neueda.app.repositories.PriceRepository;
 import java.math.BigDecimal;
@@ -29,7 +30,7 @@ public class PositionService {
             ));
         
         BigDecimal currentPrice = priceRepository.findFirstBySymbolOrderByTradeDateDesc(symbol)
-            .map(p -> BigDecimal.ZERO)
+            .map(Price::getPrice)
             .orElse(BigDecimal.ZERO);
         
         BigDecimal marketValue = position.getMarketValue(currentPrice);
@@ -59,7 +60,7 @@ public class PositionService {
 
     private PositionResponse convertToPositionResponse(Position position) {
         BigDecimal currentPrice = priceRepository.findFirstBySymbolOrderByTradeDateDesc(position.getSymbol())
-            .map(p -> BigDecimal.ZERO)
+            .map(Price::getPrice)
             .orElse(BigDecimal.ZERO);  // Default to 0 if price not found
 
         BigDecimal marketValue = position.getMarketValue(currentPrice);
@@ -84,7 +85,7 @@ public class PositionService {
             ));
         
         BigDecimal currentPrice = priceRepository.findFirstBySymbolOrderByTradeDateDesc(symbol)
-            .map(p -> BigDecimal.ZERO)
+            .map(Price::getPrice)
             .orElse(BigDecimal.ZERO);
         
         BigDecimal marketValue = position.getMarketValue(currentPrice);

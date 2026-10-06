@@ -1,14 +1,16 @@
 package com.neueda.app.controllers;
 
+import com.neueda.app.services.AccountAccess;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.exceptions.OrderNotFoundException;
@@ -36,10 +38,13 @@ class OrderControllerTest {
     @Autowired
     private ObjectMapper objectMapper;  // Converts Java objects to JSON
 
-    @MockBean
+    @MockitoBean
+    private AccountAccess accountAccess;  // permits everything; ownership is tested in AccountAccessTest
+
+    @MockitoBean
     private OrderService orderService;  // Fake service (no database needed)
 
-    @MockBean
+    @MockitoBean
     private JwtUtil jwtUtil;  // Required by JwtFilter, which is picked up in the web slice
 
     @Test 

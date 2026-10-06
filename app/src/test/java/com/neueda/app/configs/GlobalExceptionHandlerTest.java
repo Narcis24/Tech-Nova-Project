@@ -7,9 +7,10 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.web.servlet.MockMvc;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.neueda.app.controllers.OrderController;
 import com.neueda.app.dtos.PlaceOrderRequest;
+import com.neueda.app.services.AccountAccess;
 import com.neueda.app.services.OrderService;
 import com.neueda.app.utils.JwtUtil;
 import com.neueda.app.exceptions.AccountNotFoundException;
@@ -22,10 +23,13 @@ import com.neueda.app.exceptions.InvalidOrderStateException;
 import com.neueda.app.exceptions.OrderNotFoundException;
 import com.neueda.app.exceptions.OrderNotTriggeredException;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.dao.DataIntegrityViolationException;
 import com.neueda.app.exceptions.TradingException;
 import java.math.BigDecimal;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.mockito.ArgumentMatchers.any;
@@ -39,6 +43,9 @@ class GlobalExceptionHandlerTest {
     private ObjectMapper objectMapper;
 
     @Mock
+    private AccountAccess accountAccess;
+
+    @Mock
     private OrderService orderService;
 
     @Mock
@@ -48,7 +55,7 @@ class GlobalExceptionHandlerTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         objectMapper = new ObjectMapper();
-        OrderController controller = new OrderController(orderService);
+        OrderController controller = new OrderController(orderService, accountAccess);
         mockMvc = standaloneSetup(controller)
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
@@ -343,5 +350,41 @@ class GlobalExceptionHandlerTest {
             .andExpect(jsonPath("$.httpStatus").value(500))
             .andExpect(jsonPath("$.message").value("An unexpected error occurred"))
             .andExpect(jsonPath("$.timestamp").exists());
+    }
+
+    @Test
+    void testConstraintViolationReturnsConflict() throws Exception {
+        when(orderService.placeOrder(any())).thenThrow(
+            new DataIntegrityViolationException("duplicate key value violates unique constraint")
+        );
+
+        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", "LIMIT", 100, new BigDecimal("150.00"), "id-123");
+
+        mockMvc.perform(post("/v1/orders")
+            .contentType("application/json")
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.errorCode").value("CONFLICT"))
+            .andExpect(jsonPath("$.httpStatus").value(409));
+    }
+
+    @Test
+    void testMalformedOrderIdReturnsBadRequest() throws Exception {
+        mockMvc.perform(get("/v1/orders/not-a-uuid"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.errorCode").value("INVALID_ARGUMENT"));
+
+        mockMvc.perform(delete("/v1/orders/not-a-uuid"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.errorCode").value("INVALID_ARGUMENT"));
+    }
+
+    @Test
+    void testMalformedJsonReturnsBadRequest() throws Exception {
+        mockMvc.perform(post("/v1/orders")
+            .contentType("application/json")
+            .content("{not json"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.errorCode").value("MALFORMED_REQUEST"));
     }
 }
