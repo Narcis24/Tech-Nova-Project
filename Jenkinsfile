@@ -36,6 +36,19 @@ pipeline {
             steps {
                 // imports dependencies and compiles load.py without hitting Yahoo or a database
                 sh 'docker run --rm --entrypoint python tech-nova-pipeline:latest -c "import load"'
+                // load_prices against a throwaway Postgres with the real migrations; Yahoo is faked
+                sh './data-pipeline/tests/run.sh'
+            }
+        }
+        stage('E2E Tests') {
+            steps {
+                // the whole system in containers, driven over HTTP; reuses the images built above
+                sh 'mvn -B -f e2e/pom.xml verify -De2e.image.app=team-skeleton:latest -De2e.image.auth=tech-nova-auth:latest -De2e.image.engine=tech-nova-execution-engine:latest'
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'e2e/target/e2e-logs/*.log', allowEmptyArchive: true
+                }
             }
         }
         stage('SonarQube') {
