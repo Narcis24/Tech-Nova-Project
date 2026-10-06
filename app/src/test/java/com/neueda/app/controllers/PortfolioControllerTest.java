@@ -1,5 +1,7 @@
 package com.neueda.app.controllers;
 
+import com.neueda.app.services.AccountAccess;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -41,12 +43,15 @@ class PortfolioControllerTest {
     private MockMvc mockMvc;
 
     @Mock
+    private AccountAccess accountAccess;
+
+    @Mock
     private PortfolioService portfolioService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        PortfolioController controller = new PortfolioController(portfolioService);
+        PortfolioController controller = new PortfolioController(portfolioService, accountAccess);
         mockMvc = standaloneSetup(controller)
             .setControllerAdvice(new PortfolioGlobalExceptionHandler())
             .build();

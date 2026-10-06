@@ -13,6 +13,7 @@ import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +28,19 @@ public class AccountService {
         this.orderRepository = orderRepository;
         this.positionRepository = positionRepository;
         this.positionValuator = positionValuator;
+    }
+
+    /** Opens an empty account for the user; they fund it with a deposit. */
+    @Transactional
+    public AccountResponse openAccount(String ownerUsername, String holderName) {
+        String accountId = "ACC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        return new AccountResponse(accountRepository.save(Account.open(accountId, holderName, ownerUsername)));
+    }
+
+    public List<AccountResponse> getAccountsOwnedBy(String ownerUsername) {
+        return accountRepository.findByOwnerUsernameOrderByAccountId(ownerUsername).stream()
+            .map(AccountResponse::new)
+            .toList();
     }
 
     public AccountResponse getAccount(String accountId) {

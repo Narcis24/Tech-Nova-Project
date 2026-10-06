@@ -73,6 +73,31 @@ echo "JWT Token: $TOKEN"
 - Expires in 1 hour (3600000ms)
 - Used in `Authorization: Bearer <token>` header for all order API calls
 
+### Step 3: Get an Account
+
+An account belongs to the user who opened it, and every other user gets `403 ACCESS_DENIED`.
+The seed accounts (ACC001-ACC005) start with no owner, so claim them for your user to run the
+examples below as written:
+
+```bash
+./db/scripts/claim-seed-accounts.sh testuser
+```
+
+Or open a fresh account of your own (it starts at $0) and use its id in place of ACC001:
+
+```bash
+ACCOUNT=$(curl -s -X POST http://localhost:8081/api/v1/accounts \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"holderName": "Test User"}' | jq -r '.accountId')
+
+curl -s -X POST http://localhost:8081/api/v1/accounts/$ACCOUNT/deposit \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"amount": 50000}'
+
+# list your accounts
+curl -s http://localhost:8081/api/v1/accounts -H "Authorization: Bearer $TOKEN"
+```
+
 ---
 
 ## 4. Test the Complete Flow

@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 import com.neueda.app.controllers.OrderController;
 import com.neueda.app.dtos.PlaceOrderRequest;
+import com.neueda.app.services.AccountAccess;
 import com.neueda.app.services.OrderService;
 import com.neueda.app.utils.JwtUtil;
 import com.neueda.app.exceptions.AccountNotFoundException;
@@ -43,6 +44,9 @@ class GlobalExceptionHandlerTest {
     private ObjectMapper objectMapper;
 
     @Mock
+    private AccountAccess accountAccess;
+
+    @Mock
     private OrderService orderService;
 
     @Mock
@@ -52,7 +56,7 @@ class GlobalExceptionHandlerTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         objectMapper = new ObjectMapper();
-        OrderController controller = new OrderController(orderService);
+        OrderController controller = new OrderController(orderService, accountAccess);
         mockMvc = standaloneSetup(controller)
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();

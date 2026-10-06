@@ -1,5 +1,7 @@
 package com.neueda.app.controllers;
 
+import com.neueda.app.services.AccountAccess;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -37,6 +39,9 @@ class PositionControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;  
+
+    @MockitoBean
+    private AccountAccess accountAccess;  // permits everything; ownership is tested in AccountAccessTest
 
     @MockitoBean
     private PositionService positionService;
