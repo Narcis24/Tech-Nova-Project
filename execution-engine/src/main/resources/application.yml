@@ -26,8 +26,9 @@ spring:
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
   jackson:
-    serialization:
-      write-dates-as-timestamps: false
+    datatype:
+      datetime:
+        write-dates-as-timestamps: false
 
 
 server:
