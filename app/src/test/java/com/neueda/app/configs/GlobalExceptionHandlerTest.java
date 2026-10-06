@@ -21,6 +21,7 @@ import com.neueda.app.exceptions.InsufficientHoldingsException;
 import com.neueda.app.exceptions.InvalidOrderStateException;
 import com.neueda.app.exceptions.OrderNotFoundException;
 import com.neueda.app.exceptions.OrderNotTriggeredException;
+import com.neueda.app.exceptions.PositionNotFoundException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
 import com.neueda.app.exceptions.TradingException;
@@ -239,6 +240,24 @@ class GlobalExceptionHandlerTest {
             .andExpect(jsonPath("$.errorCode").value("ORDER_NOT_FOUND"))
             .andExpect(jsonPath("$.httpStatus").value(404))
             .andExpect(jsonPath("$.message").value("Order not found: 123"))
+            .andExpect(jsonPath("$.timestamp").exists());
+    }
+
+    @Test
+    void testPositionNotFoundException() throws Exception {
+        when(orderService.placeOrder(any())).thenThrow(
+            new PositionNotFoundException("Position not found for account: ACC123, symbol: AAPL")
+        );
+
+        PlaceOrderRequest request = new PlaceOrderRequest("ACC123", "AAPL", "BUY", "LIMIT", 100, new BigDecimal("150.00"), "id-123");
+
+        mockMvc.perform(post("/v1/orders")
+            .contentType("application/json")
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.errorCode").value("POSITION_NOT_FOUND"))
+            .andExpect(jsonPath("$.httpStatus").value(404))
+            .andExpect(jsonPath("$.message").value("Position not found for account: ACC123, symbol: AAPL"))
             .andExpect(jsonPath("$.timestamp").exists());
     }
 
