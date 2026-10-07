@@ -58,8 +58,9 @@ pipeline {
                         for (m in ['app', 'execution-engine']) {
                             sh "mvn -B -f ${m}/pom.xml verify sonar:sonar -Dsonar.host.url=http://localhost:8083 -Dsonar.token=\$SONAR_TOKEN -Dsonar.qualitygate.wait=true"
                         }
-                        // auth: settings in auth/sonar-project.properties, coverage from the Unit Tests stage
-                        sh 'docker run --rm --network host -u $(id -u):$(id -g) -e SONAR_HOST_URL=http://localhost:8083 -e SONAR_TOKEN -e SONAR_USER_HOME=/tmp/.sonar -v $WORKSPACE/auth:/usr/src sonarsource/sonar-scanner-cli -Dsonar.qualitygate.wait=true'
+                        // auth: settings in auth/sonar-project.properties, coverage from the Unit Tests stage;
+                        // the image's own /tmp/.scannerwork is writable only by its uid 1000, so use a fresh work dir
+                        sh 'docker run --rm --network host -u $(id -u):$(id -g) -e SONAR_HOST_URL=http://localhost:8083 -e SONAR_TOKEN -e SONAR_USER_HOME=/tmp/.sonar -e SCANNER_WORKDIR_PATH=/tmp/scannerwork -v $WORKSPACE/auth:/usr/src sonarsource/sonar-scanner-cli -Dsonar.qualitygate.wait=true'
                     }
                 }
             }
