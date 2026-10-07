@@ -1,0 +1,277 @@
+openapi: 3.0.3
+info:
+  title: TechNova Auth Service API
+  version: 2.0.0
+  description: |
+    Identity provider for TechNova. Registers users, checks credentials and issues the JWTs
+    that the Trade REST API (app) accepts. Replaces the Spring Boot auth service; paths, port
+    and token format are kept so the Trade REST API needs no code change.
+
+    ## Access token
+    - Signed with **HS256** using the shared secret `JWT_SECRET` (at least 32 bytes), the same
+      secret the Trade REST API verifies with. Header: `{"alg":"HS256","typ":"JWT"}`.
+    - The payload carries **exactly** these claims, no others:
+
+      | Claim   | Type            | Value                                              |
+      |---------|-----------------|----------------------------------------------------|
+      | `sub`   | string          | the username; the Trade REST API uses it as the account owner |
+      | `roles` | array of string | `["TRADER"]` for every registered user            |
+      | `iat`   | number          | issue time, seconds since the epoch               |
+      | `exp`   | number          | `iat` + 900 (15 minutes)                           |
+
+    - Sent to the Trade REST API as `Authorization: Bearer <accessToken>`.
+
+    ## Refresh token
+    An opaque random string (not a JWT), valid for 7 days. The service stores only a hash
+    of it. Each use of `/v1/auth/refresh` revokes it and issues a new one (rotation);
+    `/v1/auth/logout` revokes it.
+
+    ## Passwords
+    Hashed with bcrypt at cost 12 or above (or argon2id) and never logged or returned.
+    A failed login returns the same 401 body, with comparable timing, whether the username
+    is unknown or the password is wrong.
+
+    ## Operational endpoints (not part of this contract)
+    - `GET /auth/docs` serves this API's Swagger UI and `GET /auth/docs-json` its OpenAPI document.
+    - `GET /auth/health` returns 200 when the service is up; used by the Docker health check.
+
+servers:
+  - url: http://localhost:8082/auth
+    description: Local; the service listens on port 8082 with the base path /auth
+    # I use localhost, but this will be replaced with the actual ip address 
+
+tags:
+  - name: auth
+    description: Public endpoints; none of them takes a token
+
+paths:
+  /v1/auth/register:
+    post:
+      tags: [auth]
+      operationId: register
+      security: []
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+      responses:
+        '201':
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '409':
+          description: Username already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                statusCode: 409
+                error: Conflict
+                message: Username already registered
+
+  /v1/auth/login:
+    post:
+      tags: [auth]
+      operationId: login
+      security: []
+      summary: Log in and receive an access token and a refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+      responses:
+        '200':
+          description: Credentials accepted, tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          description: Unknown username or wrong password; the body is identical in both cases
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                statusCode: 401
+                error: Unauthorized
+                message: Invalid username or password
+
+  /v1/auth/refresh:
+    post:
+      tags: [auth]
+      operationId: refresh
+      security: []
+      summary: Exchange a refresh token for a new access token and a new refresh token
+      description: The refresh token sent is revoked; only the one returned can be used next.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/InvalidRefreshToken'
+
+  /v1/auth/logout:
+    post:
+      tags: [auth]
+      operationId: logout
+      security: []
+      summary: Revoke a refresh token
+      description: |
+        Idempotent: an unknown, expired or already revoked refresh token also gets 204, so the
+        endpoint does not reveal whether a token was valid. Access tokens already issued stay
+        valid until they expire (at most 15 minutes).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '204':
+          description: Refresh token revoked (or was not valid)
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+
+components:
+  schemas:
+    Credentials:
+      type: object
+      additionalProperties: false
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 8
+          maxLength: 16
+          pattern: '^[A-Za-z0-9_]+$'
+          description: Letters, digits and underscore
+          example: john_doe1
+        password:
+          type: string
+          format: password
+          minLength: 12
+          maxLength: 20
+          example: Something123@
+
+    RegisterResponse:
+      type: object
+      required: [username]
+      properties:
+        username:
+          type: string
+          example: john_doe1
+
+    RefreshTokenRequest:
+      type: object
+      additionalProperties: false
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+          minLength: 1
+          example: 3q2-7wEXAMPLEc0ZqXk9rT1mVb8LwN4yHs6
+
+    TokenResponse:
+      type: object
+      required: [accessToken, refreshToken, tokenType, expiresIn]
+      properties:
+        accessToken:
+          type: string
+          description: JWT, HS256, claims exactly sub, roles, iat, exp
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huX2RvZTEiLCJyb2xlcyI6WyJUUkFERVIiXSwiaWF0IjoxNzkxMjg4MDAwLCJleHAiOjE3OTEyODg5MDB9.signature
+        refreshToken:
+          type: string
+          description: Opaque, single use, valid for 7 days
+          example: 3q2-7wEXAMPLEc0ZqXk9rT1mVb8LwN4yHs6
+        tokenType:
+          type: string
+          enum: [Bearer]
+        expiresIn:
+          type: integer
+          description: Seconds until the access token expires
+          enum: [900]
+
+    AccessTokenClaims:
+      description: Payload of the access token. Documents the token; not a request or response body.
+      type: object
+      additionalProperties: false
+      required: [sub, roles, iat, exp]
+      properties:
+        sub:
+          type: string
+          example: john_doe1
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [TRADER]
+          example: [TRADER]
+        iat:
+          type: integer
+          example: 1791288000
+        exp:
+          type: integer
+          example: 1791288900
+
+    Error:
+      type: object
+      required: [statusCode, error, message]
+      properties:
+        statusCode:
+          type: integer
+        error:
+          type: string
+        message:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+
+  responses:
+    ValidationFailed:
+      description: Body missing, malformed or breaking a field rule; one message per broken rule
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            statusCode: 400
+            error: Bad Request
+            message:
+              - username must be longer than or equal to 8 characters
+
+    InvalidRefreshToken:
+      description: Refresh token unknown, expired or already used
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            statusCode: 401
+            error: Unauthorized
+            message: Invalid or expired refresh token
