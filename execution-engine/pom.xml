@@ -24,6 +24,30 @@
         <!-- Security patches newer than Spring Boot's managed versions (found by Trivy) -->
         <tomcat.version>11.0.25</tomcat.version>
         <jackson-bom.version>3.1.7</jackson-bom.version>
+        
+        <!-- SonarQube Exclusions: Enums, Events, Config, Data Classes, and Entry Point -->
+        <sonar.exclusions>
+            **/enums/**,
+            **/events/**,
+            **/*Config.java,
+            **/*Properties.java,
+            **/*Quote.java,
+            **/*Cache.java,
+            **/*Exception.java,
+            **/ExecutionEngineApplication.java
+        </sonar.exclusions>
+        
+        <!-- Exclude from Coverage Reports -->
+        <sonar.coverage.exclusions>
+            **/enums/**,
+            **/events/**,
+            **/*Config.java,
+            **/*Properties.java,
+            **/*Quote.java,
+            **/*Cache.java,
+            **/*Exception.java,
+            **/ExecutionEngineApplication.java
+        </sonar.coverage.exclusions>
     </properties>
 
     <dependencies>
