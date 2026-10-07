@@ -42,7 +42,8 @@ class AccountServiceTest {
         orderRepository = mock(OrderRepository.class);
         positionRepository = mock(PositionRepository.class);
         priceRepository = mock(PriceRepository.class);
-        accountService = new AccountService(accountRepository, orderRepository, positionRepository, priceRepository);
+        // Real valuator over the mocked prices, so these tests still check the valuation math
+        accountService = new AccountService(accountRepository, orderRepository, positionRepository, new PositionValuator(priceRepository));
     }
 
     // ========== getAccount Tests ==========
@@ -485,8 +486,8 @@ class AccountServiceTest {
             .thenReturn(Optional.of(account));
         when(positionRepository.findByAccountId(accountId))
             .thenReturn(positions);
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL"))
-            .thenReturn(Optional.of(price));
+        when(priceRepository.findLatestBySymbols(List.of("AAPL")))
+            .thenReturn(List.of(price));
 
         // Act
         List<PositionResponse> result = accountService.getAccountPositions(accountId);
@@ -562,8 +563,8 @@ class AccountServiceTest {
             .thenReturn(Optional.of(account));
         when(positionRepository.findByAccountId(accountId))
             .thenReturn(positions);
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL"))
-            .thenReturn(Optional.empty());
+        when(priceRepository.findLatestBySymbols(List.of("AAPL")))
+            .thenReturn(List.of());
 
         // Act
         List<PositionResponse> result = accountService.getAccountPositions(accountId);
@@ -610,10 +611,10 @@ class AccountServiceTest {
             .thenReturn(Optional.of(account));
         when(positionRepository.findByAccountId(accountId))
             .thenReturn(positions);
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL"))
-            .thenReturn(Optional.of(new Price("AAPL", LocalDate.now(), new BigDecimal("160.00"))));
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("GOOGL"))
-            .thenReturn(Optional.of(new Price("GOOGL", LocalDate.now(), new BigDecimal("2900.00"))));
+        when(priceRepository.findLatestBySymbols(List.of("AAPL", "GOOGL")))
+            .thenReturn(List.of(
+                new Price("AAPL", LocalDate.now(), new BigDecimal("160.00")),
+                new Price("GOOGL", LocalDate.now(), new BigDecimal("2900.00"))));
 
         // Act
         List<PositionResponse> result = accountService.getAccountPositions(accountId);

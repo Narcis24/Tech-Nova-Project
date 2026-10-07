@@ -15,6 +15,7 @@ import com.neueda.app.dtos.PositionResponse;
 import com.neueda.app.services.PositionService;
 import com.neueda.app.dtos.PositionMetricsResponse;
 import com.neueda.app.exceptions.TradingException;
+import com.neueda.app.exceptions.PositionNotFoundException;
 import com.neueda.app.utils.JwtUtil;
 
 import java.util.List;
@@ -78,11 +79,12 @@ class PositionControllerTest {
     void testGetPosition_NotFound() throws Exception {
     
         when(positionService.getPosition("ACC123", "AAPL"))
-            .thenThrow(new TradingException("Position not found"));
+            .thenThrow(new PositionNotFoundException("Position not found"));
         
         
         mockMvc.perform(get("/v1/positions/ACC123/AAPL"))
-            .andExpect(status().isBadRequest()); 
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.errorCode").value("POSITION_NOT_FOUND"));
     }
 
     @Test
@@ -172,9 +174,10 @@ class PositionControllerTest {
     @Test
     void testGetPositionMetrics_NotFound() throws Exception {
         when(positionService.getPositionMetrics("ACC123", "AAPL"))
-            .thenThrow(new TradingException("Position not found"));
+            .thenThrow(new PositionNotFoundException("Position not found"));
         
         mockMvc.perform(get("/v1/positions/ACC123/AAPL/metrics"))
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.errorCode").value("POSITION_NOT_FOUND"));
     }
 }
