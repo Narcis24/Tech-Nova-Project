@@ -7,7 +7,6 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
@@ -34,14 +33,8 @@ public final class Trader {
 
     /** Registers a new user with auth-service and logs in. */
     public static Trader register() {
-        String username = "e2e_" + UUID.randomUUID().toString().substring(0, 8);
-        Map<String, String> credentials = Map.of("username", username, "password", PASSWORD);
-
-        given().baseUri(Stack.authUrl()).contentType(ContentType.JSON).body(credentials)
-            .post("/v1/auth/register").then().statusCode(201);
-        String token = given().baseUri(Stack.authUrl()).contentType(ContentType.JSON).body(credentials)
-            .post("/v1/auth/login").then().statusCode(200).extract().path("token");
-        return new Trader(username, token);
+        String username = Auth.newUsername();
+        return new Trader(username, Auth.registerAndLogin(username).getString("accessToken"));
     }
 
     public String username() {

@@ -93,7 +93,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
 
     ports:
-      - "${AUTH_PORT:-8082}:8080"
+      - "${AUTH_PORT:-8082}:8082"
 
     networks:
       - tech-nova-network
