@@ -4,23 +4,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.neueda</groupId>
-    <artifactId>tech-nova-messaging</artifactId>
-    <version>0.1.0</version>
-    <packaging>jar</packaging>
+    <parent>
+        <groupId>com.neueda</groupId>
+        <artifactId>tech-nova-parent</artifactId>
+        <version>0.1.0</version>
+    </parent>
 
-    <properties>
-        <maven.compiler.release>21</maven.compiler.release>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-    
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
-            </plugin>
-        </plugins>
-    </build>
+    <!-- Kafka event contract shared by app and execution-engine. Plain records, no dependencies. -->
+    <artifactId>tech-nova-messaging</artifactId>
+    <packaging>jar</packaging>
 </project>
