@@ -17,7 +17,6 @@ import java.util.List;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -55,30 +54,40 @@ class InstrumentControllerTest {
     }
 
     @Test
-    void testGetTradableInstruments_Success() throws Exception {
+    void testGetInstruments_AllWithoutFilter() throws Exception {
+        when(instrumentService.getInstruments(null)).thenReturn(List.of(
+            new InstrumentResponse("AAPL", "Apple Inc.", AssetClass.EQUITY, "USD", true),
+            new InstrumentResponse("OLD", "Delisted Co.", AssetClass.EQUITY, "USD", false)));
+
+        mockMvc.perform(get("/v1/instruments"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    void testGetInstruments_TradableOnly() throws Exception {
         InstrumentResponse response = new InstrumentResponse("AAPL", "Apple Inc.", AssetClass.EQUITY, "USD", true);
-        when(instrumentService.getAllTradable()).thenReturn(List.of(response));
+        when(instrumentService.getInstruments(true)).thenReturn(List.of(response));
 
-        mockMvc.perform(get("/v1/instruments/tradable"))
+        mockMvc.perform(get("/v1/instruments").param("tradable", "true"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].symbol").value("AAPL"));
+            .andExpect(jsonPath("$[0].symbol").value("AAPL"))
+            .andExpect(jsonPath("$[0].tradable").value(true));
     }
 
     @Test
-    void testIsTradable_True() throws Exception {
-        when(instrumentService.isTradable("AAPL")).thenReturn(true);
+    void testGetInstruments_NotTradableOnly() throws Exception {
+        InstrumentResponse response = new InstrumentResponse("OLD", "Delisted Co.", AssetClass.EQUITY, "USD", false);
+        when(instrumentService.getInstruments(false)).thenReturn(List.of(response));
 
-        mockMvc.perform(get("/v1/instruments/{symbol}/tradable", "AAPL"))
+        mockMvc.perform(get("/v1/instruments").param("tradable", "false"))
             .andExpect(status().isOk())
-            .andExpect(content().string("true"));
+            .andExpect(jsonPath("$[0].tradable").value(false));
     }
 
     @Test
-    void testIsTradable_NotFound() throws Exception {
-        when(instrumentService.isTradable("FAKE"))
-            .thenThrow(new InstrumentNotFoundException("Instrument not found: FAKE"));
-
-        mockMvc.perform(get("/v1/instruments/{symbol}/tradable", "FAKE"))
-            .andExpect(status().isNotFound());
+    void testGetInstruments_InvalidFilter() throws Exception {
+        mockMvc.perform(get("/v1/instruments").param("tradable", "maybe"))
+            .andExpect(status().isBadRequest());
     }
 }
