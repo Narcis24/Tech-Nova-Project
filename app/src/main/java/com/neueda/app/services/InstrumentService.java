@@ -28,18 +28,11 @@ public class InstrumentService {
     }
     
 
-    public boolean isTradable(String symbol) {
-        Instrument instrument = instrumentRepository.findBySymbol(symbol)
-            .orElseThrow(() -> new InstrumentNotFoundException(
-                "Instrument not found: " + symbol
-            ));
-        
-        return instrument.isTradable();
-    }
-    
-    
-    public List<InstrumentResponse> getAllTradable() {
-        List<Instrument> instruments = instrumentRepository.findByTradable(true);
+    /** All instruments when tradable is null, else only those whose tradable flag matches. */
+    public List<InstrumentResponse> getInstruments(Boolean tradable) {
+        List<Instrument> instruments = tradable == null
+            ? instrumentRepository.findAll()
+            : instrumentRepository.findByTradable(tradable);
         List<InstrumentResponse> responses = new ArrayList<>();
         
         for (Instrument instrument : instruments) {
