@@ -66,6 +66,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Kafka Messaging -->
+        <dependency>
+            <groupId>com.neueda</groupId>
+            <artifactId>tech-nova-messaging</artifactId>
+            <version>0.1.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>

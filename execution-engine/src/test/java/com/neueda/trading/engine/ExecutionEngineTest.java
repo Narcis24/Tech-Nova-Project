@@ -21,10 +21,10 @@ import org.mockito.ArgumentCaptor;
 
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
-import com.neueda.trading.events.EventEnvelope;
-import com.neueda.trading.events.OrderExecutedEvent;
-import com.neueda.trading.events.OrderPlacedEvent;
-import com.neueda.trading.events.OrderRejectedEvent;
+import com.neueda.events.EventEnvelope;
+import com.neueda.events.OrderExecutedEvent;
+import com.neueda.events.OrderPlacedEvent;
+import com.neueda.events.OrderRejectedEvent;
 
 class ExecutionEngineTest {
 
