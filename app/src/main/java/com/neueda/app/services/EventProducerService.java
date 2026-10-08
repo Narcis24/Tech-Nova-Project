@@ -1,6 +1,6 @@
 package com.neueda.app.services;
 
-import com.neueda.app.events.EventEnvelope;
+import com.neueda.events.EventEnvelope;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;

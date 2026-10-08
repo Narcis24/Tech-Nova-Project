@@ -1,6 +1,7 @@
 package com.neueda.app.configs;
 
-import com.neueda.app.events.EventEnvelope;
+import com.neueda.events.EventEnvelope;
+import com.neueda.events.Topics;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -109,7 +110,7 @@ public class KafkaConfig {
     public NewTopic orderRequestTopic() {
 
         return TopicBuilder
-            .name("order-request")
+            .name(Topics.ORDER_REQUEST)
             .partitions(3)
             .replicas(1)
             .build();
@@ -119,7 +120,7 @@ public class KafkaConfig {
     public NewTopic orderExecutionTopic() {
 
         return TopicBuilder
-            .name("order-execution")
+            .name(Topics.ORDER_EXECUTION)
             .partitions(3)
             .replicas(1)
             .build();
@@ -129,7 +130,7 @@ public class KafkaConfig {
     public NewTopic orderExecutionDltTopic() {
 
         return TopicBuilder
-            .name("order-execution" + DLT_SUFFIX)
+            .name(Topics.ORDER_EXECUTION + DLT_SUFFIX)
             .partitions(3)
             .replicas(1)
             .build();

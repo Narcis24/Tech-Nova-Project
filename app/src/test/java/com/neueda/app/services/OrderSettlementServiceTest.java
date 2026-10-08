@@ -2,10 +2,11 @@ package com.neueda.app.services;
 
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
-import com.neueda.app.dtos.OrderExecutedEvent;
+import com.neueda.events.OrderExecutedEvent;
+import com.neueda.events.OrderRejectedEvent;
 import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.enums.OrderStatus;
-import com.neueda.app.events.EventEnvelope;
+import com.neueda.events.EventEnvelope;
 import com.neueda.app.exceptions.OrderNotFoundException;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
@@ -97,8 +98,8 @@ class OrderSettlementServiceTest {
     void rejectionResolvesAPendingOrderWithTheReason() throws Exception {
         when(orderRepository.reject(orderId, OrderStatus.PENDING, OrderStatus.REJECTED, "No fresh quote"))
                 .thenReturn(1);
-        com.neueda.app.dtos.OrderRejectedEvent rejected =
-                new com.neueda.app.dtos.OrderRejectedEvent(orderId, "ACC1", "AAPL", "No fresh quote");
+        OrderRejectedEvent rejected =
+                new OrderRejectedEvent(orderId, "ACC1", "AAPL", "No fresh quote");
 
         service.processKafkaMessage(mapper.writeValueAsString(
                 new EventEnvelope<>("e2", "ORDER_REJECTED", Instant.now(), "test", 1, rejected)));

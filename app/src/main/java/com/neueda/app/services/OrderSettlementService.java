@@ -1,10 +1,12 @@
 package com.neueda.app.services;
 
 import tools.jackson.databind.ObjectMapper;
-import com.neueda.app.dtos.OrderExecutedEvent;
-import com.neueda.app.dtos.OrderRejectedEvent;
+import com.neueda.events.OrderExecutedEvent;
+import com.neueda.events.OrderRejectedEvent;
 import com.neueda.app.enums.OrderStatus;
-import com.neueda.app.events.EventEnvelope;
+import com.neueda.events.EventEnvelope;
+import com.neueda.events.EventTypes;
+import com.neueda.events.Topics;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.InstrumentNotFoundException;
 import com.neueda.app.exceptions.InsufficientFundsException;
@@ -65,7 +67,7 @@ public class OrderSettlementService {
      * @param message the JSON Kafka message
      */
     @KafkaListener(
-        topics = "order-execution",
+        topics = Topics.ORDER_EXECUTION,
         groupId = "order-settlement"
     )
     public void processKafkaMessage(String message) {
@@ -82,12 +84,12 @@ public class OrderSettlementService {
             return;
         }
 
-        if ("ORDER_REJECTED".equals(envelope.eventType())) {
+        if (EventTypes.ORDER_REJECTED.equals(envelope.eventType())) {
             processOrderRejection(envelope);
             return;
         }
 
-        if (!"ORDER_EXECUTED".equals(envelope.eventType())) {
+        if (!EventTypes.ORDER_EXECUTED.equals(envelope.eventType())) {
             log.debug("Ignoring event type: {}", envelope.eventType());
             return;
         }
@@ -119,13 +121,13 @@ public class OrderSettlementService {
             return;
         }
 
-        int updated = orderRepository.reject(event.getOrderId(), OrderStatus.PENDING,
-                OrderStatus.REJECTED, event.getReason());
+        int updated = orderRepository.reject(event.orderId(), OrderStatus.PENDING,
+                OrderStatus.REJECTED, event.reason());
         if (updated == 0) {
-            log.warn("Ignoring ORDER_REJECTED, order is not PENDING or unknown: orderId={}", event.getOrderId());
+            log.warn("Ignoring ORDER_REJECTED, order is not PENDING or unknown: orderId={}", event.orderId());
             return;
         }
-        log.info("Order rejected: orderId={}, reason={}", event.getOrderId(), event.getReason());
+        log.info("Order rejected: orderId={}, reason={}", event.orderId(), event.reason());
     }
 
     /**
@@ -140,7 +142,7 @@ public class OrderSettlementService {
      * @throws InsufficientHoldingsException if trying to sell without holdings
      */
     private void processOrderExecution(OrderExecutedEvent event) {
-        UUID orderId = event.getOrderId();
+        UUID orderId = event.orderId();
 
         log.info("Received ORDER_EXECUTED event: orderId={}", orderId);
 
@@ -149,7 +151,7 @@ public class OrderSettlementService {
             // write, so a duplicate stops here before touching cash or positions.
             int updated = orderRepository.transition(
                     orderId, OrderStatus.PENDING, OrderStatus.FILLED,
-                    event.getExecutionPrice().setScale(2, RoundingMode.HALF_UP));
+                    event.executionPrice().setScale(2, RoundingMode.HALF_UP));
             if (updated == 0) {
                 if (!orderRepository.existsById(orderId)) {
                     throw new OrderNotFoundException("Order not found: " + orderId);
@@ -158,46 +160,46 @@ public class OrderSettlementService {
                 return;
             }
 
-            Account account = accountRepository.findByIdForUpdate(event.getAccountId())
+            Account account = accountRepository.findByIdForUpdate(event.accountId())
                     .orElseThrow(() -> new AccountNotFoundException(
-                            "Account not found: " + event.getAccountId()
+                            "Account not found: " + event.accountId()
                     ));
 
-            Instrument instrument = instrumentRepository.findBySymbol(event.getSymbol())
+            Instrument instrument = instrumentRepository.findBySymbol(event.symbol())
                     .orElseThrow(() -> new InstrumentNotFoundException(
-                            "Instrument not found: " + event.getSymbol()
+                            "Instrument not found: " + event.symbol()
                     ));
 
-            if ("BUY".equalsIgnoreCase(event.getSide())) {
+            if ("BUY".equalsIgnoreCase(event.side())) {
                 handleBuy(account, instrument, event);
                 log.info(
                     "BUY execution processed: orderId={}, symbol={}, quantity={}, executionPrice={}, totalValue={}",
                     orderId,
-                    event.getSymbol(),
-                    event.getQuantity(),
-                    event.getExecutionPrice(),
-                    event.getTotalValue()
+                    event.symbol(),
+                    event.quantity(),
+                    event.executionPrice(),
+                    event.totalValue()
                 );
-            } else if ("SELL".equalsIgnoreCase(event.getSide())) {
+            } else if ("SELL".equalsIgnoreCase(event.side())) {
                 handleSell(account, instrument, event);
                 log.info(
                     "SELL execution processed: orderId={}, symbol={}, quantity={}, executionPrice={}, totalValue={}",
                     orderId,
-                    event.getSymbol(),
-                    event.getQuantity(),
-                    event.getExecutionPrice(),
-                    event.getTotalValue()
+                    event.symbol(),
+                    event.quantity(),
+                    event.executionPrice(),
+                    event.totalValue()
                 );
             } else {
                 throw new IllegalArgumentException(
-                    "Unknown order side: " + event.getSide()
+                    "Unknown order side: " + event.side()
                 );
             }
 
             log.info(
                 "Order execution processed successfully: orderId={}, status=FILLED, executionPrice={}",
                 orderId,
-                event.getExecutionPrice()
+                event.executionPrice()
             );
 
         } catch (InsufficientFundsException | InsufficientHoldingsException e) {
@@ -215,13 +217,13 @@ public class OrderSettlementService {
      * Handles BUY execution: debits cash and updates position.
      */
     private void handleBuy(Account account, Instrument instrument, OrderExecutedEvent event) {
-        account.debitCash(event.getTotalValue());
+        account.debitCash(event.totalValue());
 
         Position position = positionRepository
                 .findByAccountIdAndSymbol(account.getAccountId(), instrument.getSymbol())
                 .orElse(new Position(account, instrument, 0, BigDecimal.ZERO));
 
-        position.updateOnBuy(event.getQuantity(), event.getExecutionPrice());
+        position.updateOnBuy(event.quantity(), event.executionPrice());
 
         accountRepository.save(account);
         positionRepository.save(position);
@@ -234,11 +236,11 @@ public class OrderSettlementService {
         Position position = positionRepository
                 .findByAccountIdAndSymbol(account.getAccountId(), instrument.getSymbol())
                 .orElseThrow(() -> new InsufficientHoldingsException(
-                        "No position in " + event.getSymbol() + " for account " + account.getAccountId()
+                        "No position in " + event.symbol() + " for account " + account.getAccountId()
                 ));
 
-        position.updateOnSell(event.getQuantity());
-        account.creditCash(event.getTotalValue());
+        position.updateOnSell(event.quantity());
+        account.creditCash(event.totalValue());
 
         positionRepository.save(position);
         accountRepository.save(account);
