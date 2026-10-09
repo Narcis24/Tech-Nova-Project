@@ -122,6 +122,54 @@ class ExecutionEngineTest {
         verify(producer, never()).publishEvent(any(), any(), any(), any(), any());
     }
 
+    @Test
+    void ignoresNonOrderPlacedEvents() throws Exception {
+        String message = mapper.writeValueAsString(new EventEnvelope<>("e1", "ORDER_EXECUTED", Instant.now(), "app", 1,
+            Map.of("orderId", "123")));
+
+        // Should not throw
+        engine.handleOrderPlaced(message);
+
+        verify(producer, never()).publishEvent(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void marketSellOrderFillsAtTheLiveBid() throws Exception {
+        cache.put(new Quote("AAPL", new BigDecimal("99.50"), new BigDecimal("100.50"), Instant.now()));
+
+        UUID sellOrderId = UUID.randomUUID();
+        OrderPlacedEvent sellOrder = new OrderPlacedEvent(sellOrderId, "ACC1", "AAPL", "SELL", "MARKET", 10,
+            null, "key");
+        engine.handleOrderPlaced(mapper.writeValueAsString(
+            new EventEnvelope<>("e1", "ORDER_PLACED", Instant.now(), "app", 1, sellOrder)));
+
+        ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
+        verify(producer).publishEvent(eq("order-execution"), any(), eq("ORDER_EXECUTED"), any(),
+            payload.capture());
+        OrderExecutedEvent fill = (OrderExecutedEvent) payload.getValue();
+        assertEquals(new BigDecimal("99.50"), fill.executionPrice());
+        assertEquals(new BigDecimal("995.00"), fill.totalValue());
+        assertEquals(sellOrderId, fill.orderId());
+    }
+
+    @Test
+    void invalidMessageThrowsEventProcessingException() {
+        String invalidJson = "not a valid json";
+
+        assertThrows(EventProcessingException.class, () -> engine.handleOrderPlaced(invalidJson));
+    }
+
+    @Test
+    void marketOrderWithZeroBidAskIsRejected() throws Exception {
+        cache.put(new Quote("AAPL", BigDecimal.ZERO, BigDecimal.ZERO, Instant.now()));
+
+        place("MARKET", "150.00");
+
+        ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
+        verify(producer).publishEvent(eq("order-execution"), eq(orderId.toString()),
+            eq("ORDER_REJECTED"), any(), payload.capture());
+    }
+
     private String quoteMessage(String bid, String ask) throws Exception {
         return mapper.writeValueAsString(new EventEnvelope<>("q", "MARKET_DATA", Instant.now(), "p", 1,
             new Quote("AAPL", new BigDecimal(bid), new BigDecimal(ask), Instant.now())));

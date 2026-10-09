@@ -21,9 +21,34 @@
         <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <sonar.projectKey>tech-nova-execution-engine</sonar.projectKey>
+        <sonar.jacoco.reportPaths>target/jacoco.exec</sonar.jacoco.reportPaths>
         <!-- Security patches newer than Spring Boot's managed versions (found by Trivy) -->
         <tomcat.version>11.0.25</tomcat.version>
         <jackson-bom.version>3.1.7</jackson-bom.version>
+        
+        <!-- SonarQube Exclusions: Enums, Events, Config, Data Classes, and Entry Point -->
+        <sonar.exclusions>
+            **/enums/**,
+            **/events/**,
+            **/*Config.java,
+            **/*Properties.java,
+            **/*Quote.java,
+            **/*Cache.java,
+            **/*Exception.java,
+            **/ExecutionEngineApplication.java
+        </sonar.exclusions>
+        
+        <!-- Exclude from Coverage Reports -->
+        <sonar.coverage.exclusions>
+            **/enums/**,
+            **/events/**,
+            **/*Config.java,
+            **/*Properties.java,
+            **/*Quote.java,
+            **/*Cache.java,
+            **/*Exception.java,
+            **/ExecutionEngineApplication.java
+        </sonar.coverage.exclusions>
     </properties>
 
     <dependencies>
@@ -74,6 +99,27 @@
         <finalName>execution-engine</finalName>
 
         <plugins>
+
+            <!-- JaCoCo Code Coverage -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.10</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
             <!-- Spring Boot executable JAR -->
             <plugin>
