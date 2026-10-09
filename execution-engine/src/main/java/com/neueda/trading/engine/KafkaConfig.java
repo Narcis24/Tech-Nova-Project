@@ -1,5 +1,7 @@
 package com.neueda.trading.engine;
 
+import com.neueda.events.Topics;
+
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.context.annotation.Bean;
@@ -40,7 +42,7 @@ public class KafkaConfig {
 
     @Bean
     public NewTopic orderRequestDltTopic() {
-        return topic("order-request" + DLT_SUFFIX);
+        return topic(Topics.ORDER_REQUEST + DLT_SUFFIX);
     }
 
     // 3 partitions to match the app's topics, so a dead letter keeps its partition

@@ -33,7 +33,9 @@ services:
   # Main Application
   # =========================================================
   app:
-    build: ./app
+    build:
+      context: .
+      dockerfile: app/Dockerfile
     restart: unless-stopped
 
     depends_on:
@@ -61,7 +63,9 @@ services:
       - tech-nova-network
 
   execution-engine:
-    build: ./execution-engine
+    build:
+      context: .
+      dockerfile: execution-engine/Dockerfile
     restart: unless-stopped
 
     depends_on:

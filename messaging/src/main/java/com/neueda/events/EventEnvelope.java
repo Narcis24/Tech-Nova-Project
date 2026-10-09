@@ -1,4 +1,4 @@
-package com.neueda.trading.events;
+package com.neueda.events;
 
 import java.time.Instant;
 
