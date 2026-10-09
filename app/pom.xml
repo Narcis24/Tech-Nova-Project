@@ -50,6 +50,13 @@
             <artifactId>postgresql</artifactId>
         </dependency>
 
+        <!-- Security patch for lz4-java: CVE-2026-106451 -->
+        <dependency>
+            <groupId>at.yawk.lz4</groupId>
+            <artifactId>lz4-java</artifactId>
+            <version>1.11.4</version>
+        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
