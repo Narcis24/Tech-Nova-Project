@@ -1,14 +1,21 @@
+# Build from the repo root: docker build -f execution-engine/Dockerfile .
+
 # ---- build stage ----
 FROM maven:3.9-eclipse-temurin-21 AS build
 
 WORKDIR /build
 
+# the reactor needs every module's pom, even the ones it is not building
 COPY pom.xml .
-RUN mvn -B dependency:go-offline
+COPY messaging/pom.xml messaging/
+COPY app/pom.xml app/
+COPY execution-engine/pom.xml execution-engine/
+RUN mvn -B -pl execution-engine -am dependency:go-offline -DexcludeGroupIds=com.neueda
 
-COPY src ./src
+COPY messaging/src messaging/src
+COPY execution-engine/src execution-engine/src
 
-RUN mvn -B -q -Dmaven.test.skip=true package
+RUN mvn -B -q -pl execution-engine -am -Dmaven.test.skip=true package
 
 
 # ---- runtime stage ----
@@ -18,7 +25,7 @@ RUN addgroup -S engine && adduser -S engine -G engine
 
 WORKDIR /opt/execution-engine
 
-COPY --from=build /build/target/execution-engine.jar app.jar
+COPY --from=build /build/execution-engine/target/execution-engine.jar app.jar
 
 USER engine
 

@@ -14,7 +14,7 @@ endpoint used by the Docker health check.
 
 ```
 execution-engine/
-├── Dockerfile                        # multi-stage: Maven build, then JRE 21 runtime
+├── Dockerfile                        # multi-stage: Maven build, then JRE 21 runtime; build from the repo root
 ├── pom.xml                           # Spring Boot 4.1, Spring Kafka
 └── src/
     ├── main/java/com/neueda/trading/
@@ -28,8 +28,7 @@ execution-engine/
     │   │   ├── MarketDataProperties.java  # market-data.* settings, quota checked on startup
     │   │   ├── EventProducerService.java  # wraps payloads in EventEnvelope and sends them
     │   │   └── KafkaConfig.java           # retry + dead-letter handler, topic declarations
-    │   ├── events/                        # message contracts (EventEnvelope, OrderPlacedEvent, ...)
-    │   └── enums/Side.java
+        │   └── enums/Side.java
     ├── main/resources/application.yml
     └── test/java/com/neueda/trading/engine/
         ├── FillRuleTest.java
@@ -55,9 +54,11 @@ are waiting for the market live in memory and are lost if the engine restarts.
 
 ## Building and running
 
+The message contracts (`EventEnvelope`, `OrderPlacedEvent`, `Topics`, ...) live in the shared
+`messaging` module, so build from the repo root:
+
 ```bash
-cd execution-engine
-mvn test               # unit tests, no Kafka or Docker needed
+mvn test -pl execution-engine -am   # unit tests, no Kafka or Docker needed
 ```
 
 Through Docker, it runs as the `execution-engine` service:

@@ -18,19 +18,19 @@ pipeline {
         }
         stage('Build Images') {
             steps {
-                sh 'docker build -t team-skeleton:latest ./app'
+                sh 'docker build -t team-skeleton:latest -f app/Dockerfile .'
                 sh 'docker build -t tech-nova-pipeline:latest ./data-pipeline'
                 sh 'docker build -t tech-nova-auth:latest ./auth'
-                sh 'docker build -t tech-nova-execution-engine:latest ./execution-engine'
+                sh 'docker build -t tech-nova-execution-engine:latest -f execution-engine/Dockerfile .'
             }
         }
         stage('Unit Tests') {
             steps {
-                // fails the build on test failures; app uses the in-memory H2 database, no Postgres or Kafka needed
-                sh 'mvn -B -f app/pom.xml test'
+                // fails the build on test failures; app uses the in-memory H2 database, no Postgres or Kafka needed.
+                // Built from the root so messaging comes first; install puts it in ~/.m2 for the per-module Sonar runs
+                sh 'mvn -B install'
                 // auth is NestJS; the agent's Node is too old, so it runs in a Node 24 container as the jenkins user
                 sh 'docker run --rm -u $(id -u):$(id -g) -e npm_config_cache=/tmp/.npm -v $WORKSPACE/auth:/app -w /app node:24-alpine sh -c "npm ci && npm run test:cov"'
-                sh 'mvn -B -f execution-engine/pom.xml test'
             }
         }
         stage('Smoke Test') {
