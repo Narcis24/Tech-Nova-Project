@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Runs without a test transaction so each deposit/withdrawal commits on its own.
  */
 @DataJpaTest
-@Import(AccountService.class)
+@Import({AccountService.class, PositionValuator.class})
 @ActiveProfiles("test")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class AccountServiceConcurrencyTest {

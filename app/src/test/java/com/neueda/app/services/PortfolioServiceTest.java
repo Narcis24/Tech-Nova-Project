@@ -3,8 +3,10 @@ package com.neueda.app.services;
 import com.neueda.app.dtos.PortfolioMetricsResponse;
 import com.neueda.app.dtos.PortfolioSnapshotResponse;
 import com.neueda.app.enums.AccountStatus;
+import com.neueda.app.enums.AssetClass;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.models.Account;
+import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Position;
 import com.neueda.app.models.Price;
 import com.neueda.app.repositories.AccountRepository;
@@ -35,7 +37,8 @@ class PortfolioServiceTest {
         accountRepository = mock(AccountRepository.class);
         positionRepository = mock(PositionRepository.class);
         priceRepository = mock(PriceRepository.class);
-        portfolioService = new PortfolioService(accountRepository, positionRepository, priceRepository);
+        // Real valuator over the mocked prices, so these tests still check the valuation math
+        portfolioService = new PortfolioService(accountRepository, positionRepository, new PositionValuator(priceRepository));
     }
 
     // ========== getPortfolioSnapshot Tests ==========
@@ -65,8 +68,8 @@ class PortfolioServiceTest {
             .thenReturn(Optional.of(account));
         when(positionRepository.findByAccountId(accountId))
             .thenReturn(positions);
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL"))
-            .thenReturn(Optional.of(new Price("AAPL", LocalDate.now(), new BigDecimal("160.00"))));
+        when(priceRepository.findLatestBySymbols(List.of("AAPL")))
+            .thenReturn(List.of(new Price("AAPL", LocalDate.now(), new BigDecimal("160.00"))));
 
         // Act
         PortfolioSnapshotResponse result = portfolioService.getPortfolioSnapshot(accountId);
@@ -168,8 +171,11 @@ class PortfolioServiceTest {
             .thenReturn(Optional.of(account));
         when(positionRepository.findByAccountId(accountId))
             .thenReturn(positions);
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc(anyString()))
-            .thenReturn(Optional.of(new Price("SYMBOL", LocalDate.now(), new BigDecimal("100.00"))));
+        when(priceRepository.findLatestBySymbols(anyList()))
+            .thenReturn(List.of(
+                new Price("AAPL", LocalDate.now(), new BigDecimal("100.00")),
+                new Price("GOOGL", LocalDate.now(), new BigDecimal("100.00")),
+                new Price("MSFT", LocalDate.now(), new BigDecimal("100.00"))));
 
         // Act
         PortfolioSnapshotResponse result = portfolioService.getPortfolioSnapshot(accountId);
@@ -209,8 +215,8 @@ class PortfolioServiceTest {
             .thenReturn(Optional.of(account));
         when(positionRepository.findByAccountId(accountId))
             .thenReturn(positions);
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL"))
-            .thenReturn(Optional.of(new Price("AAPL", LocalDate.now(), new BigDecimal("160.00"))));
+        when(priceRepository.findLatestBySymbols(List.of("AAPL")))
+            .thenReturn(List.of(new Price("AAPL", LocalDate.now(), new BigDecimal("160.00"))));
 
         // Act
         PortfolioSnapshotResponse result = portfolioService.getPortfolioSnapshot(accountId);
@@ -249,8 +255,8 @@ class PortfolioServiceTest {
             .thenReturn(Optional.of(account));
         when(positionRepository.findByAccountId(accountId))
             .thenReturn(positions);
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL"))
-            .thenReturn(Optional.of(new Price("AAPL", LocalDate.now(), new BigDecimal("160.00"))));
+        when(priceRepository.findLatestBySymbols(List.of("AAPL")))
+            .thenReturn(List.of(new Price("AAPL", LocalDate.now(), new BigDecimal("160.00"))));
 
         // Act
         PortfolioMetricsResponse result = portfolioService.getPortfolioMetrics(accountId);
@@ -344,8 +350,10 @@ class PortfolioServiceTest {
             .thenReturn(Optional.of(account));
         when(positionRepository.findByAccountId(accountId))
             .thenReturn(positions);
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc(anyString()))
-            .thenReturn(Optional.of(new Price("SYMBOL", LocalDate.now(), new BigDecimal("100.00"))));
+        when(priceRepository.findLatestBySymbols(anyList()))
+            .thenReturn(List.of(
+                new Price("AAPL", LocalDate.now(), new BigDecimal("100.00")),
+                new Price("GOOGL", LocalDate.now(), new BigDecimal("100.00"))));
 
         // Act
         PortfolioMetricsResponse result = portfolioService.getPortfolioMetrics(accountId);
@@ -385,8 +393,8 @@ class PortfolioServiceTest {
             .thenReturn(Optional.of(account));
         when(positionRepository.findByAccountId(accountId))
             .thenReturn(positions);
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL"))
-            .thenReturn(Optional.of(new Price("AAPL", LocalDate.now(), new BigDecimal("140.00"))));
+        when(priceRepository.findLatestBySymbols(List.of("AAPL")))
+            .thenReturn(List.of(new Price("AAPL", LocalDate.now(), new BigDecimal("140.00"))));
 
         // Act
         PortfolioMetricsResponse result = portfolioService.getPortfolioMetrics(accountId);
@@ -423,8 +431,8 @@ class PortfolioServiceTest {
             .thenReturn(Optional.of(account));
         when(positionRepository.findByAccountId(accountId))
             .thenReturn(positions);
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL"))
-            .thenReturn(Optional.of(new Price("AAPL", LocalDate.now(), new BigDecimal("160.00"))));
+        when(priceRepository.findLatestBySymbols(List.of("AAPL")))
+            .thenReturn(List.of(new Price("AAPL", LocalDate.now(), new BigDecimal("160.00"))));
 
         // Act
         PortfolioMetricsResponse result = portfolioService.getPortfolioMetrics(accountId);
@@ -461,8 +469,8 @@ class PortfolioServiceTest {
             .thenReturn(Optional.of(account));
         when(positionRepository.findByAccountId(accountId))
             .thenReturn(positions);
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL"))
-            .thenReturn(Optional.of(new Price("AAPL", LocalDate.now(), new BigDecimal("160.00"))));
+        when(priceRepository.findLatestBySymbols(List.of("AAPL")))
+            .thenReturn(List.of(new Price("AAPL", LocalDate.now(), new BigDecimal("160.00"))));
 
         // Act
         PortfolioMetricsResponse result = portfolioService.getPortfolioMetrics(accountId);
@@ -501,8 +509,8 @@ class PortfolioServiceTest {
             .thenReturn(Optional.of(account));
         when(positionRepository.findByAccountId(accountId))
             .thenReturn(positions);
-        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL"))
-            .thenReturn(Optional.of(new Price("AAPL", LocalDate.now(), new BigDecimal("160.00"))));
+        when(priceRepository.findLatestBySymbols(List.of("AAPL")))
+            .thenReturn(List.of(new Price("AAPL", LocalDate.now(), new BigDecimal("160.00"))));
 
         // Act
         PortfolioSnapshotResponse snapshot = portfolioService.getPortfolioSnapshot(accountId);
@@ -512,5 +520,53 @@ class PortfolioServiceTest {
         assertEquals(snapshot.getCashBalance(), metrics.getCashBalance());
         assertEquals(snapshot.getTotalMarketValue(), metrics.getTotalMarketValue());
         assertEquals(snapshot.getTotalPortfolioValue(), metrics.getTotalPortfolioValue());
+    }
+
+    // ========== Valuation Tests (real Position, real PositionValuator) ==========
+
+    /** 1,000 cash + 10 AAPL bought at 100, now trading at 150. */
+    private void givenCashAndTenAaplBoughtAt100TradingAt150() {
+        Account account = new Account("ACC1", "Test Holder", new BigDecimal("1000"),
+            AccountStatus.ACTIVE, LocalDateTime.now());
+        Instrument aapl = new Instrument("AAPL", "Apple Inc.", AssetClass.EQUITY, "USD", true);
+        Position position = new Position(account, aapl, 10, new BigDecimal("100"));
+
+        when(accountRepository.findById("ACC1")).thenReturn(Optional.of(account));
+        when(positionRepository.findByAccountId("ACC1")).thenReturn(List.of(position));
+        when(priceRepository.findLatestBySymbols(List.of("AAPL")))
+            .thenReturn(List.of(new Price("AAPL", LocalDate.now(), new BigDecimal("150"))));
+    }
+
+    @Test
+    void snapshotValuesPositionsAtLatestPrice() {
+        givenCashAndTenAaplBoughtAt100TradingAt150();
+
+        PortfolioSnapshotResponse snapshot = portfolioService.getPortfolioSnapshot("ACC1");
+
+        assertEquals(0, new BigDecimal("150").compareTo(snapshot.getPositions().get(0).getCurrentPrice()));
+        assertEquals(0, new BigDecimal("1500").compareTo(snapshot.getTotalMarketValue()));
+        assertEquals(0, new BigDecimal("2500").compareTo(snapshot.getTotalPortfolioValue()));
+        assertEquals(0, new BigDecimal("500").compareTo(snapshot.getPositions().get(0).getUnrealizedPnL()));
+    }
+
+    @Test
+    void metricsUseLatestPrice() {
+        givenCashAndTenAaplBoughtAt100TradingAt150();
+
+        PortfolioMetricsResponse metrics = portfolioService.getPortfolioMetrics("ACC1");
+
+        assertEquals(0, new BigDecimal("1500").compareTo(metrics.getTotalMarketValue()));
+        assertEquals(0, new BigDecimal("500").compareTo(metrics.getTotalUnrealizedPnL()));
+        assertEquals(0, new BigDecimal("2500").compareTo(metrics.getTotalPortfolioValue()));
+    }
+
+    @Test
+    void positionWithoutPriceIsValuedAtZero() {
+        givenCashAndTenAaplBoughtAt100TradingAt150();
+        when(priceRepository.findLatestBySymbols(List.of("AAPL"))).thenReturn(List.of());
+
+        PortfolioSnapshotResponse snapshot = portfolioService.getPortfolioSnapshot("ACC1");
+
+        assertEquals(0, BigDecimal.ZERO.compareTo(snapshot.getTotalMarketValue()));
     }
 }

@@ -27,98 +27,88 @@ class InstrumentServiceTest {
     }
 
     @Test
-    void testIsTradableSuccess() {
+    void testGetInstrumentSuccess() {
         // Arrange
-        String symbol = "AAPL";
-        Instrument instrument = new Instrument(symbol, "Apple Inc.", AssetClass.EQUITY, "USD", true);
-        
-        when(instrumentRepository.findBySymbol(symbol))
-            .thenReturn(Optional.of(instrument));
+        when(instrumentRepository.findBySymbol("AAPL"))
+            .thenReturn(Optional.of(new Instrument("AAPL", "Apple Inc.", AssetClass.EQUITY, "USD", true)));
 
         // Act
-        boolean result = instrumentService.isTradable(symbol);
+        InstrumentResponse result = instrumentService.getInstrument("AAPL");
 
         // Assert
-        assertTrue(result);
-        verify(instrumentRepository, times(1)).findBySymbol(symbol);
+        assertEquals("AAPL", result.getSymbol());
+        assertTrue(result.isTradable());
     }
 
     @Test
-    void testIsTradableNotTradable() {
+    void testGetInstrumentNotFound() {
         // Arrange
-        String symbol = "AAPL";
-        Instrument instrument = new Instrument(symbol, "Apple Inc.", AssetClass.EQUITY, "USD", false);
-        
-        when(instrumentRepository.findBySymbol(symbol))
-            .thenReturn(Optional.of(instrument));
-
-        // Act
-        boolean result = instrumentService.isTradable(symbol);
-
-        // Assert
-        assertFalse(result);
-        verify(instrumentRepository, times(1)).findBySymbol(symbol);
-    }
-
-    @Test
-    void testIsTradableNotFound() {
-        // Arrange
-        String symbol = "UNKNOWN";
-        when(instrumentRepository.findBySymbol(symbol))
+        when(instrumentRepository.findBySymbol("UNKNOWN"))
             .thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(InstrumentNotFoundException.class, () -> {
-            instrumentService.isTradable(symbol);
-        });
-        verify(instrumentRepository, times(1)).findBySymbol(symbol);
+        assertThrows(InstrumentNotFoundException.class, () -> instrumentService.getInstrument("UNKNOWN"));
     }
 
     @Test
-    void testGetAllTradable() {
+    void testGetInstrumentsWithoutFilterReturnsAll() {
+        // Arrange
+        when(instrumentRepository.findAll()).thenReturn(List.of(
+            new Instrument("AAPL", "Apple Inc.", AssetClass.EQUITY, "USD", true),
+            new Instrument("OLD", "Delisted Co.", AssetClass.EQUITY, "USD", false)));
+
+        // Act
+        List<InstrumentResponse> result = instrumentService.getInstruments(null);
+
+        // Assert
+        assertEquals(2, result.size());
+        verify(instrumentRepository, never()).findByTradable(anyBoolean());
+    }
+
+    @Test
+    void testGetInstrumentsTradableOnly() {
         // Arrange
         List<Instrument> instruments = new ArrayList<>();
         instruments.add(new Instrument("AAPL", "Apple Inc.", AssetClass.EQUITY, "USD", true));
         instruments.add(new Instrument("MSFT", "Microsoft Corp.", AssetClass.EQUITY, "USD", true));
-        
+
         when(instrumentRepository.findByTradable(true))
             .thenReturn(instruments);
 
         // Act
-        List<InstrumentResponse> result = instrumentService.getAllTradable();
+        List<InstrumentResponse> result = instrumentService.getInstruments(true);
 
         // Assert
-        assertNotNull(result);
         assertEquals(2, result.size());
         verify(instrumentRepository, times(1)).findByTradable(true);
+        verify(instrumentRepository, never()).findAll();
     }
 
     @Test
-    void testGetAllTradableEmpty() {
+    void testGetInstrumentsNotTradableOnly() {
+        // Arrange
+        when(instrumentRepository.findByTradable(false)).thenReturn(List.of(
+            new Instrument("OLD", "Delisted Co.", AssetClass.EQUITY, "USD", false)));
+
+        // Act
+        List<InstrumentResponse> result = instrumentService.getInstruments(false);
+
+        // Assert
+        assertEquals(1, result.size());
+        assertFalse(result.get(0).isTradable());
+    }
+
+    @Test
+    void testGetInstrumentsEmpty() {
         // Arrange
         when(instrumentRepository.findByTradable(true))
             .thenReturn(new ArrayList<>());
 
         // Act
-        List<InstrumentResponse> result = instrumentService.getAllTradable();
+        List<InstrumentResponse> result = instrumentService.getInstruments(true);
 
         // Assert
         assertNotNull(result);
         assertEquals(0, result.size());
-        verify(instrumentRepository, times(1)).findByTradable(true);
-    }
-
-    @Test
-    void testIsTradableMultipleSymbols() {
-        // Arrange
-        when(instrumentRepository.findBySymbol("AAPL"))
-            .thenReturn(Optional.of(new Instrument("AAPL", "Apple Inc.", AssetClass.EQUITY, "USD", true)));
-        when(instrumentRepository.findBySymbol("GOOG"))
-            .thenReturn(Optional.of(new Instrument("GOOG", "Google LLC", AssetClass.EQUITY, "USD", true)));
-
-        // Act & Assert
-        assertTrue(instrumentService.isTradable("AAPL"));
-        assertTrue(instrumentService.isTradable("GOOG"));
-        verify(instrumentRepository, times(2)).findBySymbol(anyString());
     }
 }

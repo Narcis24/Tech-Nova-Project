@@ -22,6 +22,28 @@
         <jackson-bom.version>3.1.7</jackson-bom.version>
         <!-- Jackson 2 still comes in through jjwt-jackson -->
         <jackson-2-bom.version>2.21.7</jackson-2-bom.version>
+        
+        <!-- SonarQube Exclusions: Config, DTOs, Enums, and Simple Models -->
+        <sonar.exclusions>
+            **/configs/**,
+            **/dtos/**,
+            **/enums/**,
+            **/events/**,
+            **/models/**,
+            **/exceptions/**,
+            **/Main.java
+        </sonar.exclusions>
+        
+        <!-- Exclude from Coverage Reports -->
+        <sonar.coverage.exclusions>
+            **/configs/**,
+            **/dtos/**,
+            **/enums/**,
+            **/events/**,
+            **/models/**,
+            **/exceptions/**,
+            **/Main.java
+        </sonar.coverage.exclusions>
     </properties>
 
     <dependencies>
