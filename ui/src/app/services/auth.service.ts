@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, finalize, map, shareReplay, tap, throwError } from 'rxjs';
+import { Observable, catchError, finalize, map, of, shareReplay, tap, throwError } from 'rxjs';
 
 import { AUTH_BASE } from '../core/api-urls';
 
@@ -79,6 +79,23 @@ export class AuthService {
     }
     this.clearSession();
     void this.router.navigateByUrl('/login');
+  }
+
+  /**
+   * Restores the session after a reload by exchanging the stored refresh token.
+   * Never errors: a failed restore leaves the user logged out.
+   */
+  restoreSession(): Observable<void> {
+    if (!localStorage.getItem(REFRESH_TOKEN_KEY)) {
+      return of(undefined);
+    }
+    return this.refresh().pipe(
+      map(() => undefined),
+      catchError(() => {
+        this.clearSession();
+        return of(undefined);
+      }),
+    );
   }
 
   private storeTokens(tokens: TokenResponse): void {
