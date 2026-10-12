@@ -7,10 +7,13 @@ import com.neueda.app.dtos.RiskLimitResponse;
 import com.neueda.app.dtos.RiskWarning;
 import com.neueda.app.enums.AssetClass;
 import com.neueda.app.enums.LimitSource;
+import com.neueda.app.enums.OrderSide;
+import com.neueda.app.enums.OrderType;
 import com.neueda.app.enums.RiskRule;
 import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.models.Instrument;
 import com.neueda.app.repositories.InstrumentRepository;
+import com.neueda.app.services.OrderValidator.ValidatedOrder;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -32,21 +35,27 @@ public class RiskService {
     private final PriceService priceService;
     private final InstrumentRepository instrumentRepository;
     private final RiskLimitService riskLimitService;
+    private final OrderValidator orderValidator;
 
     public RiskService(PortfolioService portfolioService, PriceService priceService,
-                       InstrumentRepository instrumentRepository, RiskLimitService riskLimitService) {
+                       InstrumentRepository instrumentRepository, RiskLimitService riskLimitService,
+                       OrderValidator orderValidator) {
         this.portfolioService = portfolioService;
         this.priceService = priceService;
         this.instrumentRepository = instrumentRepository;
         this.riskLimitService = riskLimitService;
+        this.orderValidator = orderValidator;
     }
 
     public List<RiskWarning> check(PlaceOrderRequest order) {
         List<RiskWarning> warnings = new ArrayList<>();
         String symbol = order.getSymbol();
 
+        // The same checks as placing the order, so an order /orders would refuse is refused here too
+        ValidatedOrder valid = orderValidator.validate(order);
+
         // Only buys can raise exposure: a sell lowers its symbol and asset class and raises cash.
-        if (!"BUY".equalsIgnoreCase(order.getSide())) {
+        if (valid.side() != OrderSide.BUY) {
             return warnings;
         }
 
@@ -60,13 +69,17 @@ public class RiskService {
 
         // Step 2: Price of the order. Cash moves at the price paid (the limit price for a limit order);
         // the new shares are valued at market, like every other holding.
+        BigDecimal pricePaid = valid.price();
         BigDecimal marketPrice;
-        try {
-            marketPrice = priceService.getCurrentPrice(symbol);
-        } catch (PriceNotFoundException e) {
-            return warnings;
+        if (valid.orderType() == OrderType.MARKET) {
+            marketPrice = pricePaid;
+        } else {
+            try {
+                marketPrice = priceService.getCurrentPrice(symbol);
+            } catch (PriceNotFoundException e) {
+                return warnings;
+            }
         }
-        BigDecimal pricePaid = order.getPrice() != null ? order.getPrice() : marketPrice;
         BigDecimal quantity = BigDecimal.valueOf(order.getQuantity());
 
         // Step 3: Portfolio after the order

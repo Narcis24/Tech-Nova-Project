@@ -6,8 +6,12 @@ import com.neueda.app.dtos.PositionResponse;
 import com.neueda.app.dtos.RiskWarning;
 import com.neueda.app.enums.AssetClass;
 import com.neueda.app.enums.LimitSource;
+import com.neueda.app.enums.OrderSide;
+import com.neueda.app.enums.OrderType;
 import com.neueda.app.enums.RiskRule;
+import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.exceptions.PriceNotFoundException;
+import com.neueda.app.services.OrderValidator.ValidatedOrder;
 import com.neueda.app.models.AccountRiskLimit;
 import com.neueda.app.models.Instrument;
 import com.neueda.app.models.RiskLimit;
@@ -33,6 +37,7 @@ class RiskServiceTest {
     private InstrumentRepository instrumentRepository;
     private RiskLimitRepository riskLimitRepository;
     private AccountRiskLimitRepository accountRiskLimitRepository;
+    private OrderValidator orderValidator;
     private RiskService riskService;
 
     @BeforeEach
@@ -42,9 +47,18 @@ class RiskServiceTest {
         instrumentRepository = mock(InstrumentRepository.class);
         riskLimitRepository = mock(RiskLimitRepository.class);
         accountRiskLimitRepository = mock(AccountRiskLimitRepository.class);
+        orderValidator = mock(OrderValidator.class);
         // Real RiskLimitService over the mocked repositories, so these tests still check how limits combine
         riskService = new RiskService(portfolioService, priceService, instrumentRepository,
-            new RiskLimitService(riskLimitRepository, accountRiskLimitRepository));
+            new RiskLimitService(riskLimitRepository, accountRiskLimitRepository), orderValidator);
+
+        // Passes every order, resolving the price as the real validator does; OrderValidatorTest covers refusals
+        when(orderValidator.validate(any())).thenAnswer(inv -> {
+            PlaceOrderRequest r = inv.getArgument(0);
+            OrderType type = OrderType.valueOf(r.getOrderType());
+            BigDecimal price = type == OrderType.LIMIT ? r.getPrice() : priceService.getCurrentPrice(r.getSymbol());
+            return new ValidatedOrder(null, null, OrderSide.valueOf(r.getSide()), type, price);
+        });
 
         when(riskLimitRepository.findAll()).thenReturn(List.of(
             new RiskLimit(RiskRule.SINGLE_INSTRUMENT, new BigDecimal("20"), "ABOVE"),
@@ -91,11 +105,20 @@ class RiskServiceTest {
     }
 
     @Test
-    void noWarningsWhenOrderSymbolHasNoPrice() {
+    void noWarningsWhenLimitOrderSymbolHasNoMarketPrice() {
         givenAlicePortfolio();
         when(priceService.getCurrentPrice("NEW")).thenThrow(new PriceNotFoundException("No price data for symbol: NEW"));
 
-        assertTrue(riskService.check(buy("NEW", 10, null)).isEmpty());
+        assertTrue(riskService.check(buy("NEW", 10, new BigDecimal("50.00"))).isEmpty());
+    }
+
+    @Test
+    void orderThatCannotBePlacedIsRefusedWithTheSameError() {
+        doThrow(new InsufficientFundsException("Account ACC001 has $0.00 but order requires $5082.00"))
+            .when(orderValidator).validate(any());
+
+        assertThrows(InsufficientFundsException.class, () -> riskService.check(buy("AAPL", 20, null)));
+        verifyNoInteractions(portfolioService);
     }
 
     @Test
