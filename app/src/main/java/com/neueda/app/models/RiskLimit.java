@@ -34,8 +34,4 @@ public class RiskLimit {
         this.thresholdPct = thresholdPct;
         this.direction = direction;
     }
-
-    public boolean isBelow() {
-        return "BELOW".equals(direction);
-    }
 }
