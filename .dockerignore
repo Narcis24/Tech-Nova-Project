@@ -1,0 +1,11 @@
+# Used by the app and execution-engine images, which build from the repo root so Maven
+# can see the parent pom and the messaging module. Allowlist only what they need, so
+# .env, .git and other modules never end up in the build context.
+*
+!pom.xml
+!messaging/pom.xml
+!messaging/src
+!app/pom.xml
+!app/src
+!execution-engine/pom.xml
+!execution-engine/src

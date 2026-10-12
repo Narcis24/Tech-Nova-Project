@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
-import com.neueda.trading.events.EventEnvelope;
+import com.neueda.events.EventEnvelope;
 
 import lombok.extern.slf4j.Slf4j;
 

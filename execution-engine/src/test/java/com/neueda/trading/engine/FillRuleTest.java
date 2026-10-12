@@ -13,7 +13,7 @@ import com.neueda.trading.engine.FillRule.Decision;
 import com.neueda.trading.engine.FillRule.Fill;
 import com.neueda.trading.engine.FillRule.Reject;
 import com.neueda.trading.engine.FillRule.Wait;
-import com.neueda.trading.events.OrderPlacedEvent;
+import com.neueda.events.OrderPlacedEvent;
 
 class FillRuleTest {
 

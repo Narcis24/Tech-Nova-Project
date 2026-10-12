@@ -13,10 +13,12 @@ import org.springframework.stereotype.Service;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
-import com.neueda.trading.events.EventEnvelope;
-import com.neueda.trading.events.OrderPlacedEvent;
-import com.neueda.trading.events.OrderExecutedEvent;
-import com.neueda.trading.events.OrderRejectedEvent;
+import com.neueda.events.EventEnvelope;
+import com.neueda.events.OrderPlacedEvent;
+import com.neueda.events.OrderExecutedEvent;
+import com.neueda.events.OrderRejectedEvent;
+import com.neueda.events.Topics;
+import com.neueda.events.EventTypes;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,7 +47,7 @@ public class ExecutionEngine {
     }
 
     @KafkaListener(
-        topics = "order-request",
+        topics = Topics.ORDER_REQUEST,
         groupId = "execution-engine"
     )
     public void handleOrderPlaced(String message) {
@@ -83,7 +85,7 @@ public class ExecutionEngine {
         /*
          * This consumer only handles ORDER_PLACED events.
          */
-        if (!"ORDER_PLACED".equals(envelope.eventType())) {
+        if (!EventTypes.ORDER_PLACED.equals(envelope.eventType())) {
 
             log.debug(
                 "Ignoring event type: {}",
@@ -122,13 +124,13 @@ public class ExecutionEngine {
 
         log.info(
             "Received ORDER_PLACED: orderId={}, accountId={}, symbol={}, side={}, orderType={}, quantity={}, price={}",
-            event.getOrderId(),
-            event.getAccountId(),
-            event.getSymbol(),
-            event.getSide(),
-            event.getOrderType(),
-            event.getQuantity(),
-            event.getPrice()
+            event.orderId(),
+            event.accountId(),
+            event.symbol(),
+            event.side(),
+            event.orderType(),
+            event.quantity(),
+            event.price()
         );
 
         handle(event);
@@ -150,59 +152,59 @@ public class ExecutionEngine {
      * priced, so an order is never left PENDING without a reason.
      */
     synchronized void handle(OrderPlacedEvent event) {
-        boolean market = "MARKET".equals(event.getOrderType());
+        boolean market = "MARKET".equals(event.orderType());
         FillRule.Decision decision = quoteCache
-            .fresh(event.getSymbol(), Instant.now(), Duration.ofSeconds(props.maxQuoteAgeSeconds()))
+            .fresh(event.symbol(), Instant.now(), Duration.ofSeconds(props.maxQuoteAgeSeconds()))
             .<FillRule.Decision>map(q -> FillRule.decide(event, q))
             .orElseGet(() -> market
-                ? new FillRule.Reject("No fresh quote for " + event.getSymbol())
+                ? new FillRule.Reject("No fresh quote for " + event.symbol())
                 : new FillRule.Wait());
 
         switch (decision) {
             case FillRule.Fill(BigDecimal price) -> publishFill(event, price);
             case FillRule.Reject(String reason) -> publishReject(event, reason);
             case FillRule.Wait() -> {
-                resting.put(event.getOrderId(), event);
-                log.info("Resting LIMIT order: orderId={}, symbol={}", event.getOrderId(), event.getSymbol());
+                resting.put(event.orderId(), event);
+                log.info("Resting LIMIT order: orderId={}, symbol={}", event.orderId(), event.symbol());
             }
         }
     }
 
     private synchronized void recheckResting(Quote quote) {
         for (OrderPlacedEvent order : List.copyOf(resting.values())) {
-            if (order.getSymbol().equals(quote.symbol())
+            if (order.symbol().equals(quote.symbol())
                     && FillRule.decide(order, quote) instanceof FillRule.Fill(BigDecimal price)) {
-                resting.remove(order.getOrderId());
+                resting.remove(order.orderId());
                 publishFill(order, price);
             }
         }
     }
 
     private void publishReject(OrderPlacedEvent event, String reason) {
-        log.info("Rejecting order: orderId={}, reason={}", event.getOrderId(), reason);
+        log.info("Rejecting order: orderId={}, reason={}", event.orderId(), reason);
         eventProducerService.publishEvent(
-            "order-execution",
-            event.getOrderId().toString(),
-            "ORDER_REJECTED",
+            Topics.ORDER_EXECUTION,
+            event.orderId().toString(),
+            EventTypes.ORDER_REJECTED,
             "ExecutionEngine",
-            new OrderRejectedEvent(event.getOrderId(), event.getAccountId(), event.getSymbol(), reason)
+            new OrderRejectedEvent(event.orderId(), event.accountId(), event.symbol(), reason)
         );
     }
 
     private void publishFill(OrderPlacedEvent event, BigDecimal executionPrice) {
-        BigDecimal totalValue = executionPrice.multiply(BigDecimal.valueOf(event.getQuantity()));
+        BigDecimal totalValue = executionPrice.multiply(BigDecimal.valueOf(event.quantity()));
 
         eventProducerService.publishEvent(
-            "order-execution",
-            event.getOrderId().toString(),
-            "ORDER_EXECUTED",
+            Topics.ORDER_EXECUTION,
+            event.orderId().toString(),
+            EventTypes.ORDER_EXECUTED,
             "ExecutionEngine",
             new OrderExecutedEvent(
-                event.getOrderId(),
-                event.getAccountId(),
-                event.getSymbol(),
-                event.getSide(),
-                event.getQuantity(),
+                event.orderId(),
+                event.accountId(),
+                event.symbol(),
+                event.side(),
+                event.quantity(),
                 executionPrice,
                 totalValue
             )
@@ -210,7 +212,7 @@ public class ExecutionEngine {
 
         log.info(
             "Published ORDER_EXECUTED: orderId={}, executionPrice={}, totalValue={}",
-            event.getOrderId(),
+            event.orderId(),
             executionPrice,
             totalValue
         );

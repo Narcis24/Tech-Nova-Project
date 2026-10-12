@@ -9,7 +9,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -19,8 +18,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
-import com.neueda.trading.events.EventEnvelope;
-import com.neueda.trading.events.OrderExecutedEvent;
+import com.neueda.events.EventEnvelope;
+import com.neueda.events.OrderExecutedEvent;
 
 class EventProducerServiceTest {
 

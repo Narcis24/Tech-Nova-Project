@@ -3,7 +3,7 @@ package com.neueda.trading.engine;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-import com.neueda.trading.events.OrderPlacedEvent;
+import com.neueda.events.OrderPlacedEvent;
 
 /**
  * Decides what happens to an order given a quote. Pure: no database, no clock, no socket.
@@ -34,24 +34,24 @@ public final class FillRule {
             return new Reject(problem);
         }
 
-        boolean buy = "BUY".equals(order.getSide());
-        boolean market = "MARKET".equals(order.getOrderType());
+        boolean buy = "BUY".equals(order.side());
+        boolean market = "MARKET".equals(order.orderType());
         BigDecimal price = usable(buy ? quote.ask() : quote.bid());
         if (price == null) {
             String side = buy ? "ask" : "bid";
             return market ? new Reject("No usable " + side + " for " + quote.symbol()) : new Wait();
         }
-        return market || crosses(buy, price, order.getPrice()) ? new Fill(price) : new Wait();
+        return market || crosses(buy, price, order.price()) ? new Fill(price) : new Wait();
     }
 
     /** Why the order can never be filled, or null if it is well formed. */
     private static String problemWith(OrderPlacedEvent order) {
-        if (!"BUY".equals(order.getSide()) && !"SELL".equals(order.getSide())) {
-            return "Unknown side: " + order.getSide();
+        if (!"BUY".equals(order.side()) && !"SELL".equals(order.side())) {
+            return "Unknown side: " + order.side();
         }
-        boolean validLimit = "LIMIT".equals(order.getOrderType()) && order.getPrice() != null;
-        if (!"MARKET".equals(order.getOrderType()) && !validLimit) {
-            return "Invalid order: type=" + order.getOrderType() + ", limit=" + order.getPrice();
+        boolean validLimit = "LIMIT".equals(order.orderType()) && order.price() != null;
+        if (!"MARKET".equals(order.orderType()) && !validLimit) {
+            return "Invalid order: type=" + order.orderType() + ", limit=" + order.price();
         }
         return null;
     }

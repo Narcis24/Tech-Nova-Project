@@ -1,6 +1,6 @@
 package com.neueda.app.services;
 
-import com.neueda.app.events.EventEnvelope;
+import com.neueda.events.EventEnvelope;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.kafka.core.KafkaTemplate;

@@ -165,8 +165,7 @@ public final class Stack {
         String prebuilt = System.getProperty("e2e.image." + name);
         GenericContainer<?> container = prebuilt != null
             ? new GenericContainer<>(DockerImageName.parse(prebuilt))
-            : new GenericContainer<>(new ImageFromDockerfile("tech-nova-e2e-" + name, false)
-                .withFileFromPath(".", ROOT.resolve(module)));
+            : new GenericContainer<>(image(name, module));
         return container
             .withNetwork(network)
             .withLogConsumer(logTo(name))
@@ -174,6 +173,27 @@ public final class Stack {
     }
 
     // ---- helpers ----
+
+    /** The Java services build from the repo root, so they can see the parent pom and messaging. */
+    private static final String[] JAVA_BUILD_CONTEXT = {
+        "pom.xml",
+        "messaging/pom.xml", "messaging/src",
+        "app/pom.xml", "app/src",
+        "execution-engine/pom.xml", "execution-engine/src",
+    };
+
+    private static ImageFromDockerfile image(String name, String module) {
+        ImageFromDockerfile image = new ImageFromDockerfile("tech-nova-e2e-" + name, false);
+        if ("auth".equals(module)) {
+            return image.withFileFromPath(".", ROOT.resolve(module));
+        }
+        // same files the root .dockerignore lets through
+        for (String path : JAVA_BUILD_CONTEXT) {
+            image.withFileFromPath(path, ROOT.resolve(path));
+        }
+        String dockerfile = module + "/Dockerfile";
+        return image.withFileFromPath(dockerfile, ROOT.resolve(dockerfile)).withDockerfilePath(dockerfile);
+    }
 
     private static Consumer<OutputFrame> logTo(String name) {
         try {
