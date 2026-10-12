@@ -71,6 +71,13 @@
             <artifactId>spring-boot-starter-kafka</artifactId>
         </dependency>
 
+        <!-- Security patch for lz4-java (comes in through kafka-clients): CVE-2026-106451 -->
+        <dependency>
+            <groupId>at.yawk.lz4</groupId>
+            <artifactId>lz4-java</artifactId>
+            <version>1.11.4</version>
+        </dependency>
+
         <!-- Actuator - used by Docker healthcheck -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
