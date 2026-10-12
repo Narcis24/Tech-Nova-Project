@@ -12,9 +12,9 @@ export const authGuard: CanActivateFn & CanMatchFn = () => {
   const router = inject(Router);
 
   if (auth.isAuthenticated()) {
-      return true;
+    return true;
   }
 
   const returnUrl = router.getCurrentNavigation()?.extractedUrl.toString() ?? '/';
-  return router.createUrlTree(['/login'], { queryParams: { returnUrl } });  
-}
+  return router.createUrlTree(['/login'], { queryParams: { returnUrl } });
+};
