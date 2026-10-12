@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, tap } from 'rxjs';
+import { Router } from '@angular/router';
+import { Observable, finalize, map, shareReplay, tap, throwError } from 'rxjs';
 
 import { AUTH_BASE } from '../core/api-urls';
 
@@ -27,8 +28,10 @@ const REFRESH_TOKEN_KEY = 'technova.refreshToken';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
 
   private readonly accessToken = signal<string | null>(null);
+  private refreshInFlight$: Observable<string> | null = null;
   readonly isAuthenticated = computed(() => this.accessToken() !== null);
 
   login(credentials: LoginRequest): Observable<void> {
@@ -42,8 +45,49 @@ export class AuthService {
     return this.accessToken();
   }
 
+  /**
+   * Gets a new access token. Callers that arrive while a refresh is running share it,
+   * since the backend revokes each refresh token after one use.
+   */
+  refresh(): Observable<string> {
+    if (this.refreshInFlight$) {
+      return this.refreshInFlight$;
+    }
+
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (!refreshToken) {
+      return throwError(() => new Error('No refresh token'));
+    }
+
+    this.refreshInFlight$ = this.http.post<TokenResponse>(`${AUTH_BASE}/refresh`, { refreshToken }).pipe(
+      tap(tokens => this.storeTokens(tokens)),
+      map(tokens => tokens.accessToken),
+      finalize(() => (this.refreshInFlight$ = null)),
+      shareReplay(1),
+    );
+    return this.refreshInFlight$;
+  }
+
+  /**
+   * Ends the session locally straight away. The server call only revokes the refresh token,
+   * so the UI logs out even if it fails.
+   */
+  logout(): void {
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (refreshToken) {
+      this.http.post<void>(`${AUTH_BASE}/logout`, { refreshToken }).subscribe({ error: () => {} });
+    }
+    this.clearSession();
+    void this.router.navigateByUrl('/login');
+  }
+
   private storeTokens(tokens: TokenResponse): void {
     this.accessToken.set(tokens.accessToken);
     localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
+  }
+
+  private clearSession(): void {
+    this.accessToken.set(null);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
   }
 }
