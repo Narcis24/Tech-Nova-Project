@@ -641,6 +641,36 @@ paths:
         '404':
           description: Account not found
 
+  /v1/instruments:
+    get:
+      summary: List instruments, optionally filtered by tradability
+      tags:
+        - Instruments
+      parameters:
+        - name: tradable
+          in: query
+          required: false
+          description: true for tradable instruments only, false for non-tradable only; omit for all
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of instruments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InstrumentResponse'
+        '400':
+          description: tradable is not true or false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+
   /v1/instruments/{symbol}:
     get:
       summary: Get instrument details
@@ -659,55 +689,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InstrumentResponse'
-        '401':
-          description: Unauthorized
-        '404':
-          description: 'Instrument not found (INSTRUMENT_NOT_FOUND)'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /v1/instruments/tradable:
-    get:
-      summary: Get all tradable instruments
-      tags:
-        - Instruments
-      responses:
-        '200':
-          description: List of tradable instruments
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/InstrumentResponse'
-        '401':
-          description: Unauthorized
-
-  /v1/instruments/{symbol}/tradable:
-    get:
-      summary: Check if instrument is tradable
-      tags:
-        - Instruments
-      parameters:
-        - name: symbol
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Tradability status
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  symbol:
-                    type: string
-                  tradable:
-                    type: boolean
         '401':
           description: Unauthorized
         '404':

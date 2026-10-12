@@ -1,5 +1,6 @@
-# Default gitleaks rules, plus values known to be fake. Unlike .gitleaksignore fingerprints,
-# these match in any commit, so squash merges and rebases don't bring the findings back.
+# Default gitleaks rules, plus values known to be fake. Unlike .gitleaksignore
+# these match in any commit, so squash merges and rebases don't bring the
+# findings back.
 [extend]
 useDefault = true
 

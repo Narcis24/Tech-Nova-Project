@@ -17,6 +17,32 @@
 
     <properties>
         <sonar.projectKey>tech-nova-execution-engine</sonar.projectKey>
+        <sonar.jacoco.reportPaths>target/jacoco.exec</sonar.jacoco.reportPaths>
+        <!-- tomcat.version / jackson-bom.version security pins are inherited from the root pom -->
+
+        <!-- SonarQube Exclusions: Enums, Events, Config, Data Classes, and Entry Point -->
+        <sonar.exclusions>
+            **/enums/**,
+            **/events/**,
+            **/*Config.java,
+            **/*Properties.java,
+            **/*Quote.java,
+            **/*Cache.java,
+            **/*Exception.java,
+            **/ExecutionEngineApplication.java
+        </sonar.exclusions>
+        
+        <!-- Exclude from Coverage Reports -->
+        <sonar.coverage.exclusions>
+            **/enums/**,
+            **/events/**,
+            **/*Config.java,
+            **/*Properties.java,
+            **/*Quote.java,
+            **/*Cache.java,
+            **/*Exception.java,
+            **/ExecutionEngineApplication.java
+        </sonar.coverage.exclusions>
     </properties>
 
     <dependencies>
@@ -37,6 +63,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-kafka</artifactId>
+        </dependency>
+
+        <!-- Security patch for lz4-java (comes in through kafka-clients): CVE-2026-106451 -->
+        <dependency>
+            <groupId>at.yawk.lz4</groupId>
+            <artifactId>lz4-java</artifactId>
+            <version>1.11.4</version>
         </dependency>
 
         <!-- Actuator - used by Docker healthcheck -->
@@ -72,6 +105,27 @@
         <finalName>execution-engine</finalName>
 
         <plugins>
+
+            <!-- JaCoCo Code Coverage -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.10</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
             <!-- Spring Boot executable JAR -->
             <plugin>

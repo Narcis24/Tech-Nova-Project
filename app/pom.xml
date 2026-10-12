@@ -16,6 +16,28 @@
         <sonar.jacoco.reportPaths>target/jacoco.exec</sonar.jacoco.reportPaths>
         <!-- Jackson 2 still comes in through jjwt-jackson -->
         <jackson-2-bom.version>2.21.7</jackson-2-bom.version>
+        
+        <!-- SonarQube Exclusions: Config, DTOs, Enums, and Simple Models -->
+        <sonar.exclusions>
+            **/configs/**,
+            **/dtos/**,
+            **/enums/**,
+            **/events/**,
+            **/models/**,
+            **/exceptions/**,
+            **/Main.java
+        </sonar.exclusions>
+        
+        <!-- Exclude from Coverage Reports -->
+        <sonar.coverage.exclusions>
+            **/configs/**,
+            **/dtos/**,
+            **/enums/**,
+            **/events/**,
+            **/models/**,
+            **/exceptions/**,
+            **/Main.java
+        </sonar.coverage.exclusions>
     </properties>
 
     <dependencies>
@@ -42,6 +64,13 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
+        </dependency>
+
+        <!-- Security patch for lz4-java: CVE-2026-106451 -->
+        <dependency>
+            <groupId>at.yawk.lz4</groupId>
+            <artifactId>lz4-java</artifactId>
+            <version>1.11.4</version>
         </dependency>
 
         <dependency>
