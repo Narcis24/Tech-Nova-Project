@@ -78,7 +78,7 @@ public final class Stack {
         Stream.of(auth, app).parallel().forEach(GenericContainer::start);
         engine.start();
 
-        authUrl = "http://" + auth.getHost() + ":" + auth.getMappedPort(8080) + "/auth";
+        authUrl = "http://" + auth.getHost() + ":" + auth.getMappedPort(8082) + "/auth";
         appUrl = "http://" + app.getHost() + ":" + app.getMappedPort(8081) + "/api";
         alpacaUrl = "http://" + alpaca.getHost() + ":" + alpaca.getMappedPort(8080);
         jdbcUrl = db.getJdbcUrl();
@@ -134,7 +134,9 @@ public final class Stack {
     private static GenericContainer<?> authService(Network network, Map<String, String> env) {
         return service("auth", "auth", network)
             .withEnv(env)
-            .withExposedPorts(8080);
+            .withExposedPorts(8082)
+            // NestJS, so no Spring "Started ..." log line; ready once its health endpoint answers
+            .waitingFor(Wait.forHttp("/auth/health").forPort(8082).withStartupTimeout(STARTUP));
     }
 
     private static GenericContainer<?> app(Network network, Map<String, String> env) {
@@ -158,13 +160,12 @@ public final class Stack {
                 .withStartupTimeout(STARTUP));
     }
 
-    /** One of our Spring Boot services, from a prebuilt image or its module's Dockerfile. */
+    /** One of our services, from a prebuilt image or its module's Dockerfile. */
     private static GenericContainer<?> service(String name, String module, Network network) {
         String prebuilt = System.getProperty("e2e.image." + name);
         GenericContainer<?> container = prebuilt != null
             ? new GenericContainer<>(DockerImageName.parse(prebuilt))
-            : new GenericContainer<>(new ImageFromDockerfile("tech-nova-e2e-" + name, false)
-                .withFileFromPath(".", ROOT.resolve(module)));
+            : new GenericContainer<>(image(name, module));
         return container
             .withNetwork(network)
             .withLogConsumer(logTo(name))
@@ -172,6 +173,27 @@ public final class Stack {
     }
 
     // ---- helpers ----
+
+    /** The Java services build from the repo root, so they can see the parent pom and messaging. */
+    private static final String[] JAVA_BUILD_CONTEXT = {
+        "pom.xml",
+        "messaging/pom.xml", "messaging/src",
+        "app/pom.xml", "app/src",
+        "execution-engine/pom.xml", "execution-engine/src",
+    };
+
+    private static ImageFromDockerfile image(String name, String module) {
+        ImageFromDockerfile image = new ImageFromDockerfile("tech-nova-e2e-" + name, false);
+        if ("auth".equals(module)) {
+            return image.withFileFromPath(".", ROOT.resolve(module));
+        }
+        // same files the root .dockerignore lets through
+        for (String path : JAVA_BUILD_CONTEXT) {
+            image.withFileFromPath(path, ROOT.resolve(path));
+        }
+        String dockerfile = module + "/Dockerfile";
+        return image.withFileFromPath(dockerfile, ROOT.resolve(dockerfile)).withDockerfilePath(dockerfile);
+    }
 
     private static Consumer<OutputFrame> logTo(String name) {
         try {

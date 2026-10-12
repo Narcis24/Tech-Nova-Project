@@ -3,7 +3,9 @@ package com.neueda.app.services;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.neueda.app.dtos.OrderPlacedEvent;
+import com.neueda.events.EventTypes;
+import com.neueda.events.OrderPlacedEvent;
+import com.neueda.events.Topics;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.enums.OrderSide;
@@ -177,9 +179,9 @@ public class OrderService {
             order.getId(), orderType, order.getSymbol());
 
         eventProducerService.publishEvent(
-            "order-request",
+            Topics.ORDER_REQUEST,
             order.getId().toString(),
-            "ORDER_PLACED",
+            EventTypes.ORDER_PLACED,
             "OrderService",
             event
         );

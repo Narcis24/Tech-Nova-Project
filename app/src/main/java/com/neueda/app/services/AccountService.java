@@ -8,12 +8,9 @@ import com.neueda.app.dtos.PositionResponse;
 import com.neueda.app.exceptions.*;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Order;
-import com.neueda.app.models.Position;
-import com.neueda.app.models.Price;
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
-import com.neueda.app.repositories.PriceRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -24,13 +21,13 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final OrderRepository orderRepository;
     private final PositionRepository positionRepository;
-    private final PriceRepository priceRepository;
+    private final PositionValuator positionValuator;
 
-    public AccountService(AccountRepository accountRepository, OrderRepository orderRepository, PositionRepository positionRepository, PriceRepository priceRepository) {
+    public AccountService(AccountRepository accountRepository, OrderRepository orderRepository, PositionRepository positionRepository, PositionValuator positionValuator) {
         this.accountRepository = accountRepository;
         this.orderRepository = orderRepository;
         this.positionRepository = positionRepository;
-        this.priceRepository = priceRepository;
+        this.positionValuator = positionValuator;
     }
 
     /** Opens an empty account for the user; they fund it with a deposit. */
@@ -112,28 +109,7 @@ public class AccountService {
                 "Account not found: " + accountId
             ));
         
-        // Retrieve all positions for the account
-        List<Position> positions = positionRepository.findByAccountId(accountId);
-        
-        // Convert to PositionResponse DTOs
-        return positions.stream()
-            .map(position -> {
-                // Fetch current price for this position
-                BigDecimal currentPrice = priceRepository.findFirstBySymbolOrderByTradeDateDesc(position.getSymbol())
-                    .map(Price::getPrice)
-                    .orElse(BigDecimal.ZERO);
-                
-                return new PositionResponse(
-                    position.getAccountId(),
-                    position.getSymbol(),
-                    position.getQuantity(),
-                    position.getAverageCost(),
-                    currentPrice,
-                    position.getMarketValue(currentPrice),
-                    position.getUnrealizedPnL(currentPrice)
-                );
-            })
-            .collect(Collectors.toList());
+        return positionValuator.valueAll(positionRepository.findByAccountId(accountId));
     }
 }
 

@@ -1,0 +1,10 @@
+# Default gitleaks rules, plus values known to be fake. Unlike .gitleaksignore
+# these match in any commit, so squash merges and rebases don't bring the
+# findings back.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Dummy JWT secret used only in the auth service's tests"
+regexTarget = "match"
+regexes = ['''0123456789abcdef0123456789abcdef''']

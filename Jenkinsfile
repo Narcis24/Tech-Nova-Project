@@ -18,18 +18,19 @@ pipeline {
         }
         stage('Build Images') {
             steps {
-                sh 'docker build -t team-skeleton:latest ./app'
+                sh 'docker build -t team-skeleton:latest -f app/Dockerfile .'
                 sh 'docker build -t tech-nova-pipeline:latest ./data-pipeline'
                 sh 'docker build -t tech-nova-auth:latest ./auth'
-                sh 'docker build -t tech-nova-execution-engine:latest ./execution-engine'
+                sh 'docker build -t tech-nova-execution-engine:latest -f execution-engine/Dockerfile .'
             }
         }
         stage('Unit Tests') {
             steps {
-                // fails the build on test failures; app uses the in-memory H2 database, no Postgres or Kafka needed
-                sh 'mvn -B -f app/pom.xml test'
-                sh 'mvn -B -f auth/pom.xml test'
-                sh 'mvn -B -f execution-engine/pom.xml test'
+                // fails the build on test failures; app uses the in-memory H2 database, no Postgres or Kafka needed.
+                // Built from the root so messaging comes first; install puts it in ~/.m2 for the per-module Sonar runs
+                sh 'mvn -B install'
+                // auth is NestJS; the agent's Node is too old, so it runs in a Node 24 container as the jenkins user
+                sh 'docker run --rm -u $(id -u):$(id -g) -e npm_config_cache=/tmp/.npm -v $WORKSPACE/auth:/app -w /app node:24-alpine sh -c "npm ci && npm run test:cov"'
             }
         }
         stage('Smoke Test') {
@@ -54,9 +55,12 @@ pipeline {
                 // needs a "Secret text" credential with id sonar-token; fails the build if a quality gate fails
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     script {
-                        for (m in ['app', 'auth', 'execution-engine']) {
+                        for (m in ['app', 'execution-engine']) {
                             sh "mvn -B -f ${m}/pom.xml verify sonar:sonar -Dsonar.host.url=http://localhost:8083 -Dsonar.token=\$SONAR_TOKEN -Dsonar.qualitygate.wait=true"
                         }
+                        // auth: settings in auth/sonar-project.properties, coverage from the Unit Tests stage;
+                        // the image's own /tmp/.scannerwork is writable only by its uid 1000, so use a fresh work dir
+                        sh 'docker run --rm --network host -u $(id -u):$(id -g) -e SONAR_HOST_URL=http://localhost:8083 -e SONAR_TOKEN -e SONAR_USER_HOME=/tmp/.sonar -e SCANNER_WORKDIR_PATH=/tmp/scannerwork -v $WORKSPACE/auth:/usr/src sonarsource/sonar-scanner-cli -Dsonar.qualitygate.wait=true'
                     }
                 }
             }

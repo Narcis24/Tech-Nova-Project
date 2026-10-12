@@ -53,7 +53,7 @@ curl -X POST http://localhost:8082/auth/v1/auth/register \
     "password": "TestPass123@"
   }'
 
-# Password requirements: 12-20 chars, uppercase, lowercase, digit, special char
+# Username: 8-16 letters, digits or underscore. Password: 12-20 chars
 ```
 
 ### Step 2: Login to Get JWT Token
@@ -64,7 +64,7 @@ TOKEN=$(curl -s -X POST http://localhost:8082/auth/v1/auth/login \
   -d '{
     "username": "testuser",
     "password": "TestPass123@"
-  }' | jq -r '.token')
+  }' | jq -r '.accessToken')
 
 echo "JWT Token: $TOKEN"
 ```
@@ -107,7 +107,7 @@ curl -s http://localhost:8081/api/v1/accounts -H "Authorization: Bearer $TOKEN"
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8082/auth/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"TestPass123@"}' | jq -r '.token')
+  -d '{"username":"testuser","password":"TestPass123@"}' | jq -r '.accessToken')
 
 curl -X POST http://localhost:8081/api/v1/orders \
   -H "Content-Type: application/json" \
@@ -236,7 +236,7 @@ docker exec -it tech-nova-kafka /opt/kafka/bin/kafka-console-consumer.sh \
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8082/auth/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"TestPass123@"}' | jq -r '.token')
+  -d '{"username":"testuser","password":"TestPass123@"}' | jq -r '.accessToken')
 
 curl -X POST http://localhost:8081/api/v1/orders \
   -H "Content-Type: application/json" \
@@ -258,7 +258,7 @@ curl -X POST http://localhost:8081/api/v1/orders \
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8082/auth/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"TestPass123@"}' | jq -r '.token')
+  -d '{"username":"testuser","password":"TestPass123@"}' | jq -r '.accessToken')
 
 curl -X POST http://localhost:8081/api/v1/orders \
   -H "Content-Type: application/json" \
@@ -280,7 +280,7 @@ curl -X POST http://localhost:8081/api/v1/orders \
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8082/auth/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"TestPass123@"}' | jq -r '.token')
+  -d '{"username":"testuser","password":"TestPass123@"}' | jq -r '.accessToken')
 
 curl -X DELETE http://localhost:8081/api/v1/orders/{orderId} \
   -H "Authorization: Bearer $TOKEN"
@@ -298,7 +298,7 @@ Test duplicate protection with idempotency key:
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8082/auth/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"TestPass123@"}' | jq -r '.token')
+  -d '{"username":"testuser","password":"TestPass123@"}' | jq -r '.accessToken')
 
 # First call - succeeds
 curl -X POST http://localhost:8081/api/v1/orders \
@@ -339,7 +339,7 @@ curl -X POST http://localhost:8081/api/v1/orders \
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8082/auth/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"TestPass123@"}' | jq -r '.token')
+  -d '{"username":"testuser","password":"TestPass123@"}' | jq -r '.accessToken')
 
 curl -X POST http://localhost:8081/api/v1/orders \
   -H "Content-Type: application/json" \
@@ -363,7 +363,7 @@ curl -X POST http://localhost:8081/api/v1/orders \
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8082/auth/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"TestPass123@"}' | jq -r '.token')
+  -d '{"username":"testuser","password":"TestPass123@"}' | jq -r '.accessToken')
 
 curl -X POST http://localhost:8081/api/v1/orders \
   -H "Content-Type: application/json" \
@@ -411,7 +411,7 @@ docker-compose stop execution-engine
 # 2. Place orders while engine is down
 TOKEN=$(curl -s -X POST http://localhost:8082/auth/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"TestPass123@"}' | jq -r '.token')
+  -d '{"username":"testuser","password":"TestPass123@"}' | jq -r '.accessToken')
 
 curl -X POST http://localhost:8081/api/v1/orders \
   -H "Content-Type: application/json" \
@@ -471,7 +471,7 @@ fi
 echo "2️⃣  Logging in to get JWT token..."
 TOKEN=$(curl -s -X POST "$AUTH_URL/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"username":"testuser2","password":"TestPass123@"}' | jq -r '.token')
+  -d '{"username":"testuser2","password":"TestPass123@"}' | jq -r '.accessToken')
 
 if [ -z "$TOKEN" ] || [ "$TOKEN" == "null" ]; then
   echo "   ✗ Failed to get JWT token"
@@ -541,7 +541,7 @@ chmod +x test_order_flow.sh
 | Service | URL | Purpose |
 |---------|-----|---------|
 | **API Documentation** | http://localhost:8081/swagger-ui.html | Order API Swagger UI |
-| **Auth Service** | http://localhost:8082/auth/swagger-ui/index.html | Authentication Swagger UI |
+| **Auth Service** | http://localhost:8082/auth/docs | Authentication Swagger UI |
 | **Kafka UI** | http://localhost:8090 | Monitor topics and messages |
 | **Order API** | http://localhost:8081/api/v1/orders | Place/cancel orders (requires JWT) |
 | **Auth API** | http://localhost:8082/auth/v1/auth | Register/login endpoints |
@@ -553,7 +553,7 @@ chmod +x test_order_flow.sh
 
 | Component | What to Check | Success Criteria |
 |-----------|---------------|------------------|
-| **Auth Service** | POST /auth/login returns JWT token | Token present in response |
+| **Auth Service** | POST /auth/v1/auth/login returns tokens | accessToken and refreshToken present |
 | **Order API** | POST /orders requires Authorization header | 401 error without token |
 | **Order API** | POST /orders returns PUBLISHED status | Order saved, status is PUBLISHED |
 | **Kafka Topics** | `order-requests` has message | Message appears within 1s |

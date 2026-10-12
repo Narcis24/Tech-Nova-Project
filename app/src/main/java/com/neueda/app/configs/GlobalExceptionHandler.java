@@ -26,6 +26,7 @@ import com.neueda.app.exceptions.InsufficientHoldingsException;
 import com.neueda.app.exceptions.InvalidOrderStateException;
 import com.neueda.app.exceptions.OrderNotFoundException;
 import com.neueda.app.exceptions.OrderNotTriggeredException;
+import com.neueda.app.exceptions.PositionNotFoundException;
 import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.exceptions.TradingException;
 
@@ -98,6 +99,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(OrderNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleOrderNotFound(OrderNotFoundException ex) {
         ErrorResponse error = new ErrorResponse("ORDER_NOT_FOUND", ex.getMessage(), 404);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Handles PositionNotFoundException when an account holds no position in the requested symbol.
+     *
+     * @param ex the PositionNotFoundException thrown from the service layer
+     * @return ResponseEntity containing ErrorResponse with 404 status
+     */
+    @ExceptionHandler(PositionNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlePositionNotFound(PositionNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse("POSITION_NOT_FOUND", ex.getMessage(), 404);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 

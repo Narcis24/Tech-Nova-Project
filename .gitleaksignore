@@ -1,4 +1,5 @@
-# Known false positives: example values in docs (idempotency keys, truncated/invalid sample JWTs).
+# Known false positives: example values in docs (idempotency keys, truncated/invalid sample JWTs)
+# and the dummy JWT secret in the auth service's tests.
 # Generated with: gitleaks detect --report-format json; each line is a finding's Fingerprint.
 23c3e5774939925579ade08bccb685848c3b796d:app/docs/Authentication/jwt_authentication.md:curl-auth-header:122
 23c3e5774939925579ade08bccb685848c3b796d:app/docs/Authentication/jwt_authentication.md:curl-auth-header:94
@@ -28,3 +29,5 @@ e4c25849c6ae6e8f9265085c796b2a59b7595f7d:E2E_TESTING_GUIDE.md:generic-api-key:59
 9e91a9f9f21562745934c4051613e4c08191d6ab:E2E_TESTING_GUIDE.md:generic-api-key:303
 9e91a9f9f21562745934c4051613e4c08191d6ab:E2E_TESTING_GUIDE.md:generic-api-key:306
 9e91a9f9f21562745934c4051613e4c08191d6ab:E2E_TESTING_GUIDE.md:generic-api-key:598
+787debd4ff9d36ad247adaf778649c1b5dd44354:auth/src/jwt.service.spec.ts:generic-api-key:4
+787debd4ff9d36ad247adaf778649c1b5dd44354:auth/test/auth.e2e-spec.ts:generic-api-key:11
