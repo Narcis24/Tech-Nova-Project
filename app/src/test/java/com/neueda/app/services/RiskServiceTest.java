@@ -42,8 +42,9 @@ class RiskServiceTest {
         instrumentRepository = mock(InstrumentRepository.class);
         riskLimitRepository = mock(RiskLimitRepository.class);
         accountRiskLimitRepository = mock(AccountRiskLimitRepository.class);
+        // Real RiskLimitService over the mocked repositories, so these tests still check how limits combine
         riskService = new RiskService(portfolioService, priceService, instrumentRepository,
-            riskLimitRepository, accountRiskLimitRepository);
+            new RiskLimitService(riskLimitRepository, accountRiskLimitRepository));
 
         when(riskLimitRepository.findAll()).thenReturn(List.of(
             new RiskLimit(RiskRule.SINGLE_INSTRUMENT, new BigDecimal("20"), "ABOVE"),
