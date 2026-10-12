@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { NotFoundComponent } from './features/not-found/not-found.component';
+import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
     {path: '', pathMatch: 'full', redirectTo: 'dashboard'},
@@ -10,6 +11,7 @@ export const routes: Routes = [
     },
     {
         path: 'dashboard',
+        canMatch: [authGuard],
         loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
     },
     { path: '**', component: NotFoundComponent },
