@@ -3,17 +3,14 @@ package com.neueda.app.services;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.dtos.PortfolioSnapshotResponse;
 import com.neueda.app.dtos.PositionResponse;
+import com.neueda.app.dtos.RiskLimitResponse;
 import com.neueda.app.dtos.RiskWarning;
 import com.neueda.app.enums.AssetClass;
 import com.neueda.app.enums.LimitSource;
 import com.neueda.app.enums.RiskRule;
 import com.neueda.app.exceptions.PriceNotFoundException;
-import com.neueda.app.models.AccountRiskLimit;
 import com.neueda.app.models.Instrument;
-import com.neueda.app.models.RiskLimit;
-import com.neueda.app.repositories.AccountRiskLimitRepository;
 import com.neueda.app.repositories.InstrumentRepository;
-import com.neueda.app.repositories.RiskLimitRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -34,17 +31,14 @@ public class RiskService {
     private final PortfolioService portfolioService;
     private final PriceService priceService;
     private final InstrumentRepository instrumentRepository;
-    private final RiskLimitRepository riskLimitRepository;
-    private final AccountRiskLimitRepository accountRiskLimitRepository;
+    private final RiskLimitService riskLimitService;
 
     public RiskService(PortfolioService portfolioService, PriceService priceService,
-                       InstrumentRepository instrumentRepository, RiskLimitRepository riskLimitRepository,
-                       AccountRiskLimitRepository accountRiskLimitRepository) {
+                       InstrumentRepository instrumentRepository, RiskLimitService riskLimitService) {
         this.portfolioService = portfolioService;
         this.priceService = priceService;
         this.instrumentRepository = instrumentRepository;
-        this.riskLimitRepository = riskLimitRepository;
-        this.accountRiskLimitRepository = accountRiskLimitRepository;
+        this.riskLimitService = riskLimitService;
     }
 
     public List<RiskWarning> check(PlaceOrderRequest order) {
@@ -118,26 +112,13 @@ public class RiskService {
         return warnings;
     }
 
-    /** The account's own limit where set, otherwise the default. Rules the account switched off are left out. */
+    /** The limits in force for the account. Rules the account switched off are left out. */
     private Map<RiskRule, EffectiveLimit> effectiveLimits(String accountId) {
-        Map<RiskRule, AccountRiskLimit> own = new HashMap<>();
-        for (AccountRiskLimit limit : accountRiskLimitRepository.findByAccountId(accountId)) {
-            own.put(limit.getRule(), limit);
-        }
-
         Map<RiskRule, EffectiveLimit> limits = new HashMap<>();
-        for (RiskLimit defaultLimit : riskLimitRepository.findAll()) {
-            AccountRiskLimit custom = own.get(defaultLimit.getRule());
-
-            if (custom != null && !custom.isEnabled()) {
-                continue;
-            }
-            if (custom != null && custom.getThresholdPct() != null) {
-                limits.put(defaultLimit.getRule(),
-                    new EffectiveLimit(custom.getThresholdPct(), defaultLimit.isBelow(), LimitSource.CUSTOM));
-            } else {
-                limits.put(defaultLimit.getRule(),
-                    new EffectiveLimit(defaultLimit.getThresholdPct(), defaultLimit.isBelow(), LimitSource.DEFAULT));
+        for (RiskLimitResponse limit : riskLimitService.getLimits(accountId)) {
+            if (limit.isEnabled()) {
+                boolean below = "BELOW".equals(limit.getDirection());
+                limits.put(limit.getRule(), new EffectiveLimit(limit.getThresholdPct(), below, limit.getSource()));
             }
         }
         return limits;
