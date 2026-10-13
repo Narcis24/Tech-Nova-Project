@@ -3,18 +3,12 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, catchError, finalize, map, of, shareReplay, tap, throwError } from 'rxjs';
 
+import type { components } from '../api/auth-api';
 import { AUTH_BASE } from '../core/api-urls';
 
-export interface LoginRequest {
-  username: string;
-  password: string;
-}
-
-interface TokenResponse {
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
-}
+// Generated from contracts/auth-api.yml; run `npm run generate:api` after the contract changes
+export type LoginRequest = components['schemas']['Credentials'];
+type TokenResponse = components['schemas']['TokenResponse'];
 
 const REFRESH_TOKEN_KEY = 'technova.refreshToken';
 
