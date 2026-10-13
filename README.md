@@ -81,15 +81,18 @@ Container logs land in `e2e/target/e2e-logs/`. To reuse prebuilt images instead 
 
 ## Code quality (SonarQube)
 
-```bash
-docker-compose --profile quality up -d sonarqube   # http://localhost:8083 (admin/admin, change on first login)
-# create a token in My Account > Security, then per module:
-mvn install -DskipTests             # puts messaging in ~/.m2 for the per-module runs
-mvn -f app/pom.xml verify sonar:sonar -Dsonar.host.url=http://localhost:8083 -Dsonar.token=<token>
-mvn -f execution-engine/pom.xml verify sonar:sonar -Dsonar.host.url=http://localhost:8083 -Dsonar.token=<token>
-# auth and data-pipeline: settings in their sonar-project.properties, see the SonarQube stage in the Jenkinsfile
-```
+Every project must pass the "Tech Nova" quality gate (defined in `sonar/quality-gate.sh`).
 
-All projects use the "Tech Nova" quality gate. It lives in SonarQube's database, so (re)create it with
-`SONAR_TOKEN=<admin user token> ./sonar/quality-gate.sh` after setting up a fresh SonarQube; edit the
-script to change thresholds.
+```bash
+# 1. Start SonarQube: http://localhost:8083 (admin/admin, change on first login)
+docker-compose --profile quality up -d sonarqube
+
+# 2. As admin: My Account > Security > generate a *User* token (squ_...)
+export SONAR_TOKEN=<token>
+
+# 3. Create the gate (once per fresh SonarQube, and after editing the script)
+./sonar/quality-gate.sh
+
+# 4. Scan all projects; fails if any of them fails the gate
+./sonar/scan.sh
+```
