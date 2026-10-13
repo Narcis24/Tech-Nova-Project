@@ -58,6 +58,14 @@ describe('app routes', () => {
       expect(router.url).toBe('/dashboard');
       expect(harness.routeNativeElement?.textContent).toContain('Dashboard');
     });
+
+    it('shows no shell on the login page', async () => {
+      await harness.navigateByUrl('/login');
+
+      expect(router.url).toBe('/login');
+      const shell = harness.fixture.nativeElement.querySelector('app-shell');
+      expect(shell).toBeNull();
+    });
   });
 
   describe('when logged in', () => {
@@ -74,6 +82,27 @@ describe('app routes', () => {
       await harness.navigateByUrl('/login');
 
       expect(router.url).toBe('/dashboard');
+    });
+
+    it('shows the trade page', async () => {
+      await harness.navigateByUrl('/trade');
+
+      expect(router.url).toBe('/trade');
+      expect(harness.routeNativeElement?.textContent).toContain('Trade');
+    });
+
+    it('shows the orders page', async () => {
+      await harness.navigateByUrl('/orders');
+
+      expect(router.url).toBe('/orders');
+      expect(harness.routeNativeElement?.textContent).toContain('Orders');
+    });
+
+    it('wraps the page in the shell', async () => {
+      await harness.navigateByUrl('/dashboard');
+
+      const shell = harness.fixture.nativeElement.querySelector('app-shell');
+      expect(shell).not.toBeNull();
     });
   });
 
