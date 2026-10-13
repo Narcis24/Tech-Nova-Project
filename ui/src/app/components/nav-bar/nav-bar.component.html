@@ -6,4 +6,13 @@
       <a class="tab" [routerLink]="tab.path" routerLinkActive="active" ariaCurrentWhenActive="page">{{ tab.label }}</a>
     }
   </nav>
+
+  @if (username(); as name) {
+    <div class="user">
+        <span class="avatar" aria-hidden="true">{{ initial() }}</span>
+        <span class="username">{{ name }}</span>
+        <button type="button" class="sign-out" (click)="signOut()">Sign out</button>
+    </div>
+  }
+
 </header>

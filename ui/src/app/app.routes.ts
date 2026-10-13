@@ -13,7 +13,7 @@ export const routes: Routes = [
   },
   {
     path: '',
-    // canActivate: [authGuard], // TEMP: guard off to preview the shell. Restore before committing.
+    canActivate: [authGuard], // TEMP: guard off to preview the shell. Restore before committing.
     loadComponent: () => import('./features/shell/shell.component').then(m => m.ShellComponent),
     children: [
       {

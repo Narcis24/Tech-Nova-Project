@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+
+import { AuthService } from '../../services/auth.service';
 
 interface NavTab {
   label: string;
@@ -18,4 +20,13 @@ export class NavBarComponent {
     { label: 'Trade', path: '/trade' },
     { label: 'Orders', path: '/orders' },
   ];
+
+  private readonly auth = inject(AuthService);
+  
+  readonly username = this.auth.username;
+  readonly initial = computed(() => this.username()?.charAt(0).toUpperCase() ?? '');
+
+  signOut(): void {
+    this.auth.logout();
+  }
 }

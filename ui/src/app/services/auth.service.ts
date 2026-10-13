@@ -106,7 +106,7 @@ export class AuthService {
 
 function usernameFrom(token: string | null): string | null {
   const payload = token?.split('.')[1];
-  if(!payload) {
+  if (!payload) {
     return null;    
   }
 
