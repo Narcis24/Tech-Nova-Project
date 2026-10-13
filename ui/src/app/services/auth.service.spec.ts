@@ -11,8 +11,8 @@ const LOGOUT_URL = '/auth/v1/auth/logout';
 const REFRESH_TOKEN_KEY = 'technova.refreshToken';
 
 const CREDENTIALS = { username: 'trader01', password: 'Trader.Pass01' };
-const TOKENS = { accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 };
-const NEW_TOKENS = { accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 };
+const TOKENS = { accessToken: 'access-1', refreshToken: 'refresh-1', tokenType: 'Bearer', expiresIn: 900 };
+const NEW_TOKENS = { accessToken: 'access-2', refreshToken: 'refresh-2', tokenType: 'Bearer', expiresIn: 900 };
 
 describe('AuthService', () => {
   let service: AuthService;

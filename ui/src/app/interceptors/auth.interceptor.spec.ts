@@ -11,8 +11,8 @@ const REFRESH_URL = '/auth/v1/auth/refresh';
 const LOGOUT_URL = '/auth/v1/auth/logout';
 const ORDERS_URL = '/api/v1/orders';
 
-const TOKENS = { accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 };
-const NEW_TOKENS = { accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 };
+const TOKENS = { accessToken: 'access-1', refreshToken: 'refresh-1', tokenType: 'Bearer', expiresIn: 900 };
+const NEW_TOKENS = { accessToken: 'access-2', refreshToken: 'refresh-2', tokenType: 'Bearer', expiresIn: 900 };
 const UNAUTHORIZED = { status: 401, statusText: 'Unauthorized' };
 
 // Uses the real AuthService, so "concurrent 401s share one refresh" is checked end to end
