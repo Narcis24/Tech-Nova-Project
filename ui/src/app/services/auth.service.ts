@@ -27,6 +27,7 @@ export class AuthService {
   private readonly accessToken = signal<string | null>(null);
   private refreshInFlight$: Observable<string> | null = null;
   readonly isAuthenticated = computed(() => this.accessToken() !== null);
+  readonly username = computed(() => usernameFrom(this.accessToken()));
 
   login(credentials: LoginRequest): Observable<void> {
     return this.http.post<TokenResponse>(`${AUTH_BASE}/login`, credentials).pipe(
@@ -100,5 +101,20 @@ export class AuthService {
   private clearSession(): void {
     this.accessToken.set(null);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+  }
+}
+
+function usernameFrom(token: string | null): string | null {
+  const payload = token?.split('.')[1];
+  if(!payload) {
+    return null;    
+  }
+
+  try {
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    const stub: unknown = JSON.parse(json).sub;
+    return typeof stub === 'string' ? stub : null;
+  } catch {
+    return null;
   }
 }
