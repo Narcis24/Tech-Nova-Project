@@ -56,9 +56,10 @@ class MarketDataPropertiesTest {
 
     @Test
     void throwsWhenIntervalSecondsIsZero() {
+        List<String> symbols = Arrays.asList("AAPL");
         assertThrows(IllegalArgumentException.class, () ->
             new MarketDataProperties(
-                Arrays.asList("AAPL"),
+                symbols,
                 0, 25, 2000, 600, "http://x", "", ""
             )
         );
@@ -66,9 +67,10 @@ class MarketDataPropertiesTest {
 
     @Test
     void throwsWhenIntervalSecondsIsNegative() {
+        List<String> symbols = Arrays.asList("AAPL");
         assertThrows(IllegalArgumentException.class, () ->
             new MarketDataProperties(
-                Arrays.asList("AAPL"),
+                symbols,
                 -1, 25, 2000, 600, "http://x", "", ""
             )
         );
@@ -76,9 +78,10 @@ class MarketDataPropertiesTest {
 
     @Test
     void throwsWhenBatchSizeIsZero() {
+        List<String> symbols = Arrays.asList("AAPL");
         assertThrows(IllegalArgumentException.class, () ->
             new MarketDataProperties(
-                Arrays.asList("AAPL"),
+                symbols,
                 120, 0, 2000, 600, "http://x", "", ""
             )
         );
@@ -86,9 +89,10 @@ class MarketDataPropertiesTest {
 
     @Test
     void throwsWhenBatchSizeIsNegative() {
+        List<String> symbols = Arrays.asList("AAPL");
         assertThrows(IllegalArgumentException.class, () ->
             new MarketDataProperties(
-                Arrays.asList("AAPL"),
+                symbols,
                 120, -1, 2000, 600, "http://x", "", ""
             )
         );
@@ -98,11 +102,12 @@ class MarketDataPropertiesTest {
     void throwsWhenRequestsPerDayExceedsQuota() {
         // 26 symbols, 25 batch size, 120 second interval
         // = ceil(26/25) * ceil(86400/120) = 2 * 720 = 1440 requests/day, quota = 1439
+        List<String> symbols = Arrays.asList("A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10",
+            "B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10",
+            "C1", "C2", "C3", "C4", "C5", "C6", "C7");
         assertThrows(IllegalArgumentException.class, () ->
             new MarketDataProperties(
-                Arrays.asList("A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10",
-                    "B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10",
-                    "C1", "C2", "C3", "C4", "C5", "C6", "C7"),
+                symbols,
                 120, 25, 1439, 600, "http://x", "", ""
             )
         );
@@ -124,9 +129,10 @@ class MarketDataPropertiesTest {
     void rejectsSlightlyOverBoundaryQuota() {
         // 10 symbols, 10 batch size, 120 second interval
         // = ceil(10/10) * ceil(86400/120) = 1 * 720 = 720 requests/day, quota = 719
+        List<String> symbols = Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J");
         assertThrows(IllegalArgumentException.class, () ->
             new MarketDataProperties(
-                Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J"),
+                symbols,
                 120, 10, 719, 600, "http://x", "", ""
             )
         );

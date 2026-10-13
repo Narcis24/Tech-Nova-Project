@@ -4,6 +4,7 @@ import com.neueda.app.dtos.AccountResponse;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PositionResponse;
 import com.neueda.app.enums.AccountStatus;
+import com.neueda.app.enums.OrderSide;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.AccountNotActiveException;
 import com.neueda.app.exceptions.InsufficientFundsException;
@@ -234,9 +235,8 @@ class AccountServiceTest {
             .thenReturn(Optional.of(account));
 
         // Act & Assert
-        assertThrows(AccountNotActiveException.class, () -> {
-            accountService.depositCash(accountId, new BigDecimal("1000.00"));
-        });
+        BigDecimal amount = new BigDecimal("1000.00");
+        assertThrows(AccountNotActiveException.class, () -> accountService.depositCash(accountId, amount));
     }
 
     @Test
@@ -299,9 +299,8 @@ class AccountServiceTest {
             .thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(AccountNotFoundException.class, () -> {
-            accountService.withdrawCash(accountId, new BigDecimal("1000.00"));
-        });
+        BigDecimal amount = new BigDecimal("1000.00");
+        assertThrows(AccountNotFoundException.class, () -> accountService.withdrawCash(accountId, amount));
     }
 
     @Test
@@ -320,9 +319,8 @@ class AccountServiceTest {
             .thenReturn(Optional.of(account));
 
         // Act & Assert
-        assertThrows(AccountNotActiveException.class, () -> {
-            accountService.withdrawCash(accountId, new BigDecimal("1000.00"));
-        });
+        BigDecimal amount = new BigDecimal("1000.00");
+        assertThrows(AccountNotActiveException.class, () -> accountService.withdrawCash(accountId, amount));
     }
 
     @Test
@@ -341,9 +339,8 @@ class AccountServiceTest {
             .thenReturn(Optional.of(account));
 
         // Act & Assert
-        assertThrows(InsufficientFundsException.class, () -> {
-            accountService.withdrawCash(accountId, new BigDecimal("1000.00"));
-        });
+        BigDecimal amount = new BigDecimal("1000.00");
+        assertThrows(InsufficientFundsException.class, () -> accountService.withdrawCash(accountId, amount));
     }
 
     // ========== getAccountOrders Tests ==========
@@ -363,7 +360,7 @@ class AccountServiceTest {
         Order mockOrder = mock(Order.class);
         when(mockOrder.getAccountId()).thenReturn(accountId);
         when(mockOrder.getSymbol()).thenReturn("AAPL");
-        when(mockOrder.getSide()).thenReturn(mock(com.neueda.app.enums.OrderSide.class));
+        when(mockOrder.getSide()).thenReturn(OrderSide.BUY);
         orders.add(mockOrder);
 
         when(accountRepository.findById(accountId))
@@ -436,9 +433,9 @@ class AccountServiceTest {
         Order mockOrder2 = mock(Order.class);
         Order mockOrder3 = mock(Order.class);
         
-        when(mockOrder1.getSide()).thenReturn(mock(com.neueda.app.enums.OrderSide.class));
-        when(mockOrder2.getSide()).thenReturn(mock(com.neueda.app.enums.OrderSide.class));
-        when(mockOrder3.getSide()).thenReturn(mock(com.neueda.app.enums.OrderSide.class));
+        when(mockOrder1.getSide()).thenReturn(OrderSide.BUY);
+        when(mockOrder2.getSide()).thenReturn(OrderSide.BUY);
+        when(mockOrder3.getSide()).thenReturn(OrderSide.BUY);
         
         orders.add(mockOrder1);
         orders.add(mockOrder2);

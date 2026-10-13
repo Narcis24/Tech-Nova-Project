@@ -12,12 +12,12 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.DisplayName;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.math.BigDecimal;
 
 
-public class AccountTest {
+class AccountTest {
     private Account account;
-    private Account invalidAccount;
 
     @BeforeEach 
     void setUp() {
@@ -28,31 +28,22 @@ public class AccountTest {
             AccountStatus.ACTIVE,
             LocalDateTime.of(2026,9,17,13,00)
         );
-
-                    
-        invalidAccount = new Account(
-            "123456", 
-            "Debbie Lynch", 
-            new BigDecimal("2000.00"), 
-            AccountStatus.INACTIVE,
-            LocalDateTime.of(2026,9,17,13,00)
-            );
     }
 
     @Test 
     void validateAccountGetters() {
         assertAll(
-            () -> assertEquals(account.getAccountId(), "12345"),
-            () -> assertEquals(account.getHolderName(), "Karl Devon"),
-            () -> assertEquals(account.getCashBalance(), new BigDecimal("2000.00")),
-            () -> assertEquals(account.getAccountStatus(), AccountStatus.ACTIVE),
-            () -> assertEquals(account.getLastUpdated(), LocalDateTime.of(2026,9,17,13,00))
+            () -> assertEquals("12345", account.getAccountId()),
+            () -> assertEquals("Karl Devon", account.getHolderName()),
+            () -> assertEquals(new BigDecimal("2000.00"), account.getCashBalance()),
+            () -> assertEquals(AccountStatus.ACTIVE, account.getAccountStatus()),
+            () -> assertEquals(LocalDateTime.of(2026,9,17,13,00), account.getLastUpdated())
         );
     }
 
     @Nested
     @DisplayName("Account Status Validation Checks")
-    public class AccountStatusTests {
+    class AccountStatusTests {
 
         private Account testValidateAccountStatus;
 
@@ -87,7 +78,7 @@ public class AccountTest {
             
             AccountNotActiveException exception = assertThrows(
                 AccountNotActiveException.class,
-                () -> inactiveAccount.validateStatus());
+                inactiveAccount::validateStatus);
             
             assertTrue(exception.getMessage().contains("12345"));
                 assertTrue(exception.getMessage().contains("INACTIVE"));
@@ -105,7 +96,7 @@ public class AccountTest {
             );
             String result = testAccount.toString();
 
-            assertEquals(result, "Account{accountId='12345', holderName='Karl Devon', cashBalance=2000, accountStatus=ACTIVE, lastUpdated=2026-09-17T13:00}");
+            assertEquals("Account{accountId='12345', holderName='Karl Devon', cashBalance=2000, accountStatus=ACTIVE, lastUpdated=2026-09-17T13:00}", result);
         }
     }
 
@@ -126,9 +117,10 @@ public class AccountTest {
 
         @Test
         void testDebitCashWithInsufficientFunds() {
+            BigDecimal amount = new BigDecimal("3500.00");
             InsufficientFundsException exception = assertThrows(
                 InsufficientFundsException.class,
-                () -> account.debitCash(new BigDecimal("3500.00"))
+                () -> account.debitCash(amount)
             );
 
             assertTrue(exception.getMessage().contains("12345"));
@@ -139,16 +131,18 @@ public class AccountTest {
         @Test
         void testBalanceDoesNotChangeWhenDebitFails() {
 
+            BigDecimal amount = new BigDecimal("2500.00");
             assertThrows(InsufficientFundsException.class,
-                    () -> account.debitCash(new BigDecimal("2500.00")));
+                    () -> account.debitCash(amount));
 
             assertEquals(new BigDecimal("2000.00"), account.getCashBalance());
         }
 
         @Test
         void testNegativeOrZeroDebitIsRejected() {
+            BigDecimal negative = new BigDecimal("-100.00");
             assertThrows(IllegalArgumentException.class,
-                    () -> account.debitCash(new BigDecimal("-100.00")));
+                    () -> account.debitCash(negative));
             assertThrows(IllegalArgumentException.class,
                     () -> account.debitCash(BigDecimal.ZERO));
 
@@ -158,11 +152,11 @@ public class AccountTest {
         @Test
         void testLastUpdatedChangesAfterDebit() {
 
-            LocalDateTime before = LocalDateTime.now();
+            LocalDateTime before = LocalDateTime.now(ZoneOffset.UTC);
             
             account.debitCash(new BigDecimal("100.00"));
 
-            LocalDateTime after = LocalDateTime.now();
+            LocalDateTime after = LocalDateTime.now(ZoneOffset.UTC);
 
             assertTrue(!account.getLastUpdated().isBefore(before));
             assertTrue(!account.getLastUpdated().isAfter(after));
