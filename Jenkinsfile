@@ -61,6 +61,8 @@ pipeline {
                         // auth: settings in auth/sonar-project.properties, coverage from the Unit Tests stage;
                         // the image's own /tmp/.scannerwork is writable only by its uid 1000, so use a fresh work dir
                         sh 'docker run --rm --network host -u $(id -u):$(id -g) -e SONAR_HOST_URL=http://localhost:8083 -e SONAR_TOKEN -e SONAR_USER_HOME=/tmp/.sonar -e SCANNER_WORKDIR_PATH=/tmp/scannerwork -v $WORKSPACE/auth:/usr/src sonarsource/sonar-scanner-cli -Dsonar.qualitygate.wait=true'
+                        // data-pipeline: settings in data-pipeline/sonar-project.properties
+                        sh 'docker run --rm --network host -u $(id -u):$(id -g) -e SONAR_HOST_URL=http://localhost:8083 -e SONAR_TOKEN -e SONAR_USER_HOME=/tmp/.sonar -e SCANNER_WORKDIR_PATH=/tmp/scannerwork -v $WORKSPACE/data-pipeline:/usr/src sonarsource/sonar-scanner-cli -Dsonar.qualitygate.wait=true'
                     }
                 }
             }
