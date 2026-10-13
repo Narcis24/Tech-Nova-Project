@@ -42,7 +42,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({OrderService.class, PriceService.class})
+@Import({OrderService.class, OrderValidator.class, PriceService.class})
 // Uses application-test.properties imports for Integration Testing
 @ActiveProfiles("test")
 @DisplayName("OrderService End-to-End Integration Tests")

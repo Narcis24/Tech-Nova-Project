@@ -53,12 +53,10 @@ class OrderServiceTest {
         priceService = mock(PriceService.class);
         eventProducerService = mock(EventProducerService.class);
 
+        // Real validator over the mocked repositories, so these tests still cover every placement check
         orderService = new OrderService(
             orderRepository,
-            accountRepository,
-            positionRepository,
-            instrumentRepository,
-            priceService,
+            new OrderValidator(accountRepository, positionRepository, instrumentRepository, priceService),
             eventProducerService
         );
     }
