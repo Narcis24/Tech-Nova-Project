@@ -87,5 +87,9 @@ docker-compose --profile quality up -d sonarqube   # http://localhost:8083 (admi
 mvn install -DskipTests             # puts messaging in ~/.m2 for the per-module runs
 mvn -f app/pom.xml verify sonar:sonar -Dsonar.host.url=http://localhost:8083 -Dsonar.token=<token>
 mvn -f execution-engine/pom.xml verify sonar:sonar -Dsonar.host.url=http://localhost:8083 -Dsonar.token=<token>
-# auth is NestJS: settings in auth/sonar-project.properties, see the SonarQube stage in the Jenkinsfile
+# auth and data-pipeline: settings in their sonar-project.properties, see the SonarQube stage in the Jenkinsfile
 ```
+
+All projects use the "Tech Nova" quality gate. It lives in SonarQube's database, so (re)create it with
+`SONAR_TOKEN=<admin user token> ./sonar/quality-gate.sh` after setting up a fresh SonarQube; edit the
+script to change thresholds.
