@@ -26,6 +26,7 @@ import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class OrderService {
     
+    private static final String ORDER_NOT_FOUND = "Order not found: ";
+
     private final OrderRepository orderRepository;
     private final AccountRepository accountRepository;
     private final PositionRepository positionRepository;
@@ -155,7 +158,7 @@ public class OrderService {
             request.getQuantity(),
             price,
             request.getIdempotencyKey() != null ? request.getIdempotencyKey() : UUID.randomUUID().toString(),
-            LocalDateTime.now()
+            LocalDateTime.now(ZoneOffset.UTC)
         );
         
         // Fail fast on what we can already see. Settlement re-checks at the real fill price.
@@ -194,7 +197,7 @@ public class OrderService {
         // fill reaches the row first wins and the other sees 0 rows, instead of overwriting it.
         int updated = orderRepository.changeStatus(orderId, OrderStatus.PENDING, OrderStatus.CANCELLED);
         Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+            .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND + orderId));
         if (updated == 0) {
             throw new InvalidOrderStateException(
                 "Operation not allowed. Only PENDING orders can be modified. Order is " + order.getStatus());
@@ -204,7 +207,7 @@ public class OrderService {
     
     public OrderResponse rejectOrder(UUID orderId, String reason) {
         Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+            .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND + orderId));
 
         order.reject(reason);  // Entity handles state validation
         orderRepository.save(order);
@@ -213,7 +216,7 @@ public class OrderService {
 
     public OrderResponse getOrder(UUID orderId) {
         Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+            .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND + orderId));
         return new OrderResponse(order);
     }
 }
