@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -58,7 +57,7 @@ class MarketDataPollerTest {
         poller.poll();
 
         // Assert
-        verify(client).latest(eq(Arrays.asList("AAPL", "MSFT", "GOOGL")));
+        verify(client).latest(Arrays.asList("AAPL", "MSFT", "GOOGL"));
         verify(producer, times(3)).publishEvent(
             eq("market-data"),
             anyString(),
@@ -79,20 +78,8 @@ class MarketDataPollerTest {
         poller.poll();
 
         // Assert
-        verify(producer).publishEvent(
-            eq("market-data"),
-            eq("AAPL"),
-            eq("MARKET_DATA"),
-            eq("MarketDataPoller"),
-            eq(aapl)
-        );
-        verify(producer).publishEvent(
-            eq("market-data"),
-            eq("MSFT"),
-            eq("MARKET_DATA"),
-            eq("MarketDataPoller"),
-            eq(msft)
-        );
+        verify(producer).publishEvent("market-data", "AAPL", "MARKET_DATA", "MarketDataPoller", aapl);
+        verify(producer).publishEvent("market-data", "MSFT", "MARKET_DATA", "MarketDataPoller", msft);
     }
 
     @Test
