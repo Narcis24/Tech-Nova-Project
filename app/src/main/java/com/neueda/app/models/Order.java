@@ -21,6 +21,7 @@ import java.lang.IllegalArgumentException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.JoinColumn;
@@ -83,7 +84,7 @@ public class Order implements OrderOperations {
     private OrderStatus status;
     
     @Transient
-    private LocalDateTime lastModified = LocalDateTime.now();
+    private LocalDateTime lastModified = LocalDateTime.now(ZoneOffset.UTC);
     
     @Column(name = "rejection_reason")
     private String rejectionReason;
@@ -177,7 +178,7 @@ public class Order implements OrderOperations {
         requirePending();
 
         this.status = OrderStatus.FILLED;
-        this.lastModified = LocalDateTime.now();
+        this.lastModified = LocalDateTime.now(ZoneOffset.UTC);
     }
     /**
      * Cancels the order: PENDING → CANCELLED
@@ -189,7 +190,7 @@ public class Order implements OrderOperations {
         requirePending();
         
         this.status = OrderStatus.CANCELLED;
-        this.lastModified = LocalDateTime.now();
+        this.lastModified = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     /**
@@ -201,7 +202,7 @@ public class Order implements OrderOperations {
         requirePending();
 
         this.status = OrderStatus.REJECTED;
-        this.lastModified = LocalDateTime.now();
+        this.lastModified = LocalDateTime.now(ZoneOffset.UTC);
         this.rejectionReason = reason;
     }
 
@@ -218,7 +219,7 @@ public class Order implements OrderOperations {
      */
     public void setStatus(OrderStatus newStatus) {
         this.status = newStatus;
-        this.lastModified = LocalDateTime.now();
+        this.lastModified = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     /**
@@ -234,7 +235,7 @@ public class Order implements OrderOperations {
      */
     public void setExecutionPrice(BigDecimal executionPrice) {
         this.price = executionPrice.setScale(2, RoundingMode.HALF_UP);
-        this.lastModified = LocalDateTime.now();
+        this.lastModified = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     @Override

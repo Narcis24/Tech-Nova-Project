@@ -14,10 +14,11 @@ import com.neueda.app.repositories.PositionRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class AccountService {
+    private static final String ACCOUNT_NOT_FOUND = "Account not found: ";
+
     private final AccountRepository accountRepository;
     private final OrderRepository orderRepository;
     private final PositionRepository positionRepository;
@@ -45,14 +46,14 @@ public class AccountService {
 
     public AccountResponse getAccount(String accountId) {
         Account account = accountRepository.findById(accountId)
-            .orElseThrow(() -> new AccountNotFoundException("Account not found: " + accountId));
+            .orElseThrow(() -> new AccountNotFoundException(ACCOUNT_NOT_FOUND + accountId));
         return new AccountResponse(account);
     }
 
     public BigDecimal getAccountCashBalance(String accountId) {
         Account account = accountRepository.findById(accountId)
             .orElseThrow(() -> new AccountNotFoundException(
-                "Account not found: " + accountId
+                ACCOUNT_NOT_FOUND + accountId
             ));
         
         return account.getCashBalance();
@@ -62,7 +63,7 @@ public class AccountService {
     public AccountResponse depositCash(String accountId, BigDecimal amount) {
         Account account = accountRepository.findByIdForUpdate(accountId)
             .orElseThrow(() -> new AccountNotFoundException(
-                "Account not found: " + accountId
+                ACCOUNT_NOT_FOUND + accountId
             ));
         
         account.validateStatus();  // Throws if not ACTIVE
@@ -76,7 +77,7 @@ public class AccountService {
     public AccountResponse withdrawCash(String accountId, BigDecimal amount) {
         Account account = accountRepository.findByIdForUpdate(accountId)
                     .orElseThrow(() -> new AccountNotFoundException(
-                "Account not found: " + accountId
+                ACCOUNT_NOT_FOUND + accountId
             ));
         
         account.validateStatus();  // Throws if not ACTIVE
@@ -90,7 +91,7 @@ public class AccountService {
         // Verify account exists
         accountRepository.findById(accountId)
             .orElseThrow(() -> new AccountNotFoundException(
-                "Account not found: " + accountId
+                ACCOUNT_NOT_FOUND + accountId
             ));
         
         // Retrieve all orders for the account
@@ -99,14 +100,14 @@ public class AccountService {
         // Convert to OrderResponse DTOs
         return orders.stream()
             .map(OrderResponse::new)
-            .collect(Collectors.toList());
+            .toList();
     }
 
     public List<PositionResponse> getAccountPositions(String accountId) {
         // Verify account exists
         accountRepository.findById(accountId)
             .orElseThrow(() -> new AccountNotFoundException(
-                "Account not found: " + accountId
+                ACCOUNT_NOT_FOUND + accountId
             ));
         
         return positionValuator.valueAll(positionRepository.findByAccountId(accountId));

@@ -89,9 +89,10 @@ describe('Auth (e2e)', () => {
     });
 
     it('accepts any 12-20 character password', async () => {
-      await post('register')
+      const res = await post('register')
         .send({ username: 'john_doe1', password: 'alllowercase' })
         .expect(201);
+      expect(res.body).toEqual({ username: 'john_doe1' });
     });
 
     it('rejects a taken username with 409', async () => {
@@ -171,12 +172,21 @@ describe('Auth (e2e)', () => {
     });
 
     it('rejects an unknown or expired token', async () => {
-      await post('refresh').send({ refreshToken: 'unknown' }).expect(401);
+      const rejected = {
+        statusCode: 401,
+        error: 'Unauthorized',
+        message: 'Invalid or expired refresh token',
+      };
+      const unknown = await post('refresh')
+        .send({ refreshToken: 'unknown' })
+        .expect(401);
+      expect(unknown.body).toEqual(rejected);
 
       const { refreshToken } = await loggedIn();
       for (const token of repository.tokens.values())
         token.expiresAt = Date.now() - 1;
-      await post('refresh').send({ refreshToken }).expect(401);
+      const expired = await post('refresh').send({ refreshToken }).expect(401);
+      expect(expired.body).toEqual(rejected);
     });
 
     it('does not store the token itself', async () => {
@@ -195,10 +205,14 @@ describe('Auth (e2e)', () => {
     });
 
     it('returns 204 for an unknown or already revoked token', async () => {
-      await post('logout').send({ refreshToken: 'unknown' }).expect(204);
+      const unknown = await post('logout')
+        .send({ refreshToken: 'unknown' })
+        .expect(204);
+      expect(unknown.text).toBe('');
       const { refreshToken } = await loggedIn();
       await post('logout').send({ refreshToken }).expect(204);
-      await post('logout').send({ refreshToken }).expect(204);
+      const revoked = await post('logout').send({ refreshToken }).expect(204);
+      expect(revoked.text).toBe('');
     });
   });
 
@@ -276,7 +290,8 @@ describe('Auth (e2e)', () => {
 
   describe('operational endpoints', () => {
     it('reports health', async () => {
-      await http().get('/auth/health').expect(200);
+      const res = await http().get('/auth/health').expect(200);
+      expect(res.body).toEqual({ status: 'ok' });
     });
 
     it('serves the OpenAPI document with the contract paths', async () => {

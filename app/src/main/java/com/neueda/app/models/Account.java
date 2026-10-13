@@ -12,6 +12,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import com.neueda.app.exceptions.AccountNotActiveException;
@@ -97,7 +98,7 @@ public class Account  implements AccountOperations {
         if (ownerUsername == null || ownerUsername.isBlank()) {
             throw new IllegalArgumentException("Owner cannot be null");
         }
-        Account account = new Account(accountId, holderName, BigDecimal.ZERO, AccountStatus.ACTIVE, LocalDateTime.now());
+        Account account = new Account(accountId, holderName, BigDecimal.ZERO, AccountStatus.ACTIVE, LocalDateTime.now(ZoneOffset.UTC));
         account.ownerUsername = ownerUsername;
         return account;
     }
@@ -128,7 +129,7 @@ public class Account  implements AccountOperations {
             );
         }
         this.cashBalance = cashBalance.subtract(amount);
-        this.lastUpdated = LocalDateTime.now();
+        this.lastUpdated = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     
@@ -137,7 +138,7 @@ public class Account  implements AccountOperations {
             throw new IllegalArgumentException("Credit amount must be positive");
         }
         this.cashBalance = cashBalance.add(amount);
-        this.lastUpdated = LocalDateTime.now();
+        this.lastUpdated = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     @Override

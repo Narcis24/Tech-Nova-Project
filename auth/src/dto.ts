@@ -12,7 +12,8 @@ export class Credentials {
   @IsString()
   @MinLength(8)
   @MaxLength(16)
-  @Matches(/^[A-Za-z0-9_]+$/)
+  // spelled out rather than \w: the pattern is quoted in the public 400 message and the contract
+  @Matches(/^[A-Za-z0-9_]+$/) // NOSONAR
   username: string;
 
   @ApiProperty({
