@@ -8,6 +8,7 @@ import { AUTH_BASE } from '../core/api-urls';
 
 // Generated from contracts/auth-api.yml; run `npm run generate:api` after the contract changes
 export type LoginRequest = components['schemas']['Credentials'];
+export type RegisterResponse = components['schemas']['RegisterResponse'];
 type TokenResponse = components['schemas']['TokenResponse'];
 
 const REFRESH_TOKEN_KEY = 'technova.refreshToken';
@@ -33,6 +34,10 @@ export class AuthService {
       tap(tokens => this.storeTokens(tokens)),
       map(() => undefined),
     );
+  }
+
+  register(credentials: LoginRequest): Observable<RegisterResponse> {
+    return this.http.post<RegisterResponse>(`${AUTH_BASE}/register`, credentials);
   }
 
   getAccessToken(): string | null {
