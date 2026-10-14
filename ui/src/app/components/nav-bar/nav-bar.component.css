@@ -1,0 +1,287 @@
+.nav-bar {
+  max-width: 1360px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: 20px 56px;
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+.brand {
+  font-size: 20px;
+  font-weight: 700;
+  font-stretch: 125%;
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--color-track);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 9px;
+  color: var(--color-muted);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.tab:hover {
+  color: var(--color-ink);
+}
+
+.tab.active {
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(20, 24, 43, 0.08), 0 0 0 1px rgba(20, 24, 43, 0.04);
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.user {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  color: var(--color-surface);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.account-cluster {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.account-switcher {
+  position: relative;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--color-track);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+/* The account list shows at most 4 options; longer lists scroll */
+.account-menu {
+  --option-height: 40px;
+  max-height: calc(4 * var(--option-height));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Still scrolls with wheel, touch and keyboard, just without a visible bar */
+  scrollbar-width: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.account-menu::-webkit-scrollbar {
+  display: none;
+}
+
+.account-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  /* Pinned to both edges of the pill, so the list is exactly as wide as it */
+  left: 0;
+  right: 0;
+  z-index: 20;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: 0 8px 24px rgba(20, 24, 43, 0.12), 0 0 0 1px rgba(20, 24, 43, 0.06);
+}
+
+.account-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--option-height);
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.account-option:hover {
+  background: var(--color-track);
+}
+
+/* The selected account: a soft blue chip, distinct from the grey hover */
+.account-option[aria-current='true'] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+/* Sign out sits beside the avatar on desktop; on phones it moves into the avatar menu */
+.sign-out {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  color: var(--color-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sign-out:hover {
+  color: var(--color-ink);
+}
+
+/* The avatar and name are one button that opens the user menu, on every screen size */
+.menu-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 12px 2px 2px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.menu-button:hover,
+.menu-button[aria-expanded='true'] {
+  background: var(--color-track);
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  min-width: 180px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: 0 8px 24px rgba(20, 24, 43, 0.12), 0 0 0 1px rgba(20, 24, 43, 0.06);
+}
+
+.menu-name,
+.menu-account {
+  margin: 0;
+  font-size: 15px;
+}
+
+.menu-name {
+  font-weight: 600;
+}
+
+.menu-account {
+  color: var(--color-muted);
+}
+
+.menu-change-account {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  min-height: 44px;
+  border-radius: 10px;
+  color: var(--color-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.menu-change-account:hover {
+  background: var(--color-track);
+  color: var(--color-ink);
+}
+
+.menu-sign-out {
+  display: none;
+  min-height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--color-track);
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+@media (max-width: 767.98px) {
+  .nav-bar {
+    padding: 14px 20px;
+  }
+
+  /* Tabs become a bar pinned to the bottom of the screen */
+  .tabs {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    z-index: 10;
+    gap: 4px;
+    border-radius: 16px;
+  }
+
+  .tab {
+    flex: 1;
+    justify-content: center;
+    min-height: 46px;
+    border-radius: 12px;
+    font-size: 14px;
+  }
+
+  /* The right side shrinks to just the avatar */
+  .account-switcher,
+  .menu-button .username,
+  .sign-out {
+    display: none;
+  }
+
+  .menu-sign-out {
+    display: block;
+  }
+
+  .menu-button {
+    padding: 0;
+  }
+}

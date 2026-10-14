@@ -1,59 +1,32 @@
 # Ui
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.27.
-
 ## Development server
 
-To start a local development server, run:
+There are two ways to run it. Both reload automatically when you change a source file.
+
+**On localhost only** (the default; only your own machine can open it):
 
 ```bash
-ng serve
+npm start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Open `http://localhost:4200/`.
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+**On your machine's IP address** (anyone who can reach your machine can open it, e.g. a teammate on the same network):
 
 ```bash
-ng generate component component-name
+npm run start:network
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Open `http://<your-ip>:8090/`. The terminal prints the address under "Network". On Linux, `hostname -I` shows your IP.
+`http://localhost:8090/` still works on your own machine. Port 8090 must be open in your firewall, or in the security group on a cloud VM.
+
+8090 is used because only ports 8000-8100 are reachable on our machines, and 8080-8083 are taken by Jenkins,
+the trading API, auth and SonarQube. If 8090 is busy on yours, pick another free port in that range:
 
 ```bash
-ng generate --help
+npm run start:network -- --port 8095
 ```
 
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Either way, `/api` and `/auth` requests are forwarded to the backend on the same machine as `ng serve`
+(ports 8081 and 8082, see `proxy.conf.json`), so start the backend there with `docker-compose up -d`.
