@@ -10,10 +10,10 @@
 
 
 export interface AccountResponse { 
-    accountId?: string;
-    holderName?: string;
-    cashBalance?: number;
-    status?: AccountResponse.StatusEnum;
+    accountId: string;
+    holderName: string;
+    cashBalance: number;
+    status: AccountResponse.StatusEnum;
 }
 export namespace AccountResponse {
     export const StatusEnum = {
