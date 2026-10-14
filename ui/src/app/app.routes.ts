@@ -13,7 +13,7 @@ export const routes: Routes = [
   },
   {
     path: '',
-    // canActivate: [authGuard], // TEMP: guard off to preview without logging in. Restore before committing.
+    canActivate: [authGuard],
     loadComponent: () => import('./features/shell/shell.component').then(m => m.ShellComponent),
     children: [
       {
