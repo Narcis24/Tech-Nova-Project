@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
@@ -48,6 +49,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 404 status
      */
     @ExceptionHandler(AccountNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public ResponseEntity<ErrorResponse> handleAccountNotFound(AccountNotFoundException ex) {
         ErrorResponse error = new ErrorResponse("ACCOUNT_NOT_FOUND", ex.getMessage(), 404);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
@@ -60,6 +62,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 403 status
      */
     @ExceptionHandler(AccountAccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
     public ResponseEntity<ErrorResponse> handleAccountAccessDenied(AccountAccessDeniedException ex) {
         ErrorResponse error = new ErrorResponse("ACCESS_DENIED", ex.getMessage(), 403);
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
@@ -72,6 +75,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 400 status
      */
     @ExceptionHandler(AccountNotActiveException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handleAccountNotActive(AccountNotActiveException ex) {
         ErrorResponse error = new ErrorResponse("ACCOUNT_NOT_ACTIVE", ex.getMessage(), 400);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
@@ -85,6 +89,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 409 status
      */
     @ExceptionHandler(DuplicateOrderException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
     public ResponseEntity<ErrorResponse> handleDuplicateOrder(DuplicateOrderException ex) {
         ErrorResponse error = new ErrorResponse("DUPLICATE_ORDER", ex.getMessage(), 409);
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
@@ -97,6 +102,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 404 status
      */
     @ExceptionHandler(OrderNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public ResponseEntity<ErrorResponse> handleOrderNotFound(OrderNotFoundException ex) {
         ErrorResponse error = new ErrorResponse("ORDER_NOT_FOUND", ex.getMessage(), 404);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
@@ -109,6 +115,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 404 status
      */
     @ExceptionHandler(PositionNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public ResponseEntity<ErrorResponse> handlePositionNotFound(PositionNotFoundException ex) {
         ErrorResponse error = new ErrorResponse("POSITION_NOT_FOUND", ex.getMessage(), 404);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
@@ -122,6 +129,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 409 status
      */
     @ExceptionHandler(InvalidOrderStateException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
     public ResponseEntity<ErrorResponse> handleInvalidOrderState(InvalidOrderStateException ex) {
         ErrorResponse error = new ErrorResponse("INVALID_ORDER_STATE", ex.getMessage(), 409);
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
@@ -135,6 +143,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 409 status
      */
     @ExceptionHandler(OrderNotTriggeredException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
     public ResponseEntity<ErrorResponse> handleOrderNotTriggered(OrderNotTriggeredException ex) {
         ErrorResponse error = new ErrorResponse("ORDER_NOT_TRIGGERED", ex.getMessage(), 409);
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
@@ -148,6 +157,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 409 status
      */
     @ExceptionHandler(OptimisticLockingFailureException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
     public ResponseEntity<ErrorResponse> handleConcurrentUpdate(OptimisticLockingFailureException ex) {
         ErrorResponse error = new ErrorResponse("CONCURRENT_UPDATE", "Concurrent update, please retry", 409);
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
@@ -161,6 +171,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 404 status
      */
     @ExceptionHandler(InstrumentNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public ResponseEntity<ErrorResponse> handleInstrumentNotFound(InstrumentNotFoundException ex) {
         ErrorResponse error = new ErrorResponse("INSTRUMENT_NOT_FOUND", ex.getMessage(), 404);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
@@ -173,6 +184,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 404 status
      */
     @ExceptionHandler(PriceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public ResponseEntity<ErrorResponse> handlePriceNotFound(PriceNotFoundException ex) {
         ErrorResponse error = new ErrorResponse("PRICE_NOT_FOUND", ex.getMessage(), 404);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
@@ -186,6 +198,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 400 status
      */
     @ExceptionHandler(InsufficientFundsException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handleInsufficientFunds(InsufficientFundsException ex) {
         ErrorResponse error = new ErrorResponse("INSUFFICIENT_FUNDS", ex.getMessage(), 400);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
@@ -199,6 +212,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 400 status
      */
     @ExceptionHandler(InsufficientHoldingsException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handleInsufficientHoldings(InsufficientHoldingsException ex) {
         ErrorResponse error = new ErrorResponse("INSUFFICIENT_HOLDINGS", ex.getMessage(), 400);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
@@ -215,6 +229,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 400 status
      */
     @ExceptionHandler(TradingException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handleTradingException(TradingException ex) {
         ErrorResponse error = new ErrorResponse("TRADING_ERROR", ex.getMessage(), 400);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
@@ -228,6 +243,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 400 status
      */
     @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
         ErrorResponse error = new ErrorResponse("INVALID_ARGUMENT", ex.getMessage(), 400);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
@@ -241,6 +257,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 400 status
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult()
             .getFieldErrors()
@@ -261,6 +278,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 400 status
      */
     @ExceptionHandler(HandlerMethodValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handleParameterValidation(HandlerMethodValidationException ex) {
         String message = ex.getAllErrors()
             .stream()
@@ -280,6 +298,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 404 status
      */
     @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException ex) {
         ErrorResponse error = new ErrorResponse("NOT_FOUND", "Resource not found", 404);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
@@ -293,6 +312,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing ErrorResponse with 405 status
      */
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
     public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
         ErrorResponse error = new ErrorResponse("METHOD_NOT_ALLOWED", "Method " + ex.getMethod() + " not allowed", 405);
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(error);
@@ -303,6 +323,7 @@ public class GlobalExceptionHandler {
      * e.g. an order id that is not a UUID.
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         ErrorResponse error = new ErrorResponse("INVALID_ARGUMENT", "Invalid value for " + ex.getName(), 400);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
@@ -310,6 +331,7 @@ public class GlobalExceptionHandler {
 
     /** Handles a request body that is missing or is not valid JSON. */
     @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handleUnreadableBody(HttpMessageNotReadableException ex) {
         ErrorResponse error = new ErrorResponse("MALFORMED_REQUEST", "Request body is missing or malformed", 400);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
@@ -320,6 +342,7 @@ public class GlobalExceptionHandler {
      * e.g. two concurrent requests that both passed a uniqueness check.
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
         log.warn("Database constraint violation: {}", ex.getMostSpecificCause().getMessage());
         ErrorResponse error = new ErrorResponse("CONFLICT", "The request conflicts with existing data", 409);
@@ -341,6 +364,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity containing generic ErrorResponse with 500 status
      */
     @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         log.error("Unhandled exception", ex);
         ErrorResponse error = new ErrorResponse("INTERNAL_ERROR", "An unexpected error occurred", 500);
