@@ -8,6 +8,8 @@ import { AUTH_BASE } from '../core/api-urls';
 
 // Generated from contracts/auth-api.yml; run `npm run generate:api` after the contract changes
 export type LoginRequest = components['schemas']['Credentials'];
+type ForgotPasswordRequest = components['schemas']['ForgotPasswordRequest'];
+type ResetPasswordRequest = components['schemas']['ResetPasswordRequest'];
 type TokenResponse = components['schemas']['TokenResponse'];
 
 const REFRESH_TOKEN_KEY = 'technova.refreshToken';
@@ -33,6 +35,18 @@ export class AuthService {
       tap(tokens => this.storeTokens(tokens)),
       map(() => undefined),
     );
+  }
+
+  /** Always succeeds for a well-formed email, whether or not an account uses it (202). */
+  forgotPassword(email: string): Observable<void> {
+    const body: ForgotPasswordRequest = { email };
+    return this.http.post<void>(`${AUTH_BASE}/forgot-password`, body);
+  }
+
+  /** Sets a new password with the token from a reset link. Fails with 400 if the link is invalid or expired. */
+  resetPassword(token: string, newPassword: string): Observable<void> {
+    const body: ResetPasswordRequest = { token, newPassword };
+    return this.http.post<void>(`${AUTH_BASE}/reset-password`, body);
   }
 
   getAccessToken(): string | null {

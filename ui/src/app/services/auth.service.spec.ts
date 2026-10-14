@@ -8,6 +8,8 @@ import { AuthService } from './auth.service';
 const LOGIN_URL = '/auth/v1/auth/login';
 const REFRESH_URL = '/auth/v1/auth/refresh';
 const LOGOUT_URL = '/auth/v1/auth/logout';
+const FORGOT_URL = '/auth/v1/auth/forgot-password';
+const RESET_URL = '/auth/v1/auth/reset-password';
 const REFRESH_TOKEN_KEY = 'technova.refreshToken';
 
 const CREDENTIALS = { username: 'trader01', password: 'Trader.Pass01' };
@@ -68,6 +70,36 @@ describe('AuthService', () => {
       expect(failed).toBeTrue();
       expect(service.isAuthenticated()).toBeFalse();
       expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBeNull();
+    });
+  });
+
+  describe('password reset', () => {
+    it('asks for a reset link with only the email', () => {
+      let done = false;
+      service.forgotPassword('john.doe@example.com').subscribe(() => (done = true));
+
+      const req = http.expectOne(FORGOT_URL);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ email: 'john.doe@example.com' });
+      req.flush(null, { status: 202, statusText: 'Accepted' });
+      expect(done).toBeTrue();
+    });
+
+    it('sends the token and the new password', () => {
+      service.resetPassword('reset-token', 'NewPassword123').subscribe();
+
+      const req = http.expectOne(RESET_URL);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ token: 'reset-token', newPassword: 'NewPassword123' });
+      req.flush(null, { status: 204, statusText: 'No Content' });
+    });
+
+    it('passes a rejected reset link on to the caller', () => {
+      let status = 0;
+      service.resetPassword('bad-token', 'NewPassword123').subscribe({ error: err => (status = err.status) });
+
+      http.expectOne(RESET_URL).flush({ message: 'Invalid or expired reset link' }, { status: 400, statusText: 'Bad Request' });
+      expect(status).toBe(400);
     });
   });
 
