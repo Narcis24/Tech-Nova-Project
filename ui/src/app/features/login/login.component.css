@@ -1,0 +1,240 @@
+/* Colours taken from the design PDF */
+:host {
+  --ink: #13182b;
+  --muted: #6b7083;
+  --field: #f3f4f8;
+  --link: #2d44e0;
+  --tagline: #b9bed1;
+  --danger: #b42318;
+  --danger-bg: #fdecea;
+}
+
+.page {
+  display: flex;
+  min-height: 100vh;
+  padding: 20px;
+  gap: 20px;
+  box-sizing: border-box;
+}
+
+/* Left: dark panel with the wordmark */
+.brand {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink);
+  border-radius: 24px;
+  color: #fff;
+  text-align: center;
+  padding: 24px;
+}
+
+.wordmark {
+  margin: 0;
+  font-size: clamp(48px, 8vw, 117px);
+  font-weight: 700;
+  font-stretch: 125%;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.tagline {
+  margin: 16px 0 0;
+  font-size: 22px;
+  color: var(--tagline);
+}
+
+/* Right: the form, centred */
+.content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form {
+  width: 100%;
+  max-width: 377px;
+  display: flex;
+  flex-direction: column;
+}
+
+h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.subtitle {
+  margin: 4px 0 24px;
+  font-size: 16px;
+  color: var(--muted);
+}
+
+label {
+  margin: 16px 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+input {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--field);
+  font: inherit;
+  color: var(--ink);
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--link);
+}
+
+.password {
+  position: relative;
+}
+
+.password input {
+  padding-right: 64px;
+}
+
+.show {
+  position: absolute;
+  top: 0;
+  right: 4px;
+  height: 48px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--link);
+  cursor: pointer;
+}
+
+.field-error {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--danger);
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 8px 12px 16px;
+  border-radius: 10px;
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.alert-close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.submit {
+  margin-top: 40px;
+  height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--ink);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.submit:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.signup {
+  margin: 20px 0 0;
+  text-align: center;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.signup a {
+  color: var(--link);
+  font-weight: 600;
+}
+
+/* Tablet: narrower panel */
+@media (max-width: 1024px) {
+  .brand {
+    flex: 0.7;
+  }
+}
+
+/* Phone: panel becomes a band above the form */
+@media (max-width: 720px) {
+  .page {
+    flex-direction: column;
+    padding: 12px;
+  }
+
+  .brand {
+    flex: none;
+    padding: 40px 16px;
+  }
+
+  .tagline {
+    font-size: 16px;
+  }
+
+  .content {
+    padding: 16px 8px 32px;
+  }
+}
