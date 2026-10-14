@@ -15,7 +15,10 @@
     "moduleResolution": "bundler",
     "importHelpers": true,
     "target": "ES2022",
-    "module": "ES2022"
+    "module": "ES2022",
+    // Lets the editor see describe/it/expect in spec files; TypeScript 6 no longer loads @types/* automatically.
+    // The app build is unaffected: tsconfig.app.json sets "types": [].
+    "types": ["jasmine"]
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
