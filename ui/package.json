@@ -7,7 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "generate:api": "openapi-typescript ../contracts/auth-api.yml -o src/app/api/auth-api.ts"
+    "generate:api": "openapi-typescript ../contracts/auth-api.yml -o src/app/api/auth-api.ts",
+    "fetch:trading-spec": "node scripts/fetch-trading-spec.mjs"
   },
   "private": true,
   "dependencies": {
