@@ -83,3 +83,21 @@
 .sign-out:hover {
   color: var(--color-ink);
 }
+
+.account-cluster {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--color-track);
+  font-size: 15px;
+  font-weight: 600;
+}

@@ -7,12 +7,19 @@
     }
   </nav>
 
-  @if (username(); as name) {
-    <div class="user">
+  <div class="account-cluster">
+    @if (accountId(); as id) {
+      <span class="account">{{ id }}</span>
+    }
+
+    @if (username(); as name) {
+      <div class="user">
         <span class="avatar" aria-hidden="true">{{ initial() }}</span>
         <span class="username">{{ name }}</span>
         <button type="button" class="sign-out" (click)="signOut()">Sign out</button>
-    </div>
-  }
+      </div>
+    }
+  </div>
+
 
 </header>

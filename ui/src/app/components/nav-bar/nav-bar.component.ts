@@ -2,6 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
+import { AccountService } from '../../services/account.service';
 
 interface NavTab {
   label: string;
@@ -26,6 +27,7 @@ export class NavBarComponent {
   readonly username = this.auth.username;
   readonly initial = computed(() => this.username()?.charAt(0).toUpperCase() ?? '');
 
+  readonly accountId = inject(AccountService).currentAccountId;
   signOut(): void {
     this.auth.logout();
   }
