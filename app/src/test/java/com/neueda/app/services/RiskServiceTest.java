@@ -117,7 +117,8 @@ class RiskServiceTest {
         doThrow(new InsufficientFundsException("Account ACC001 has $0.00 but order requires $5082.00"))
             .when(orderValidator).validate(any());
 
-        assertThrows(InsufficientFundsException.class, () -> riskService.check(buy("AAPL", 20, null)));
+        PlaceOrderRequest request = buy("AAPL", 20, null);
+        assertThrows(InsufficientFundsException.class, () -> riskService.check(request));
         verifyNoInteractions(portfolioService);
     }
 

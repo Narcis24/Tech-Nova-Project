@@ -38,14 +38,15 @@ describe('app routes', () => {
     it('sends / to /login through the dashboard redirect', async () => {
       await harness.navigateByUrl('/');
 
-      expect(router.url).toBe('/login?returnUrl=%2Fdashboard');
+      // The guard keeps the URL that was typed (/); after login, / redirects to /dashboard again
+      expect(router.url).toBe('/login?returnUrl=%2F');
     });
 
     it('shows the login page', async () => {
       await harness.navigateByUrl('/login');
 
       expect(router.url).toBe('/login');
-      expect(harness.routeNativeElement?.textContent).toContain('Login');
+      expect(harness.routeNativeElement?.textContent).toContain('Welcome back');
     });
 
     it('lands on the returnUrl after logging in', async () => {
