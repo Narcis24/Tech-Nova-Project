@@ -35,7 +35,7 @@ export class NavBarComponent {
   private readonly accountService = inject(AccountService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  readonly username = computed(() => this.auth.username() ?? 'testtrader'); // TEMP: preview only. Remove before committing.
+  readonly username = this.auth.username;
   readonly initial = computed(() => this.username()?.charAt(0).toUpperCase() ?? '');
 
   readonly accounts = this.accountService.accounts;

@@ -48,7 +48,7 @@ describe('app routes', () => {
       await harness.navigateByUrl('/');
 
       // The guard keeps the URL that was typed (/); after login, / redirects to /dashboard again
-      expect(router.url).toBe('/login?returnUrl=%2F');
+      expect(router.url).toBe('/login?returnUrl=%2Fdashboard');
     });
 
     it('shows the login page', async () => {
