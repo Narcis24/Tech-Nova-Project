@@ -95,6 +95,11 @@ services:
       DB_USER: ${POSTGRES_USER:-technova}
       DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      # Password reset emails go to Mailpit, which catches them (inbox at http://localhost:8025)
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      MAIL_FROM: TechNova <no-reply@technova.local>
+      RESET_URL: ${RESET_URL:-http://localhost:4200/reset-password}
 
     ports:
       - "${AUTH_PORT:-8082}:8082"
@@ -156,6 +161,16 @@ services:
 
     ports:
       - ${KAFKA_UI_PORT:-8085}:8080
+    restart: unless-stopped
+    networks:
+      - tech-nova-network
+
+  # Fake mail server for development: catches every email the services send and shows it
+  # in a web inbox instead of delivering it
+  mailpit:
+    image: axllent/mailpit:v1.31.3
+    ports:
+      - ${MAILPIT_PORT:-8025}:8025
     restart: unless-stopped
     networks:
       - tech-nova-network
