@@ -174,6 +174,14 @@ describe('LoginComponent', () => {
     expect(page.querySelector('[role=alert]')?.textContent).toContain("We can't reach TechNova right now");
   });
 
+  it('links to the forgot password page', async () => {
+    await open();
+
+    const link = page.querySelector<HTMLAnchorElement>('a.forgot')!;
+    expect(link.textContent).toContain('Forgot password?');
+    expect(link.getAttribute('href')).toBe('/forgot-password');
+  });
+
   it('shows and hides the password', async () => {
     await open();
     const password = page.querySelector<HTMLInputElement>('#password')!;
