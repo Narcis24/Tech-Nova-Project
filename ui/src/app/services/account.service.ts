@@ -2,16 +2,16 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, map, of, tap } from 'rxjs';
 
+import type { components } from '../api/trading-api';
 import { API_BASE } from '../core/api-urls';
 
-/** One account, as returned by GET /api/v1/accounts (see app/openapi.yml). */
-export interface Account {
-  accountId: string;
-  holderName: string;
-  cashBalance: number;
-  accountStatus: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
-  lastUpdated: string;
-}
+// Generated from contracts/trading-api.json; run `npm run generate:api` after the contract changes
+/**
+ * One account, as returned by GET /api/v1/accounts. The backend always fills every field, but the spec doesn't say
+ * so yet (no `@Schema(requiredMode = REQUIRED)`), so the generated fields are all optional; `Required` restores that.
+ */
+export type Account = Required<components['schemas']['AccountResponse']>;
+type OpenAccountRequest = components['schemas']['OpenAccountRequest'];
 
 /** The user's accounts, and which one the UI is showing. The first account is selected after loading. */
 @Injectable({
@@ -45,7 +45,8 @@ export class AccountService {
 
   /** Opens a new, empty account for the logged-in user, adds it to the list and selects it. Errors reach the caller. */
   openAccount(holderName: string): Observable<Account> {
-    return this.http.post<Account>(`${API_BASE}/v1/accounts`, { holderName }).pipe(
+    const body: OpenAccountRequest = { holderName };
+    return this.http.post<Account>(`${API_BASE}/v1/accounts`, body).pipe(
       tap(account => {
         this.accounts.update(accounts => [...accounts, account]);
         this.currentAccountId.set(account.accountId);
