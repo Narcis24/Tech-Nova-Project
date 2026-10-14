@@ -10,7 +10,7 @@ import com.neueda.app.models.RiskLimit;
 import com.neueda.app.repositories.AccountRiskLimitRepository;
 import com.neueda.app.repositories.RiskLimitRepository;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
@@ -33,7 +33,7 @@ public class RiskLimitService {
 
     /** Every rule for the account, switched-off ones included. */
     public List<RiskLimitResponse> getLimits(String accountId) {
-        Map<RiskRule, AccountRiskLimit> own = new HashMap<>();
+        Map<RiskRule, AccountRiskLimit> own = new EnumMap<>(RiskRule.class);
         for (AccountRiskLimit limit : accountRiskLimitRepository.findByAccountId(accountId)) {
             own.put(limit.getRule(), limit);
         }

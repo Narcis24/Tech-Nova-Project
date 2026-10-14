@@ -17,6 +17,7 @@ import com.neueda.app.services.OrderValidator.ValidatedOrder;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,35 +62,21 @@ public class RiskService {
 
         // Step 1: Current portfolio. An unpriced holding is valued at 0 and would skew every percentage.
         PortfolioSnapshotResponse snapshot = portfolioService.getPortfolioSnapshot(order.getAccountId());
-        for (PositionResponse position : snapshot.getPositions()) {
-            if (position.getCurrentPrice().signum() == 0) {
-                return warnings;
-            }
+        if (hasUnpricedHolding(snapshot)) {
+            return warnings;
         }
 
         // Step 2: Price of the order. Cash moves at the price paid (the limit price for a limit order);
         // the new shares are valued at market, like every other holding.
         BigDecimal pricePaid = valid.price();
-        BigDecimal marketPrice;
-        if (valid.orderType() == OrderType.MARKET) {
-            marketPrice = pricePaid;
-        } else {
-            try {
-                marketPrice = priceService.getCurrentPrice(symbol);
-            } catch (PriceNotFoundException e) {
-                return warnings;
-            }
+        BigDecimal marketPrice = marketPrice(valid, symbol);
+        if (marketPrice == null) {
+            return warnings;
         }
         BigDecimal quantity = BigDecimal.valueOf(order.getQuantity());
 
         // Step 3: Portfolio after the order
-        Map<String, BigDecimal> valueBySymbol = new HashMap<>();
-        for (PositionResponse position : snapshot.getPositions()) {
-            valueBySymbol.put(position.getSymbol(), position.getMarketValue());
-        }
-        BigDecimal orderValue = marketPrice.multiply(quantity);
-        valueBySymbol.put(symbol, valueBySymbol.getOrDefault(symbol, BigDecimal.ZERO).add(orderValue));
-
+        Map<String, BigDecimal> valueBySymbol = valuesAfterOrder(snapshot, symbol, marketPrice.multiply(quantity));
         BigDecimal cash = snapshot.getCashBalance().subtract(pricePaid.multiply(quantity));
         BigDecimal total = cash;
         for (BigDecimal value : valueBySymbol.values()) {
@@ -104,30 +91,66 @@ public class RiskService {
 
         evaluate(warnings, limits.get(RiskRule.SINGLE_INSTRUMENT), RiskRule.SINGLE_INSTRUMENT,
             symbol, valueBySymbol.get(symbol), total, symbol);
+        checkAssetClass(warnings, limits.get(RiskRule.ASSET_CLASS), symbol, valueBySymbol, total);
+        evaluate(warnings, limits.get(RiskRule.CASH_FLOOR), RiskRule.CASH_FLOOR, "CASH", cash, total, "cash");
+        return warnings;
+    }
 
+    private boolean hasUnpricedHolding(PortfolioSnapshotResponse snapshot) {
+        for (PositionResponse position : snapshot.getPositions()) {
+            if (position.getCurrentPrice().signum() == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The order's price for a market order, today's price otherwise; null when there is none. */
+    private BigDecimal marketPrice(ValidatedOrder valid, String symbol) {
+        if (valid.orderType() == OrderType.MARKET) {
+            return valid.price();
+        }
+        try {
+            return priceService.getCurrentPrice(symbol);
+        } catch (PriceNotFoundException e) {
+            return null;
+        }
+    }
+
+    /** Market value per symbol once the order's shares are added. */
+    private Map<String, BigDecimal> valuesAfterOrder(PortfolioSnapshotResponse snapshot, String symbol, BigDecimal orderValue) {
+        Map<String, BigDecimal> valueBySymbol = new HashMap<>();
+        for (PositionResponse position : snapshot.getPositions()) {
+            valueBySymbol.put(position.getSymbol(), position.getMarketValue());
+        }
+        valueBySymbol.put(symbol, valueBySymbol.getOrDefault(symbol, BigDecimal.ZERO).add(orderValue));
+        return valueBySymbol;
+    }
+
+    /** Warns when the asset class of the ordered symbol reaches its limit. */
+    private void checkAssetClass(List<RiskWarning> warnings, EffectiveLimit limit, String symbol,
+                                 Map<String, BigDecimal> valueBySymbol, BigDecimal total) {
         Map<String, AssetClass> assetClassBySymbol = new HashMap<>();
         for (Instrument instrument : instrumentRepository.findAllById(valueBySymbol.keySet())) {
             assetClassBySymbol.put(instrument.getSymbol(), instrument.getAssetClass());
         }
         AssetClass orderClass = assetClassBySymbol.get(symbol);
-        if (orderClass != null) {
-            BigDecimal classValue = BigDecimal.ZERO;
-            for (Map.Entry<String, BigDecimal> entry : valueBySymbol.entrySet()) {
-                if (assetClassBySymbol.get(entry.getKey()) == orderClass) {
-                    classValue = classValue.add(entry.getValue());
-                }
-            }
-            evaluate(warnings, limits.get(RiskRule.ASSET_CLASS), RiskRule.ASSET_CLASS,
-                orderClass.name(), classValue, total, orderClass.name() + " holdings");
+        if (orderClass == null) {
+            return;
         }
-
-        evaluate(warnings, limits.get(RiskRule.CASH_FLOOR), RiskRule.CASH_FLOOR, "CASH", cash, total, "cash");
-        return warnings;
+        BigDecimal classValue = BigDecimal.ZERO;
+        for (Map.Entry<String, BigDecimal> entry : valueBySymbol.entrySet()) {
+            if (assetClassBySymbol.get(entry.getKey()) == orderClass) {
+                classValue = classValue.add(entry.getValue());
+            }
+        }
+        evaluate(warnings, limit, RiskRule.ASSET_CLASS, orderClass.name(), classValue, total,
+            orderClass.name() + " holdings");
     }
 
     /** The limits in force for the account. Rules the account switched off are left out. */
     private Map<RiskRule, EffectiveLimit> effectiveLimits(String accountId) {
-        Map<RiskRule, EffectiveLimit> limits = new HashMap<>();
+        Map<RiskRule, EffectiveLimit> limits = new EnumMap<>(RiskRule.class);
         for (RiskLimitResponse limit : riskLimitService.getLimits(accountId)) {
             if (limit.isEnabled()) {
                 boolean below = "BELOW".equals(limit.getDirection());
