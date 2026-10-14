@@ -8,7 +8,6 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "generate:api": "openapi-typescript ../contracts/auth-api.yml -o src/app/api/auth-api.ts",
     "fetch:trading-spec": "node scripts/fetch-spec.mjs http://localhost:8081/api/v3/api-docs ../contracts/trading-api.json",
     "fetch:auth-spec": "node scripts/fetch-spec.mjs http://localhost:8082/auth/docs-json ../contracts/auth-api.json",
     "fetch:specs": "npm run fetch:trading-spec && npm run fetch:auth-spec",
@@ -41,7 +40,6 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "openapi-typescript": "^7.13.0",
     "typescript": "~5.7.2"
   }
 }
