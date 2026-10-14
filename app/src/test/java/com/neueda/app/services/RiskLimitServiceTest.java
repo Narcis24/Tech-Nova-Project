@@ -113,8 +113,9 @@ class RiskLimitServiceTest {
     void updateFailsWhenRuleHasNoDefault() {
         when(riskLimitRepository.findById(RiskRule.ASSET_CLASS)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> riskLimitService.updateLimit(ACCOUNT, RiskRule.ASSET_CLASS,
-            new UpdateRiskLimitRequest(new BigDecimal("50"), true)));
+        UpdateRiskLimitRequest request = new UpdateRiskLimitRequest(new BigDecimal("50"), true);
+        assertThrows(IllegalStateException.class,
+            () -> riskLimitService.updateLimit(ACCOUNT, RiskRule.ASSET_CLASS, request));
         verify(accountRiskLimitRepository, never()).save(any());
     }
 

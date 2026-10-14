@@ -92,8 +92,9 @@ class OrderValidatorTest {
     @Test
     void buyCostingMoreThanCashIsRefused() {
         // 11 x 100.00 = 1,100.00
+        PlaceOrderRequest request = order("BUY", "MARKET", 11, null);
         InsufficientFundsException ex = assertThrows(InsufficientFundsException.class,
-            () -> orderValidator.validate(order("BUY", "MARKET", 11, null)));
+            () -> orderValidator.validate(request));
 
         assertEquals("Account ACC001 has $1000.00 but order requires $1100.00", ex.getMessage());
     }
@@ -102,16 +103,18 @@ class OrderValidatorTest {
     void buyFromEmptyAccountIsRefused() {
         givenAccount("0.00", AccountStatus.ACTIVE);
 
+        PlaceOrderRequest request = order("BUY", "MARKET", 1, null);
         assertThrows(InsufficientFundsException.class,
-            () -> orderValidator.validate(order("BUY", "MARKET", 1, null)));
+            () -> orderValidator.validate(request));
     }
 
     @Test
     void sellOfMoreThanHeldIsRefused() {
         givenShares(3);
 
+        PlaceOrderRequest request = order("SELL", "MARKET", 5, null);
         InsufficientHoldingsException ex = assertThrows(InsufficientHoldingsException.class,
-            () -> orderValidator.validate(order("SELL", "MARKET", 5, null)));
+            () -> orderValidator.validate(request));
 
         assertEquals("Cannot sell 5 shares of AAPL. Only 3 held.", ex.getMessage());
     }
@@ -120,16 +123,18 @@ class OrderValidatorTest {
     void unknownAccountIsRefused() {
         when(accountRepository.findById(ACCOUNT)).thenReturn(Optional.empty());
 
+        PlaceOrderRequest request = order("BUY", "MARKET", 1, null);
         assertThrows(AccountNotFoundException.class,
-            () -> orderValidator.validate(order("BUY", "MARKET", 1, null)));
+            () -> orderValidator.validate(request));
     }
 
     @Test
     void inactiveAccountIsRefused() {
         givenAccount("1000.00", AccountStatus.INACTIVE);
 
+        PlaceOrderRequest request = order("BUY", "MARKET", 1, null);
         assertThrows(AccountNotActiveException.class,
-            () -> orderValidator.validate(order("BUY", "MARKET", 1, null)));
+            () -> orderValidator.validate(request));
     }
 
     @Test
@@ -137,21 +142,24 @@ class OrderValidatorTest {
         when(instrumentRepository.findBySymbol("AAPL"))
             .thenReturn(Optional.of(new Instrument("AAPL", "Apple Inc.", AssetClass.EQUITY, "USD", false)));
 
+        PlaceOrderRequest request = order("BUY", "MARKET", 1, null);
         assertThrows(TradingException.class,
-            () -> orderValidator.validate(order("BUY", "MARKET", 1, null)));
+            () -> orderValidator.validate(request));
     }
 
     @Test
     void limitWithoutPriceIsRefusedBeforeAnyLookup() {
+        PlaceOrderRequest request = order("BUY", "LIMIT", 1, null);
         assertThrows(IllegalArgumentException.class,
-            () -> orderValidator.validate(order("BUY", "LIMIT", 1, null)));
+            () -> orderValidator.validate(request));
         verifyNoInteractions(accountRepository, instrumentRepository, priceService);
     }
 
     @Test
     void marketWithPriceIsRefusedBeforeAnyLookup() {
+        PlaceOrderRequest request = order("BUY", "MARKET", 1, "100.00");
         assertThrows(IllegalArgumentException.class,
-            () -> orderValidator.checkInputs(order("BUY", "MARKET", 1, "100.00")));
+            () -> orderValidator.checkInputs(request));
         verifyNoInteractions(accountRepository, instrumentRepository, priceService);
     }
 
