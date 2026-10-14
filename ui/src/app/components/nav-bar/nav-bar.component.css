@@ -69,21 +69,6 @@
   font-weight: 600;
 }
 
-.sign-out {
-  margin-left: 6px;
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  color: var(--color-muted);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.sign-out:hover {
-  color: var(--color-ink);
-}
-
 .account-cluster {
   margin-left: auto;
   display: flex;
@@ -168,10 +153,97 @@
   font-weight: 600;
 }
 
-/* Phone-only avatar menu, hidden on desktop */
-.menu-button,
+/* Sign out sits beside the avatar on desktop; on phones it moves into the avatar menu */
+.sign-out {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  color: var(--color-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sign-out:hover {
+  color: var(--color-ink);
+}
+
+/* The avatar and name are one button that opens the user menu, on every screen size */
+.menu-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 12px 2px 2px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.menu-button:hover,
+.menu-button[aria-expanded='true'] {
+  background: var(--color-track);
+}
+
 .menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  min-width: 180px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: 0 8px 24px rgba(20, 24, 43, 0.12), 0 0 0 1px rgba(20, 24, 43, 0.06);
+}
+
+.menu-name,
+.menu-account {
+  margin: 0;
+  font-size: 15px;
+}
+
+.menu-name {
+  font-weight: 600;
+}
+
+.menu-account {
+  color: var(--color-muted);
+}
+
+.menu-change-account {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  min-height: 44px;
+  border-radius: 10px;
+  color: var(--color-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.menu-change-account:hover {
+  background: var(--color-track);
+  color: var(--color-ink);
+}
+
+.menu-sign-out {
   display: none;
+  min-height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--color-track);
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-ink);
+  cursor: pointer;
 }
 
 @media (max-width: 767.98px) {
@@ -198,77 +270,18 @@
     font-size: 14px;
   }
 
-  /* The right side shrinks to just the avatar button; > keeps the avatar inside the button visible */
+  /* The right side shrinks to just the avatar */
   .account-switcher,
-  .user > .avatar,
-  .username,
+  .menu-button .username,
   .sign-out {
     display: none;
   }
 
-  .menu-button {
-    display: flex;
-    padding: 0;
-    border: 0;
-    background: none;
-    border-radius: 50%;
-    cursor: pointer;
-  }
-
-  .menu {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    z-index: 20;
-    min-width: 180px;
-    padding: 12px;
-    border-radius: 12px;
-    background: var(--color-surface);
-    box-shadow: 0 8px 24px rgba(20, 24, 43, 0.12), 0 0 0 1px rgba(20, 24, 43, 0.06);
-  }
-
-  .menu-name,
-  .menu-account {
-    margin: 0;
-    font-size: 15px;
-  }
-
-  .menu-name {
-    font-weight: 600;
-  }
-
-  .menu-account {
-    color: var(--color-muted);
-  }
-
-  .menu-change-account {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 8px;
-    min-height: 44px;
-    border-radius: 10px;
-    color: var(--color-ink);
-    font-weight: 600;
-    text-decoration: none;
-  }
-
-  .menu-change-account:hover {
-    background: var(--color-track);
-    color: var(--color-ink);
-  }
-
   .menu-sign-out {
-    min-height: 44px;
-    border: 0;
-    border-radius: 10px;
-    background: var(--color-track);
-    font: inherit;
-    font-weight: 600;
-    color: var(--color-ink);
-    cursor: pointer;
+    display: block;
+  }
+
+  .menu-button {
+    padding: 0;
   }
 }

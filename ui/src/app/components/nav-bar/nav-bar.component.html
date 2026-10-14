@@ -45,10 +45,6 @@
 
     @if (username(); as name) {
       <div class="user">
-        <span class="avatar" aria-hidden="true">{{ initial() }}</span>
-        <span class="username">{{ name }}</span>
-        <button type="button" class="sign-out" (click)="signOut()">Sign out</button>
-
         <button
           type="button"
           class="menu-button"
@@ -58,7 +54,9 @@
           (click)="toggleMenu()"
         >
           <span class="avatar" aria-hidden="true">{{ initial() }}</span>
+          <span class="username">{{ name }}</span>
         </button>
+        <button type="button" class="sign-out" (click)="signOut()">Sign out</button>
 
         @if (menuOpen()) {
           <div class="menu" id="user-menu">

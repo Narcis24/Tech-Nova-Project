@@ -156,9 +156,18 @@ describe('NavBarComponent', () => {
     });
   });
 
-  it('signs out when Sign out is clicked', () => {
-    const button: HTMLButtonElement = fixture.nativeElement.querySelector('.sign-out');
-    button.click();
+  it('signs out from the link beside the avatar', () => {
+    fixture.nativeElement.querySelector('.sign-out').click();
+
+    expect(auth.logout).toHaveBeenCalled();
+  });
+
+  // The menu's Sign out is only shown on phones (by CSS); the click still works whatever the screen size
+  it('signs out from the avatar menu', () => {
+    fixture.nativeElement.querySelector('.menu-button').click();
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector('.menu-sign-out').click();
 
     expect(auth.logout).toHaveBeenCalled();
   });

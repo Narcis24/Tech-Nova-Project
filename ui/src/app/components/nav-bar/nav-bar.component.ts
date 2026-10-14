@@ -11,7 +11,8 @@ interface NavTab {
 
 /**
  * Top bar of the signed-in app. The account pill opens a list for switching accounts.
- * Under 768px the tabs move to a bottom bar, and the account list and Sign out move into the avatar menu.
+ * The avatar opens a menu with the account; Sign out sits beside it. Under 768px the tabs move to a bottom bar
+ * and the header shrinks to just the avatar, whose menu then holds Sign out too.
  */
 @Component({
   selector: 'app-nav-bar',
@@ -42,7 +43,7 @@ export class NavBarComponent {
 
   /** The account list under the pill */
   readonly accountMenuOpen = signal(false);
-  /** The phone-only avatar menu */
+  /** The menu under the avatar */
   readonly menuOpen = signal(false);
 
   toggleAccountMenu(): void {
