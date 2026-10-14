@@ -42,4 +42,14 @@ export class AccountService {
   selectAccount(accountId: string): void {
     this.currentAccountId.set(accountId);
   }
+
+  /** Opens a new, empty account for the logged-in user, adds it to the list and selects it. Errors reach the caller. */
+  openAccount(holderName: string): Observable<Account> {
+    return this.http.post<Account>(`${API_BASE}/v1/accounts`, { holderName }).pipe(
+      tap(account => {
+        this.accounts.update(accounts => [...accounts, account]);
+        this.currentAccountId.set(account.accountId);
+      }),
+    );
+  }
 }

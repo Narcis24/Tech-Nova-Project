@@ -60,4 +60,42 @@ describe('AccountService', () => {
     expect(failed).toBeFalse();
     expect(done).toBeTrue();
   });
+
+  describe('openAccount', () => {
+    beforeEach(() => {
+      service.accounts.set([{ accountId: 'ACC001' }] as Account[]);
+      service.selectAccount('ACC001');
+    });
+
+    it('posts the holder name', () => {
+      service.openAccount('Test Trader').subscribe();
+
+      const req = http.expectOne(ACCOUNTS_URL);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ holderName: 'Test Trader' });
+      req.flush({ accountId: 'ACC-NEW' } as Account);
+    });
+
+    it('adds the new account and selects it', () => {
+      let opened: Account | undefined;
+      service.openAccount('Test Trader').subscribe(account => (opened = account));
+
+      http.expectOne(ACCOUNTS_URL).flush({ accountId: 'ACC-NEW' } as Account);
+
+      expect(opened?.accountId).toBe('ACC-NEW');
+      expect(service.accounts().map(account => account.accountId)).toEqual(['ACC001', 'ACC-NEW']);
+      expect(service.currentAccountId()).toBe('ACC-NEW');
+    });
+
+    it('passes failures to the caller and changes nothing', () => {
+      let failed = false;
+      service.openAccount('Test Trader').subscribe({ error: () => (failed = true) });
+
+      http.expectOne(ACCOUNTS_URL).flush({ message: 'Holder name is required' }, { status: 400, statusText: 'Bad Request' });
+
+      expect(failed).toBeTrue();
+      expect(service.accounts().map(account => account.accountId)).toEqual(['ACC001']);
+      expect(service.currentAccountId()).toBe('ACC001');
+    });
+  });
 });
