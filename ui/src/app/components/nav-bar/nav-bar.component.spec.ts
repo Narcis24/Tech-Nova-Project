@@ -2,6 +2,7 @@ import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
+import { Account, AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
 import { NavBarComponent } from './nav-bar.component';
 
@@ -9,15 +10,23 @@ import { NavBarComponent } from './nav-bar.component';
 @Component({ template: '' })
 class BlankComponent {}
 
+const ACCOUNTS = [{ accountId: 'ACC001' }, { accountId: 'ACC002' }, { accountId: 'ACC003' }] as Account[];
+
 describe('NavBarComponent', () => {
   const username = signal<string | null>('trader01');
+  const accounts = signal<Account[]>(ACCOUNTS);
+  const currentAccountId = signal<string | null>('ACC001');
   let auth: { username: typeof username; logout: jasmine.Spy };
+  let accountService: { accounts: typeof accounts; currentAccountId: typeof currentAccountId; selectAccount: jasmine.Spy };
   let component: NavBarComponent;
   let fixture: ComponentFixture<NavBarComponent>;
 
   beforeEach(async () => {
     username.set('trader01');
+    accounts.set(ACCOUNTS);
+    currentAccountId.set('ACC001');
     auth = { username, logout: jasmine.createSpy('logout') };
+    accountService = { accounts, currentAccountId, selectAccount: jasmine.createSpy('selectAccount') };
 
     await TestBed.configureTestingModule({
       imports: [NavBarComponent],
@@ -28,6 +37,7 @@ describe('NavBarComponent', () => {
           { path: 'orders', component: BlankComponent },
         ]),
         { provide: AuthService, useValue: auth },
+        { provide: AccountService, useValue: accountService },
       ],
     })
     .compileComponents();
@@ -61,6 +71,89 @@ describe('NavBarComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.user')).toBeNull();
+  });
+
+  it('shows the current account', () => {
+    const pill: HTMLElement = fixture.nativeElement.querySelector('.account');
+
+    expect(pill.textContent).toContain('ACC001');
+  });
+
+  it('hides the account pill when no account is selected', () => {
+    currentAccountId.set(null);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.account')).toBeNull();
+  });
+
+  describe('account switcher', () => {
+    function pill(): HTMLButtonElement {
+      return fixture.nativeElement.querySelector('.account');
+    }
+
+    function options(): HTMLButtonElement[] {
+      return Array.from(fixture.nativeElement.querySelectorAll('.account-menu .account-option'));
+    }
+
+    it('starts closed', () => {
+      expect(pill().getAttribute('aria-expanded')).toBe('false');
+      expect(options().length).toBe(0);
+    });
+
+    it('lists every account when the pill is clicked, marking the current one', () => {
+      pill().click();
+      fixture.detectChanges();
+
+      expect(pill().getAttribute('aria-expanded')).toBe('true');
+      expect(options().map(option => option.textContent?.trim())).toEqual(['ACC001', 'ACC002', 'ACC003']);
+      expect(options()[0].getAttribute('aria-current')).toBe('true');
+      expect(options()[1].hasAttribute('aria-current')).toBeFalse();
+    });
+
+    it('selects the clicked account and closes the list', () => {
+      pill().click();
+      fixture.detectChanges();
+
+      options()[1].click();
+      fixture.detectChanges();
+
+      expect(accountService.selectAccount).toHaveBeenCalledWith('ACC002');
+      expect(options().length).toBe(0);
+    });
+
+    it('closes on Escape', () => {
+      pill().click();
+      fixture.detectChanges();
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      fixture.detectChanges();
+
+      expect(options().length).toBe(0);
+    });
+  });
+
+  describe('phone menu', () => {
+    function openMenu(): void {
+      fixture.nativeElement.querySelector('.menu-button').click();
+      fixture.detectChanges();
+    }
+
+    it('shows the current account and a link to change it', () => {
+      openMenu();
+
+      expect(fixture.nativeElement.querySelector('.menu-account').textContent).toContain('ACC001');
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.menu-change-account');
+      expect(link.getAttribute('href')).toBe('/accounts');
+    });
+
+    it('closes when Change account is clicked', () => {
+      openMenu();
+
+      fixture.nativeElement.querySelector('.menu-change-account').click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.menu')).toBeNull();
+    });
   });
 
   it('signs out when Sign out is clicked', () => {

@@ -1,4 +1,3 @@
-/* Design tokens from the TechNova Trading UI mockup. Named by role, so a colour change is a one-line edit. */
 :root {
   --color-ink: #14182b;
   --color-muted: #6b7186;
@@ -7,6 +6,7 @@
   --color-card: #f5f6f8;
   --color-accent: #3044e0;
   --color-accent-hover: #1f2da8;
+  --color-accent-soft: #e3e7fc;
   --color-loss: #b54c0b;
 }
 

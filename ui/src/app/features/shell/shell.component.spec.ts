@@ -1,7 +1,9 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 
+import { AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
 import { ShellComponent } from './shell.component';
 
@@ -12,8 +14,15 @@ describe('ShellComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ShellComponent],
-      // The nav bar inside the shell reads the username; a fake avoids needing HttpClient
-      providers: [provideRouter([]), { provide: AuthService, useValue: { username: signal(null) } }],
+      // The shell loads the accounts and its nav bar reads the username; fakes avoid needing HttpClient
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: { username: signal(null) } },
+        {
+          provide: AccountService,
+          useValue: { accounts: signal([]), currentAccountId: signal(null), loadAccounts: () => of(undefined) },
+        },
+      ],
     })
     .compileComponents();
 

@@ -1,0 +1,21 @@
+<h1>Accounts</h1>
+
+@if (accounts().length) {
+  <ul class="accounts" aria-label="Your accounts">
+    @for (account of accounts(); track account.accountId) {
+      <li>
+        <button
+          type="button"
+          class="account"
+          [attr.aria-current]="account.accountId === currentAccountId() ? 'true' : null"
+          (click)="selectAccount(account.accountId)"
+        >
+          <span class="account-id">{{ account.accountId }}</span>
+          <span class="holder">{{ account.holderName }}</span>
+        </button>
+      </li>
+    }
+  </ul>
+} @else {
+  <p class="empty">You don't have any accounts yet.</p>
+}

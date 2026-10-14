@@ -13,27 +13,33 @@ export interface Account {
   lastUpdated: string;
 }
 
-/**
- * Tracks which of the user's accounts the UI is showing.
- * For now it is always the first account the API returns; switching accounts comes in a later story.
- */
+/** The user's accounts, and which one the UI is showing. The first account is selected after loading. */
 @Injectable({
   providedIn: 'root'
 })
 export class AccountService {
   private readonly http = inject(HttpClient);
 
+  readonly accounts = signal<Account[]>([]);
   readonly currentAccountId = signal<string | null>(null);
-  /** Loads the user's accounts and selects the first. Never errors: a failed load leaves no account selected. */
+
+  /** Loads the user's accounts and selects the first. Never errors: a failed load leaves no accounts. */
   loadAccounts(): Observable<void> {
     return this.http.get<Account[]>(`${API_BASE}/v1/accounts`).pipe(
-      tap(accounts => this.currentAccountId.set(accounts[0]?.accountId ?? null)),
+      tap(accounts => {
+        this.accounts.set(accounts);
+        this.currentAccountId.set(accounts[0]?.accountId ?? null);
+      }),
       map(() => undefined),
       catchError(() => {
+        this.accounts.set([]);
         this.currentAccountId.set(null);
         return of(undefined);
       }),
     );
   }
 
+  selectAccount(accountId: string): void {
+    this.currentAccountId.set(accountId);
+  }
 }

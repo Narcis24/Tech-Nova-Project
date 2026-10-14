@@ -4,3 +4,10 @@ main {
   box-sizing: border-box;
   padding: 32px 56px 88px;
 }
+
+/* Room at the bottom for the nav bar's fixed tab bar */
+@media (max-width: 767.98px) {
+  main {
+    padding: 16px 20px 96px;
+  }
+}

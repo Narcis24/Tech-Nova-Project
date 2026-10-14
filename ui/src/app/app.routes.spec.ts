@@ -2,21 +2,30 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { of } from 'rxjs';
 
 import { routes } from './app.routes';
 import { safeReturnUrl } from './core/return-url';
+import { AccountService } from './services/account.service';
 import { AuthService } from './services/auth.service';
 
-// Runs the real route table and guards, with only AuthService faked
+// Runs the real route table and guards, with only the services faked
 describe('app routes', () => {
   const isAuthenticated = signal(false);
+  // The shell loads the accounts and its nav bar shows the username
+  const auth = { isAuthenticated, username: signal(null) };
+  const accounts = { accounts: signal([]), currentAccountId: signal(null), loadAccounts: () => of(undefined) };
   let harness: RouterTestingHarness;
   let router: Router;
 
   beforeEach(async () => {
     isAuthenticated.set(false);
     TestBed.configureTestingModule({
-      providers: [provideRouter(routes), { provide: AuthService, useValue: { isAuthenticated } }],
+      providers: [
+        provideRouter(routes),
+        { provide: AuthService, useValue: auth },
+        { provide: AccountService, useValue: accounts },
+      ],
     });
     harness = await RouterTestingHarness.create();
     router = TestBed.inject(Router);
@@ -96,6 +105,13 @@ describe('app routes', () => {
 
       expect(router.url).toBe('/orders');
       expect(harness.routeNativeElement?.textContent).toContain('Orders');
+    });
+
+    it('shows the accounts page', async () => {
+      await harness.navigateByUrl('/accounts');
+
+      expect(router.url).toBe('/accounts');
+      expect(harness.routeNativeElement?.textContent).toContain('Accounts');
     });
 
     it('wraps the page in the shell', async () => {
