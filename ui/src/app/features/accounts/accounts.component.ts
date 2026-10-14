@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 
 import { AccountService } from '../../services/account.service';
 
@@ -12,6 +13,7 @@ import { AccountService } from '../../services/account.service';
 })
 export class AccountsComponent {
   private readonly accountService = inject(AccountService);
+  private readonly router = inject(Router);
 
   readonly accounts = this.accountService.accounts;
   readonly currentAccountId = this.accountService.currentAccountId;
@@ -50,6 +52,7 @@ export class AccountsComponent {
       next: () => {
         this.submitting.set(false);
         this.cancel();
+        void this.router.navigateByUrl('/dashboard');
       },
       error: () => {
         this.submitting.set(false);
@@ -60,5 +63,6 @@ export class AccountsComponent {
 
   selectAccount(accountId: string): void {
     this.accountService.selectAccount(accountId);
+    void this.router.navigateByUrl('/dashboard');
   }
 }
