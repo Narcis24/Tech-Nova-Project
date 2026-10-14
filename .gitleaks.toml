@@ -8,3 +8,9 @@ useDefault = true
 description = "Dummy JWT secret used only in the auth service's tests"
 regexTarget = "match"
 regexes = ['''0123456789abcdef0123456789abcdef''']
+
+[[allowlists]]
+description = "SonarQube token passed to curl as a variable in sonar/quality-gate.sh, not a literal"
+targetRules = ["curl-auth-user"]
+regexTarget = "line"
+regexes = ['''-u "\$SONAR_TOKEN:"''']
