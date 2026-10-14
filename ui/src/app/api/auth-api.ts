@@ -80,6 +80,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/forgot-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Email a password reset link
+         * @description Always 202 for a well-formed email, whether or not an account uses it. If one does, a
+         *     reset link is emailed to it; an earlier unused link for that user stops working.
+         */
+        post: operations["forgotPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set a new password with the token from a reset link */
+        post: operations["resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -95,6 +133,26 @@ export interface components {
              * @example Something123@
              */
             password: string;
+        };
+        RegisterRequest: {
+            username: components["schemas"]["Credentials"]["username"];
+            password: components["schemas"]["Credentials"]["password"];
+            email: components["schemas"]["ForgotPasswordRequest"]["email"];
+        };
+        ForgotPasswordRequest: {
+            /**
+             * Format: email
+             * @example john.doe@example.com
+             */
+            email: string;
+        };
+        ResetPasswordRequest: {
+            /**
+             * @description The token from the reset link
+             * @example Zq8-1rEXAMPLEp4XcT0mWb7LqN2yHs5aVd3uKf9
+             */
+            token: string;
+            newPassword: components["schemas"]["Credentials"]["password"];
         };
         RegisterResponse: {
             /** @example john_doe1 */
@@ -196,7 +254,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Credentials"];
+                "application/json": components["schemas"]["RegisterRequest"];
             };
         };
         responses: {
@@ -210,7 +268,7 @@ export interface operations {
                 };
             };
             400: components["responses"]["ValidationFailed"];
-            /** @description Username already registered */
+            /** @description Username or email already registered; the body does not say which */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -220,7 +278,7 @@ export interface operations {
                      * @example {
                      *       "statusCode": 409,
                      *       "error": "Conflict",
-                     *       "message": "Username already registered"
+                     *       "message": "Username or email already registered"
                      *     }
                      */
                     "application/json": components["schemas"]["Error"];
@@ -316,6 +374,67 @@ export interface operations {
                 content?: never;
             };
             400: components["responses"]["ValidationFailed"];
+        };
+    };
+    forgotPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgotPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Request accepted (a link was sent only if an account uses the email) */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ValidationFailed"];
+        };
+    };
+    resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Password changed; every refresh token of the user is revoked */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Reset token unknown, expired or already used, or the new password breaks a field rule */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "statusCode": 400,
+                     *       "error": "Bad Request",
+                     *       "message": "Invalid or expired reset link"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
 }
