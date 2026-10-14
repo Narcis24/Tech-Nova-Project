@@ -1,1 +1,33 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  --color-ink: #14182b;
+  --color-muted: #6b7186;
+  --color-surface: #ffffff;
+  --color-track: #f3f4f7;
+  --color-card: #f5f6f8;
+  --color-accent: #3044e0;
+  --color-accent-hover: #1f2da8;
+  --color-accent-soft: #e3e7fc;
+  --color-loss: #b54c0b;
+}
+
+body {
+  margin: 0;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: 'Archivo', system-ui, sans-serif;
+  /* Equal-width digits, so prices line up in columns */
+  font-variant-numeric: tabular-nums;
+}
+
+a {
+  color: var(--color-accent);
+}
+
+a:hover {
+  color: var(--color-accent-hover);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

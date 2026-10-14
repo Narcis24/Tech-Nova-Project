@@ -13,6 +13,8 @@ const REFRESH_TOKEN_KEY = 'technova.refreshToken';
 const CREDENTIALS = { username: 'trader01', password: 'Trader.Pass01' };
 const TOKENS = { accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 };
 const NEW_TOKENS = { accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 };
+// Only the payload is real: username() reads it without checking the signature
+const JWT = `header.${btoa(JSON.stringify({ sub: 'trader01' }))}.signature`;
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -139,6 +141,25 @@ describe('AuthService', () => {
       http.expectOne(LOGOUT_URL).flush(null, { status: 500, statusText: 'Server Error' });
       expect(service.isAuthenticated()).toBeFalse();
       expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBeNull();
+    });
+  });
+
+  describe('username', () => {
+    it('reads sub from the access token', () => {
+      service.login(CREDENTIALS).subscribe();
+      http.expectOne(LOGIN_URL).flush({ ...TOKENS, accessToken: JWT });
+
+      expect(service.username()).toBe('trader01');
+    });
+
+    it('is null when logged out', () => {
+      expect(service.username()).toBeNull();
+    });
+
+    it('is null when the token is not a JWT', () => {
+      logIn();
+
+      expect(service.username()).toBeNull();
     });
   });
 
