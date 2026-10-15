@@ -1,5 +1,5 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
-import { Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
+import { afterNextRender, Component, computed, DestroyRef, effect, ElementRef, inject, Injector, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -13,6 +13,8 @@ import { AccountService } from '../../services/account.service';
   templateUrl: './trade.component.html', styleUrl: './trade.component.css',
 })
 export class TradeComponent {
+  private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
   private readonly destroyRef = inject(DestroyRef);
   private readonly accounts = inject(AccountService);
   private readonly api = inject(OrderControllerService);
@@ -108,6 +110,10 @@ export class TradeComponent {
     this.quote.set(quote);
     if (quote.symbol === this.chartSymbol() && this.isLimit() && this.form.controls.price.value == null && quote.price != null) this.form.controls.price.setValue(Math.round(quote.price * 100) / 100);
   }
+  toggleInstrumentPicker(): void {
+    this.pickerOpen.update(open => !open);
+    if (this.pickerOpen()) afterNextRender(() => this.element.nativeElement.querySelector<HTMLInputElement>('#trade-symbol')?.focus(), { injector: this.injector });
+  }
   normalizeSymbol(): void { this.form.controls.symbol.setValue(this.form.controls.symbol.value.trim().toUpperCase()); }
   setSide(side: 'BUY' | 'SELL'): void { this.form.controls.side.setValue(side); }
   setOrderType(type: 'MARKET' | 'LIMIT'): void {
@@ -127,6 +133,7 @@ export class TradeComponent {
     const fingerprint = JSON.stringify(request);
     if (fingerprint !== this.lastFingerprint) { this.lastFingerprint = fingerprint; this.key = crypto.randomUUID(); }
     this.review.set({ ...request, idempotencyKey: this.key });
+    afterNextRender(() => this.element.nativeElement.querySelector<HTMLElement>('.review h3')?.focus(), { injector: this.injector });
   }
   confirm(): void {
     const order = this.review();

@@ -43,6 +43,13 @@ describe('PriceChartComponent', () => {
     component.move(new KeyboardEvent('keydown',{key:'Home'}));expect(component.selected()?.date).toBe('2026-03-30');
     component.move(new KeyboardEvent('keydown',{key:'ArrowRight'}));expect(component.selected()?.date).toBe('2026-03-31');
   }));
+  it('keeps the axis badge aligned with the price being inspected', fakeAsync(() => {
+    const fixture=setup();api.getPriceHistory.and.returnValue(of([{date:'2026-03-30',close:20},{date:'2026-03-31',close:10}]));tick(250);fixture.detectChanges();
+    const badge:HTMLElement=fixture.nativeElement.querySelector('.current-price');
+    expect(badge.textContent).toContain('10.00');expect(parseFloat(badge.style.top)).toBeGreaterThan(75);
+    fixture.componentInstance.move(new KeyboardEvent('keydown',{key:'Home'}));fixture.detectChanges();
+    expect(badge.textContent).toContain('20.00');expect(parseFloat(badge.style.top)).toBeLessThan(25);
+  }));
   it('shows empty history instead of inventing a chart', fakeAsync(() => {
     const fixture=setup();api.getPriceHistory.and.returnValue(of([]));tick(250);fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('No stored price history');expect(fixture.nativeElement.querySelector('svg[role="img"]')).toBeNull();

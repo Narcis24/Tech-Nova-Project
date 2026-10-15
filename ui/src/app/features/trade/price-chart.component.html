@@ -20,7 +20,7 @@
           <path class="grid" d="M0 16H640 M0 75H640 M0 133H640 M0 192H640" /><polyline class="line" [attr.points]="line()" />
           @if (selected(); as point) { @if (hovered() != null) { <line class="cursor" [attr.x1]="x(selectedIndex())" [attr.x2]="x(selectedIndex())" y1="8" y2="208" /> }<circle class="halo" [attr.cx]="x(selectedIndex())" [attr.cy]="y(point.close!)" r="9" /><circle [attr.cx]="x(selectedIndex())" [attr.cy]="y(point.close!)" r="4" /> }
         </svg>
-        <div class="prices" aria-hidden="true"><span class="current-price">{{ latest()!.close | number:'1.2-2' }}</span><span>{{ (minimum() + (maximum() - minimum()) / 2) | number:'1.2-2' }}</span><span>{{ minimum() | number:'1.2-2' }}</span></div>
+        <div class="prices" aria-hidden="true"><span class="axis-top">{{ maximum() | number:'1.2-2' }}</span><span class="axis-mid">{{ (minimum() + (maximum() - minimum()) / 2) | number:'1.2-2' }}</span><span class="axis-bottom">{{ minimum() | number:'1.2-2' }}</span><span class="current-price" [style.top.%]="y(selected()?.close ?? latest()!.close!) / 220 * 100">{{ selected()?.close | number:'1.2-2' }}</span></div>
       </div>
       <div class="dates"><span>{{ sessionDate(visible().at(0)?.date) | date:'d MMM':'UTC' }}</span><span>{{ sessionDate(visible().at(Math.floor(visible().length / 2))?.date) | date:'d MMM':'UTC' }}</span><span>{{ sessionDate(latest()!.date) | date:'d MMM':'UTC' }}</span></div>
       <p class="range-change">{{ (rangeChange() ?? 0) > 0 ? '+' : '' }}{{ (rangeChange() | percent:'1.2-2') ?? '—' }} <span class="muted">over displayed sessions · {{ visible().length }} observations</span></p>
