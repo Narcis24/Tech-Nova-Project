@@ -17,6 +17,7 @@ export class PriceChartComponent {
   readonly Math = Math;
   readonly symbol = input('');
   readonly instrumentName = input('');
+  readonly pendingSymbol = input(false);
   readonly changeInstrument = output<void>();
   readonly quoteChange = output<TradeQuote>();
   readonly expanded = signal(false);
@@ -25,6 +26,7 @@ export class PriceChartComponent {
   readonly normalizedSymbol = computed(() => this.symbol().trim().toUpperCase());
   private readonly request = computed(() => ({ symbol: this.normalizedSymbol(), revision: this.revision() }));
   readonly state = signal<HistoryState>({ symbol: '', loading: false, error: false, points: [] });
+  readonly loading = computed(() => this.pendingSymbol() || this.state().loading || this.state().symbol !== this.normalizedSymbol());
   readonly range = signal<1 | 3 | 12>(1);
   readonly ranges = [{ months: 1, label: '1M' }, { months: 3, label: '3M' }, { months: 12, label: '1Y' }] as const;
   readonly hovered = signal<number | null>(null);

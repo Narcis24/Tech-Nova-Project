@@ -26,6 +26,17 @@ describe('TradeComponent', () => {
     expect(api.placeOrder).not.toHaveBeenCalled(); component.prepare(); expect(api.placeOrder).not.toHaveBeenCalled();
     component.confirm(); expect(api.placeOrder.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({accountId:'ACC001',symbol:'AAPL',side:'SELL',orderType:'MARKET',quantity:25}));
   });
+  it('keeps the price ruler space reserved before the quote arrives', () => {
+    const fixture=setup(), root:HTMLElement=fixture.nativeElement;
+    const ruler=root.querySelector<HTMLElement>('.price-ruler')!;
+    expect(ruler.style.visibility).toBe('hidden');
+    expect(ruler.getAttribute('aria-hidden')).toBe('true');
+    fixture.componentInstance.onQuote({symbol:'AAPL',price:100,previousClose:99,date:'2026-10-14'});
+    fixture.detectChanges();
+    expect(root.querySelector('.price-ruler')).toBe(ruler);
+    expect(ruler.style.visibility).toBe('');
+    expect(ruler.getAttribute('aria-hidden')).toBeNull();
+  });
   it('blocks invalid quantities and missing limit prices', () => {
     const component=setup().componentInstance;
     component.form.controls.quantity.setValue(1.5); component.prepare(); expect(component.review()).toBeNull();

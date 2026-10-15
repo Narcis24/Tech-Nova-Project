@@ -24,6 +24,7 @@ export class TradeComponent {
   readonly accountId = this.accounts.currentAccountId;
   readonly instruments = signal<InstrumentResponse[]>([]);
   readonly instrumentError = signal(false);
+  readonly instrumentsLoading = signal(true);
   readonly pickerOpen = signal(false);
   readonly submitting = signal(false);
   readonly error = signal<string | null>(null);
@@ -98,11 +99,13 @@ export class TradeComponent {
   }
   loadInstruments(): void {
     this.instrumentError.set(false);
+    this.instrumentsLoading.set(true);
     this.instrumentsApi.getInstruments(true).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: assets => {
         this.instruments.set(assets);
+        this.instrumentsLoading.set(false);
         if (!this.form.controls.symbol.value && assets.length) this.form.controls.symbol.setValue(assets.find(i => i.symbol === 'AAPL')?.symbol ?? assets[0].symbol ?? '');
-      }, error: () => this.instrumentError.set(true),
+      }, error: () => { this.instrumentsLoading.set(false); this.instrumentError.set(true); },
     });
   }
   refreshContext(): void { this.contextRevision.update(v => v + 1); }

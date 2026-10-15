@@ -23,6 +23,20 @@ describe('PriceChartComponent', () => {
     component.chooseRange(3);expect(component.visible().length).toBe(4);component.chooseRange(12);expect(component.visible().length).toBe(5);
     expect(api.getPriceHistory).toHaveBeenCalledTimes(1);
   }));
+  it('reserves the quote and chart layout while price history is pending', fakeAsync(() => {
+    const fixture=setup(), pending=new Subject<PriceHistoryPoint[]>();
+    api.getPriceHistory.and.returnValue(pending);tick(250);fixture.detectChanges();
+    const root:HTMLElement=fixture.nativeElement;
+    const quote=root.querySelector('.quote');
+    expect(root.querySelector('.chart-loading')).not.toBeNull();
+    expect(root.querySelector('.history .plot svg')).not.toBeNull();
+    expect(root.querySelector('.quote-facts')).not.toBeNull();
+    expect(root.querySelector('svg[role="img"]')).toBeNull();
+    pending.next(points);pending.complete();fixture.detectChanges();
+    expect(root.querySelector('.quote')).toBe(quote);
+    expect(root.querySelector('.chart-loading')).toBeNull();
+    expect(root.querySelector('svg[role="img"]')).not.toBeNull();
+  }));
   it('cancels an old symbol request and never labels its data as the new instrument', fakeAsync(() => {
     const fixture=setup();const first=new Subject<PriceHistoryPoint[]>();api.getPriceHistory.and.returnValue(first);
     tick(250);fixture.componentRef.setInput('symbol','MSFT');fixture.detectChanges();
@@ -53,6 +67,14 @@ describe('PriceChartComponent', () => {
   it('shows empty history instead of inventing a chart', fakeAsync(() => {
     const fixture=setup();api.getPriceHistory.and.returnValue(of([]));tick(250);fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('No stored price history');expect(fixture.nativeElement.querySelector('svg[role="img"]')).toBeNull();
+  }));
+  it('keeps the loading layout while the default instrument is being resolved', fakeAsync(() => {
+    const fixture=setup('');fixture.componentRef.setInput('pendingSymbol',true);fixture.detectChanges();tick(500);fixture.detectChanges();
+    expect(api.getPriceHistory).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('.chart-loading')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Choose an instrument to see');
+    fixture.componentRef.setInput('pendingSymbol',false);fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Choose an instrument to see');
   }));
   it('waits for an instrument before requesting history', fakeAsync(() => {
     const fixture=setup('');tick(500);fixture.detectChanges();expect(api.getPriceHistory).not.toHaveBeenCalled();expect(fixture.nativeElement.textContent).toContain('Choose an instrument');

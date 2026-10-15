@@ -3,11 +3,11 @@
 } @else {
   <div class="market-column">
     <a class="mobile-back" routerLink="/dashboard" aria-label="Back to portfolio"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12.5 4-6 6 6 6" /></svg></a>
-    @if (pickerOpen() || !chartSymbol()) {
+    @if (pickerOpen() || (!chartSymbol() && !instrumentsLoading())) {
       <div class="instrument-picker"><label for="trade-symbol">Choose an instrument</label><div><input id="trade-symbol" [formControl]="form.controls.symbol" list="trade-instruments" placeholder="Search symbol, e.g. AAPL" autocapitalize="characters" (input)="normalizeSymbol()" /><button type="button" (click)="pickerOpen.set(false)" [disabled]="!chartSymbol()">Done</button></div><datalist id="trade-instruments">@for (asset of instruments(); track asset.symbol) { <option [value]="asset.symbol">{{ asset.name }}</option> }</datalist></div>
     }
     @if (instrumentError()) { <p class="data-note" role="status">Couldn't load the instrument list. <button type="button" class="text-button" (click)="loadInstruments()">Retry</button></p> }
-    <app-price-chart [symbol]="chartSymbol()" [instrumentName]="instrumentName()" (changeInstrument)="toggleInstrumentPicker()" (quoteChange)="onQuote($event)" />
+    <app-price-chart [pendingSymbol]="instrumentsLoading() && !chartSymbol()" [symbol]="chartSymbol()" [instrumentName]="instrumentName()" (changeInstrument)="toggleInstrumentPicker()" (quoteChange)="onQuote($event)" />
   </div>
   <form class="order-ticket" [class.sell]="!isBuy()" [formGroup]="form" (ngSubmit)="prepare()" aria-labelledby="new-order-heading">
     <fieldset [disabled]="submitting()">
@@ -19,13 +19,11 @@
         @if (isLimit()) { <div class="limit-field"><label for="trade-price">{{ isBuy() ? 'Most you will pay' : 'Least you will accept' }}<span class="desktop-only"> per share</span></label><div class="limit-control"><button type="button" aria-label="Lower limit by 0.05" (click)="stepLimit(-1)">−</button><input id="trade-price" type="number" inputmode="decimal" min="0.01" step="0.01" formControlName="price" /><button type="button" aria-label="Raise limit by 0.05" (click)="stepLimit(1)">+</button></div></div> }
       </div>
       <div class="execution-card">
-        @if (referencePrice() != null) {
-          <div class="price-ruler" role="img" [attr.aria-label]="'Last stored close ' + referencePrice() + (isLimit() ? ', your limit ' + values()?.price : ', market execution price is not available')"><div class="ruler-track"></div><div class="reference-tick"></div><span class="reference-label">Close {{ referencePrice() | number:'1.2-2' }}</span><div class="order-marker" [style.left.%]="marker()"><span>{{ isLimit() ? 'Your limit' : 'Reference' }} {{ price() | number:'1.2-2' }}</span><i></i></div></div>
-        }
+        <div class="price-ruler" [style.visibility]="referencePrice() == null ? 'hidden' : null" [attr.aria-hidden]="referencePrice() == null ? true : null" role="img" [attr.aria-label]="'Last stored close ' + referencePrice() + (isLimit() ? ', your limit ' + values()?.price : ', market execution price is not available')"><div class="ruler-track"></div><div class="reference-tick"></div><span class="reference-label">Close {{ referencePrice() | number:'1.2-2' }}</span><div class="order-marker" [style.left.%]="marker()"><span>{{ isLimit() ? 'Your limit' : 'Reference' }} {{ price() | number:'1.2-2' }}</span><i></i></div></div>
         <p>@if (isLimit()) { <strong>Your limit applies.</strong> {{ isBuy() ? 'Buys at your price or lower.' : 'Sells at your price or higher.' }} Execution may wait. } @else { <strong>Market order.</strong> Executes at the available price. The stored close is an estimate, not a live quote. }</p>
       </div>
       <dl class="order-totals"><div class="unit-price"><dt>{{ isLimit() ? 'Your limit' : 'Last close (reference)' }}</dt><dd>{{ (price() | number:'1.2-2') ?? '—' }}</dd></div><div class="total-row"><dt>{{ isBuy() ? (isLimit() ? 'Cost at your limit' : 'Estimated cost') : 'Estimated proceeds' }}</dt><dd>{{ (total() | currency:'USD') ?? '—' }}</dd></div><div><dt>{{ isLimit() ? 'Cash after this order' : 'Estimated cash after' }}</dt><dd>{{ (cashAfter() | currency:'USD') ?? '—' }}</dd></div></dl>
-      @if (context().loading) { <p class="data-note" role="status">Loading account balance and holdings…</p> }
+      @if (context().loading) { <p class="loading-context" role="status">Loading account balance and holdings…</p> }
       @if (context().error) { <p class="data-note" role="status">Account estimates unavailable. <button type="button" class="text-button" (click)="refreshContext()">Retry</button></p> }
       @if (form.touched && form.invalid) { <p class="field-error" role="alert">Enter a valid symbol and a whole-share quantity between 1 and 100,000.</p> }
       @if (validationIssue()) { <p class="field-error" role="alert">{{ validationIssue() }}</p> }

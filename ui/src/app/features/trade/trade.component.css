@@ -21,3 +21,5 @@
   .execution-card{padding:12px;gap:8px}.price-ruler{height:72px}
   .ruler-track{top:38px}.reference-tick{top:30px}.reference-label{top:54px}
 }
+
+.loading-context{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
