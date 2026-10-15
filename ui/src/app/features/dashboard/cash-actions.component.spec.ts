@@ -20,6 +20,28 @@ describe('CashActionsComponent', () => {
     fixture.componentRef.setInput('accountId', 'ACC001'); fixture.componentRef.setInput('cashBalance', 100);
     fixture.detectChanges(); return fixture;
   }
+  it('opens a modal, focuses the amount and restores focus when cancelled', () => {
+    const fixture=setup(), root:HTMLElement=fixture.nativeElement;
+    const trigger=root.querySelector<HTMLButtonElement>('.actions button')!;
+    trigger.focus();trigger.click();fixture.detectChanges();
+    const dialog=root.querySelector<HTMLDialogElement>('dialog')!;
+    expect(dialog.open).toBeTrue();
+    expect(document.activeElement).toBe(root.querySelector('#cash-amount'));
+    fixture.componentInstance.cancel(new Event('cancel',{cancelable:true}));fixture.detectChanges();
+    expect(dialog.open).toBeFalse();
+    expect(document.activeElement).toBe(trigger);
+    expect(api.deposit).not.toHaveBeenCalled();
+  });
+  it('keeps the modal open if Escape is pressed during a transfer', () => {
+    const fixture=setup(), component=fixture.componentInstance;
+    const pending=new Subject<AccountResponse>();api.deposit.and.returnValue(pending);
+    component.open('deposit');fixture.detectChanges();component.amount.setValue(10);component.submit();
+    const event=new Event('cancel',{cancelable:true});component.cancel(event);
+    expect(event.defaultPrevented).toBeTrue();expect(component.mode()).toBe('deposit');
+    pending.next({...account,cashBalance:110});pending.complete();fixture.detectChanges();
+    expect(rootDialogOpen()).toBeFalse();
+    function rootDialogOpen(){return fixture.nativeElement.querySelector('dialog').open;}
+  });
   it('blocks invalid amounts and withdrawals beyond available cash', () => {
     const component = setup().componentInstance;
     component.open('deposit');

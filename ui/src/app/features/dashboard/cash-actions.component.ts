@@ -1,5 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, effect, inject, input, output, signal } from '@angular/core';
+import { afterNextRender, Component, effect, ElementRef, inject, Injector, input, output, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subject, exhaustMap, catchError, of, tap } from 'rxjs';
@@ -13,6 +13,8 @@ import { AccountService } from '../../services/account.service';
   styleUrl: './cash-actions.component.css',
 })
 export class CashActionsComponent {
+  private readonly dialog = viewChild<ElementRef<HTMLDialogElement>>('cashDialog');
+  private readonly injector = inject(Injector);
   private readonly api = inject(AccountControllerService);
   private readonly accounts = inject(AccountService);
   readonly accountId = input.required<string>();
@@ -50,8 +52,17 @@ export class CashActionsComponent {
 
   open(mode: 'deposit' | 'withdraw'): void {
     this.close(); this.success.set(null); this.mode.set(mode);
+    afterNextRender(() => {
+      const dialog = this.dialog()?.nativeElement;
+      if (this.mode() && dialog?.isConnected && !dialog.open) {
+        dialog.showModal();
+        dialog.querySelector<HTMLInputElement>('input')?.focus();
+      }
+    }, { injector: this.injector });
   }
-  close(): void { this.mode.set(null); this.amount.reset(); this.error.set(null); }
+  close(): void { this.dialog()?.nativeElement.close(); this.mode.set(null); this.amount.reset(); this.error.set(null); }
+
+  cancel(event: Event): void { event.preventDefault(); if (!this.submitting()) this.close(); }
 
   submit(): void {
     const mode = this.mode();
