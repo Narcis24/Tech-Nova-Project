@@ -8,9 +8,12 @@ index.ts
 model/credentials.ts
 model/errorResponse.ts
 model/errorResponseMessage.ts
+model/forgotPasswordRequest.ts
 model/models.ts
 model/refreshTokenRequest.ts
+model/registerRequest.ts
 model/registerResponse.ts
+model/resetPasswordRequest.ts
 model/tokenResponse.ts
 param.ts
 provide-api.ts
