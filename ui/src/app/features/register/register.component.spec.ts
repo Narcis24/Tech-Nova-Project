@@ -58,6 +58,7 @@ describe('RegisterComponent', () => {
     await open();
 
     expect(page.querySelector<HTMLInputElement>('#username')!.required).toBeTrue();
+    expect(page.querySelector<HTMLInputElement>('#email')!.required).toBeTrue();
     expect(page.querySelector<HTMLInputElement>('#password')!.required).toBeTrue();
     expect(page.querySelector<HTMLInputElement>('#confirmPassword')!.required).toBeTrue();
   });
@@ -68,6 +69,7 @@ describe('RegisterComponent', () => {
     submit();
 
     expect(text()).toContain('Username is required');
+    expect(text()).toContain('Email is required');
     expect(text()).toContain('Password is required');
     expect(auth.register).not.toHaveBeenCalled();
   });
@@ -75,6 +77,7 @@ describe('RegisterComponent', () => {
   it('rejects usernames that do not meet the format rules', async () => {
     await open();
     type('username', 'bad-name');
+    type('email', 'trader@example.com');
     type('password', 'Trader.Pass01');
     type('confirmPassword', 'Trader.Pass01');
 
@@ -84,9 +87,23 @@ describe('RegisterComponent', () => {
     expect(auth.register).not.toHaveBeenCalled();
   });
 
+  it('rejects an invalid email without calling the server', async () => {
+    await open();
+    type('username', 'trader_01');
+    type('email', 'trader@example');
+    type('password', 'Trader.Pass01');
+    type('confirmPassword', 'Trader.Pass01');
+
+    submit();
+
+    expect(text()).toContain('Enter a valid email address');
+    expect(auth.register).not.toHaveBeenCalled();
+  });
+
   it('rejects passwords that do not meet the strength rules', async () => {
     await open();
     type('username', 'trader_01');
+    type('email', 'trader@example.com');
     type('password', 'weakpassword');
     type('confirmPassword', 'weakpassword');
 
@@ -99,6 +116,7 @@ describe('RegisterComponent', () => {
   it('rejects mismatched passwords without calling the server', async () => {
     await open();
     type('username', 'trader_01');
+    type('email', 'trader@example.com');
     type('password', 'Trader.Pass01');
     type('confirmPassword', 'Trader.Pass02');
 
@@ -111,6 +129,7 @@ describe('RegisterComponent', () => {
   it('sends valid credentials and disables the button while registering', async () => {
     await open();
     type('username', 'trader_01');
+    type('email', 'trader@example.com');
     type('password', 'Trader.Pass01');
     type('confirmPassword', 'Trader.Pass01');
 
@@ -118,6 +137,7 @@ describe('RegisterComponent', () => {
 
     expect(auth.register).toHaveBeenCalledOnceWith({
       username: 'trader_01',
+      email: 'trader@example.com',
       password: 'Trader.Pass01',
     });
     expect(page.querySelector<HTMLButtonElement>('button[type=submit]')!.disabled).toBeTrue();
@@ -127,6 +147,7 @@ describe('RegisterComponent', () => {
   it('shows success and navigates to login after registration', fakeAsync(async () => {
     await open();
     type('username', 'trader_01');
+    type('email', 'trader@example.com');
     type('password', 'Trader.Pass01');
     type('confirmPassword', 'Trader.Pass01');
     submit();
@@ -140,9 +161,10 @@ describe('RegisterComponent', () => {
     expect(TestBed.inject(Router).url).toBe('/login');
   }));
 
-  it('shows a specific message when the username already exists', async () => {
+  it('shows a specific message when the username or email is taken', async () => {
     await open();
     type('username', 'trader_01');
+    type('email', 'trader@example.com');
     type('password', 'Trader.Pass01');
     type('confirmPassword', 'Trader.Pass01');
     submit();
@@ -150,13 +172,14 @@ describe('RegisterComponent', () => {
     registerResult.error(new HttpErrorResponse({ status: 409 }));
     harness.detectChanges();
 
-    expect(page.querySelector('[role=alert]')?.textContent).toContain('Username already exists');
+    expect(page.querySelector('[role=alert]')?.textContent).toContain('Username or email already registered');
     expect(page.querySelector<HTMLButtonElement>('button[type=submit]')!.disabled).toBeFalse();
   });
 
   it('shows the server error message for other registration failures', async () => {
     await open();
     type('username', 'trader_01');
+    type('email', 'trader@example.com');
     type('password', 'Trader.Pass01');
     type('confirmPassword', 'Trader.Pass01');
     submit();

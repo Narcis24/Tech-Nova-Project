@@ -2,13 +2,9 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, catchError, finalize, map, of, shareReplay, tap, throwError } from 'rxjs';
 
-import { AuthApi, Credentials, RegisterResponse, TokenResponse } from '../generated/auth-api-client';
+import { AuthApi, Credentials, RegisterRequest, RegisterResponse, TokenResponse } from '../generated/auth-api-client';
 
-// Generated from contracts/auth-api.yml; run `npm run generate:api` after the contract changes
-export type LoginRequest = components['schemas']['Credentials'];
-type ForgotPasswordRequest = components['schemas']['ForgotPasswordRequest'];
-type ResetPasswordRequest = components['schemas']['ResetPasswordRequest'];
-type TokenResponse = components['schemas']['TokenResponse'];
+export type LoginRequest = Credentials;
 
 const REFRESH_TOKEN_KEY = 'technova.refreshToken';
 
@@ -36,8 +32,18 @@ export class AuthService {
     );
   }
 
-  register(credentials: LoginRequest): Observable<RegisterResponse> {
-    return this.authApi.register(credentials);
+  register(request: RegisterRequest): Observable<RegisterResponse> {
+    return this.authApi.register(request);
+  }
+
+  /** Always succeeds for a well-formed email, whether or not an account uses it (202). */
+  forgotPassword(email: string): Observable<void> {
+    return this.authApi.forgotPassword({ email });
+  }
+
+  /** Sets a new password with the token from a reset link. Fails with 400 if the link is invalid or expired. */
+  resetPassword(token: string, newPassword: string): Observable<void> {
+    return this.authApi.resetPassword({ token, newPassword });
   }
 
   getAccessToken(): string | null {

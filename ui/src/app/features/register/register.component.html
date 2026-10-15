@@ -28,6 +28,15 @@
         </p>
       }
 
+      <label for="email">Email</label>
+      <input id="email" type="email" formControlName="email" autocomplete="email" required />
+      @if (showFieldErrors('email') && f['email'].errors) {
+        <p class="field-error">
+          @if (f['email'].errors['required']) { Email is required }
+          @if (f['email'].errors['pattern'] || f['email'].errors['maxlength']) { Enter a valid email address }
+        </p>
+      }
+
       <label for="password">Password</label>
       <div class="password">
         <input id="password" [type]="showPassword ? 'text' : 'password'" formControlName="password" autocomplete="new-password" required />
