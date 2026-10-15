@@ -4,8 +4,9 @@
   box-sizing: border-box;
   padding: 20px 56px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 40px;
+  gap: 16px 40px;
 }
 
 .brand {
