@@ -9,6 +9,7 @@ describe('DashboardStore', () => {
   const currentAccountId = signal<string | null>('ACC001');
   let portfolioApi: jasmine.SpyObj<{ getPortfolioMetrics: (id: string) => Observable<PortfolioMetricsResponse> }>;
   let accountApi: jasmine.SpyObj<{ getAccountOrders: (id: string) => Observable<OrderResponse[]> }>;
+  let instrumentsApi: jasmine.SpyObj<{ getInstruments: () => Observable<{ symbol?: string }[]> }>;
   let store: DashboardStore;
 
   beforeEach(() => {
@@ -17,12 +18,14 @@ describe('DashboardStore', () => {
     accountApi = jasmine.createSpyObj('AccountControllerService', ['getAccountOrders']);
     portfolioApi.getPortfolioMetrics.and.returnValue(of({ totalPortfolioValue: 120, totalUnrealizedPnL: 10, positions: [{ quantity: 2, averageCost: 50, marketValue: 110 }] }));
     accountApi.getAccountOrders.and.returnValue(of([]));
+    instrumentsApi = jasmine.createSpyObj('InstrumentControllerService', ['getInstruments']);
+    instrumentsApi.getInstruments.and.returnValue(of([]));
     TestBed.configureTestingModule({ providers: [DashboardStore,
       { provide: DashboardControllerService, useValue: { getBalanceHistory: () => of({}), getMarketOverview: () => of([]) } },
       { provide: AccountService, useValue: { currentAccountId } },
       { provide: PortfolioControllerService, useValue: portfolioApi },
       { provide: AccountControllerService, useValue: accountApi },
-      { provide: InstrumentControllerService, useValue: { getInstruments: () => of([]) } },
+      { provide: InstrumentControllerService, useValue: instrumentsApi },
     ] });
     store = TestBed.inject(DashboardStore);
   });
@@ -93,4 +96,13 @@ describe('DashboardStore', () => {
     currentAccountId.set(null); TestBed.flushEffects();
     expect(portfolioApi.getPortfolioMetrics).not.toHaveBeenCalled();
   });
+
+  it('loads the static instrument list once, then keeps it across refreshes', fakeAsync(() => {
+    spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+    instrumentsApi.getInstruments.and.returnValue(of([{ symbol: 'SPY' }]));
+    TestBed.flushEffects(); tick(30000); store.refresh(); TestBed.flushEffects();
+    expect(portfolioApi.getPortfolioMetrics.calls.count()).toBeGreaterThan(1);
+    expect(instrumentsApi.getInstruments).toHaveBeenCalledTimes(1);
+    expect(store.instruments().has('SPY')).toBeTrue();
+  }));
 });

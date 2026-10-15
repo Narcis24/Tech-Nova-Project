@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +20,21 @@ public class MarketOverviewService {
         this.prices = prices; this.instruments = instruments;
     }
 
-    public List<MarketAssetResponse> overview() {
+    /** Daily closes change at most once a minute; share one result across polling tabs and users. */
+    private static final long CACHE_TTL_NANOS = TimeUnit.SECONDS.toNanos(15);
+    private List<MarketAssetResponse> cached;
+    private long cachedAt;
+
+    public synchronized List<MarketAssetResponse> overview() {
+        long now = System.nanoTime();
+        if (cached == null || now - cachedAt >= CACHE_TTL_NANOS) {
+            cached = load();
+            cachedAt = now;
+        }
+        return cached;
+    }
+
+    private List<MarketAssetResponse> load() {
         var bySymbol = prices.findRecentPrices().stream().collect(Collectors.groupingBy(Price::getSymbol));
         return instruments.findAll().stream().filter(i -> bySymbol.containsKey(i.getSymbol()))
             .sorted(Comparator.comparing(i -> i.getSymbol()))

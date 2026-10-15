@@ -13,7 +13,7 @@
   <div class="feedback" aria-live="polite">@if (error()) { <p class="error" role="alert">{{ error() }}</p> }</div>
   <div class="actions">
     @if (result()) {
-      <a [routerLink]="['/orders', result()!.orderId]">View order details</a><button type="button" class="secondary" (click)="close()">Done</button>
+      @if (result()!.orderId) { <a [routerLink]="['/orders', result()!.orderId]">View order details</a> }<button type="button" class="secondary" (click)="close()">Done</button>
     } @else {
       <button type="button" (click)="confirmOrder.emit()" [disabled]="submitting()">{{ submitting() ? 'Submitting…' : 'Confirm order' }}</button>
       <button type="button" class="secondary" (click)="close()" [disabled]="submitting()">Edit order</button>

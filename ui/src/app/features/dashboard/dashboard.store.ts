@@ -55,10 +55,11 @@ export class DashboardStore {
               orders: optional(this.accountApi.getAccountOrders(accountId), []),
               history: optional(this.dashboardApi.getBalanceHistory(accountId), null),
               market: optional(this.dashboardApi.getMarketOverview(), []),
-              instruments: optional(this.instrumentsApi.getInstruments(), []),
+              // The instrument list is effectively static, so fetch it once instead of on every poll.
+              instruments: this.instruments().size ? of({ value: null, failed: false }) : optional(this.instrumentsApi.getInstruments(), []),
             }).pipe(
               map(({ portfolio, orders, history, market, instruments }) => {
-                if (!instruments.failed) this.instruments.set(new Map(instruments.value.filter(i => i.symbol).map(i => [i.symbol!, i])));
+                if (!instruments.failed && instruments.value) this.instruments.set(new Map(instruments.value.filter(i => i.symbol).map(i => [i.symbol!, i])));
                 return { ...this.empty(accountId), portfolio, orders: orders.failed ? previous.orders : orders.value,
                   history: history.failed ? previous.history : history.value, market: market.failed ? previous.market : market.value,
                   ordersError: orders.failed, historyError: history.failed, marketError: market.failed, updatedAt: Date.now() };

@@ -5,6 +5,7 @@ import { of } from 'rxjs';
 import { AccountControllerService, DashboardControllerService, InstrumentControllerService, PortfolioControllerService } from '../../generated/trading-api-client';
 import { Account, AccountService } from '../../services/account.service';
 import { DashboardComponent } from './dashboard.component';
+import { DashboardStore } from './dashboard.store';
 
 describe('DashboardComponent', () => {
   const currentAccountId = signal<string | null>('ACC001');
@@ -30,5 +31,14 @@ describe('DashboardComponent', () => {
     currentAccountId.set(null); fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Manage accounts');
     expect(fixture.nativeElement.querySelector('table')).toBeNull();
+  });
+  it('links orders to their details, and shows an order without an id as plain text instead of throwing', () => {
+    const store = fixture.debugElement.injector.get(DashboardStore);
+    store.state.update(state => ({ ...state, orders: [{ orderId: 'ORD1', status: 'FILLED', symbol: 'SPY' }, { status: 'PENDING', symbol: 'QQQ' }] }));
+    expect(() => fixture.detectChanges()).not.toThrow();
+    const links = fixture.nativeElement.querySelectorAll('.orders a.order-status');
+    expect(links.length).toBe(1);
+    expect(links[0].getAttribute('href')).toBe('/orders/ORD1');
+    expect(fixture.nativeElement.querySelector('.orders span.order-status').textContent).toContain('Pending');
   });
 });

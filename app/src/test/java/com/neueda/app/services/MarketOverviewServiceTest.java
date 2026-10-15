@@ -47,4 +47,13 @@ class MarketOverviewServiceTest {
         assertEquals(BigDecimal.TEN, result.getFirst().change());
         assertNotNull(result.getLast().changePercent());
     }
+    @Test void reusesTheOverviewBetweenCallsWithinTheCacheWindow() {
+        var prices = mock(PriceRepository.class);
+        var instruments = mock(InstrumentRepository.class);
+        when(instruments.findAll()).thenReturn(List.of(new Instrument("SPY", "S&P 500", AssetClass.ETF, "USD", true)));
+        when(prices.findRecentPrices()).thenReturn(List.of(new Price("SPY", LocalDate.now(), BigDecimal.TEN)));
+        var service = new MarketOverviewService(prices, instruments);
+        assertSame(service.overview(), service.overview());
+        verify(prices, times(1)).findRecentPrices();
+    }
 }
