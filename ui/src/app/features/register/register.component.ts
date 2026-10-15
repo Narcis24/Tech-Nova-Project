@@ -4,6 +4,9 @@ import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
 
+// Something@domain.tld: Angular's Validators.email also accepts 'john@example', which the auth service refuses
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 @Component({
   selector: 'app-register',
   standalone: true,
@@ -30,6 +33,11 @@ export class RegisterComponent {
             Validators.minLength(8),
             Validators.maxLength(16),
             Validators.pattern(/^[A-Za-z0-9_]+$/)
+      ]],
+      email: ['', [
+            Validators.required,
+            Validators.pattern(EMAIL_PATTERN),
+            Validators.maxLength(254)
       ]],
       password: ['', [
             Validators.required,
@@ -81,9 +89,9 @@ export class RegisterComponent {
     }
 
     this.loading = true;
-    const { username, password } = this.registerForm.value;
+    const { username, email, password } = this.registerForm.value;
 
-    this.authService.register({ username, password }).subscribe({
+    this.authService.register({ username, email, password }).subscribe({
       next: () => {
         this.success = 'Registration successful! Redirecting to login...';
         this.loading = false;
@@ -100,7 +108,7 @@ export class RegisterComponent {
             : err.error?.message;
         const status = err.status || err.error?.httpStatus;
         this.error = status === 409
-          ? 'Username already exists. Please choose another username.'
+          ? 'Username or email already registered. Please choose another.'
           : details || 'Registration failed. Please try again.';
         this.loading = false;
       }
