@@ -1,4 +1,5 @@
 import { signal } from '@angular/core';
+import { Location } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -86,6 +87,20 @@ describe('app routes', () => {
 
       expect(router.url).toBe('/dashboard');
       expect(harness.routeNativeElement?.textContent).toContain('Dashboard');
+    });
+
+    it('sends /forgot-password to /dashboard', async () => {
+      await harness.navigateByUrl('/forgot-password');
+
+      expect(router.url).toBe('/dashboard');
+    });
+
+    it('still opens /reset-password, so the link from the email works', async () => {
+      await harness.navigateByUrl('/reset-password#token=abc');
+
+      // The page took the token out of the address bar
+      expect(TestBed.inject(Location).path(true)).toBe('/reset-password');
+      expect(harness.routeNativeElement?.textContent).toContain('Choose a new password');
     });
 
     it('sends /login to /dashboard', async () => {

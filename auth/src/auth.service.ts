@@ -1,39 +1,58 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import { createHash, randomBytes } from 'node:crypto';
 import { AuthRepository } from './auth.repository.js';
-import type { Credentials, RegisterResponse, TokenResponse } from './dto.js';
+import type {
+  Credentials,
+  RegisterRequest,
+  RegisterResponse,
+  TokenResponse,
+} from './dto.js';
 import { ACCESS_TOKEN_SECONDS, JwtService } from './jwt.service.js';
+import { MailService } from './mail.service.js';
 
 const BCRYPT_ROUNDS = 12;
 const REFRESH_TOKEN_SECONDS = 7 * 24 * 60 * 60;
+const RESET_TOKEN_SECONDS = 30 * 60;
 
 // Compared against when the username is unknown, so both login failures take as long
 const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', BCRYPT_ROUNDS);
 
-/** Refresh tokens are stored only as this hash. */
-export function hashRefreshToken(token: string): string {
+/** Refresh and password reset tokens are stored only as this hash. */
+export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+  // The UI page the reset email links to. The token goes after # so browsers never send it to any server.
+  private readonly resetUrl =
+    process.env.RESET_URL ?? 'http://localhost:4200/reset-password';
+
   constructor(
     private readonly repository: AuthRepository,
     private readonly jwtService: JwtService,
+    private readonly mailService: MailService,
   ) {}
 
   async register({
     username,
     password,
-  }: Credentials): Promise<RegisterResponse> {
+    email,
+  }: RegisterRequest): Promise<RegisterResponse> {
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-    if (!(await this.repository.createUser({ username, passwordHash }))) {
-      throw new ConflictException('Username already registered');
+    if (
+      !(await this.repository.createUser({ username, passwordHash, email }))
+    ) {
+      // Does not say which one, to give away as little as possible
+      throw new ConflictException('Username or email already registered');
     }
     return { username };
   }
@@ -51,7 +70,7 @@ export class AuthService {
 
     const refreshToken = randomBytes(32).toString('base64url');
     await this.repository.saveRefreshToken(
-      hashRefreshToken(refreshToken),
+      hashToken(refreshToken),
       user.username,
       REFRESH_TOKEN_SECONDS,
     );
@@ -61,8 +80,8 @@ export class AuthService {
   async refresh(refreshToken: string): Promise<TokenResponse> {
     const next = randomBytes(32).toString('base64url');
     const username = await this.repository.rotateRefreshToken(
-      hashRefreshToken(refreshToken),
-      hashRefreshToken(next),
+      hashToken(refreshToken),
+      hashToken(next),
       REFRESH_TOKEN_SECONDS,
     );
     if (username === null) {
@@ -72,7 +91,45 @@ export class AuthService {
   }
 
   async logout(refreshToken: string): Promise<void> {
-    await this.repository.revokeRefreshToken(hashRefreshToken(refreshToken));
+    await this.repository.revokeRefreshToken(hashToken(refreshToken));
+  }
+
+  /**
+   * Emails a reset link if an account uses the email; does nothing otherwise. Never throws, so the
+   * caller can answer the same way in both cases without waiting for it.
+   */
+  async forgotPassword(email: string): Promise<void> {
+    try {
+      const user = await this.repository.findUserByEmail(email);
+      if (user === null) {
+        return;
+      }
+      const token = randomBytes(32).toString('base64url');
+      await this.repository.saveResetToken(
+        hashToken(token),
+        user.username,
+        RESET_TOKEN_SECONDS,
+      );
+      await this.mailService.sendPasswordReset(
+        email,
+        `${this.resetUrl}#token=${token}`,
+      );
+    } catch (err) {
+      // No email address in the log
+      this.logger.error(
+        `Password reset email failed: ${(err as Error).message}`,
+      );
+    }
+  }
+
+  /** Sets the new password and signs the user out everywhere. */
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    if (
+      !(await this.repository.resetPassword(hashToken(token), passwordHash))
+    ) {
+      throw new BadRequestException('Invalid or expired reset link');
+    }
   }
 
   private tokenResponse(username: string, refreshToken: string): TokenResponse {

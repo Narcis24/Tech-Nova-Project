@@ -12,7 +12,7 @@ const INVALID_CREDENTIALS = 'Invalid username or password';
   selector: 'app-login',
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.css',
+  styleUrls: ['../../shared/auth-page.css', './login.component.css'],
 })
 export class LoginComponent {
   private readonly auth = inject(AuthService);

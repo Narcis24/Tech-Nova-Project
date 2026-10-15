@@ -4,7 +4,11 @@ import { Observable, catchError, finalize, map, of, shareReplay, tap, throwError
 
 import { AuthApi, Credentials, RegisterResponse, TokenResponse } from '../generated/auth-api-client';
 
-export type LoginRequest = Credentials;
+// Generated from contracts/auth-api.yml; run `npm run generate:api` after the contract changes
+export type LoginRequest = components['schemas']['Credentials'];
+type ForgotPasswordRequest = components['schemas']['ForgotPasswordRequest'];
+type ResetPasswordRequest = components['schemas']['ResetPasswordRequest'];
+type TokenResponse = components['schemas']['TokenResponse'];
 
 const REFRESH_TOKEN_KEY = 'technova.refreshToken';
 

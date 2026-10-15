@@ -26,17 +26,22 @@ import io.restassured.path.json.JsonPath;
 class AuthApiE2ETest extends E2ETestBase {
 
     @Test
-    @DisplayName("Register returns 201 with the username; the same name again is 409")
+    @DisplayName("Register returns 201 with the username; the same name or email again is 409")
     void registerThenConflict() {
         String username = Auth.newUsername();
 
-        Auth.post("register", Auth.credentials(username)).then().statusCode(201)
+        Auth.post("register", Auth.registration(username)).then().statusCode(201)
             .body("size()", equalTo(1))
             .body("username", equalTo(username));
-        Auth.post("register", Auth.credentials(username)).then().statusCode(409)
+        Auth.post("register", Auth.registration(username)).then().statusCode(409)
             .body("statusCode", equalTo(409))
             .body("error", equalTo("Conflict"))
-            .body("message", equalTo("Username already registered"));
+            .body("message", equalTo("Username or email already registered"));
+
+        Map<String, String> sameEmail = new HashMap<>(Auth.registration(Auth.newUsername()));
+        sameEmail.put("email", username.toUpperCase() + "@E2E.TEST");
+        Auth.post("register", sameEmail).then().statusCode(409)
+            .body("message", equalTo("Username or email already registered"));
     }
 
     @Test
@@ -69,7 +74,7 @@ class AuthApiE2ETest extends E2ETestBase {
     @DisplayName("A wrong password and an unknown username get the same 401 body")
     void failedLoginsLookTheSame() {
         String username = Auth.newUsername();
-        Auth.post("register", Auth.credentials(username)).then().statusCode(201);
+        Auth.post("register", Auth.registration(username)).then().statusCode(201);
         Map<String, String> wrongPassword = Map.of("username", username, "password", "Wrong-Password1");
         Map<String, String> unknownUser = Map.of("username", Auth.newUsername(), "password", "Wrong-Password1");
 
@@ -141,7 +146,7 @@ class AuthApiE2ETest extends E2ETestBase {
     @Test
     @DisplayName("Unknown fields and a missing refresh token are refused with 400")
     void unexpectedBodiesAreRefused() {
-        Map<String, String> withRole = new HashMap<>(Auth.credentials(Auth.newUsername()));
+        Map<String, String> withRole = new HashMap<>(Auth.registration(Auth.newUsername()));
         withRole.put("role", "ADMIN");
 
         Auth.post("register", withRole).then().statusCode(400)
@@ -151,11 +156,27 @@ class AuthApiE2ETest extends E2ETestBase {
     }
 
     @Test
+    @DisplayName("Forgot password always answers 202; an unknown reset token is refused with 400")
+    void passwordResetEndpoints() {
+        String username = Auth.newUsername();
+        Auth.post("register", Auth.registration(username)).then().statusCode(201);
+
+        // The stack has no mail server: sending fails in the background, the answer stays 202
+        Auth.post("forgot-password", Map.of("email", username + "@e2e.test")).then().statusCode(202);
+        Auth.post("forgot-password", Map.of("email", "nobody@e2e.test")).then().statusCode(202);
+        Auth.post("forgot-password", Map.of("email", "not-an-email")).then().statusCode(400);
+
+        Auth.post("reset-password", Map.of("token", "unknown", "newPassword", "NewPassword123")).then().statusCode(400)
+            .body("message", equalTo("Invalid or expired reset link"));
+    }
+
+    @Test
     @DisplayName("Health, Swagger UI and the OpenAPI document are served without a token")
     void operationalEndpoints() {
         Auth.get("/health").then().statusCode(200);
         Auth.get("/docs").then().statusCode(200);
-        assertEquals(Set.of("/v1/auth/register", "/v1/auth/login", "/v1/auth/refresh", "/v1/auth/logout"),
+        assertEquals(Set.of("/v1/auth/register", "/v1/auth/login", "/v1/auth/refresh", "/v1/auth/logout",
+                "/v1/auth/forgot-password", "/v1/auth/reset-password"),
             Auth.get("/docs-json").then().statusCode(200).extract().jsonPath().getMap("paths").keySet());
     }
 }

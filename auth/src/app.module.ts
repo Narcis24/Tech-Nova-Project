@@ -4,6 +4,7 @@ import { AuthRepository } from './auth.repository.js';
 import { AuthService } from './auth.service.js';
 import { HealthController } from './health.controller.js';
 import { JwtService } from './jwt.service.js';
+import { MailService } from './mail.service.js';
 
 @Module({
   controllers: [AuthController, HealthController],
@@ -11,6 +12,7 @@ import { JwtService } from './jwt.service.js';
     AuthService,
     AuthRepository,
     { provide: JwtService, useFactory: () => new JwtService() },
+    { provide: MailService, useFactory: () => new MailService() },
   ],
 })
 export class AppModule {}

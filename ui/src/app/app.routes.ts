@@ -12,9 +12,16 @@ export const routes: Routes = [
     loadComponent: () => import('./features/login/login.component').then(m => m.LoginComponent),
   },
   {
-    path: 'register',
+    path: 'forgot-password',
     canActivate: [guestGuard],
-    loadComponent: () => import('./features/register/register.component').then(m => m.RegisterComponent),
+    loadComponent: () =>
+      import('./features/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent),
+  },
+  {
+    // No guard: the link from the email must work even if someone is signed in on this browser
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./features/reset-password/reset-password.component').then(m => m.ResetPasswordComponent),
   },
   {
     path: '',
