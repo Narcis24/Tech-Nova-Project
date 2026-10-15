@@ -2,6 +2,7 @@ api.base.service.ts
 api.module.ts
 api/accountController.service.ts
 api/api.ts
+api/dashboardController.service.ts
 api/instrumentController.service.ts
 api/orderController.service.ts
 api/portfolioController.service.ts
@@ -13,9 +14,11 @@ configuration.ts
 encoder.ts
 index.ts
 model/accountResponse.ts
+model/balanceHistoryResponse.ts
 model/balanceResponse.ts
 model/cashAmountRequest.ts
 model/instrumentResponse.ts
+model/marketAssetResponse.ts
 model/models.ts
 model/openAccountRequest.ts
 model/orderResponse.ts
