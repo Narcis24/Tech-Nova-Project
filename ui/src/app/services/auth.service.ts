@@ -1,10 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, catchError, finalize, map, of, shareReplay, tap, throwError } from 'rxjs';
 
-import type { components } from '../api/auth-api';
-import { AUTH_BASE } from '../core/api-urls';
+import { AuthApi, Credentials, TokenResponse } from '../generated/auth-api-client';
 
 // Generated from contracts/auth-api.yml; run `npm run generate:api` after the contract changes
 export type LoginRequest = components['schemas']['Credentials'];
@@ -22,15 +20,16 @@ const REFRESH_TOKEN_KEY = 'technova.refreshToken';
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly http = inject(HttpClient);
+  private readonly authApi = inject(AuthApi);
   private readonly router = inject(Router);
 
   private readonly accessToken = signal<string | null>(null);
   private refreshInFlight$: Observable<string> | null = null;
   readonly isAuthenticated = computed(() => this.accessToken() !== null);
+  readonly username = computed(() => usernameFrom(this.accessToken()));
 
   login(credentials: LoginRequest): Observable<void> {
-    return this.http.post<TokenResponse>(`${AUTH_BASE}/login`, credentials).pipe(
+    return this.authApi.login(credentials).pipe(
       tap(tokens => this.storeTokens(tokens)),
       map(() => undefined),
     );
@@ -58,7 +57,7 @@ export class AuthService {
       return throwError(() => new Error('No refresh token'));
     }
 
-    this.refreshInFlight$ = this.http.post<TokenResponse>(`${AUTH_BASE}/refresh`, { refreshToken }).pipe(
+    this.refreshInFlight$ = this.authApi.refresh({ refreshToken }).pipe(
       tap(tokens => this.storeTokens(tokens)),
       map(tokens => tokens.accessToken),
       finalize(() => (this.refreshInFlight$ = null)),
@@ -74,7 +73,7 @@ export class AuthService {
   logout(): void {
     const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
     if (refreshToken) {
-      this.http.post<void>(`${AUTH_BASE}/logout`, { refreshToken }).subscribe({ error: () => {} });
+      this.authApi.logout({ refreshToken }).subscribe({ error: () => {} });
     }
     this.clearSession();
     void this.router.navigateByUrl('/login');
@@ -105,5 +104,20 @@ export class AuthService {
   private clearSession(): void {
     this.accessToken.set(null);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+  }
+}
+
+function usernameFrom(token: string | null): string | null {
+  const payload = token?.split('.')[1];
+  if (!payload) {
+    return null;    
+  }
+
+  try {
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    const stub: unknown = JSON.parse(json).sub;
+    return typeof stub === 'string' ? stub : null;
+  } catch {
+    return null;
   }
 }
