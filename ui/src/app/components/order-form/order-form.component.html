@@ -59,7 +59,7 @@
     (ngSubmit)="prepare()"
     aria-labelledby="new-order-heading"
   >
-    <fieldset [disabled]="submitting()">
+    <fieldset [disabled]="submitting() || checking()">
       <div class="ticket-heading">
         <h2 id="new-order-heading">New order</h2>
         <span>{{ accountId() }}</span>
@@ -216,11 +216,15 @@
       <button
         type="submit"
         class="submit-order"
-        [disabled]="submitting() || form.invalid || !!validationIssue() || !ready()"
+        [disabled]="submitting() || checking() || form.invalid || !!validationIssue() || !ready()"
       >
-        {{ isBuy() ? 'Buy' : 'Sell' }} {{ values()?.quantity ?? 0 }} {{ chartSymbol() }}
-        @if (isLimit() && values()?.price != null) {
-          at {{ values()?.price | number: '1.2-2' }}
+        @if (checking()) {
+          Checking…
+        } @else {
+          {{ isBuy() ? 'Buy' : 'Sell' }} {{ values()?.quantity ?? 0 }} {{ chartSymbol() }}
+          @if (isLimit() && values()?.price != null) {
+            at {{ values()?.price | number: '1.2-2' }}
+          }
         }
       </button>
     </fieldset>
@@ -233,6 +237,7 @@
     [total]="confirmationTotal()"
     [cashAfter]="confirmationCashAfter()"
     [result]="result()"
+    [warnings]="warnings()"
     [submitting]="submitting()"
     [error]="error()"
     (confirmOrder)="confirm()"

@@ -11,16 +11,29 @@ import {
   OrderControllerService,
   OrderResponse,
   PlaceOrderRequest,
+  RiskControllerService,
+  RiskWarning,
 } from '../../generated/trading-api-client';
 import { OrderFormComponent } from './order-form.component';
 
 describe('OrderFormComponent', () => {
   let api: jasmine.SpyObj<{ placeOrder: (request: PlaceOrderRequest) => Observable<OrderResponse> }>;
+  let risk: jasmine.SpyObj<{ check: (request: PlaceOrderRequest) => Observable<RiskWarning[]> }>;
+  const concentration: RiskWarning = {
+    rule: 'SINGLE_INSTRUMENT',
+    subject: 'AAPL',
+    resultingPct: 35,
+    limitPct: 20,
+    limitSource: 'DEFAULT',
+    message: 'AAPL would be 35% of your portfolio.',
+  };
   const currentAccountId = signal<string | null>('ACC001');
   function setup(quote = true) {
     currentAccountId.set('ACC001');
     api = jasmine.createSpyObj('orders', ['placeOrder']);
     api.placeOrder.and.returnValue(of({ orderId: 'test', status: 'PENDING' }));
+    risk = jasmine.createSpyObj('risk', ['check']);
+    risk.check.and.returnValue(of([]));
     TestBed.configureTestingModule({
       imports: [OrderFormComponent],
       providers: [
@@ -31,6 +44,7 @@ describe('OrderFormComponent', () => {
         },
         { provide: AccountService, useValue: { currentAccountId } },
         { provide: OrderControllerService, useValue: api },
+        { provide: RiskControllerService, useValue: risk },
         {
           provide: PortfolioControllerService,
           useValue: {
@@ -273,5 +287,92 @@ describe('OrderFormComponent', () => {
     fixture.detectChanges();
     fixture.componentInstance.confirm();
     expect(api.placeOrder).not.toHaveBeenCalled();
+  });
+  describe('risk check', () => {
+    it('checks the exact order on review and places that same body on confirm', () => {
+      const component = setup().componentInstance;
+      component.prepare();
+      expect(risk.check).toHaveBeenCalledTimes(1);
+      const checked = risk.check.calls.mostRecent().args[0];
+      expect(component.review()).toEqual(checked);
+      expect(component.warnings()).toEqual([]);
+      component.confirm();
+      expect(api.placeOrder.calls.mostRecent().args[0]).toEqual(checked);
+    });
+    it('shows warnings in the dialog and still places the order on Place anyway', () => {
+      const fixture = setup(),
+        component = fixture.componentInstance;
+      risk.check.and.returnValue(of([concentration]));
+      component.prepare();
+      fixture.detectChanges();
+      const dialog: HTMLDialogElement = fixture.nativeElement.querySelector('dialog');
+      expect(dialog.querySelector('.warnings')?.textContent).toContain('AAPL would be 35% of your portfolio.');
+      const place = dialog.querySelector<HTMLButtonElement>('.actions button:not(.secondary)')!;
+      expect(place.textContent).toContain('Place anyway');
+      place.click();
+      expect(api.placeOrder).toHaveBeenCalledTimes(1);
+    });
+    it('places nothing when the user goes back from the warnings', () => {
+      const fixture = setup(),
+        component = fixture.componentInstance;
+      risk.check.and.returnValue(of([concentration]));
+      component.prepare();
+      fixture.detectChanges();
+      fixture.nativeElement.querySelector('dialog .secondary').click();
+      fixture.detectChanges();
+      expect(component.review()).toBeNull();
+      expect(component.warnings()).toEqual([]);
+      expect(api.placeOrder).not.toHaveBeenCalled();
+    });
+    it('shows a check rejection on the form without opening the dialog, and uses a fresh key next time', () => {
+      const component = setup().componentInstance;
+      risk.check.and.returnValue(
+        throwError(() => new HttpErrorResponse({ status: 400, error: { message: 'Insufficient funds' } })),
+      );
+      component.prepare();
+      const key = risk.check.calls.mostRecent().args[0].idempotencyKey;
+      expect(component.review()).toBeNull();
+      expect(component.error()).toBe('Insufficient funds');
+      risk.check.and.returnValue(of([]));
+      component.prepare();
+      expect(component.review()?.idempotencyKey).not.toBe(key);
+      expect(api.placeOrder).not.toHaveBeenCalled();
+    });
+    it('asks to retry when the check cannot run, and never places without it', () => {
+      const component = setup().componentInstance;
+      risk.check.and.returnValue(throwError(() => new HttpErrorResponse({ status: 503 })));
+      component.prepare();
+      expect(component.review()).toBeNull();
+      expect(component.error()).toBe("Couldn't run the risk check. Try again.");
+      component.confirm();
+      expect(api.placeOrder).not.toHaveBeenCalled();
+    });
+    it('disables the ticket while checking and ignores a second review', () => {
+      const fixture = setup(),
+        component = fixture.componentInstance;
+      const pending = new Subject<RiskWarning[]>();
+      risk.check.and.returnValue(pending);
+      component.prepare();
+      component.prepare();
+      fixture.detectChanges();
+      expect(risk.check).toHaveBeenCalledTimes(1);
+      const button = fixture.nativeElement.querySelector('fieldset > .submit-order');
+      expect(button.disabled).toBeTrue();
+      expect(button.textContent).toContain('Checking');
+      pending.next([]);
+      pending.complete();
+      fixture.detectChanges();
+      expect(component.checking()).toBeFalse();
+      expect(component.review()).not.toBeNull();
+    });
+    it('clears warnings when the order is edited', () => {
+      const component = setup().componentInstance;
+      risk.check.and.returnValue(of([concentration]));
+      component.prepare();
+      expect(component.warnings().length).toBe(1);
+      component.form.controls.quantity.setValue(5);
+      expect(component.warnings()).toEqual([]);
+      expect(component.review()).toBeNull();
+    });
   });
 });
