@@ -177,6 +177,22 @@ services:
       - tech-nova-network
 
 
+  # Optional near-real-time refresh of provider-delayed daily bars, including the current session.
+  market-data:
+    build: ./data-pipeline
+    profiles:
+      - market-data
+    command: ["--watch", "--interval", "60"]
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: postgresql://${POSTGRES_USER:-technova}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-technova}
+      PYTHONUNBUFFERED: "1"
+    networks:
+      - tech-nova-network
+
   sonarqube:
     image: sonarqube:26.9.0.129388-community
 

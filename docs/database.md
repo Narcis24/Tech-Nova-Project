@@ -30,3 +30,10 @@ cash transfers and trades; it is not an investment-return calculation.
 
 Market overview uses the latest 20 stored daily closes per instrument. Its as-of dates are part of
 the response; polling the dashboard does not make a daily price feed into an intraday quote feed.
+
+Run `docker compose --profile market-data up -d --build market-data` to refresh recent daily
+bars every 60 seconds. During the trading session, the current day's bar is provisional and
+provider-delayed. Failed refreshes roll back atomically and retry without erasing good data.
+This optional service also keeps today's close available for the balance snapshot schedule;
+it does not require Alpaca credentials. The execution engine still requires its own quote feed
+for market-order fills.
