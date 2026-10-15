@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { Observable, of, Subject, throwError } from 'rxjs';
-import { AccountControllerService, InstrumentControllerService, PortfolioControllerService, PortfolioMetricsResponse, OrderResponse } from '../../generated/trading-api-client';
+import { AccountControllerService, DashboardControllerService, InstrumentControllerService, PortfolioControllerService, PortfolioMetricsResponse, OrderResponse } from '../../generated/trading-api-client';
 import { AccountService } from '../../services/account.service';
 import { DashboardStore } from './dashboard.store';
 
@@ -18,6 +18,7 @@ describe('DashboardStore', () => {
     portfolioApi.getPortfolioMetrics.and.returnValue(of({ totalPortfolioValue: 120, totalUnrealizedPnL: 10, positions: [{ quantity: 2, averageCost: 50, marketValue: 110 }] }));
     accountApi.getAccountOrders.and.returnValue(of([]));
     TestBed.configureTestingModule({ providers: [DashboardStore,
+      { provide: DashboardControllerService, useValue: { getBalanceHistory: () => of({}), getMarketOverview: () => of([]) } },
       { provide: AccountService, useValue: { currentAccountId } },
       { provide: PortfolioControllerService, useValue: portfolioApi },
       { provide: AccountControllerService, useValue: accountApi },
@@ -77,6 +78,16 @@ describe('DashboardStore', () => {
     pending.next({ accountId: 'ACC001', totalPortfolioValue: 130 }); pending.complete();
     expect(store.state().portfolio?.totalPortfolioValue).toBe(130);
   });
+
+  it('refreshes every 30 seconds only while visible and stops without an account', fakeAsync(() => {
+    const visibility = spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+    TestBed.flushEffects(); expect(portfolioApi.getPortfolioMetrics).toHaveBeenCalledTimes(1);
+    tick(30000); expect(portfolioApi.getPortfolioMetrics).toHaveBeenCalledTimes(2);
+    visibility.and.returnValue('hidden'); tick(30000);
+    expect(portfolioApi.getPortfolioMetrics).toHaveBeenCalledTimes(2);
+    currentAccountId.set(null); TestBed.flushEffects(); tick(30000);
+    expect(portfolioApi.getPortfolioMetrics).toHaveBeenCalledTimes(2);
+  }));
 
   it('does not request a portfolio without an account', () => {
     currentAccountId.set(null); TestBed.flushEffects();

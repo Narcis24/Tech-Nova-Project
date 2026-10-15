@@ -7,7 +7,8 @@
   --color-accent: #3044e0;
   --color-accent-hover: #1f2da8;
   --color-accent-soft: #e3e7fc;
-  --color-loss: #b54c0b;
+  --color-gain: #147547;
+  --color-loss: #b42332;
 }
 
 body {

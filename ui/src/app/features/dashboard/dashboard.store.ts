@@ -1,53 +1,72 @@
+import { DOCUMENT } from '@angular/common';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { catchError, forkJoin, map, of, startWith, switchMap } from 'rxjs';
-
-import { AccountControllerService, InstrumentControllerService, PortfolioControllerService, PortfolioMetricsResponse, OrderResponse } from '../../generated/trading-api-client';
+import { catchError, exhaustMap, filter, forkJoin, map, merge, of, startWith, switchMap, timer } from 'rxjs';
+import { AccountControllerService, DashboardControllerService, InstrumentControllerService, PortfolioControllerService, PortfolioMetricsResponse, OrderResponse, BalanceHistoryResponse, MarketAssetResponse } from '../../generated/trading-api-client';
 import { AccountService } from '../../services/account.service';
 
 interface DashboardState {
+  accountId: string | null;
   loading: boolean;
   portfolio: PortfolioMetricsResponse | null;
   orders: OrderResponse[];
+  history: BalanceHistoryResponse | null;
+  market: MarketAssetResponse[];
   ordersError: boolean;
+  historyError: boolean;
+  marketError: boolean;
   error: boolean;
+  updatedAt: number | null;
 }
 
-/** Local to the dashboard. Account changes cancel requests and clear the previous account's data. */
 @Injectable()
 export class DashboardStore {
   private readonly accounts = inject(AccountService);
   private readonly portfolioApi = inject(PortfolioControllerService);
   private readonly accountApi = inject(AccountControllerService);
+  private readonly dashboardApi = inject(DashboardControllerService);
   private readonly instrumentsApi = inject(InstrumentControllerService);
+  private readonly document = inject(DOCUMENT);
   private readonly revision = signal(0);
   private readonly request = computed(() => ({ accountId: this.accounts.currentAccountId(), revision: this.revision() }));
-  readonly state = signal<DashboardState>({ loading: false, portfolio: null, orders: [], ordersError: false, error: false });
+  private empty(accountId: string | null): DashboardState {
+    return { accountId, loading: false, portfolio: null, orders: [], history: null, market: [], ordersError: false, historyError: false, marketError: false, error: false, updatedAt: null };
+  }
+  readonly state = signal<DashboardState>(this.empty(null));
   readonly instruments = signal(new Map<string, { name?: string; assetClass?: string }>());
-  readonly holdings = computed(() => [...(this.state().portfolio?.positions ?? [])].sort((a, b) => Number(b.marketValue ?? 0) - Number(a.marketValue ?? 0)));
+  readonly holdings = computed(() => [...(this.state().portfolio?.positions ?? [])].filter(p => Number(p.quantity) > 0).sort((a, b) => Number(b.marketValue ?? 0) - Number(a.marketValue ?? 0)));
   readonly cost = computed(() => this.holdings().reduce((sum, p) => sum + Number(p.averageCost ?? 0) * Number(p.quantity ?? 0), 0));
   readonly gain = computed(() => Number(this.state().portfolio?.totalUnrealizedPnL ?? 0));
   readonly returnOnCost = computed(() => this.cost() > 0 ? this.gain() / this.cost() : null);
 
   constructor() {
-    this.instrumentsApi.getInstruments().pipe(catchError(() => of([])), takeUntilDestroyed()).subscribe(instruments => {
-      this.instruments.set(new Map(instruments.filter(i => i.symbol).map(i => [i.symbol!, i])));
-    });
     toObservable(this.request).pipe(
       switchMap(({ accountId }) => {
-        const empty: DashboardState = { loading: false, portfolio: null, orders: [], ordersError: false, error: false };
-        if (!accountId) return of(empty);
-        return forkJoin({
-          portfolio: this.portfolioApi.getPortfolioMetrics(accountId),
-          orders: this.accountApi.getAccountOrders(accountId).pipe(
-            map(orders => ({ orders, failed: false })),
-            catchError(() => of({ orders: [], failed: true })),
-          ),
-        }).pipe(
-          map(({ portfolio, orders }) => ({ ...empty, portfolio, orders: orders.orders, ordersError: orders.failed })),
-          catchError(() => of({ ...empty, error: true })),
-          // Keep the same account visible during a refresh, including cash confirmation and focus.
-          startWith({ ...empty, ...(this.state().portfolio?.accountId === accountId ? this.state() : {}), loading: true, error: false }),
+        if (!accountId) return of(this.empty(null));
+        // One request at a time; no background polling in hidden tabs. Manual refresh restarts immediately.
+        return merge(of(0), timer(30_000, 30_000).pipe(filter(() => this.document.visibilityState !== 'hidden'))).pipe(
+          exhaustMap(() => {
+            const previous = this.state().accountId === accountId ? this.state() : this.empty(accountId);
+            const optional = <T>(request: import('rxjs').Observable<T>, fallback: T) => request.pipe(
+              map(value => ({ value, failed: false })), catchError(() => of({ value: fallback, failed: true })),
+            );
+            return forkJoin({
+              portfolio: this.portfolioApi.getPortfolioMetrics(accountId),
+              orders: optional(this.accountApi.getAccountOrders(accountId), []),
+              history: optional(this.dashboardApi.getBalanceHistory(accountId), null),
+              market: optional(this.dashboardApi.getMarketOverview(), []),
+              instruments: optional(this.instrumentsApi.getInstruments(), []),
+            }).pipe(
+              map(({ portfolio, orders, history, market, instruments }) => {
+                if (!instruments.failed) this.instruments.set(new Map(instruments.value.filter(i => i.symbol).map(i => [i.symbol!, i])));
+                return { ...this.empty(accountId), portfolio, orders: orders.failed ? previous.orders : orders.value,
+                  history: history.failed ? previous.history : history.value, market: market.failed ? previous.market : market.value,
+                  ordersError: orders.failed, historyError: history.failed, marketError: market.failed, updatedAt: Date.now() };
+              }),
+              catchError(() => of({ ...previous, loading: false, error: true })),
+              startWith({ ...previous, loading: true, error: false }),
+            );
+          }),
         );
       }),
       takeUntilDestroyed(),
@@ -55,12 +74,13 @@ export class DashboardStore {
   }
 
   refresh(): void { this.revision.update(value => value + 1); }
-
+  hasPendingSell(symbol?: string): boolean {
+    return this.state().orders.some(o => o.symbol === symbol && o.side?.toUpperCase() === 'SELL' && ['PENDING', 'PUBLISHED', 'PARTIALLY_FILLED'].includes(o.status ?? ''));
+  }
   allocation(value?: number): number | null {
     const total = Number(this.state().portfolio?.totalPortfolioValue ?? 0);
     return value != null && total > 0 ? Number(value) / total : null;
   }
-
   positionReturn(quantity?: number, averageCost?: number, gain?: number): number | null {
     const cost = Number(quantity ?? 0) * Number(averageCost ?? 0);
     return gain != null && cost > 0 ? Number(gain) / cost : null;
