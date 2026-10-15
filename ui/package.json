@@ -8,7 +8,12 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "generate:api": "openapi-typescript ../contracts/auth-api.yml -o src/app/api/auth-api.ts"
+    "fetch:trading-spec": "node scripts/fetch-spec.mjs http://localhost:8081/api/v3/api-docs ../contracts/trading-api.json",
+    "fetch:auth-spec": "node scripts/fetch-spec.mjs http://localhost:8082/auth/docs-json ../contracts/auth-api.json",
+    "fetch:specs": "npm run fetch:trading-spec && npm run fetch:auth-spec",
+    "generate:trading-client": "openapi-generator-cli generate -i ../contracts/trading-api.json -g typescript-angular -o src/app/generated/trading-api-client --additional-properties=ngVersion=19.2.0,providedInRoot=true",
+    "generate:auth-client": "openapi-generator-cli generate -i ../contracts/auth-api.json -g typescript-angular -o src/app/generated/auth-api-client --additional-properties=ngVersion=19.2.0,providedInRoot=true,serviceSuffix=Api",
+    "generate:clients": "npm run generate:trading-client && npm run generate:auth-client"
   },
   "private": true,
   "dependencies": {
@@ -27,6 +32,7 @@
     "@angular-devkit/build-angular": "^19.2.27",
     "@angular/cli": "^19.2.27",
     "@angular/compiler-cli": "^19.2.0",
+    "@openapitools/openapi-generator-cli": "^2.29.0",
     "@types/jasmine": "~5.1.0",
     "jasmine-core": "~5.6.0",
     "karma": "~6.4.0",
@@ -34,7 +40,6 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "openapi-typescript": "^7.13.0",
     "typescript": "~5.7.2"
   }
 }

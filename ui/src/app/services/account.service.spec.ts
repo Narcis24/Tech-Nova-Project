@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
+import { API_BASE } from '../core/api-urls';
+import { provideApi as provideTradingApi } from '../generated/trading-api-client';
 import { Account, AccountService } from './account.service';
 
 const ACCOUNTS_URL = '/api/v1/accounts';
@@ -12,7 +14,8 @@ describe('AccountService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      // Same base path as app.config.ts, so requests go to /api/... instead of the spec's localhost URL
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideTradingApi(API_BASE)],
     });
     service = TestBed.inject(AccountService);
     http = TestBed.inject(HttpTestingController);

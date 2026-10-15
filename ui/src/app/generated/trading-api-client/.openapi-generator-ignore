@@ -1,0 +1,4 @@
+# Not needed in the app
+git_push.sh
+README.md
+.gitignore
