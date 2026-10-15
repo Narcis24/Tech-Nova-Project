@@ -257,7 +257,7 @@
     position: fixed;
     left: 16px;
     right: 16px;
-    bottom: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     z-index: 10;
     gap: 4px;
     border-radius: 16px;
@@ -291,3 +291,5 @@
   .nav-bar.compact-trade { padding: 0; }
   .compact-trade .brand, .compact-trade .account-cluster { display: none; }
 }
+
+@media(max-width:767.98px){.tabs{box-shadow:0 6px 24px #14182b14,0 0 0 1px #14182b06}}
