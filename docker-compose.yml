@@ -169,6 +169,10 @@ services:
   # in a web inbox instead of delivering it
   mailpit:
     image: axllent/mailpit:v1.31.3
+
+    profiles:
+      - mail
+
     ports:
       - ${MAILPIT_PORT:-8025}:8025
     restart: unless-stopped
