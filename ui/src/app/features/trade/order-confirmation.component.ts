@@ -1,7 +1,7 @@
 import { CurrencyPipe, DecimalPipe, TitleCasePipe } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, input, OnDestroy, output, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { OrderResponse, PlaceOrderRequest } from '../../generated/trading-api-client';
+import { OrderResponse, PlaceOrderRequest, RiskWarning } from '../../generated/trading-api-client';
 
 @Component({
   selector: 'app-order-confirmation',
@@ -16,6 +16,8 @@ export class OrderConfirmationComponent implements AfterViewInit, OnDestroy {
   readonly result = input<OrderResponse | null>(null);
   readonly submitting = input(false);
   readonly error = input<string | null>(null);
+  // From the risk check run before the dialog opened; they never block the order
+  readonly warnings = input<RiskWarning[]>([]);
   readonly confirmOrder = output<void>();
   readonly dismiss = output<void>();
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');

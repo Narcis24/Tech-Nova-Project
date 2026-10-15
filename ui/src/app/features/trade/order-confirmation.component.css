@@ -72,6 +72,43 @@ dd {
 .total dt {
   color: var(--color-ink);
 }
+.warnings {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid #f1d29b;
+  border-radius: 14px;
+  background: #fff8eb;
+  color: #6b4200;
+}
+.warnings h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.warnings ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.warnings li p {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.warnings .figures {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.warnings .hint {
+  margin-top: 10px;
+  font-size: 12px;
+}
+.warnings .hint a {
+  color: inherit;
+  font-weight: 600;
+}
 .note {
   margin-top: 24px;
   font-size: 13px;

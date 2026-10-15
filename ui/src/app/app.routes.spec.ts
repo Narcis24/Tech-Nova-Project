@@ -12,6 +12,8 @@ import {
   PriceControllerService,
   InstrumentControllerService,
   PortfolioControllerService,
+  RiskControllerService, 
+  RiskLimitControllerService
 } from './generated/trading-api-client';
 import { routes } from './app.routes';
 import { safeReturnUrl } from './core/return-url';
@@ -35,10 +37,9 @@ describe('app routes', () => {
         { provide: PriceControllerService, useValue: { getPriceHistory: () => of([]) } },
         { provide: DashboardControllerService, useValue: { getMarketOverview: () => of([]) } },
         { provide: OrderControllerService, useValue: { placeOrder: () => of({}) } },
-        {
-          provide: PortfolioControllerService,
-          useValue: { getPortfolioMetrics: () => of({}), getPortfolioSnapshot: () => of({}) },
-        },
+        { provide: RiskControllerService, useValue: { check: () => of([]) } },
+        { provide: RiskLimitControllerService, useValue: { getLimits: () => of([]) } },
+        { provide: PortfolioControllerService, useValue: { getPortfolioMetrics: () => of({}), getPortfolioSnapshot: () => of({}) } },
         { provide: AccountControllerService, useValue: { getAccountOrders: () => of([]) } },
         { provide: InstrumentControllerService, useValue: { getInstruments: () => of([]) } },
         { provide: AuthService, useValue: auth },
@@ -145,6 +146,13 @@ describe('app routes', () => {
 
       expect(router.url).toBe('/accounts');
       expect(harness.routeNativeElement?.textContent).toContain('Accounts');
+    });
+
+    it('shows the risk limits page', async () => {
+      await harness.navigateByUrl('/risk-limits');
+
+      expect(router.url).toBe('/risk-limits');
+      expect(harness.routeNativeElement?.textContent).toContain('Risk limits');
     });
 
     it('wraps the page in the shell', async () => {

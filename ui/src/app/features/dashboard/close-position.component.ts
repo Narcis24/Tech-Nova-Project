@@ -23,6 +23,7 @@ export class ClosePositionComponent implements AfterViewInit {
   private key = newUuid();
   private readonly submissions = new Subject<void>();
   constructor() {
+    // No risk check before placing: this is always a sell, and only buys can raise exposure, so it never warns
     this.submissions
       .pipe(
         exhaustMap(() =>
