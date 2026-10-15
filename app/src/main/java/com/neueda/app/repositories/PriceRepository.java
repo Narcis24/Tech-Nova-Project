@@ -12,6 +12,16 @@ import java.util.Optional;
 
 @Repository
 public interface PriceRepository extends JpaRepository<Price, PriceKey> {
+    /** Last 20 sessions per instrument, bounded in the database and fetched in one query. */
+    @Query(value = """
+        SELECT symbol, trade_date, close FROM (
+            SELECT symbol, trade_date, close,
+                   ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY trade_date DESC) AS rank
+            FROM price_data
+        ) recent WHERE rank <= 20
+        """, nativeQuery = true)
+    List<Price> findRecentPrices();
+
     Optional<Price> findFirstBySymbolOrderByTradeDateDesc(String symbol);
 
     /** Latest bar for each of the given symbols, in one query. Symbols with no price data are absent. */

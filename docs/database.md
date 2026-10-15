@@ -14,3 +14,19 @@ To add an instrument, add it to `V003_seed_data.sql` and reset. Seed orders use 
 Bonds and commodities are loaded as ETFs (`TLT`, `GLD`...). Yahoo has no tradable bond prices, and its futures tickers (`GC=F`) have gaps.
 
 Name new migrations `V006_...`. Without zero padding, `V10` would run before `V2`.
+
+### Dashboard balance history
+
+Apply `V010_account_balance_history.sql` to existing databases (Compose initialization scripts
+only run on a new volume). The app captures actual cash and portfolio values at 16:15 America/New_York
+on weekdays, after the US close. Run the price pipeline before then. Missing same-day prices
+cause the affected account to be skipped; holidays with no bars are skipped entirely. The cron
+is configurable with `dashboard.balance-snapshot-cron`.
+
+Snapshots are immutable and never backfilled from current holdings. A new installation/account
+shows history unavailable until a prior session has been captured. The UI displays the snapshot's
+actual date, including gaps when the app or price pipeline was offline. Balance change includes
+cash transfers and trades; it is not an investment-return calculation.
+
+Market overview uses the latest 20 stored daily closes per instrument. Its as-of dates are part of
+the response; polling the dashboard does not make a daily price feed into an intraday quote feed.
