@@ -2,12 +2,9 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, catchError, finalize, map, of, shareReplay, tap, throwError } from 'rxjs';
 
-import { AuthApi, Credentials, TokenResponse } from '../generated/auth-api-client';
+import { AuthApi, Credentials, RegisterResponse, TokenResponse } from '../generated/auth-api-client';
 
-// Generated from contracts/auth-api.yml; run `npm run generate:api` after the contract changes
-export type LoginRequest = components['schemas']['Credentials'];
-export type RegisterResponse = components['schemas']['RegisterResponse'];
-type TokenResponse = components['schemas']['TokenResponse'];
+export type LoginRequest = Credentials;
 
 const REFRESH_TOKEN_KEY = 'technova.refreshToken';
 
@@ -36,7 +33,7 @@ export class AuthService {
   }
 
   register(credentials: LoginRequest): Observable<RegisterResponse> {
-    return this.http.post<RegisterResponse>(`${AUTH_BASE}/register`, credentials);
+    return this.authApi.register(credentials);
   }
 
   getAccessToken(): string | null {
