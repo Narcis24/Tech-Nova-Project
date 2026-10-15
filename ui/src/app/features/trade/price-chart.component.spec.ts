@@ -45,7 +45,7 @@ describe('PriceChartComponent', () => {
   }));
   it('shows empty history instead of inventing a chart', fakeAsync(() => {
     const fixture=setup();api.getPriceHistory.and.returnValue(of([]));tick(250);fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('No stored price history');expect(fixture.nativeElement.querySelector('svg')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('No stored price history');expect(fixture.nativeElement.querySelector('svg[role="img"]')).toBeNull();
   }));
   it('waits for an instrument before requesting history', fakeAsync(() => {
     const fixture=setup('');tick(500);fixture.detectChanges();expect(api.getPriceHistory).not.toHaveBeenCalled();expect(fixture.nativeElement.textContent).toContain('Choose an instrument');

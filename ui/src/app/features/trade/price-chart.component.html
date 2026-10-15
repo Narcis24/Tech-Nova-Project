@@ -1,22 +1,31 @@
-<section aria-label="Selected instrument price history">
-  <div class="heading"><h2>{{ normalizedSymbol() || 'Price history' }}</h2><div class="ranges" role="group" aria-label="Price chart range">@for (option of ranges; track option.months) { <button type="button" [attr.aria-pressed]="range() === option.months" (click)="chooseRange(option.months)">{{ option.label }}</button> }</div></div>
-  @if (!normalizedSymbol()) { <p class="message">Choose an instrument below to see its price history.</p> }
+<section aria-label="Selected instrument price history" [class.expanded]="expanded()">
+  <div class="heading">
+    <div class="instrument"><h1><button type="button" class="symbol-button" (click)="changeInstrument.emit()" aria-label="Change instrument">{{ normalizedSymbol() || 'Choose an instrument' }}<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4 3 3 3-3" /></svg></button></h1><span class="instrument-name">{{ instrumentName() }}</span></div>
+    @if (latest()) {
+      <div class="quote"><strong>{{ latest()!.close | number:'1.2-2' }}</strong><p><span class="change" [class.loss]="(dailyChange() ?? 0) < 0">{{ (dailyChange() ?? 0) > 0 ? '+' : '' }}{{ (dailyChange() | number:'1.2-2') ?? '—' }} ({{ (dailyPercent() | percent:'1.2-2') ?? '—' }})</span><span class="session-copy"> vs previous session.</span></p></div>
+    }
+    <div class="ranges" role="group" aria-label="Price chart range">@for (option of ranges; track option.months) { <button type="button" [attr.aria-pressed]="range() === option.months" (click)="chooseRange(option.months)">{{ option.label }}</button> }</div>
+  </div>
+  @if (!normalizedSymbol()) { <p class="message">Choose an instrument to see its price history.</p> }
   @else if (state().loading || state().symbol !== normalizedSymbol()) { <p class="message" role="status">Loading {{ normalizedSymbol() }} price history…</p> }
   @else if (state().error) { <div class="message" role="alert"><p>Couldn't load {{ normalizedSymbol() }} price history.</p><button type="button" (click)="refresh()">Try again</button></div> }
   @else if (!latest()) { <p class="message">No stored price history for {{ normalizedSymbol() }}.</p> }
   @else {
-    <div class="quote"><strong>{{ latest()!.close | currency:'USD' }}</strong><span [class.gain]="(dailyChange() ?? 0) > 0" [class.loss]="(dailyChange() ?? 0) < 0">{{ (dailyChange() ?? 0) > 0 ? '+' : '' }}{{ (dailyChange() | currency:'USD') ?? '—' }} ({{ (dailyPercent() | percent:'1.2-2') ?? '—' }}) <span class="muted">vs previous stored session</span></span></div>
-    <p class="as-of">Daily closes · USD · as of {{ sessionDate(latest()!.date) | date:'mediumDate':'UTC' }} · provider-delayed</p>
-    <div class="readout" aria-live="polite">{{ sessionDate(selected()?.date) | date:'mediumDate':'UTC' }} <strong>{{ selected()?.close | currency:'USD' }}</strong></div>
-    <div class="plot" [class.down]="(rangeChange() ?? 0) < 0">
-      <svg viewBox="0 0 640 220" preserveAspectRatio="none" role="img" tabindex="0" [attr.aria-label]="normalizedSymbol() + ' daily closing prices. Use left and right arrows to inspect sessions.'" (pointermove)="pointAt($event)" (pointerleave)="hovered.set(null)" (keydown)="move($event)">
-        <path class="grid" d="M0 16H640 M0 104H640 M0 192H640" />
-        <polygon class="area" [attr.points]="area()" /><polyline class="line" [attr.points]="line()" />
-        @if (selected(); as point) { <line class="cursor" [attr.x1]="x(selectedIndex())" [attr.x2]="x(selectedIndex())" y1="8" y2="208" /><circle [attr.cx]="x(selectedIndex())" [attr.cy]="y(point.close!)" r="4" /> }
-      </svg>
-      <div class="prices" aria-hidden="true"><span>{{ maximum() | currency:'USD':'symbol':'1.2-2' }}</span><span>{{ minimum() | currency:'USD':'symbol':'1.2-2' }}</span></div>
+    <p class="as-of">Daily close · USD · as of {{ sessionDate(latest()!.date) | date:'mediumDate':'UTC' }} · provider-delayed</p>
+    <button type="button" class="mobile-chart-toggle" [attr.aria-expanded]="expanded()" (click)="expanded.set(!expanded())">{{ expanded() ? 'Hide price chart' : 'Show price chart' }} <span aria-hidden="true">{{ expanded() ? '−' : '+' }}</span></button>
+    <div class="history">
+      <div class="readout" aria-live="polite"><span [class.hidden]="hovered() == null">{{ sessionDate(selected()?.date) | date:'mediumDate':'UTC' }} · {{ selected()?.close | currency:'USD' }}</span></div>
+      <div class="plot">
+        <svg viewBox="0 0 640 220" preserveAspectRatio="none" role="img" tabindex="0" [attr.aria-label]="normalizedSymbol() + ' daily closing prices. Use left and right arrows to inspect sessions.'" (pointermove)="pointAt($event)" (pointerleave)="hovered.set(null)" (keydown)="move($event)">
+          <path class="grid" d="M0 16H640 M0 75H640 M0 133H640 M0 192H640" /><polyline class="line" [attr.points]="line()" />
+          @if (selected(); as point) { @if (hovered() != null) { <line class="cursor" [attr.x1]="x(selectedIndex())" [attr.x2]="x(selectedIndex())" y1="8" y2="208" /> }<circle class="halo" [attr.cx]="x(selectedIndex())" [attr.cy]="y(point.close!)" r="9" /><circle [attr.cx]="x(selectedIndex())" [attr.cy]="y(point.close!)" r="4" /> }
+        </svg>
+        <div class="prices" aria-hidden="true"><span class="current-price">{{ latest()!.close | number:'1.2-2' }}</span><span>{{ (minimum() + (maximum() - minimum()) / 2) | number:'1.2-2' }}</span><span>{{ minimum() | number:'1.2-2' }}</span></div>
+      </div>
+      <div class="dates"><span>{{ sessionDate(visible().at(0)?.date) | date:'d MMM':'UTC' }}</span><span>{{ sessionDate(visible().at(Math.floor(visible().length / 2))?.date) | date:'d MMM':'UTC' }}</span><span>{{ sessionDate(latest()!.date) | date:'d MMM':'UTC' }}</span></div>
+      <p class="range-change">{{ (rangeChange() ?? 0) > 0 ? '+' : '' }}{{ (rangeChange() | percent:'1.2-2') ?? '—' }} <span class="muted">over displayed sessions · {{ visible().length }} observations</span></p>
     </div>
-    <div class="dates"><span>{{ sessionDate(visible().at(0)?.date) | date:'MMM d, y':'UTC' }}</span><span>{{ sessionDate(latest()!.date) | date:'MMM d, y':'UTC' }}</span></div>
-    <p class="range-change" [class.gain]="(rangeChange() ?? 0) > 0" [class.loss]="(rangeChange() ?? 0) < 0">{{ (rangeChange() ?? 0) > 0 ? '+' : '' }}{{ (rangeChange() | percent:'1.2-2') ?? '—' }} <span class="muted">over displayed sessions · {{ visible().length }} observations</span></p>
+    <dl class="quote-facts"><div><dt>Bid</dt><dd>—</dd></div><div><dt>Ask</dt><dd>—</dd></div><div><dt>Spread</dt><dd>—</dd></div><div><dt>Previous close</dt><dd>{{ (points().at(-2)?.close | number:'1.2-2') ?? '—' }}</dd></div></dl>
+    <p class="quote-note">Live bid and ask are unavailable from the daily price feed.</p>
   }
 </section>

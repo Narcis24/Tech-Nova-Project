@@ -1,18 +1,25 @@
 import { sessionDate } from '../../core/session-date';
-import { CurrencyPipe, DatePipe, PercentPipe } from '@angular/common';
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { CurrencyPipe, DatePipe, DecimalPipe, PercentPipe } from '@angular/common';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { catchError, map, of, startWith, switchMap, timer } from 'rxjs';
 import { PriceControllerService, PriceHistoryPoint } from '../../generated/trading-api-client';
 
+export interface TradeQuote { symbol: string; price: number | null; previousClose: number | null; date: string | null; }
+
 interface HistoryState { symbol: string; loading: boolean; error: boolean; points: PriceHistoryPoint[]; }
 @Component({
-  selector: 'app-price-chart', imports: [CurrencyPipe, DatePipe, PercentPipe],
+  selector: 'app-price-chart', imports: [CurrencyPipe, DatePipe, DecimalPipe, PercentPipe],
   templateUrl: './price-chart.component.html', styleUrl: './price-chart.component.css',
 })
 export class PriceChartComponent {
   readonly sessionDate = sessionDate;
+  readonly Math = Math;
   readonly symbol = input('');
+  readonly instrumentName = input('');
+  readonly changeInstrument = output<void>();
+  readonly quoteChange = output<TradeQuote>();
+  readonly expanded = signal(false);
   private readonly api = inject(PriceControllerService);
   private readonly revision = signal(0);
   readonly normalizedSymbol = computed(() => this.symbol().trim().toUpperCase());
@@ -50,7 +57,8 @@ export class PriceChartComponent {
       return timer(250).pipe(switchMap(() => this.api.getPriceHistory(symbol)),
         map(points => ({ ...empty, points: points.filter(p => p.date && Number.isFinite(Number(p.close)) && Number(p.close) > 0).sort((a,b) => a.date!.localeCompare(b.date!)) })),
         catchError(() => of({ ...empty, error: true })), startWith({ ...empty, loading: true }));
-    }), takeUntilDestroyed()).subscribe(state => { this.hovered.set(null); this.state.set(state); });
+    }), takeUntilDestroyed()).subscribe(state => { this.hovered.set(null); this.state.set(state);
+      this.quoteChange.emit({ symbol: state.symbol, price: state.points.at(-1)?.close ?? null, previousClose: state.points.at(-2)?.close ?? null, date: state.points.at(-1)?.date ?? null }); });
   }
   refresh(): void { this.revision.update(v => v + 1); }
   chooseRange(months: 1 | 3 | 12): void { this.hovered.set(null); this.range.set(months); }
