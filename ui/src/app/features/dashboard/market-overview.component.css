@@ -1,0 +1,161 @@
+:host {
+  display: block;
+}
+h2,
+p {
+  margin: 0;
+}
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+h2 {
+  font-size: 18px;
+}
+.heading p,
+.name,
+.as-of {
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 6px;
+}
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 20px 0;
+}
+button,
+select,
+input {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  background: var(--color-track);
+  color: var(--color-ink);
+}
+button {
+  cursor: pointer;
+}
+button[aria-pressed='true'] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+button:disabled {
+  opacity: 0.6;
+}
+.assets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  gap: 10px;
+}
+article {
+  padding: 18px;
+  background: var(--color-card);
+  border-radius: 14px;
+  min-width: 0;
+}
+.asset-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.asset-heading a {
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--color-ink);
+}
+.asset-heading button {
+  font-size: 20px;
+  min-height: 36px;
+  background: none;
+}
+.name {
+  min-height: 40px;
+}
+.price {
+  font-size: 22px;
+  margin: 12px 0 6px;
+}
+.change {
+  font-size: 14px;
+}
+.gain {
+  color: var(--color-gain);
+}
+.loss,
+.error {
+  color: var(--color-loss);
+}
+svg {
+  width: 100%;
+  height: 40px;
+  margin-top: 16px;
+  fill: none;
+  stroke: var(--color-gain);
+  stroke-width: 2;
+}
+svg.loss {
+  stroke: var(--color-loss);
+}
+.as-of {
+  font-size: 12px;
+}
+.add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+.add select {
+  max-width: 100%;
+}
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-muted);
+  min-width: 0;
+}
+.filters .search {
+  flex: 1 1 240px;
+}
+.filters input {
+  width: 100%;
+  box-sizing: border-box;
+}
+.filters select {
+  max-width: 100%;
+}
+.filters input:focus-visible,
+.filters select:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+.result-count {
+  color: var(--color-muted);
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+.empty {
+  color: var(--color-muted);
+  padding: 20px 0;
+}

@@ -4,9 +4,7 @@ Usage: python load.py [start_date]   (default 2025-01-01, which covers the seed 
 """
 
 import os
-import argparse
-import time
-from datetime import date, timedelta
+import sys
 
 import psycopg
 import yfinance as yf
@@ -20,7 +18,7 @@ def load_prices(cur, start):
     bars_by_symbol = {s: data[s].dropna() for s in symbols}
     missing = [s for s, bars in bars_by_symbol.items() if bars.empty]
     if missing:
-        raise RuntimeError(f"no price data for {', '.join(missing)}; nothing was written, rerun")
+        sys.exit(f"no price data for {', '.join(missing)}; nothing was written, rerun")
     for symbol, bars in bars_by_symbol.items():
         cur.executemany(
             """INSERT INTO price_data (symbol, trade_date, open, high, low, close, adj_close, volume)
@@ -37,24 +35,5 @@ def load_prices(cur, start):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("start_date", nargs="?")
-    parser.add_argument("--watch", action="store_true", help="Refresh recent daily bars continuously (provider-delayed)")
-    parser.add_argument("--interval", type=int, default=60, help="Seconds between refreshes, minimum 60")
-    args = parser.parse_args()
-    if args.interval < 60:
-        parser.error("interval must be at least 60 seconds")
-    while True:
-        start = args.start_date or ((date.today() - timedelta(days=7)).isoformat() if args.watch else "2025-01-01")
-        try:
-            with psycopg.connect(os.environ["DB_URL"]) as conn, conn.cursor() as cur:
-                load_prices(cur, start)
-            print("Price refresh committed", flush=True)
-        except Exception as error:
-            if not args.watch:
-                raise
-            # The connection context rolled back the entire refresh. Keep the last good prices.
-            print(f"Price refresh failed; retrying in {args.interval}s: {error}", flush=True)
-        if not args.watch:
-            break
-        time.sleep(args.interval)
+    with psycopg.connect(os.environ["DB_URL"]) as conn, conn.cursor() as cur:
+        load_prices(cur, sys.argv[1] if len(sys.argv) > 1 else "2025-01-01")

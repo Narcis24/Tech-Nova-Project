@@ -1,24 +1,57 @@
 <div class="actions">
-  <button type="button" class="primary" (click)="open('deposit')" [disabled]="submitting()" aria-haspopup="dialog" [attr.aria-expanded]="mode() === 'deposit'">Deposit cash</button>
-  <button type="button" (click)="open('withdraw')" [disabled]="submitting()" aria-haspopup="dialog" [attr.aria-expanded]="mode() === 'withdraw'">Withdraw</button>
+  <button
+    type="button"
+    class="primary"
+    (click)="open('deposit')"
+    [disabled]="submitting()"
+    aria-haspopup="dialog"
+    [attr.aria-expanded]="mode() === 'deposit'"
+  >
+    Deposit cash
+  </button>
+  <button
+    type="button"
+    (click)="open('withdraw')"
+    [disabled]="submitting()"
+    aria-haspopup="dialog"
+    [attr.aria-expanded]="mode() === 'withdraw'"
+  >
+    Withdraw
+  </button>
 </div>
-@if (success()) { <p class="success" role="status">{{ success() }}</p> }
-<dialog #cashDialog aria-labelledby="cash-dialog-title" (cancel)="cancel($event)">
-@if (mode(); as action) {
-  <form [formGroup]="form" (ngSubmit)="submit()" aria-label="Cash transfer">
-    <h2 id="cash-dialog-title">{{ action === 'deposit' ? 'Deposit cash' : 'Withdraw cash' }}</h2>
-    <p>{{ action === 'deposit' ? 'Deposit into' : 'Withdraw from' }} {{ accountId() }}</p>
-    <p class="available">Available cash: {{ cashBalance() | currency:'USD' }}</p>
-    <label for="cash-amount">Amount (USD)</label>
-    <input id="cash-amount" type="number" inputmode="decimal" min="0.01" step="0.01" [formControl]="amount" [readOnly]="submitting()" aria-describedby="cash-amount-help" />
-    <p id="cash-amount-help">Enter a positive amount with up to two decimal places.</p>
-    @if (amount.touched && amount.invalid) { <p class="error" role="alert">Enter a valid amount of at least $0.01.</p> }
-    @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
-    <div class="actions">
-      <button type="submit" class="primary" [disabled]="submitting()">{{ submitting() ? 'Processing…' : action === 'deposit' ? 'Confirm deposit' : 'Confirm withdrawal' }}</button>
-      <button type="button" (click)="close()" [disabled]="submitting()">Cancel</button>
-    </div>
-  </form>
+@if (success()) {
+  <p class="success" role="status">{{ success() }}</p>
 }
-
+<dialog #cashDialog aria-labelledby="cash-dialog-title" (cancel)="cancel($event)">
+  @if (mode(); as action) {
+    <form [formGroup]="form" (ngSubmit)="submit()" aria-label="Cash transfer">
+      <h2 id="cash-dialog-title">{{ action === 'deposit' ? 'Deposit cash' : 'Withdraw cash' }}</h2>
+      <p>{{ action === 'deposit' ? 'Deposit into' : 'Withdraw from' }} {{ accountId() }}</p>
+      <p class="available">Available cash: {{ cashBalance() | currency: 'USD' }}</p>
+      <label for="cash-amount">Amount (USD)</label>
+      <input
+        id="cash-amount"
+        type="number"
+        inputmode="decimal"
+        min="0.01"
+        step="0.01"
+        [formControl]="amount"
+        [readOnly]="submitting()"
+        aria-describedby="cash-amount-help"
+      />
+      <p id="cash-amount-help">Enter a positive amount with up to two decimal places.</p>
+      @if (amount.touched && amount.invalid) {
+        <p class="error" role="alert">Enter a valid amount of at least $0.01.</p>
+      }
+      @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+      }
+      <div class="actions">
+        <button type="submit" class="primary" [disabled]="submitting()">
+          {{ submitting() ? 'Processing…' : action === 'deposit' ? 'Confirm deposit' : 'Confirm withdrawal' }}
+        </button>
+        <button type="button" (click)="close()" [disabled]="submitting()">Cancel</button>
+      </div>
+    </form>
+  }
 </dialog>

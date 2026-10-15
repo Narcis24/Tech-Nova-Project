@@ -1,0 +1,28 @@
+<div class="heading">
+  <strong>{{ position().symbol }}</strong
+  ><span>{{ assetClass() === 'ETF' ? 'ETF' : (assetClass() | titlecase) }}</span>
+</div>
+<p class="value">{{ position().marketValue | currency: 'USD' : 'symbol' : '1.0-0' }}</p>
+<p class="muted">{{ allocation() | percent: '1.1-1' }} of portfolio</p>
+<dl>
+  <div>
+    <dt>Quantity</dt>
+    <dd>{{ position().quantity | number }}</dd>
+  </div>
+  <div>
+    <dt>Entry price</dt>
+    <dd>{{ position().averageCost | currency: 'USD' }}</dd>
+  </div>
+  <div>
+    <dt>Current price</dt>
+    <dd>{{ position().currentPrice | currency: 'USD' }}</dd>
+  </div>
+</dl>
+<p class="gain" [class.loss]="(position().unrealizedPnL ?? 0) < 0">
+  {{ (position().unrealizedPnL ?? 0) > 0 ? '+' : '' }}{{ position().unrealizedPnL | currency: 'USD' }} P&amp;L
+</p>
+<app-action-buttons
+  [symbol]="position().symbol ?? ''"
+  [closeDisabled]="closeDisabled()"
+  (close)="close.emit(position())"
+/>

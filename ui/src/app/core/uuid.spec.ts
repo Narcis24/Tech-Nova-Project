@@ -11,7 +11,8 @@ describe('newUuid', () => {
     const original = crypto.randomUUID;
     (crypto as { randomUUID?: unknown }).randomUUID = undefined;
     try {
-      const first = newUuid(), second = newUuid();
+      const first = newUuid(),
+        second = newUuid();
       expect(first).toMatch(pattern);
       expect(second).toMatch(pattern);
       expect(first).not.toBe(second);

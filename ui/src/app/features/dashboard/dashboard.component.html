@@ -1,25 +1,134 @@
-<div class="page-heading"><h1>Portfolio</h1>@if (account()) { <div class="refresh"><span>{{ store.state().updatedAt ? 'Updated ' + (store.state().updatedAt | date:'HH:mm:ss') : '' }} · every 30 seconds</span><button type="button" (click)="store.refresh()" [disabled]="store.state().loading">{{ store.state().loading ? 'Refreshing…' : 'Refresh dashboard' }}</button></div> }</div>
+<div class="page-heading">
+  <h1>Portfolio</h1>
+  @if (account()) {
+    <div class="refresh">
+      <span
+        >{{ store.state().updatedAt ? 'Updated ' + (store.state().updatedAt | date: 'HH:mm:ss') : '' }} · every 30
+        seconds</span
+      ><button type="button" (click)="store.refresh()" [disabled]="store.state().loading">
+        {{ store.state().loading ? 'Refreshing…' : 'Refresh dashboard' }}
+      </button>
+    </div>
+  }
+</div>
 @if (!account()) {
-  <div class="notice"><p>Select or open an account to see your portfolio.</p><a routerLink="/accounts">Manage accounts</a></div>
+  <div class="notice">
+    <p>Select or open an account to see your portfolio.</p>
+    <a routerLink="/accounts">Manage accounts</a>
+  </div>
 } @else {
-  @if (store.state().error) { <div class="notice" role="alert"><p>Couldn't update your portfolio. Any displayed values are from the last successful refresh.</p><button type="button" (click)="store.refresh()">Try again</button></div> }
-  @if (store.state().loading && !store.state().portfolio) { <p class="notice" role="status">Loading portfolio…</p> }
-  @if (feedback()) { <p class="notice" role="status">{{ feedback() }}</p> }
+  @if (store.state().error) {
+    <div class="notice" role="alert">
+      <p>Couldn't update your portfolio. Any displayed values are from the last successful refresh.</p>
+      <button type="button" (click)="store.refresh()">Try again</button>
+    </div>
+  }
+  @if (store.state().loading && !store.state().portfolio) {
+    <p class="notice" role="status">Loading portfolio…</p>
+  }
+  @if (feedback()) {
+    <p class="notice" role="status">{{ feedback() }}</p>
+  }
   @if (store.state().portfolio; as portfolio) {
-    <section class="summary" aria-label="Portfolio summary"><app-balance-card [portfolio]="portfolio" [dayChange]="store.dayChange()" /><app-cash-actions [accountId]="account()!.accountId" [cashBalance]="portfolio.cashBalance ?? 0" (completed)="store.refresh()" /></section>
-    <p class="description">Unrealized P&amp;L: <span class="gain" [class.loss]="store.gain() < 0">{{ store.gain() > 0 ? '+' : '' }}{{ store.gain() | currency:'USD' }} @if (store.returnOnCost() != null) { ({{ store.returnOnCost() | percent:'1.2-2' }}) }</span> on {{ store.holdings().length }} open {{ store.holdings().length === 1 ? 'position' : 'positions' }}.</p>
-    <section class="allocation" aria-label="Positions, sized by market value">
-      @for (position of store.holdings(); track position.symbol) { <app-position-card [position]="position" [assetClass]="store.instruments().get(position.symbol ?? '')?.assetClass" [allocation]="store.allocation(position.marketValue)" [closeDisabled]="pendingSells().has(position.symbol ?? '')" [style.flex-grow]="Math.max(0,store.allocation(position.marketValue) ?? 0)" (close)="closing.set($event)" /> }
-      <div class="cash-card"><strong>Cash</strong><div><p>{{ portfolio.cashBalance | currency:'USD' }}</p><span>{{ (store.allocation(portfolio.cashBalance) | percent:'1.1-1') ?? '—' }}, ready to trade</span></div><a routerLink="/trade">Buy an asset →</a></div>
+    <section class="summary" aria-label="Portfolio summary">
+      <app-balance-card [portfolio]="portfolio" [dayChange]="store.dayChange()" /><app-cash-actions
+        [accountId]="account()!.accountId"
+        [cashBalance]="portfolio.cashBalance ?? 0"
+        (completed)="store.refresh()"
+      />
     </section>
-    <app-position-summary [positions]="store.holdings()" [instruments]="store.instruments()" [pendingSells]="pendingSells()" (close)="closing.set($event)" />
-    <div class="details"><app-market-overview [assets]="store.state().market" [loading]="store.state().loading" [error]="store.state().marketError" (refresh)="store.refresh()" />
-      <section class="orders" aria-labelledby="orders-heading"><div class="section-heading"><h2 id="orders-heading">Orders</h2><a routerLink="/orders">All orders</a></div>
-        @if (store.state().ordersError) { <p role="status">Couldn't update orders. <button class="text-button" type="button" (click)="store.refresh()">Try again</button></p> }
-        @if (store.state().orders.length) { <ul>@for (order of store.state().orders.slice(0,5); track order.orderId ?? $index) { <li>@if (order.orderId) { <a class="order-status" [routerLink]="['/orders', order.orderId]" [class.loss]="order.status === 'REJECTED'">{{ order.status?.replaceAll('_',' ') | titlecase }}</a> } @else { <span class="order-status" [class.loss]="order.status === 'REJECTED'">{{ order.status?.replaceAll('_',' ') | titlecase }}</span> }<span>{{ order.side | titlecase }} {{ order.quantity | number }} {{ order.symbol }} @if (order.price != null) { at {{ order.price | number:'1.2-2' }} }<span class="order-message">{{ order.message }}</span></span></li> }</ul> }
-        @else if (!store.state().ordersError) { <p class="muted">No orders for this account yet.</p> }
+    <p class="description">
+      Unrealized P&amp;L:
+      <span class="gain" [class.loss]="store.gain() < 0"
+        >{{ store.gain() > 0 ? '+' : '' }}{{ store.gain() | currency: 'USD' }}
+        @if (store.returnOnCost() != null) {
+          ({{ store.returnOnCost() | percent: '1.2-2' }})
+        }
+      </span>
+      on {{ store.holdings().length }} open {{ store.holdings().length === 1 ? 'position' : 'positions' }}.
+    </p>
+    <section class="allocation" aria-label="Positions, sized by market value">
+      @for (position of store.holdings(); track position.symbol) {
+        <app-position-card
+          [position]="position"
+          [assetClass]="store.instruments().get(position.symbol ?? '')?.assetClass"
+          [allocation]="store.allocation(position.marketValue)"
+          [closeDisabled]="pendingSells().has(position.symbol ?? '')"
+          [style.flex-grow]="Math.max(0, store.allocation(position.marketValue) ?? 0)"
+          (close)="closing.set($event)"
+        />
+      }
+      <div class="cash-card">
+        <strong>Cash</strong>
+        <div>
+          <p>{{ portfolio.cashBalance | currency: 'USD' }}</p>
+          <span>{{ (store.allocation(portfolio.cashBalance) | percent: '1.1-1') ?? '—' }}, ready to trade</span>
+        </div>
+        <a routerLink="/trade">Buy an asset →</a>
+      </div>
+    </section>
+    <app-position-summary
+      [positions]="store.holdings()"
+      [instruments]="store.instruments()"
+      [pendingSells]="pendingSells()"
+      (close)="closing.set($event)"
+    />
+    <div class="details">
+      <app-market-overview
+        [assets]="store.state().market"
+        [loading]="store.state().loading"
+        [error]="store.state().marketError"
+        (refresh)="store.refresh()"
+      />
+      <section class="orders" aria-labelledby="orders-heading">
+        <div class="section-heading">
+          <h2 id="orders-heading">Orders</h2>
+          <a routerLink="/orders">All orders</a>
+        </div>
+        @if (store.state().ordersError) {
+          <p role="status">
+            Couldn't update orders.
+            <button class="text-button" type="button" (click)="store.refresh()">Try again</button>
+          </p>
+        }
+        @if (store.state().orders.length) {
+          <ul>
+            @for (order of store.state().orders.slice(0, 5); track order.orderId ?? $index) {
+              <li>
+                @if (order.orderId) {
+                  <a
+                    class="order-status"
+                    [routerLink]="['/orders', order.orderId]"
+                    [class.loss]="order.status === 'REJECTED'"
+                    >{{ order.status?.replaceAll('_', ' ') | titlecase }}</a
+                  >
+                } @else {
+                  <span class="order-status" [class.loss]="order.status === 'REJECTED'">{{
+                    order.status?.replaceAll('_', ' ') | titlecase
+                  }}</span>
+                }
+                <span
+                  >{{ order.side | titlecase }} {{ order.quantity | number }} {{ order.symbol }}
+                  @if (order.price != null) {
+                    at {{ order.price | number: '1.2-2' }}
+                  }
+                  <span class="order-message">{{ order.message }}</span></span
+                >
+              </li>
+            }
+          </ul>
+        } @else if (!store.state().ordersError) {
+          <p class="muted">No orders for this account yet.</p>
+        }
       </section>
     </div>
   }
-  @if (closing(); as position) { <app-close-position [accountId]="account()!.accountId" [position]="position" (dismiss)="closing.set(null)" (completed)="closed($event)" /> }
+  @if (closing(); as position) {
+    <app-close-position
+      [accountId]="account()!.accountId"
+      [position]="position"
+      (dismiss)="closing.set(null)"
+      (completed)="closed($event)"
+    />
+  }
 }

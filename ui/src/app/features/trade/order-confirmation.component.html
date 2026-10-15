@@ -1,21 +1,74 @@
-<dialog #dialog aria-labelledby="order-dialog-title" aria-describedby="order-dialog-note" (cancel)="cancel($event)" [class.sell]="order().side === 'SELL'" [attr.aria-busy]="submitting()">
-  <div class="heading"><p>{{ result() ? 'Order submitted' : 'One final check' }}</p><h2 id="order-dialog-title" tabindex="-1">{{ result() ? 'Order ' + (result()!.status?.replaceAll('_', ' ') | titlecase) : 'Review your order' }}</h2></div>
+<dialog
+  #dialog
+  aria-labelledby="order-dialog-title"
+  aria-describedby="order-dialog-note"
+  (cancel)="cancel($event)"
+  [class.sell]="order().side === 'SELL'"
+  [attr.aria-busy]="submitting()"
+>
+  <div class="heading">
+    <p>{{ result() ? 'Order submitted' : 'One final check' }}</p>
+    <h2 id="order-dialog-title" tabindex="-1">
+      {{ result() ? 'Order ' + (result()!.status?.replaceAll('_', ' ') | titlecase) : 'Review your order' }}
+    </h2>
+  </div>
   <p class="instrument">{{ order().side | titlecase }} {{ order().quantity | number }} {{ order().symbol }}</p>
   <dl>
-    <div><dt>Account</dt><dd>{{ order().accountId }}</dd></div>
-    <div><dt>Order type</dt><dd>{{ order().orderType | titlecase }}</dd></div>
-    @if (order().price != null) { <div><dt>Limit per share</dt><dd>{{ order().price | currency:'USD' }}</dd></div> }
-    <div class="total"><dt>{{ order().side === 'BUY' ? (order().orderType === 'LIMIT' ? 'Cost at your limit' : 'Estimated cost') : 'Estimated proceeds' }}</dt><dd>{{ (total() | currency:'USD') ?? '—' }}</dd></div>
-    <div><dt>Estimated cash after</dt><dd>{{ (cashAfter() | currency:'USD') ?? '—' }}</dd></div>
-    @if (result()?.orderId) { <div><dt>Order ID</dt><dd class="order-id">{{ result()!.orderId }}</dd></div> }
+    <div>
+      <dt>Account</dt>
+      <dd>{{ order().accountId }}</dd>
+    </div>
+    <div>
+      <dt>Order type</dt>
+      <dd>{{ order().orderType | titlecase }}</dd>
+    </div>
+    @if (order().price != null) {
+      <div>
+        <dt>Limit per share</dt>
+        <dd>{{ order().price | currency: 'USD' }}</dd>
+      </div>
+    }
+    <div class="total">
+      <dt>
+        {{
+          order().side === 'BUY'
+            ? order().orderType === 'LIMIT'
+              ? 'Cost at your limit'
+              : 'Estimated cost'
+            : 'Estimated proceeds'
+        }}
+      </dt>
+      <dd>{{ (total() | currency: 'USD') ?? '—' }}</dd>
+    </div>
+    <div>
+      <dt>Estimated cash after</dt>
+      <dd>{{ (cashAfter() | currency: 'USD') ?? '—' }}</dd>
+    </div>
+    @if (result()?.orderId) {
+      <div>
+        <dt>Order ID</dt>
+        <dd class="order-id">{{ result()!.orderId }}</dd>
+      </div>
+    }
   </dl>
-  <p id="order-dialog-note" class="note">{{ result()?.message || 'Placement does not guarantee a fill. Market prices can change before execution.' }}</p>
-  <div class="feedback" aria-live="polite">@if (error()) { <p class="error" role="alert">{{ error() }}</p> }</div>
+  <p id="order-dialog-note" class="note">
+    {{ result()?.message || 'Placement does not guarantee a fill. Market prices can change before execution.' }}
+  </p>
+  <div class="feedback" aria-live="polite">
+    @if (error()) {
+      <p class="error" role="alert">{{ error() }}</p>
+    }
+  </div>
   <div class="actions">
     @if (result()) {
-      @if (result()!.orderId) { <a [routerLink]="['/orders', result()!.orderId]">View order details</a> }<button type="button" class="secondary" (click)="close()">Done</button>
+      @if (result()!.orderId) {
+        <a [routerLink]="['/orders', result()!.orderId]">View order details</a>
+      }
+      <button type="button" class="secondary" (click)="close()">Done</button>
     } @else {
-      <button type="button" (click)="confirmOrder.emit()" [disabled]="submitting()">{{ submitting() ? 'Submitting…' : 'Confirm order' }}</button>
+      <button type="button" (click)="confirmOrder.emit()" [disabled]="submitting()">
+        {{ submitting() ? 'Submitting…' : 'Confirm order' }}
+      </button>
       <button type="button" class="secondary" (click)="close()" [disabled]="submitting()">Edit order</button>
     }
   </div>

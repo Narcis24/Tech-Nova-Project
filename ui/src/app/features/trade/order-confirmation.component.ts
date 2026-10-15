@@ -24,8 +24,13 @@ export class OrderConfirmationComponent implements AfterViewInit, OnDestroy {
     this.dialog().nativeElement.showModal();
     this.dialog().nativeElement.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
   }
-  ngOnDestroy(): void { this.dialog().nativeElement.close(); }
-  cancel(event: Event): void { event.preventDefault(); this.close(); }
+  ngOnDestroy(): void {
+    this.dialog().nativeElement.close();
+  }
+  cancel(event: Event): void {
+    event.preventDefault();
+    this.close();
+  }
   close(): void {
     if (this.submitting()) return;
     this.dialog().nativeElement.close();
