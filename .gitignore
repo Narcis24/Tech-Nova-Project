@@ -7,3 +7,7 @@ target/
 
 # Python
 __pycache__/
+
+# OpenAPI specs downloaded from the running services (npm run fetch:specs in ui/)
+contracts/trading-api.json
+contracts/auth-api.json

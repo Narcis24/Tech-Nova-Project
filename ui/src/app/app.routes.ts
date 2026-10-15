@@ -27,6 +27,27 @@ export const routes: Routes = [
     path: 'dashboard',
     canMatch: [authGuard],
     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
+    path: '',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/shell/shell.component').then(m => m.ShellComponent),
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
+      },
+      {
+        path: 'trade',
+        loadComponent: () => import('./features/trade/trade.component').then(m => m.TradeComponent),
+      },
+      {
+        path: 'orders',
+        loadComponent: () => import('./features/orders/orders.component').then(m => m.OrdersComponent),
+      },
+      {
+        path: 'accounts',
+        loadComponent: () => import('./features/accounts/accounts.component').then(m => m.AccountsComponent),
+      },
+    ]
   },
   { path: '**', component: NotFoundComponent },
 ];

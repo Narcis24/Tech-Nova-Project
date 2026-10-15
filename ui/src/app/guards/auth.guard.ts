@@ -15,6 +15,8 @@ export const authGuard: CanActivateFn & CanMatchFn = () => {
     return true;
   }
 
-  const returnUrl = router.getCurrentNavigation()?.extractedUrl.toString() ?? '/';
+  // finalUrl has redirects applied (so / becomes /dashboard); it is only set by the time canActivate runs
+  const navigation = router.getCurrentNavigation();
+  const returnUrl = (navigation?.finalUrl ?? navigation?.extractedUrl)?.toString() ?? '/';
   return router.createUrlTree(['/login'], { queryParams: { returnUrl } });
 };

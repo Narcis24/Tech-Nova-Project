@@ -1,0 +1,174 @@
+import { Component, signal } from '@angular/core';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
+
+import { Account, AccountService } from '../../services/account.service';
+import { AuthService } from '../../services/auth.service';
+import { NavBarComponent } from './nav-bar.component';
+
+// An empty page for the tab links to point at
+@Component({ template: '' })
+class BlankComponent {}
+
+const ACCOUNTS = [{ accountId: 'ACC001' }, { accountId: 'ACC002' }, { accountId: 'ACC003' }] as Account[];
+
+describe('NavBarComponent', () => {
+  const username = signal<string | null>('trader01');
+  const accounts = signal<Account[]>(ACCOUNTS);
+  const currentAccountId = signal<string | null>('ACC001');
+  let auth: { username: typeof username; logout: jasmine.Spy };
+  let accountService: { accounts: typeof accounts; currentAccountId: typeof currentAccountId; selectAccount: jasmine.Spy };
+  let component: NavBarComponent;
+  let fixture: ComponentFixture<NavBarComponent>;
+
+  beforeEach(async () => {
+    username.set('trader01');
+    accounts.set(ACCOUNTS);
+    currentAccountId.set('ACC001');
+    auth = { username, logout: jasmine.createSpy('logout') };
+    accountService = { accounts, currentAccountId, selectAccount: jasmine.createSpy('selectAccount') };
+
+    await TestBed.configureTestingModule({
+      imports: [NavBarComponent],
+      providers: [
+        provideRouter([
+          { path: 'dashboard', component: BlankComponent },
+          { path: 'trade', component: BlankComponent },
+          { path: 'orders', component: BlankComponent },
+        ]),
+        { provide: AuthService, useValue: auth },
+        { provide: AccountService, useValue: accountService },
+      ],
+    })
+    .compileComponents();
+
+    fixture = TestBed.createComponent(NavBarComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+
+  it('marks only the current tab with aria-current', async () => {
+    await TestBed.inject(Router).navigateByUrl('/trade');
+    fixture.detectChanges();
+
+    const current: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('[aria-current="page"]'));
+    expect(current.map(tab => tab.textContent?.trim())).toEqual(['Trade']);
+  });
+
+  it("shows the user's initial and name", () => {
+    const text: string = fixture.nativeElement.querySelector('.user').textContent;
+
+    expect(text).toContain('T');
+    expect(text).toContain('trader01');
+  });
+
+  it('hides the user badge when logged out', () => {
+    username.set(null);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.user')).toBeNull();
+  });
+
+  it('shows the current account', () => {
+    const pill: HTMLElement = fixture.nativeElement.querySelector('.account');
+
+    expect(pill.textContent).toContain('ACC001');
+  });
+
+  it('hides the account pill when no account is selected', () => {
+    currentAccountId.set(null);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.account')).toBeNull();
+  });
+
+  describe('account switcher', () => {
+    function pill(): HTMLButtonElement {
+      return fixture.nativeElement.querySelector('.account');
+    }
+
+    function options(): HTMLButtonElement[] {
+      return Array.from(fixture.nativeElement.querySelectorAll('.account-menu .account-option'));
+    }
+
+    it('starts closed', () => {
+      expect(pill().getAttribute('aria-expanded')).toBe('false');
+      expect(options().length).toBe(0);
+    });
+
+    it('lists every account when the pill is clicked, marking the current one', () => {
+      pill().click();
+      fixture.detectChanges();
+
+      expect(pill().getAttribute('aria-expanded')).toBe('true');
+      expect(options().map(option => option.textContent?.trim())).toEqual(['ACC001', 'ACC002', 'ACC003']);
+      expect(options()[0].getAttribute('aria-current')).toBe('true');
+      expect(options()[1].hasAttribute('aria-current')).toBeFalse();
+    });
+
+    it('selects the clicked account and closes the list', () => {
+      pill().click();
+      fixture.detectChanges();
+
+      options()[1].click();
+      fixture.detectChanges();
+
+      expect(accountService.selectAccount).toHaveBeenCalledWith('ACC002');
+      expect(options().length).toBe(0);
+    });
+
+    it('closes on Escape', () => {
+      pill().click();
+      fixture.detectChanges();
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      fixture.detectChanges();
+
+      expect(options().length).toBe(0);
+    });
+  });
+
+  describe('phone menu', () => {
+    function openMenu(): void {
+      fixture.nativeElement.querySelector('.menu-button').click();
+      fixture.detectChanges();
+    }
+
+    it('shows the current account and a link to change it', () => {
+      openMenu();
+
+      expect(fixture.nativeElement.querySelector('.menu-account').textContent).toContain('ACC001');
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.menu-change-account');
+      expect(link.getAttribute('href')).toBe('/accounts');
+    });
+
+    it('closes when Change account is clicked', () => {
+      openMenu();
+
+      fixture.nativeElement.querySelector('.menu-change-account').click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.menu')).toBeNull();
+    });
+  });
+
+  it('signs out from the link beside the avatar', () => {
+    fixture.nativeElement.querySelector('.sign-out').click();
+
+    expect(auth.logout).toHaveBeenCalled();
+  });
+
+  // The menu's Sign out is only shown on phones (by CSS); the click still works whatever the screen size
+  it('signs out from the avatar menu', () => {
+    fixture.nativeElement.querySelector('.menu-button').click();
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector('.menu-sign-out').click();
+
+    expect(auth.logout).toHaveBeenCalled();
+  });
+});

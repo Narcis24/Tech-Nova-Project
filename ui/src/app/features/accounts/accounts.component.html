@@ -1,0 +1,47 @@
+<h1>Accounts</h1>
+
+@if (accounts().length) {
+  <ul class="accounts" aria-label="Your accounts">
+    @for (account of accounts(); track account.accountId) {
+      <li>
+        <button
+          type="button"
+          class="account"
+          [attr.aria-current]="account.accountId === currentAccountId() ? 'true' : null"
+          (click)="selectAccount(account.accountId)"
+        >
+          <span class="account-id">{{ account.accountId }}</span>
+          <span class="holder">{{ account.holderName }}</span>
+        </button>
+      </li>
+    }
+  </ul>
+} @else {
+  <p class="empty">You don't have any accounts yet.</p>
+}
+
+@if (formOpen()) {
+  <form class="open-form" [formGroup]="newAccountForm" (ngSubmit)="submit()">
+    <label for="holder-name">Holder name</label>
+    <input id="holder-name" type="text" [formControl]="holderName" autocomplete="name" />
+
+    @if (holderName.touched && holderName.hasError('required')) {
+      <p class="field-error">Enter the holder name.</p>
+    }
+    @if (holderName.hasError('maxlength')) {
+      <p class="field-error">The holder name can be at most 255 characters.</p>
+    }
+    @if (error(); as message) {
+      <p class="field-error" role="alert">{{ message }}</p>
+    }
+
+    <div class="form-actions">
+      <button type="submit" class="primary" [disabled]="submitting()">
+        {{ submitting() ? 'Opening…' : 'Open account' }}
+      </button>
+      <button type="button" class="secondary" (click)="cancel()">Cancel</button>
+    </div>
+  </form>
+} @else {
+  <button type="button" class="open-button" (click)="openForm()">+ Open new account</button>
+}
