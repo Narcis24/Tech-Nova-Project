@@ -1,0 +1,78 @@
+<h1>Risk limits</h1>
+<p class="intro">
+  Before you place an order, we check it against these limits and warn you if it goes past one.
+  Warnings never stop an order.
+</p>
+
+@if (!accountId()) {
+  <p class="empty">Select an account to see its risk limits.</p>
+} @else if (loading()) {
+  <p class="empty" role="status">Loading your limits…</p>
+} @else if (loadError()) {
+  <div class="load-error" role="alert">
+    <p>Couldn't load your risk limits.</p>
+    <button type="button" class="secondary" (click)="retry()">Try again</button>
+  </div>
+} @else {
+  <p class="account">For account {{ accountId() }}</p>
+  <ul class="cards">
+    @for (card of cards(); track card.limit.rule) {
+      <li class="card" [class.off]="!card.limit.enabled" [attr.aria-busy]="card.saving">
+        <div class="card-head">
+          <h2 [id]="'rule-' + card.limit.rule">{{ wording[card.limit.rule!].title }}</h2>
+          <span class="badge" [class.custom]="card.limit.source === 'CUSTOM'">
+            {{ card.limit.source === 'CUSTOM' ? 'Custom' : 'Default' }}
+          </span>
+          <button
+            type="button"
+            class="switch"
+            role="switch"
+            [attr.aria-checked]="card.limit.enabled"
+            [attr.aria-labelledby]="'rule-' + card.limit.rule"
+            [disabled]="card.saving"
+            (click)="toggle(card)"
+          >
+            <span class="visually-hidden">{{ card.limit.enabled ? 'On' : 'Off' }}</span>
+          </button>
+        </div>
+
+        @if (card.limit.enabled) {
+          <form class="threshold" (submit)="$event.preventDefault(); saveThreshold(card)">
+            <label [for]="'threshold-' + card.limit.rule">{{ wording[card.limit.rule!].sentence }}</label>
+            <div class="threshold-row">
+              <span class="input">
+                <input
+                  [id]="'threshold-' + card.limit.rule"
+                  type="text"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  [value]="card.draft"
+                  [attr.aria-invalid]="invalid(card)"
+                  [disabled]="card.saving"
+                  (input)="setDraft(card.limit.rule!, $any($event.target).value)"
+                />
+                <span aria-hidden="true">%</span>
+              </span>
+              <button type="submit" class="primary" [disabled]="!canSave(card)">
+                {{ card.saving ? 'Saving…' : 'Save' }}
+              </button>
+            </div>
+            @if (invalid(card)) {
+              <p class="field-error">Enter a number from 0 to 100, with up to two decimals.</p>
+            }
+          </form>
+        } @else {
+          <p class="off-note">Off. This rule never warns you.</p>
+        }
+
+        @if (card.error) {
+          <p class="field-error" role="alert">{{ card.error }}</p>
+        }
+
+        @if (card.limit.source === 'CUSTOM') {
+          <button type="button" class="reset" [disabled]="card.saving" (click)="reset(card)">Reset to default</button>
+        }
+      </li>
+    }
+  </ul>
+}

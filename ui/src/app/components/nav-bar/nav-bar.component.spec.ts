@@ -146,6 +146,12 @@ describe('NavBarComponent', () => {
       expect(link.getAttribute('href')).toBe('/accounts');
     });
 
+    it('links to the risk limits page', () => {
+      openMenu();
+
+      expect(fixture.nativeElement.querySelector('.menu-risk-limits').getAttribute('href')).toBe('/risk-limits');
+    });
+
     it('closes when Change account is clicked', () => {
       openMenu();
 
