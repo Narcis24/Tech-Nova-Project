@@ -1,20 +1,20 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { afterNextRender, Component, computed, DestroyRef, effect, ElementRef, inject, Injector, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, exhaustMap, map, of, Subject, startWith, switchMap } from 'rxjs';
 import { InstrumentControllerService, InstrumentResponse, OrderControllerService, OrderResponse, PlaceOrderRequest, PortfolioControllerService, PortfolioSnapshotResponse } from '../../generated/trading-api-client';
-import { PriceChartComponent, TradeQuote } from './price-chart.component';
-import { orderError } from './order-error';
-import { OrderConfirmationComponent } from './order-confirmation.component';
+import { PriceChartComponent, TradeQuote } from '../../features/trade/price-chart.component';
+import { orderError } from '../../features/trade/order-error';
+import { OrderConfirmationComponent } from '../../features/trade/order-confirmation.component';
 import { AccountService } from '../../services/account.service';
 
 @Component({
-  selector: 'app-trade', imports: [CurrencyPipe, DecimalPipe, ReactiveFormsModule, RouterLink, PriceChartComponent, OrderConfirmationComponent],
-  templateUrl: './trade.component.html', styleUrl: './trade.component.css',
+  selector: 'app-order-form', imports: [CurrencyPipe, DecimalPipe, ReactiveFormsModule, RouterLink, PriceChartComponent, OrderConfirmationComponent],
+  templateUrl: './order-form.component.html', styleUrl: './order-form.component.css',
 })
-export class TradeComponent {
+export class OrderFormComponent {
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
   private readonly destroyRef = inject(DestroyRef);
@@ -39,7 +39,7 @@ export class TradeComponent {
   private lastFingerprint = '';
   private key = '';
   readonly presets = [10, 25, 50, 100];
-  readonly form = new FormGroup({
+  readonly form = inject(FormBuilder).group({
     symbol: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^[A-Z0-9.-]{1,10}$/)] }),
     side: new FormControl('BUY', { nonNullable: true, validators: [Validators.pattern(/^(BUY|SELL)$/)] }),
     quantity: new FormControl<number | null>(25, [Validators.required, Validators.min(1), Validators.max(100000), Validators.pattern(/^\d+$/)]),

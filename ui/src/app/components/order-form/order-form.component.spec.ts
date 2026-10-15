@@ -5,21 +5,21 @@ import { provideRouter, ActivatedRoute, convertToParamMap } from '@angular/route
 import { Observable, of, Subject } from 'rxjs';
 import { AccountService } from '../../services/account.service';
 import { PortfolioControllerService, PriceControllerService, InstrumentControllerService, OrderControllerService, OrderResponse, PlaceOrderRequest } from '../../generated/trading-api-client';
-import { TradeComponent } from './trade.component';
+import { OrderFormComponent } from './order-form.component';
 
-describe('TradeComponent', () => {
+describe('OrderFormComponent', () => {
   let api: jasmine.SpyObj<{placeOrder:(request:PlaceOrderRequest)=>Observable<OrderResponse>}>;
   const currentAccountId = signal<string | null>('ACC001');
   function setup(quote=true) {
     currentAccountId.set('ACC001'); api=jasmine.createSpyObj('orders',['placeOrder']); api.placeOrder.and.returnValue(of({orderId:'test',status:'PENDING'}));
-    TestBed.configureTestingModule({imports:[TradeComponent],providers:[provideRouter([]),
+    TestBed.configureTestingModule({imports:[OrderFormComponent],providers:[provideRouter([]),
       {provide:ActivatedRoute,useValue:{queryParamMap:of(convertToParamMap({symbol:'AAPL',side:'SELL'}))}},
       {provide:AccountService,useValue:{currentAccountId}},
       {provide:OrderControllerService,useValue:api},
       {provide:PortfolioControllerService,useValue:{getPortfolioSnapshot:(id:string)=>of({accountId:id,cashBalance:50000,positions:[{symbol:'AAPL',quantity:120}]})}},
       {provide:PriceControllerService,useValue:{getPriceHistory:()=>of([])}},
       {provide:InstrumentControllerService,useValue:{getInstruments:()=>of([])}},
-    ]}); const fixture=TestBed.createComponent(TradeComponent); fixture.detectChanges(); if(quote) { fixture.componentInstance.onQuote({symbol:'AAPL',price:100,previousClose:99,date:'2026-10-14'}); fixture.detectChanges(); } return fixture;
+    ]}); const fixture=TestBed.createComponent(OrderFormComponent); fixture.detectChanges(); if(quote) { fixture.componentInstance.onQuote({symbol:'AAPL',price:100,previousClose:99,date:'2026-10-14'}); fixture.detectChanges(); } return fixture;
   }
   it('prefills a dashboard action but does not submit without review and confirmation', () => {
     const component=setup().componentInstance;
