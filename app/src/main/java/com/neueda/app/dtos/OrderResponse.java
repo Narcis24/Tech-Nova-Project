@@ -1,6 +1,8 @@
 package com.neueda.app.dtos;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.UUID;
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.enums.OrderType;
@@ -22,6 +24,7 @@ public class OrderResponse {
     private BigDecimal price;
     private OrderStatus status;
     private String message;
+    private Instant createdOn;       // when the order was placed, in UTC
     
     public OrderResponse(Order order) {
         this.orderId = order.getId();
@@ -33,5 +36,7 @@ public class OrderResponse {
         this.price = order.getPrice();
         this.status = order.getStatus();
         this.message = order.getRejectionReason();
+        // Stored as UTC without a zone; an Instant tells clients it is UTC
+        this.createdOn = order.getCreatedOn() == null ? null : order.getCreatedOn().toInstant(ZoneOffset.UTC);
     }
 }
