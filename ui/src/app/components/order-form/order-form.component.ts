@@ -22,6 +22,8 @@ import {
   PlaceOrderRequest,
   PortfolioControllerService,
   PortfolioSnapshotResponse,
+  RiskControllerService,
+  RiskWarning,
 } from '../../generated/trading-api-client';
 import { PriceChartComponent, TradeQuote } from '../../features/trade/price-chart.component';
 import { isRejection, orderError } from '../../features/trade/order-error';
@@ -48,6 +50,7 @@ export class OrderFormComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly accounts = inject(AccountService);
   private readonly api = inject(OrderControllerService);
+  private readonly riskApi = inject(RiskControllerService);
   private readonly portfolioApi = inject(PortfolioControllerService);
   private readonly instrumentsApi = inject(InstrumentControllerService);
   private readonly route = inject(ActivatedRoute);
@@ -57,6 +60,8 @@ export class OrderFormComponent {
   readonly instrumentsLoading = signal(true);
   readonly pickerOpen = signal(false);
   readonly submitting = signal(false);
+  readonly checking = signal(false);
+  readonly warnings = signal<RiskWarning[]>([]);
   readonly error = signal<string | null>(null);
   readonly result = signal<OrderResponse | null>(null);
   readonly review = signal<PlaceOrderRequest | null>(null);
@@ -64,6 +69,7 @@ export class OrderFormComponent {
   readonly confirmationTotal = signal<number | null>(null);
   readonly confirmationCashAfter = signal<number | null>(null);
   private readonly submissions = new Subject<PlaceOrderRequest>();
+  private readonly checks = new Subject<PlaceOrderRequest>();
   private lastFingerprint = '';
   private key = '';
   readonly presets = [10, 25, 50, 100];
@@ -183,14 +189,42 @@ export class OrderFormComponent {
     effect(() => {
       this.accountId();
       this.review.set(null);
+      this.warnings.set([]);
       this.result.set(null);
       this.error.set(null);
     });
     this.form.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
       this.review.set(null);
+      this.warnings.set([]);
       this.error.set(null);
       this.result.set(null);
     });
+    // The risk check runs on Review, before the dialog opens. Warnings never block: the user can still place the order.
+    this.checks
+      .pipe(
+        exhaustMap((order) =>
+          this.riskApi.check(order).pipe(
+            map((warnings) => ({ order, warnings })),
+            catchError((error) => {
+              if (isRejection(error)) {
+                // The check refuses what /orders would refuse, so the order was never placed
+                this.lastFingerprint = '';
+                this.error.set(orderError(error));
+              } else {
+                this.error.set("Couldn't run the risk check. Try again.");
+              }
+              return of(null);
+            }),
+          ),
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe((checked) => {
+        this.checking.set(false);
+        if (!checked || checked.order.accountId !== this.accountId()) return;
+        this.warnings.set(checked.warnings);
+        this.review.set(checked.order);
+      });
     this.submissions
       .pipe(
         exhaustMap((request) =>
@@ -273,6 +307,7 @@ export class OrderFormComponent {
     this.form.controls.price.setValue(Math.max(0.05, Math.round((current + direction * 0.05) * 100) / 100));
   }
   prepare(): void {
+    if (this.checking()) return;
     this.error.set(null);
     this.form.markAllAsTouched();
     const value = this.form.getRawValue(),
@@ -298,10 +333,12 @@ export class OrderFormComponent {
     this.confirmationOrder.set({ ...request, idempotencyKey: this.key });
     this.confirmationTotal.set(this.total());
     this.confirmationCashAfter.set(this.cashAfter());
-    this.review.set(this.confirmationOrder());
+    this.checking.set(true);
+    this.checks.next(this.confirmationOrder()!);
   }
   dismissConfirmation(): void {
     this.review.set(null);
+    this.warnings.set([]);
     this.result.set(null);
     this.error.set(null);
   }
@@ -310,6 +347,7 @@ export class OrderFormComponent {
     if (
       !order ||
       this.submitting() ||
+      this.checking() ||
       order.accountId !== this.accountId() ||
       !this.ready() ||
       this.validationIssue() ||
