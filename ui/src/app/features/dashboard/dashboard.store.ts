@@ -75,15 +75,8 @@ export class DashboardStore {
   }
 
   refresh(): void { this.revision.update(value => value + 1); }
-  hasPendingSell(symbol?: string): boolean {
-    return this.state().orders.some(o => o.symbol === symbol && o.side?.toUpperCase() === 'SELL' && ['PENDING', 'PUBLISHED', 'PARTIALLY_FILLED'].includes(o.status ?? ''));
-  }
   allocation(value?: number): number | null {
     const total = Number(this.state().portfolio?.totalPortfolioValue ?? 0);
     return value != null && total > 0 ? Number(value) / total : null;
-  }
-  positionReturn(quantity?: number, averageCost?: number, gain?: number): number | null {
-    const cost = Number(quantity ?? 0) * Number(averageCost ?? 0);
-    return gain != null && cost > 0 ? Number(gain) / cost : null;
   }
 }

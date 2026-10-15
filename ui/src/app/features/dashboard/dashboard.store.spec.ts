@@ -34,7 +34,6 @@ describe('DashboardStore', () => {
     TestBed.flushEffects();
     expect(store.returnOnCost()).toBe(0.1);
     expect(store.allocation(60)).toBe(0.5);
-    expect(store.positionReturn(0, 50, 0)).toBeNull();
   });
 
   it('cancels old requests and clears data when switching accounts', () => {
