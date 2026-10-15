@@ -37,7 +37,7 @@ describe('PriceChartComponent', () => {
     expect(component.visible().length).toBe(5);
     expect(api.getPriceHistory).toHaveBeenCalledTimes(1);
   }));
-  it('reserves the quote and chart layout while price history is pending', fakeAsync(() => {
+  it('keeps the quote header in place and shows a placeholder while price history is pending', fakeAsync(() => {
     const fixture = setup(),
       pending = new Subject<PriceHistoryPoint[]>();
     api.getPriceHistory.and.returnValue(pending);
@@ -46,8 +46,6 @@ describe('PriceChartComponent', () => {
     const root: HTMLElement = fixture.nativeElement;
     const quote = root.querySelector('.quote');
     expect(root.querySelector('.chart-loading')).not.toBeNull();
-    expect(root.querySelector('.history .plot svg')).not.toBeNull();
-    expect(root.querySelector('.quote-facts')).not.toBeNull();
     expect(root.querySelector('svg[role="img"]')).toBeNull();
     pending.next(points);
     pending.complete();

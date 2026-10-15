@@ -45,7 +45,7 @@ describe('OrderFormComponent', () => {
     const fixture = TestBed.createComponent(OrderFormComponent);
     fixture.detectChanges();
     if (quote) {
-      fixture.componentInstance.onQuote({ symbol: 'AAPL', price: 100, previousClose: 99, date: '2026-10-14' });
+      fixture.componentInstance.onQuote({ symbol: 'AAPL', price: 100 });
       fixture.detectChanges();
     }
     return fixture;
@@ -116,18 +116,6 @@ describe('OrderFormComponent', () => {
     expect(dialog.textContent).toContain('placed');
     expect(root.querySelector('fieldset > .submit-order')).toBe(trigger);
   });
-  it('keeps the price ruler space reserved before the quote arrives', () => {
-    const fixture = setup(false),
-      root: HTMLElement = fixture.nativeElement;
-    const ruler = root.querySelector<HTMLElement>('.price-ruler')!;
-    expect(ruler.style.visibility).toBe('hidden');
-    expect(ruler.getAttribute('aria-hidden')).toBe('true');
-    fixture.componentInstance.onQuote({ symbol: 'AAPL', price: 100, previousClose: 99, date: '2026-10-14' });
-    fixture.detectChanges();
-    expect(root.querySelector('.price-ruler')).toBe(ruler);
-    expect(ruler.style.visibility).toBe('');
-    expect(ruler.getAttribute('aria-hidden')).toBeNull();
-  });
   it('blocks invalid quantities and missing limit prices', () => {
     const component = setup().componentInstance;
     component.form.controls.quantity.setValue(1.5);
@@ -153,7 +141,7 @@ describe('OrderFormComponent', () => {
     component.confirm();
     expect(api.placeOrder.calls.mostRecent().args[0].idempotencyKey).toBe(key);
     component.prepare();
-    expect(component.review()?.idempotencyKey).not.toBe(key);
+    expect(component.review()?.order.idempotencyKey).not.toBe(key);
   });
 
   it('uses a fresh idempotency key after the API rejects an order with a 4xx', () => {
@@ -162,11 +150,11 @@ describe('OrderFormComponent', () => {
       throwError(() => new HttpErrorResponse({ status: 422, error: { message: 'Insufficient cash' } })),
     );
     component.prepare();
-    const key = component.review()!.idempotencyKey;
+    const key = component.review()!.order.idempotencyKey;
     component.confirm();
     expect(component.error()).toBe('Insufficient cash');
     component.prepare();
-    expect(component.review()?.idempotencyKey).not.toBe(key);
+    expect(component.review()?.order.idempotencyKey).not.toBe(key);
   });
   it('clears the limit price when the symbol changes', () => {
     const component = setup().componentInstance;
@@ -178,7 +166,7 @@ describe('OrderFormComponent', () => {
   it('updates side, limit steps and account estimates from the ticket controls', () => {
     const fixture = setup(),
       component = fixture.componentInstance;
-    component.onQuote({ symbol: 'AAPL', price: 100, previousClose: 99, date: '2026-10-14' });
+    component.onQuote({ symbol: 'AAPL', price: 100 });
     component.setSide('BUY');
     component.setOrderType('LIMIT');
     expect(component.form.controls.price.value).toBe(100);
@@ -237,7 +225,7 @@ describe('OrderFormComponent', () => {
     component.quote.set(null);
     component.prepare();
     expect(component.review()).toBeNull();
-    component.onQuote({ symbol: 'AAPL', price: 100, previousClose: 99, date: '2026-10-14' });
+    component.onQuote({ symbol: 'AAPL', price: 100 });
     component.context.set({ id: 'ACC001', loading: false, error: true, portfolio: null });
     component.prepare();
     expect(component.review()).toBeNull();

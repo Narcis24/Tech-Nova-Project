@@ -2,10 +2,10 @@
   <h1>Portfolio</h1>
   @if (account()) {
     <div class="refresh">
-      <span
-        >{{ store.state().updatedAt ? 'Updated ' + (store.state().updatedAt | date: 'HH:mm:ss') : '' }} · every 30
-        seconds</span
-      ><button type="button" (click)="store.refresh()" [disabled]="store.state().loading">
+      @if (store.state().updatedAt; as updatedAt) {
+        <span>Updated {{ updatedAt | date: 'HH:mm:ss' }}</span>
+      }
+      <button type="button" (click)="store.refresh()" [disabled]="store.state().loading">
         {{ store.state().loading ? 'Refreshing…' : 'Refresh dashboard' }}
       </button>
     </div>
@@ -47,29 +47,10 @@
       </span>
       on {{ store.holdings().length }} open {{ store.holdings().length === 1 ? 'position' : 'positions' }}.
     </p>
-    <section class="allocation" aria-label="Positions, sized by market value">
-      @for (position of store.holdings(); track position.symbol) {
-        <app-position-card
-          [position]="position"
-          [assetClass]="store.instruments().get(position.symbol ?? '')?.assetClass"
-          [allocation]="store.allocation(position.marketValue)"
-          [closeDisabled]="pendingSells().has(position.symbol ?? '')"
-          [style.flex-grow]="Math.max(0, store.allocation(position.marketValue) ?? 0)"
-          (close)="closing.set($event)"
-        />
-      }
-      <div class="cash-card">
-        <strong>Cash</strong>
-        <div>
-          <p>{{ portfolio.cashBalance | currency: 'USD' }}</p>
-          <span>{{ (store.allocation(portfolio.cashBalance) | percent: '1.1-1') ?? '—' }}, ready to trade</span>
-        </div>
-        <a routerLink="/trade">Buy an asset →</a>
-      </div>
-    </section>
     <app-position-summary
       [positions]="store.holdings()"
       [instruments]="store.instruments()"
+      [portfolioValue]="portfolio.totalPortfolioValue ?? 0"
       [pendingSells]="pendingSells()"
       (close)="closing.set($event)"
     />

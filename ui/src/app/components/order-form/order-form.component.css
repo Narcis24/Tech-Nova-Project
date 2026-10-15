@@ -195,57 +195,7 @@ input {
   font-size: 14px;
   line-height: 1.5;
 }
-.price-ruler {
-  position: relative;
-  height: 84px;
-}
-.ruler-track {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 46px;
-  height: 2px;
-  background: #e4e7ec;
-}
-.reference-tick {
-  position: absolute;
-  left: 50%;
-  top: 38px;
-  width: 2px;
-  height: 18px;
-  background: var(--color-ink);
-}
-.reference-label {
-  position: absolute;
-  left: 50%;
-  top: 62px;
-  transform: translateX(-50%);
-  font-size: 13px;
-  white-space: nowrap;
-}
-.order-marker {
-  position: absolute;
-  top: 0;
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  transform: translateX(-50%);
-  transition: left 0.15s ease;
-}
-.order-marker span {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--trade-side);
-  color: white;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.order-marker i {
-  height: 24px;
-  width: 2px;
-  background: var(--trade-side);
-}
+
 .order-totals {
   margin: 0;
   display: flex;
@@ -335,11 +285,6 @@ dd {
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-@media (prefers-reduced-motion: reduce) {
-  .order-marker {
-    transition: none;
-  }
 }
 @media (max-width: 767.98px) {
   :host {
@@ -465,33 +410,6 @@ dd {
     flex: 1 1 100%;
     max-width: none;
   }
-  .order-ticket fieldset {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 24px;
-  }
-  .ticket-heading,
-  .side-control,
-  .field-error,
-  .data-note,
-  .submit-order,
-  .order-types {
-    grid-column: 1;
-    grid-row: 3;
-    align-self: start;
-  }
-  .inputs {
-    grid-column: 2;
-    grid-row: 3 / span 2;
-  }
-  .execution-card {
-    grid-column: 1;
-    grid-row: 4;
-    align-self: start;
-  }
-  .order-totals {
-    grid-column: 1/-1;
-  }
 }
 .side-control button:not([aria-pressed='true']):hover {
   background: #dde1ea;
@@ -526,18 +444,6 @@ dd {
   .execution-card {
     padding: 12px;
     gap: 8px;
-  }
-  .price-ruler {
-    height: 72px;
-  }
-  .ruler-track {
-    top: 38px;
-  }
-  .reference-tick {
-    top: 30px;
-  }
-  .reference-label {
-    top: 54px;
   }
 }
 

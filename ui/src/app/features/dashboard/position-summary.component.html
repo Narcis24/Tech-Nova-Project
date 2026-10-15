@@ -10,6 +10,7 @@
           <th scope="col">Entry price</th>
           <th scope="col">Current price</th>
           <th scope="col">Value</th>
+          <th scope="col">Portfolio</th>
           <th scope="col">P&amp;L</th>
           <th scope="col">Actions</th>
         </tr>
@@ -25,16 +26,32 @@
             <td>{{ p.averageCost | number: '1.2-2' }}</td>
             <td>{{ p.currentPrice | number: '1.2-2' }}</td>
             <td>{{ p.marketValue | number: '1.2-2' }}</td>
+            <td>{{ (allocation(p) | percent: '1.1-1') ?? '—' }}</td>
             <td class="gain" [class.loss]="(p.unrealizedPnL ?? 0) < 0">
               {{ (p.unrealizedPnL ?? 0) > 0 ? '+' : '' }}{{ p.unrealizedPnL | number: '1.2-2'
               }}<span class="name">{{ positionReturn(p) | percent: '1.2-2' }}</span>
             </td>
-            <td>
-              <app-action-buttons
-                [symbol]="p.symbol ?? ''"
-                [closeDisabled]="pendingSells().has(p.symbol ?? '')"
-                (close)="close.emit(p)"
-              />
+            <td class="actions">
+              <a
+                routerLink="/trade"
+                [queryParams]="{ symbol: p.symbol, side: 'BUY' }"
+                [attr.aria-label]="'Buy more ' + p.symbol"
+                >Buy more</a
+              >
+              <a
+                routerLink="/trade"
+                [queryParams]="{ symbol: p.symbol, side: 'SELL' }"
+                [attr.aria-label]="'Sell ' + p.symbol"
+                >Sell</a
+              >
+              <button
+                type="button"
+                (click)="close.emit(p)"
+                [disabled]="pendingSells().has(p.symbol ?? '')"
+                [attr.aria-label]="'Close ' + p.symbol + ' position'"
+              >
+                {{ pendingSells().has(p.symbol ?? '') ? 'Sell pending' : 'Close' }}
+              </button>
             </td>
           </tr>
         }

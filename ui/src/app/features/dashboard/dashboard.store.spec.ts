@@ -1,5 +1,5 @@
 import { signal } from '@angular/core';
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { Observable, of, Subject, throwError } from 'rxjs';
 import {
   AccountControllerService,
@@ -46,10 +46,9 @@ describe('DashboardStore', () => {
     store = TestBed.inject(DashboardStore);
   });
 
-  it('derives return on cost and allocation from portfolio values', () => {
+  it('derives return on cost from portfolio values', () => {
     TestBed.flushEffects();
     expect(store.returnOnCost()).toBe(0.1);
-    expect(store.allocation(60)).toBe(0.5);
   });
 
   it('cancels old requests and clears data when switching accounts', () => {
@@ -84,7 +83,6 @@ describe('DashboardStore', () => {
     store.refresh();
     TestBed.flushEffects();
     expect(store.state().error).toBeFalse();
-    expect(store.allocation(0)).toBeNull();
   });
 
   it('keeps the same account visible during a refresh', () => {
@@ -101,38 +99,11 @@ describe('DashboardStore', () => {
     expect(store.state().portfolio?.totalPortfolioValue).toBe(130);
   });
 
-  it('refreshes every 30 seconds only while visible and stops without an account', fakeAsync(() => {
-    const visibility = spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
-    TestBed.flushEffects();
-    expect(portfolioApi.getPortfolioMetrics).toHaveBeenCalledTimes(1);
-    tick(30000);
-    expect(portfolioApi.getPortfolioMetrics).toHaveBeenCalledTimes(2);
-    visibility.and.returnValue('hidden');
-    tick(30000);
-    expect(portfolioApi.getPortfolioMetrics).toHaveBeenCalledTimes(2);
-    currentAccountId.set(null);
-    TestBed.flushEffects();
-    tick(30000);
-    expect(portfolioApi.getPortfolioMetrics).toHaveBeenCalledTimes(2);
-  }));
-
   it('does not request a portfolio without an account', () => {
     currentAccountId.set(null);
     TestBed.flushEffects();
     expect(portfolioApi.getPortfolioMetrics).not.toHaveBeenCalled();
   });
-
-  it('loads the static instrument list once, then keeps it across refreshes', fakeAsync(() => {
-    spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
-    instrumentsApi.getInstruments.and.returnValue(of([{ symbol: 'SPY' }]));
-    TestBed.flushEffects();
-    tick(30000);
-    store.refresh();
-    TestBed.flushEffects();
-    expect(portfolioApi.getPortfolioMetrics.calls.count()).toBeGreaterThan(1);
-    expect(instrumentsApi.getInstruments).toHaveBeenCalledTimes(1);
-    expect(store.instruments().has('SPY')).toBeTrue();
-  }));
 
   it('values the change since the previous close across all holdings', () => {
     TestBed.flushEffects();

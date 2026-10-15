@@ -5,7 +5,6 @@ import { PositionResponse } from '../../generated/trading-api-client';
 import { AccountService } from '../../services/account.service';
 import { CashActionsComponent } from './cash-actions.component';
 import { BalanceCardComponent } from './balance-card.component';
-import { PositionCardComponent } from './position-card.component';
 import { PositionSummaryComponent } from './position-summary.component';
 import { MarketOverviewComponent } from './market-overview.component';
 import { ClosePositionComponent } from './close-position.component';
@@ -21,7 +20,6 @@ import { DashboardStore } from './dashboard.store';
     RouterLink,
     CashActionsComponent,
     BalanceCardComponent,
-    PositionCardComponent,
     PositionSummaryComponent,
     MarketOverviewComponent,
     ClosePositionComponent,
@@ -50,7 +48,6 @@ export class DashboardComponent {
   );
   readonly closing = signal<PositionResponse | null>(null);
   readonly feedback = signal<string | null>(null);
-  readonly Math = Math;
   constructor() {
     effect(() => {
       this.accounts.currentAccountId();
