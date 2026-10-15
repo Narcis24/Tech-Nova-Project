@@ -27,6 +27,7 @@ model/portfolioMetricsResponse.ts
 model/portfolioSnapshotResponse.ts
 model/positionMetricsResponse.ts
 model/positionResponse.ts
+model/priceHistoryPoint.ts
 model/priceResponse.ts
 model/riskLimitResponse.ts
 model/riskWarning.ts

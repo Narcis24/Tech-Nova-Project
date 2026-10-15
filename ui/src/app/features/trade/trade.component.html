@@ -1,6 +1,7 @@
 <h1>Trade</h1><a routerLink="/dashboard">← Back to portfolio</a>
 @if (!accountId()) { <p>Select an account before trading. <a routerLink="/accounts">Manage accounts</a></p> }
 @else {
+  <app-price-chart [symbol]="chartSymbol() ?? ''" />
   <p class="muted">Account {{ accountId() }}</p>
   <form [formGroup]="form" (ngSubmit)="prepare()"><fieldset [disabled]="submitting()">
     <label for="trade-symbol">Symbol</label><input id="trade-symbol" formControlName="symbol" list="trade-instruments" placeholder="e.g. AAPL" autocapitalize="characters" /><datalist id="trade-instruments">@for (asset of instruments(); track asset.symbol) { <option [value]="asset.symbol">{{ asset.name }}</option> }</datalist>

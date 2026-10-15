@@ -4,7 +4,7 @@ import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { of } from 'rxjs';
 
-import { AccountControllerService, DashboardControllerService, OrderControllerService, InstrumentControllerService, PortfolioControllerService } from './generated/trading-api-client';
+import { AccountControllerService, DashboardControllerService, OrderControllerService, PriceControllerService, InstrumentControllerService, PortfolioControllerService } from './generated/trading-api-client';
 import { routes } from './app.routes';
 import { safeReturnUrl } from './core/return-url';
 import { AccountService } from './services/account.service';
@@ -24,6 +24,7 @@ describe('app routes', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
+        { provide: PriceControllerService, useValue: { getPriceHistory: () => of([]) } },
         { provide: DashboardControllerService, useValue: { getBalanceHistory: () => of({}), getMarketOverview: () => of([]) } },
         { provide: OrderControllerService, useValue: { placeOrder: () => of({}) } },
         { provide: PortfolioControllerService, useValue: { getPortfolioMetrics: () => of({}) } },

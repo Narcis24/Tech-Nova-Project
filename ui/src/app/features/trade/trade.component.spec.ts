@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, ActivatedRoute, convertToParamMap } from '@angular/router';
 import { Observable, of, Subject } from 'rxjs';
 import { AccountService } from '../../services/account.service';
-import { InstrumentControllerService, OrderControllerService, OrderResponse, PlaceOrderRequest } from '../../generated/trading-api-client';
+import { PriceControllerService, InstrumentControllerService, OrderControllerService, OrderResponse, PlaceOrderRequest } from '../../generated/trading-api-client';
 import { TradeComponent } from './trade.component';
 
 describe('TradeComponent', () => {
@@ -15,6 +15,7 @@ describe('TradeComponent', () => {
       {provide:ActivatedRoute,useValue:{queryParamMap:of(convertToParamMap({symbol:'AAPL',side:'SELL'}))}},
       {provide:AccountService,useValue:{currentAccountId}},
       {provide:OrderControllerService,useValue:api},
+      {provide:PriceControllerService,useValue:{getPriceHistory:()=>of([])}},
       {provide:InstrumentControllerService,useValue:{getInstruments:()=>of([])}},
     ]}); const fixture=TestBed.createComponent(TradeComponent); fixture.detectChanges(); return fixture;
   }

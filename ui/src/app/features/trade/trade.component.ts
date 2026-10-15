@@ -1,13 +1,14 @@
 import { Component, effect, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { catchError, exhaustMap, of, Subject } from 'rxjs';
+import { catchError, exhaustMap, of, Subject, startWith } from 'rxjs';
 import { InstrumentControllerService, InstrumentResponse, OrderControllerService, OrderResponse, PlaceOrderRequest } from '../../generated/trading-api-client';
+import { PriceChartComponent } from './price-chart.component';
 import { AccountService } from '../../services/account.service';
 
 @Component({
-  selector:'app-trade', imports:[ReactiveFormsModule,RouterLink], templateUrl:'./trade.component.html', styleUrl:'./trade.component.css',
+  selector:'app-trade', imports:[ReactiveFormsModule,RouterLink,PriceChartComponent], templateUrl:'./trade.component.html', styleUrl:'./trade.component.css',
 })
 export class TradeComponent {
   private readonly accounts = inject(AccountService); private readonly api = inject(OrderControllerService);
@@ -23,6 +24,7 @@ export class TradeComponent {
     orderType:new FormControl('MARKET',{nonNullable:true,validators:[Validators.pattern(/^(MARKET|LIMIT)$/)]}),
     price:new FormControl<number | null>(null),
   });
+  readonly chartSymbol = toSignal(this.form.controls.symbol.valueChanges.pipe(startWith(this.form.controls.symbol.value)));
   constructor() {
     this.loadInstruments();
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(params => {

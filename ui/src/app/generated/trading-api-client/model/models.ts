@@ -11,6 +11,7 @@ export * from './portfolioMetricsResponse';
 export * from './portfolioSnapshotResponse';
 export * from './positionMetricsResponse';
 export * from './positionResponse';
+export * from './priceHistoryPoint';
 export * from './priceResponse';
 export * from './riskLimitResponse';
 export * from './riskWarning';
