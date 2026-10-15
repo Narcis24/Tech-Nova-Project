@@ -1,4 +1,4 @@
-import { Component, ElementRef, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, computed, inject, input, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
@@ -25,6 +25,7 @@ interface NavTab {
   },
 })
 export class NavBarComponent {
+  readonly compactTrade = input(false);
   readonly tabs: readonly NavTab[] = [
     { label: 'Portfolio', path: '/dashboard' },
     { label: 'Trade', path: '/trade' },

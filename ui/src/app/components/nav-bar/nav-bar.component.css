@@ -286,3 +286,8 @@
     padding: 0;
   }
 }
+
+@media (max-width: 767.98px) {
+  .nav-bar.compact-trade { padding: 0; }
+  .compact-trade .brand, .compact-trade .account-cluster { display: none; }
+}
