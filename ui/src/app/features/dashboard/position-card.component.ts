@@ -13,5 +13,5 @@ export class PositionCardComponent {
   readonly allocation = input<number | null>(null);
   readonly assetClass = input<string>();
   readonly closeDisabled = input(false);
-  readonly close = output<PositionResponse>();
+  readonly closePosition = output<PositionResponse>();
 }

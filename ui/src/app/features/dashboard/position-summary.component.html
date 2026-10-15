@@ -33,7 +33,7 @@
               <app-action-buttons
                 [symbol]="p.symbol ?? ''"
                 [closeDisabled]="pendingSells().has(p.symbol ?? '')"
-                (close)="close.emit(p)"
+                (closePosition)="closePosition.emit(p)"
               />
             </td>
           </tr>

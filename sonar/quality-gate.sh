@@ -6,7 +6,7 @@ set -euo pipefail
 
 HOST="${SONAR_HOST_URL:-http://localhost:8083}"
 GATE="Tech Nova"
-PROJECTS=(tech-nova-app tech-nova-execution-engine tech-nova-auth tech-nova-data-pipeline)
+PROJECTS=(tech-nova-app tech-nova-execution-engine tech-nova-auth tech-nova-data-pipeline tech-nova-ui)
 
 # metric operator threshold; ratings are 1=A .. 5=E, so "GT 1" means worse than A
 CONDITIONS=(

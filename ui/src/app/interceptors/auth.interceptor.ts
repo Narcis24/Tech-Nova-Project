@@ -22,12 +22,12 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => error);
       }
       return auth.refresh().pipe(
-        catchError(refreshError => {
+        catchError((refreshError) => {
           auth.logout();
           return throwError(() => refreshError);
         }),
         // Outside the first catchError, so a 401 on the retry goes to the caller and is not refreshed again
-        switchMap(token => next(withToken(req, token))),
+        switchMap((token) => next(withToken(req, token))),
       );
     }),
   );

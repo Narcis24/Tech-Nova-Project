@@ -8,7 +8,7 @@ export type Account = AccountResponse;
 
 /** The user's accounts, and which one the UI is showing. The first account is selected after loading. */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AccountService {
   private readonly accountApi = inject(AccountControllerService);
@@ -19,7 +19,7 @@ export class AccountService {
   /** Loads the user's accounts and selects the first. Never errors: a failed load leaves no accounts. */
   loadAccounts(): Observable<void> {
     return this.accountApi.getMyAccounts().pipe(
-      tap(accounts => {
+      tap((accounts) => {
         this.accounts.set(accounts);
         this.currentAccountId.set(accounts[0]?.accountId ?? null);
       }),
@@ -39,8 +39,8 @@ export class AccountService {
   /** Opens a new, empty account for the logged-in user, adds it to the list and selects it. Errors reach the caller. */
   openAccount(holderName: string): Observable<Account> {
     return this.accountApi.openAccount({ holderName }).pipe(
-      tap(account => {
-        this.accounts.update(accounts => [...accounts, account]);
+      tap((account) => {
+        this.accounts.update((accounts) => [...accounts, account]);
         this.currentAccountId.set(account.accountId);
       }),
     );

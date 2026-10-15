@@ -17,5 +17,5 @@ export const appConfig: ApplicationConfig = {
     // so requests go through the dev proxy and work on any host. The auth client's default, /auth, is already relative.
     provideTradingApi(API_BASE),
     provideAppInitializer(() => inject(AuthService).restoreSession()),
-  ]
+  ],
 };

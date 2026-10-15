@@ -17,7 +17,11 @@ describe('NavBarComponent', () => {
   const accounts = signal<Account[]>(ACCOUNTS);
   const currentAccountId = signal<string | null>('ACC001');
   let auth: { username: typeof username; logout: jasmine.Spy };
-  let accountService: { accounts: typeof accounts; currentAccountId: typeof currentAccountId; selectAccount: jasmine.Spy };
+  let accountService: {
+    accounts: typeof accounts;
+    currentAccountId: typeof currentAccountId;
+    selectAccount: jasmine.Spy;
+  };
   let component: NavBarComponent;
   let fixture: ComponentFixture<NavBarComponent>;
 
@@ -39,8 +43,7 @@ describe('NavBarComponent', () => {
         { provide: AuthService, useValue: auth },
         { provide: AccountService, useValue: accountService },
       ],
-    })
-    .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(NavBarComponent);
     component = fixture.componentInstance;
@@ -56,7 +59,7 @@ describe('NavBarComponent', () => {
     fixture.detectChanges();
 
     const current: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('[aria-current="page"]'));
-    expect(current.map(tab => tab.textContent?.trim())).toEqual(['Trade']);
+    expect(current.map((tab) => tab.textContent?.trim())).toEqual(['Trade']);
   });
 
   it("shows the user's initial and name", () => {
@@ -105,7 +108,7 @@ describe('NavBarComponent', () => {
       fixture.detectChanges();
 
       expect(pill().getAttribute('aria-expanded')).toBe('true');
-      expect(options().map(option => option.textContent?.trim())).toEqual(['ACC001', 'ACC002', 'ACC003']);
+      expect(options().map((option) => option.textContent?.trim())).toEqual(['ACC001', 'ACC002', 'ACC003']);
       expect(options()[0].getAttribute('aria-current')).toBe('true');
       expect(options()[1].hasAttribute('aria-current')).toBeFalse();
     });

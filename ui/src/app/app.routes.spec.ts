@@ -5,7 +5,16 @@ import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { of } from 'rxjs';
 
-import { AccountControllerService, DashboardControllerService, OrderControllerService, PriceControllerService, InstrumentControllerService, PortfolioControllerService, RiskControllerService, RiskLimitControllerService } from './generated/trading-api-client';
+import {
+  AccountControllerService,
+  DashboardControllerService,
+  OrderControllerService,
+  PriceControllerService,
+  InstrumentControllerService,
+  PortfolioControllerService,
+  RiskControllerService, 
+  RiskLimitControllerService
+} from './generated/trading-api-client';
 import { routes } from './app.routes';
 import { safeReturnUrl } from './core/return-url';
 import { AccountService } from './services/account.service';
