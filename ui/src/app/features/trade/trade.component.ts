@@ -6,10 +6,11 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, exhaustMap, map, of, Subject, startWith, switchMap } from 'rxjs';
 import { InstrumentControllerService, InstrumentResponse, OrderControllerService, OrderResponse, PlaceOrderRequest, PortfolioControllerService, PortfolioSnapshotResponse } from '../../generated/trading-api-client';
 import { PriceChartComponent, TradeQuote } from './price-chart.component';
+import { OrderConfirmationComponent } from './order-confirmation.component';
 import { AccountService } from '../../services/account.service';
 
 @Component({
-  selector: 'app-trade', imports: [CurrencyPipe, DecimalPipe, ReactiveFormsModule, RouterLink, PriceChartComponent],
+  selector: 'app-trade', imports: [CurrencyPipe, DecimalPipe, ReactiveFormsModule, RouterLink, PriceChartComponent, OrderConfirmationComponent],
   templateUrl: './trade.component.html', styleUrl: './trade.component.css',
 })
 export class TradeComponent {
@@ -30,6 +31,9 @@ export class TradeComponent {
   readonly error = signal<string | null>(null);
   readonly result = signal<OrderResponse | null>(null);
   readonly review = signal<PlaceOrderRequest | null>(null);
+  readonly confirmationOrder = signal<PlaceOrderRequest | null>(null);
+  readonly confirmationTotal = signal<number | null>(null);
+  readonly confirmationCashAfter = signal<number | null>(null);
   private readonly submissions = new Subject<PlaceOrderRequest>();
   private lastFingerprint = '';
   private key = '';
@@ -135,9 +139,12 @@ export class TradeComponent {
     const request = { accountId: id, symbol: value.symbol, side: value.side, quantity: value.quantity, orderType: value.orderType, ...(value.orderType === 'LIMIT' ? { price: value.price! } : {}) };
     const fingerprint = JSON.stringify(request);
     if (fingerprint !== this.lastFingerprint) { this.lastFingerprint = fingerprint; this.key = crypto.randomUUID(); }
-    this.review.set({ ...request, idempotencyKey: this.key });
-    afterNextRender(() => this.element.nativeElement.querySelector<HTMLElement>('.review h3')?.focus(), { injector: this.injector });
+    this.confirmationOrder.set({ ...request, idempotencyKey: this.key });
+    this.confirmationTotal.set(this.total());
+    this.confirmationCashAfter.set(this.cashAfter());
+    this.review.set(this.confirmationOrder());
   }
+  dismissConfirmation(): void { this.review.set(null); this.result.set(null); this.error.set(null); }
   confirm(): void {
     const order = this.review();
     if (!order || this.submitting() || order.accountId !== this.accountId()) return;

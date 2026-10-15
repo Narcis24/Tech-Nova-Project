@@ -27,13 +27,12 @@
       @if (context().error) { <p class="data-note" role="status">Account estimates unavailable. <button type="button" class="text-button" (click)="refreshContext()">Retry</button></p> }
       @if (form.touched && form.invalid) { <p class="field-error" role="alert">Enter a valid symbol and a whole-share quantity between 1 and 100,000.</p> }
       @if (validationIssue()) { <p class="field-error" role="alert">{{ validationIssue() }}</p> }
-      @if (error()) { <p class="field-error" role="alert">{{ error() }}</p> }
-      @if (review(); as order) {
-        <section class="review" aria-label="Order review"><h3 tabindex="-1">Review your order</h3><p>{{ order.side }} {{ order.quantity }} {{ order.symbol }} · {{ order.orderType }} @if (order.price != null) { at {{ order.price | number:'1.2-2' }} }</p><p>Account {{ order.accountId }}. Placement does not guarantee a fill.</p><button type="button" class="submit-order" (click)="confirm()" [disabled]="submitting()">{{ submitting() ? 'Submitting…' : 'Confirm order' }}</button><button type="button" class="edit-order" (click)="review.set(null)" [disabled]="submitting()">Edit order</button></section>
-      } @else {
+      @if (error() && !review() && !result()) { <p class="field-error" role="alert">{{ error() }}</p> }
         <button type="submit" class="submit-order" [disabled]="submitting() || form.invalid || !!validationIssue()">{{ isBuy() ? 'Buy' : 'Sell' }} {{ values()?.quantity ?? 0 }} {{ chartSymbol() }} @if (isLimit() && values()?.price != null) { at {{ values()?.price | number:'1.2-2' }} }</button>
-      }
-      @if (result(); as order) { <section class="result" role="status"><h3>Order {{ order.status }}</h3><p>{{ order.message || 'Positions update after execution.' }}</p><p class="order-id">{{ order.orderId }}</p><a routerLink="/dashboard">Return to portfolio</a></section> }
     </fieldset>
   </form>
+}
+
+@if (review() || result()) {
+  <app-order-confirmation [order]="confirmationOrder()!" [total]="confirmationTotal()" [cashAfter]="confirmationCashAfter()" [result]="result()" [submitting]="submitting()" [error]="error()" (confirmOrder)="confirm()" (dismiss)="dismissConfirmation()" />
 }

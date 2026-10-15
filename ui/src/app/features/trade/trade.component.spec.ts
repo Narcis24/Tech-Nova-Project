@@ -26,6 +26,34 @@ describe('TradeComponent', () => {
     expect(api.placeOrder).not.toHaveBeenCalled(); component.prepare(); expect(api.placeOrder).not.toHaveBeenCalled();
     component.confirm(); expect(api.placeOrder.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({accountId:'ACC001',symbol:'AAPL',side:'SELL',orderType:'MARKET',quantity:25}));
   });
+  it('opens review above the ticket and returns focus to the unchanged action when editing', () => {
+    const fixture=setup(), root:HTMLElement=fixture.nativeElement;
+    const trigger=root.querySelector<HTMLButtonElement>('fieldset > .submit-order')!;
+    trigger.focus();trigger.click();fixture.detectChanges();
+    const dialog=root.querySelector<HTMLDialogElement>('app-order-confirmation dialog')!;
+    expect(dialog.open).toBeTrue();expect(dialog.closest('.order-ticket')).toBeNull();
+    expect(document.activeElement).toBe(dialog.querySelector('h2'));
+    expect(root.querySelector('fieldset > .submit-order')).toBe(trigger);
+    expect(api.placeOrder).not.toHaveBeenCalled();
+    dialog.querySelector<HTMLButtonElement>('.secondary')!.click();fixture.detectChanges();
+    expect(root.querySelector('dialog')).toBeNull();expect(document.activeElement).toBe(trigger);
+  });
+  it('keeps pending, errors and results in the modal without replacing the ticket action', () => {
+    const fixture=setup(), component=fixture.componentInstance, root:HTMLElement=fixture.nativeElement;
+    const pending=new Subject<OrderResponse>();api.placeOrder.and.returnValue(pending);
+    const trigger=root.querySelector('fieldset > .submit-order');
+    component.prepare();fixture.detectChanges();component.confirm();fixture.detectChanges();
+    const dialog=root.querySelector<HTMLDialogElement>('dialog')!;
+    const cancel=new Event('cancel',{cancelable:true});dialog.dispatchEvent(cancel);fixture.detectChanges();
+    expect(dialog.open).toBeTrue();expect(component.review()).not.toBeNull();
+    expect(dialog.textContent).toContain('Submitting');
+    pending.error(new Error('offline'));fixture.detectChanges();
+    expect(dialog.querySelector('[role="alert"]')?.textContent).toContain("Couldn't confirm");
+    api.placeOrder.and.returnValue(of({orderId:'placed',status:'PENDING'}));component.confirm();fixture.detectChanges();
+    expect(root.querySelector('dialog')).toBe(dialog);expect(dialog.open).toBeTrue();
+    expect(dialog.textContent).toContain('Order Pending');expect(dialog.textContent).toContain('placed');
+    expect(root.querySelector('fieldset > .submit-order')).toBe(trigger);
+  });
   it('keeps the price ruler space reserved before the quote arrives', () => {
     const fixture=setup(), root:HTMLElement=fixture.nativeElement;
     const ruler=root.querySelector<HTMLElement>('.price-ruler')!;
