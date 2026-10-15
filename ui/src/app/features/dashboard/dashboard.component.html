@@ -1,2 +1,75 @@
-<h1>{{ account()?.holderName ?? 'Dashboard' }}</h1>
-<p>Placeholder — real content comes in later stories.</p>
+<h1>Portfolio</h1>
+@if (!account()) {
+  <div class="notice"><p>Select or open an account to see your portfolio.</p><a routerLink="/accounts">Manage accounts</a></div>
+} @else if (store.state().loading) {
+  <p class="notice" role="status">Loading portfolio…</p>
+} @else if (store.state().error) {
+  <div class="notice" role="alert"><p>Couldn't load your portfolio. Please try again.</p><button type="button" (click)="store.refresh()">Try again</button></div>
+} @else {
+@if (store.state().portfolio; as portfolio) {
+  <section class="summary" aria-label="Portfolio summary">
+    <div>
+      <p class="total">{{ (portfolio.totalPortfolioValue | currency:'USD':'symbol':'1.2-2') ?? '—' }}</p>
+      <p class="description">
+        {{ store.gain() < 0 ? 'Down' : 'Up' }}
+        <span class="gain" [class.loss]="store.gain() < 0">{{ Math.abs(store.gain()) | currency:'USD' }}@if (store.returnOnCost(); as value) { ({{ value > 0 ? '+' : '−' }}{{ Math.abs(value) | percent:'1.2-2' }})}</span>
+        on what you paid, across {{ store.holdings().length }} {{ store.holdings().length === 1 ? 'holding' : 'holdings' }} and cash.
+      </p>
+    </div>
+  </section>
+
+  <section class="allocation" aria-label="Where your money is, sized by value">
+    @for (position of store.holdings(); track $index) {
+      <a class="allocation-card" routerLink="/trade" [style.flex-grow]="Math.max(0, store.allocation(position.marketValue) ?? 0)">
+        <div><strong>{{ position.symbol ?? 'Unknown' }}</strong> <span class="asset-class">{{ store.instruments().get(position.symbol ?? '')?.assetClass | titlecase }}</span></div>
+        <div class="card-values">
+          <span class="card-value">{{ (position.marketValue | currency:'USD':'symbol':'1.0-0') ?? '—' }}</span>
+          <span class="muted">{{ (store.allocation(position.marketValue) | percent:'1.1-1') ?? '—' }} of portfolio</span>
+          <span class="gain" [class.loss]="(position.unrealizedPnL ?? 0) < 0">{{ (position.unrealizedPnL ?? 0) > 0 ? '+' : '' }}{{ (position.unrealizedPnL | currency:'USD':'symbol':'1.0-0') ?? '—' }}</span>
+        </div>
+      </a>
+    }
+    <div class="allocation-card cash-card" [style.flex-grow]="Math.max(0, store.allocation(portfolio.cashBalance) ?? 0)">
+      <strong>Cash</strong>
+      <div class="card-values"><span class="card-value">{{ (portfolio.cashBalance | currency:'USD') ?? '—' }}</span><span class="muted">{{ (store.allocation(portfolio.cashBalance) | percent:'1.1-1') ?? '—' }}, ready to trade</span></div>
+    </div>
+  </section>
+
+  <div class="details">
+    <section class="holdings" aria-labelledby="holdings-heading">
+      <h2 id="holdings-heading">Holdings</h2>
+      @if (store.holdings().length) {
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Holdings table, scroll horizontally to see all columns">
+          <table>
+            <thead><tr><th scope="col">Instrument</th><th scope="col">Quantity</th><th scope="col">Average cost</th><th scope="col">Last price</th><th scope="col">Value</th><th scope="col">Gain or loss</th></tr></thead>
+            <tbody>
+              @for (position of store.holdings(); track $index) {
+                <tr>
+                  <th scope="row"><a routerLink="/trade">{{ position.symbol ?? 'Unknown' }}</a><span class="instrument-name">{{ store.instruments().get(position.symbol ?? '')?.name }}</span></th>
+                  <td>{{ (position.quantity | number:'1.0-6') ?? '—' }}</td><td>{{ (position.averageCost | number:'1.2-2') ?? '—' }}</td><td>{{ (position.currentPrice | number:'1.2-2') ?? '—' }}</td><td>{{ (position.marketValue | number:'1.2-2') ?? '—' }}</td>
+                  <td class="gain" [class.loss]="(position.unrealizedPnL ?? 0) < 0">{{ (position.unrealizedPnL ?? 0) > 0 ? '+' : '' }}{{ (position.unrealizedPnL | number:'1.2-2') ?? '—' }}<span class="position-return">{{ (store.positionReturn(position.quantity, position.averageCost, position.unrealizedPnL) | percent:'1.2-2') ?? '—' }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="muted">You don't have any holdings yet. <a routerLink="/trade">Place your first trade</a>.</p>
+      }
+    </section>
+    <section class="orders" aria-labelledby="orders-heading">
+      <div class="section-heading"><h2 id="orders-heading">Orders</h2><a routerLink="/orders">All orders</a></div>
+      @if (store.state().ordersError) {
+        <p role="status">Couldn't load orders. <button class="text-button" type="button" (click)="store.refresh()">Try again</button></p>
+      } @else if (store.state().orders.length) {
+        <ul>
+          @for (order of store.state().orders.slice(0, 5); track $index) {
+            <li><span class="order-status" [class.loss]="order.status === 'REJECTED'">{{ order.status?.replaceAll('_', ' ') | titlecase }}</span><span>{{ order.side | titlecase }} {{ order.quantity | number:'1.0-6' }} {{ order.symbol }}@if (order.price != null) { at {{ order.price | number:'1.2-2' }}}<span class="order-message">{{ order.message }}</span></span></li>
+          }
+        </ul>
+      } @else { <p class="muted">No orders for this account yet.</p> }
+    </section>
+  </div>
+}
+
+}

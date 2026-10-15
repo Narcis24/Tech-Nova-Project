@@ -1,66 +1,33 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
+import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
+import { AccountControllerService, InstrumentControllerService, PortfolioControllerService } from '../../generated/trading-api-client';
 import { Account, AccountService } from '../../services/account.service';
 import { DashboardComponent } from './dashboard.component';
 
-const ACCOUNTS = [
-  { accountId: 'ACC001', holderName: 'Trader One' },
-  { accountId: 'ACC002', holderName: 'Trader Two' },
-] as Account[];
-
 describe('DashboardComponent', () => {
-  const accounts = signal<Account[]>(ACCOUNTS);
   const currentAccountId = signal<string | null>('ACC001');
-  let component: DashboardComponent;
   let fixture: ComponentFixture<DashboardComponent>;
-
   beforeEach(async () => {
-    accounts.set(ACCOUNTS);
     currentAccountId.set('ACC001');
-
-    await TestBed.configureTestingModule({
-      imports: [DashboardComponent],
-      providers: [{ provide: AccountService, useValue: { accounts, currentAccountId } }],
-    })
-    .compileComponents();
-
-    fixture = TestBed.createComponent(DashboardComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+    await TestBed.configureTestingModule({ imports: [DashboardComponent], providers: [provideRouter([]),
+      { provide: AccountService, useValue: { currentAccountId, accounts: signal([{ accountId: 'ACC001', holderName: 'Trader' }] as Account[]) } },
+      { provide: PortfolioControllerService, useValue: { getPortfolioMetrics: () => of({ totalPortfolioValue: 120, cashBalance: 10, totalUnrealizedPnL: 10, positions: [{ symbol: 'SPY', quantity: 2, averageCost: 50, currentPrice: 55, marketValue: 110, unrealizedPnL: 10 }] }) } },
+      { provide: InstrumentControllerService, useValue: { getInstruments: () => of([{ symbol: 'SPY', name: 'SPDR S&P 500 ETF', assetClass: 'ETF' }]) } },
+      { provide: AccountControllerService, useValue: { getAccountOrders: () => of([]) } },
+    ] }).compileComponents();
+    fixture = TestBed.createComponent(DashboardComponent); fixture.detectChanges(); fixture.detectChanges();
   });
-
-  function text(): string {
-    return fixture.nativeElement.textContent;
-  }
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
+  it('renders portfolio values and instrument details', () => {
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('$120.00'); expect(text).toContain('SPDR S&P 500 ETF');
+    expect(fixture.nativeElement.querySelectorAll('tbody tr').length).toBe(1);
+    expect(text).not.toContain('NaN');
   });
-
-  function heading(): string {
-    return fixture.nativeElement.querySelector('h1').textContent.trim();
-  }
-
-  it("uses the selected account's name as the heading", () => {
-    expect(heading()).toBe('Trader One');
-  });
-
-  it('updates the heading when another account is selected', () => {
-    currentAccountId.set('ACC002');
-    fixture.detectChanges();
-
-    expect(heading()).toBe('Trader Two');
-  });
-
-  it('falls back to "Dashboard" when no account is selected', () => {
-    currentAccountId.set(null);
-    fixture.detectChanges();
-
-    expect(heading()).toBe('Dashboard');
-  });
-
-  it('shows the placeholder', () => {
-    expect(text()).toContain('Placeholder');
+  it('provides an account action when no account is selected', () => {
+    currentAccountId.set(null); fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Manage accounts');
+    expect(fixture.nativeElement.querySelector('table')).toBeNull();
   });
 });

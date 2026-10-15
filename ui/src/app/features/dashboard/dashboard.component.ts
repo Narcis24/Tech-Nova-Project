@@ -1,18 +1,19 @@
+import { CurrencyPipe, DecimalPipe, PercentPipe, TitleCasePipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
-
+import { RouterLink } from '@angular/router';
 import { AccountService } from '../../services/account.service';
+import { DashboardStore } from './dashboard.store';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [],
+  imports: [CurrencyPipe, DecimalPipe, PercentPipe, TitleCasePipe, RouterLink],
+  providers: [DashboardStore],
   templateUrl: './dashboard.component.html',
-  styleUrl: './dashboard.component.css'
+  styleUrl: './dashboard.component.css',
 })
 export class DashboardComponent {
+  readonly store = inject(DashboardStore);
   private readonly accountService = inject(AccountService);
-
-  /** The selected account, or undefined while the accounts are loading or if there are none */
-  readonly account = computed(() =>
-    this.accountService.accounts().find(account => account.accountId === this.accountService.currentAccountId()),
-  );
+  readonly account = computed(() => this.accountService.accounts().find(a => a.accountId === this.accountService.currentAccountId()));
+  readonly Math = Math;
 }

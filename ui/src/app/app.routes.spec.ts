@@ -4,6 +4,7 @@ import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { of } from 'rxjs';
 
+import { AccountControllerService, InstrumentControllerService, PortfolioControllerService } from './generated/trading-api-client';
 import { routes } from './app.routes';
 import { safeReturnUrl } from './core/return-url';
 import { AccountService } from './services/account.service';
@@ -23,6 +24,9 @@ describe('app routes', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
+        { provide: PortfolioControllerService, useValue: { getPortfolioMetrics: () => of({}) } },
+        { provide: AccountControllerService, useValue: { getAccountOrders: () => of([]) } },
+        { provide: InstrumentControllerService, useValue: { getInstruments: () => of([]) } },
         { provide: AuthService, useValue: auth },
         { provide: AccountService, useValue: accounts },
       ],
@@ -66,7 +70,7 @@ describe('app routes', () => {
       await harness.navigateByUrl(safeReturnUrl(returnUrl));
 
       expect(router.url).toBe('/dashboard');
-      expect(harness.routeNativeElement?.textContent).toContain('Dashboard');
+      expect(harness.routeNativeElement?.textContent).toContain('Portfolio');
     });
 
     it('shows no shell on the login page', async () => {
@@ -85,7 +89,7 @@ describe('app routes', () => {
       await harness.navigateByUrl('/dashboard');
 
       expect(router.url).toBe('/dashboard');
-      expect(harness.routeNativeElement?.textContent).toContain('Dashboard');
+      expect(harness.routeNativeElement?.textContent).toContain('Portfolio');
     });
 
     it('sends /login to /dashboard', async () => {
