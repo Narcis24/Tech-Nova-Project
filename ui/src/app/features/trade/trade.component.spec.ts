@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, ActivatedRoute, convertToParamMap } from '@angular/router';
@@ -9,7 +10,7 @@ import { TradeComponent } from './trade.component';
 describe('TradeComponent', () => {
   let api: jasmine.SpyObj<{placeOrder:(request:PlaceOrderRequest)=>Observable<OrderResponse>}>;
   const currentAccountId = signal<string | null>('ACC001');
-  function setup() {
+  function setup(quote=true) {
     currentAccountId.set('ACC001'); api=jasmine.createSpyObj('orders',['placeOrder']); api.placeOrder.and.returnValue(of({orderId:'test',status:'PENDING'}));
     TestBed.configureTestingModule({imports:[TradeComponent],providers:[provideRouter([]),
       {provide:ActivatedRoute,useValue:{queryParamMap:of(convertToParamMap({symbol:'AAPL',side:'SELL'}))}},
@@ -18,7 +19,7 @@ describe('TradeComponent', () => {
       {provide:PortfolioControllerService,useValue:{getPortfolioSnapshot:(id:string)=>of({accountId:id,cashBalance:50000,positions:[{symbol:'AAPL',quantity:120}]})}},
       {provide:PriceControllerService,useValue:{getPriceHistory:()=>of([])}},
       {provide:InstrumentControllerService,useValue:{getInstruments:()=>of([])}},
-    ]}); const fixture=TestBed.createComponent(TradeComponent); fixture.detectChanges(); return fixture;
+    ]}); const fixture=TestBed.createComponent(TradeComponent); fixture.detectChanges(); if(quote) { fixture.componentInstance.onQuote({symbol:'AAPL',price:100,previousClose:99,date:'2026-10-14'}); fixture.detectChanges(); } return fixture;
   }
   it('prefills a dashboard action but does not submit without review and confirmation', () => {
     const component=setup().componentInstance;
@@ -55,7 +56,7 @@ describe('TradeComponent', () => {
     expect(root.querySelector('fieldset > .submit-order')).toBe(trigger);
   });
   it('keeps the price ruler space reserved before the quote arrives', () => {
-    const fixture=setup(), root:HTMLElement=fixture.nativeElement;
+    const fixture=setup(false), root:HTMLElement=fixture.nativeElement;
     const ruler=root.querySelector<HTMLElement>('.price-ruler')!;
     expect(ruler.style.visibility).toBe('hidden');
     expect(ruler.getAttribute('aria-hidden')).toBe('true');
@@ -69,7 +70,7 @@ describe('TradeComponent', () => {
     const component=setup().componentInstance;
     component.form.controls.quantity.setValue(1.5); component.prepare(); expect(component.review()).toBeNull();
     component.form.controls.quantity.setValue(1); component.form.controls.orderType.setValue('LIMIT'); component.prepare();
-    expect(component.review()).toBeNull(); expect(component.error()).toContain('limit price');
+    expect(component.review()).toBeNull(); expect(component.form.controls.price.hasError('required')).toBeTrue();
   });
   it('reuses its idempotency key on network retry and prevents double submission', () => {
     const component=setup().componentInstance; const pending=new Subject<OrderResponse>(); api.placeOrder.and.returnValue(pending);
@@ -99,6 +100,29 @@ describe('TradeComponent', () => {
     component.prepare();expect(component.validationIssue()).toContain('available cash');expect(component.review()).toBeNull();
     component.setSide('SELL');component.form.controls.quantity.setValue(121);component.prepare();
     expect(component.validationIssue()).toContain('120 AAPL');expect(api.placeOrder).not.toHaveBeenCalled();
+  });
+
+  it('validates limit price precision immediately and clears price validation for market orders', () => {
+    const component=setup().componentInstance;component.setOrderType('LIMIT');
+    for(const value of [null,0,-1,.001,1.234,Infinity]) { component.form.controls.price.setValue(value);expect(component.form.controls.price.invalid).toBeTrue();component.prepare();expect(component.review()).toBeNull(); }
+    component.form.controls.price.setValue(12.34);expect(component.form.controls.price.valid).toBeTrue();
+    component.setOrderType('MARKET');component.form.controls.price.setValue(null);expect(component.form.controls.price.valid).toBeTrue();
+  });
+  it('checks market buying power and blocks review when account or reference data is unavailable', () => {
+    const component=setup().componentInstance;component.setSide('BUY');
+    expect(component.maxShares()).toBe(500);component.form.controls.quantity.setValue(501);component.prepare();
+    expect(component.validationIssue()).toContain('available cash');expect(component.review()).toBeNull();
+    component.form.controls.quantity.setValue(1);component.quote.set(null);component.prepare();expect(component.review()).toBeNull();
+    component.onQuote({symbol:'AAPL',price:100,previousClose:99,date:'2026-10-14'});
+    component.context.set({id:'ACC001',loading:false,error:true,portfolio:null});component.prepare();expect(component.review()).toBeNull();
+  });
+  it('shows a server rejection reason and allows editing and resubmitting', () => {
+    const component=setup().componentInstance;
+    api.placeOrder.and.returnValue(new Observable(s=>s.error(new HttpErrorResponse({status:400,error:{message:'Only 10 shares held.',errorCode:'INSUFFICIENT_HOLDINGS'}}))));
+    component.prepare();component.confirm();expect(component.error()).toBe('Only 10 shares held.');
+    component.dismissConfirmation();component.form.controls.quantity.setValue(10);component.prepare();
+    api.placeOrder.and.returnValue(of({orderId:'retry',status:'PENDING'}));component.confirm();
+    expect(api.placeOrder.calls.mostRecent().args[0].quantity).toBe(10);expect(component.result()?.orderId).toBe('retry');
   });
 
   it('invalidates review when the account changes', () => {

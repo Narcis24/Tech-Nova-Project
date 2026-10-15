@@ -6,6 +6,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, exhaustMap, map, of, Subject, startWith, switchMap } from 'rxjs';
 import { InstrumentControllerService, InstrumentResponse, OrderControllerService, OrderResponse, PlaceOrderRequest, PortfolioControllerService, PortfolioSnapshotResponse } from '../../generated/trading-api-client';
 import { PriceChartComponent, TradeQuote } from './price-chart.component';
+import { orderError } from './order-error';
 import { OrderConfirmationComponent } from './order-confirmation.component';
 import { AccountService } from '../../services/account.service';
 
@@ -64,10 +65,12 @@ export class TradeComponent {
     return quantity != null && quantity > 0 && Number.isFinite(quantity) && price != null && price > 0 && Number.isFinite(price) ? quantity * price : null;
   });
   readonly cashAfter = computed(() => this.cash() != null && this.total() != null ? Number(this.cash()) + (this.isBuy() ? -this.total()! : this.total()!) : null);
+  readonly ready = computed(() => this.portfolio() != null && (this.isLimit() || this.referencePrice() != null));
+  readonly maxShares = computed(() => this.cash() != null && this.price() != null && this.price()! > 0 ? Math.min(100000, Math.floor(Number(this.cash()) / this.price()!)) : null);
   readonly validationIssue = computed(() => {
     const quantity = this.values()?.quantity;
     if (!this.isBuy() && quantity != null && this.held() != null && quantity > this.held()!) return `You hold ${this.held()} ${this.chartSymbol()}, so you can sell up to ${this.held()}.`;
-    if (this.isBuy() && this.isLimit() && this.cashAfter() != null && this.cashAfter()! < 0) return 'The cost at your limit exceeds available cash. Lower the quantity or deposit cash.';
+    if (this.isBuy() && this.cashAfter() != null && this.cashAfter()! < 0) return 'The estimated cost exceeds available cash. Lower the quantity or deposit cash.';
     return null;
   });
   readonly marker = computed(() => {
@@ -78,6 +81,10 @@ export class TradeComponent {
   });
 
   constructor() {
+    this.form.controls.orderType.valueChanges.pipe(startWith(this.form.controls.orderType.value), takeUntilDestroyed()).subscribe(type => {
+      this.form.controls.price.setValidators(type === 'LIMIT' ? [Validators.required, Validators.min(.01), Validators.pattern(/^\d+(\.\d{1,2})?$/)] : []);
+      this.form.controls.price.updateValueAndValidity();
+    });
     this.loadInstruments();
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(params => {
       const symbol = params.get('symbol')?.toUpperCase() || this.form.controls.symbol.value;
@@ -94,8 +101,8 @@ export class TradeComponent {
     }), takeUntilDestroyed()).subscribe(context => this.context.set(context));
     effect(() => { this.accountId(); this.review.set(null); this.result.set(null); this.error.set(null); });
     this.form.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => { this.review.set(null); this.error.set(null); this.result.set(null); });
-    this.submissions.pipe(exhaustMap(request => this.api.placeOrder(request).pipe(catchError(() => {
-      this.error.set("Couldn't confirm submission. Retry without changing the order to avoid duplicates."); return of(null);
+    this.submissions.pipe(exhaustMap(request => this.api.placeOrder(request).pipe(catchError(error => {
+      this.error.set(orderError(error)); return of(null);
     }))), takeUntilDestroyed()).subscribe(order => {
       this.submitting.set(false);
       if (order) { this.result.set(order); this.review.set(null); this.lastFingerprint = ''; this.key = ''; this.refreshContext(); }
@@ -134,7 +141,7 @@ export class TradeComponent {
   prepare(): void {
     this.error.set(null); this.form.markAllAsTouched();
     const value = this.form.getRawValue(), id = this.accountId();
-    if (this.form.invalid || !id || value.quantity == null || this.validationIssue()) return;
+    if (this.form.invalid || !id || value.quantity == null || this.validationIssue() || !this.ready()) return;
     if (value.orderType === 'LIMIT' && (value.price == null || !Number.isFinite(value.price) || value.price <= 0)) { this.error.set('Enter a positive limit price.'); return; }
     const request = { accountId: id, symbol: value.symbol, side: value.side, quantity: value.quantity, orderType: value.orderType, ...(value.orderType === 'LIMIT' ? { price: value.price! } : {}) };
     const fingerprint = JSON.stringify(request);
@@ -147,7 +154,7 @@ export class TradeComponent {
   dismissConfirmation(): void { this.review.set(null); this.result.set(null); this.error.set(null); }
   confirm(): void {
     const order = this.review();
-    if (!order || this.submitting() || order.accountId !== this.accountId()) return;
+    if (!order || this.submitting() || order.accountId !== this.accountId() || !this.ready() || this.validationIssue() || this.form.invalid) return;
     this.error.set(null); this.submitting.set(true); this.submissions.next(order);
   }
 }
