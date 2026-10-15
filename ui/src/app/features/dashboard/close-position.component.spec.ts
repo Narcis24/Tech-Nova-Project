@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { Observable, of, Subject } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Observable, of, Subject, throwError } from 'rxjs';
 import { OrderControllerService, OrderResponse, PlaceOrderRequest } from '../../generated/trading-api-client';
 import { ClosePositionComponent } from './close-position.component';
 describe('ClosePositionComponent', () => {
@@ -11,5 +12,15 @@ describe('ClosePositionComponent', () => {
   });
   it('keeps rejected orders visible and reuses its key after network errors', () => {
     const component=setup().componentInstance,pending=new Subject<OrderResponse>();api.placeOrder.and.returnValue(pending);component.confirm();component.confirm();expect(api.placeOrder).toHaveBeenCalledTimes(1);const key=api.placeOrder.calls.mostRecent().args[0].idempotencyKey;pending.error(new Error('offline'));api.placeOrder.and.returnValue(of({status:'REJECTED',message:'No quote'}));component.confirm();expect(component.error()).toBe('No quote');expect(api.placeOrder.calls.mostRecent().args[0].idempotencyKey).toBe(key);
+  });
+  it('uses a fresh key after a definitive rejection, but keeps it after an ambiguous failure', () => {
+    const component=setup().componentInstance; api.placeOrder.and.returnValue(of({status:'REJECTED',message:'No quote'}));
+    component.confirm(); const rejectedKey=api.placeOrder.calls.mostRecent().args[0].idempotencyKey;
+    api.placeOrder.and.returnValue(throwError(()=>new HttpErrorResponse({status:503}))); component.confirm();
+    const retryKey=api.placeOrder.calls.mostRecent().args[0].idempotencyKey; expect(retryKey).not.toBe(rejectedKey);
+    component.confirm(); expect(api.placeOrder.calls.mostRecent().args[0].idempotencyKey).toBe(retryKey);
+    api.placeOrder.and.returnValue(throwError(()=>new HttpErrorResponse({status:422}))); component.confirm();
+    api.placeOrder.and.returnValue(of({status:'PENDING'})); component.confirm();
+    expect(api.placeOrder.calls.mostRecent().args[0].idempotencyKey).not.toBe(retryKey);
   });
 });

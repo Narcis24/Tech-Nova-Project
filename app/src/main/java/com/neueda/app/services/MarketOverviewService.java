@@ -28,8 +28,10 @@ public class MarketOverviewService {
                 var latest = bars.getLast();
                 BigDecimal previous = bars.size() > 1 ? bars.get(bars.size() - 2).getPrice() : null;
                 BigDecimal change = previous == null ? null : latest.getPrice().subtract(previous);
-                BigDecimal percent = previous == null ? null : change.divide(previous, 8, RoundingMode.HALF_UP);
-                return new MarketAssetResponse(i.getSymbol(), i.getName(), i.getAssetClass().toString(), i.getCurrency(),
+                // A zero previous close (bad provider bar) has no meaningful percentage; leave it unknown rather than failing every asset.
+                BigDecimal percent = previous == null || previous.signum() == 0 ? null : change.divide(previous, 8, RoundingMode.HALF_UP);
+                String assetClass = i.getAssetClass() == null ? null : i.getAssetClass().toString();
+                return new MarketAssetResponse(i.getSymbol(), i.getName(), assetClass, i.getCurrency(),
                     latest.getPrice(), previous, change, percent, latest.getTradeDate(), bars.stream().map(Price::getPrice).toList());
             }).toList();
     }

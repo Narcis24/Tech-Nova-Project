@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, ActivatedRoute, convertToParamMap } from '@angular/router';
-import { Observable, of, Subject } from 'rxjs';
+import { Observable, of, Subject, throwError } from 'rxjs';
 import { AccountService } from '../../services/account.service';
 import { PortfolioControllerService, PriceControllerService, InstrumentControllerService, OrderControllerService, OrderResponse, PlaceOrderRequest } from '../../generated/trading-api-client';
 import { OrderFormComponent } from './order-form.component';
@@ -81,6 +81,16 @@ describe('OrderFormComponent', () => {
     component.prepare(); expect(component.review()?.idempotencyKey).not.toBe(key);
   });
 
+  it('uses a fresh idempotency key after the API rejects an order with a 4xx', () => {
+    const component=setup().componentInstance; api.placeOrder.and.returnValue(throwError(() => new HttpErrorResponse({status:422,error:{message:'Insufficient cash'}})));
+    component.prepare(); const key=component.review()!.idempotencyKey; component.confirm();
+    expect(component.error()).toBe('Insufficient cash');
+    component.prepare(); expect(component.review()?.idempotencyKey).not.toBe(key);
+  });
+  it('clears the limit price when the symbol changes', () => {
+    const component=setup().componentInstance; component.form.controls.orderType.setValue('LIMIT'); component.form.controls.price.setValue(190);
+    component.form.controls.symbol.setValue('QQQ'); expect(component.form.controls.price.value).toBeNull();
+  });
   it('updates side, limit steps and account estimates from the ticket controls', () => {
     const fixture=setup(), component=fixture.componentInstance;
     component.onQuote({symbol:'AAPL',price:100,previousClose:99,date:'2026-10-14'});

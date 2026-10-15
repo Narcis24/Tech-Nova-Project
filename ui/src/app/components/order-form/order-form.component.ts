@@ -1,13 +1,15 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { afterNextRender, Component, computed, DestroyRef, effect, ElementRef, inject, Injector, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { catchError, exhaustMap, map, of, Subject, startWith, switchMap } from 'rxjs';
+import { catchError, distinctUntilChanged, exhaustMap, map, of, Subject, startWith, switchMap } from 'rxjs';
 import { InstrumentControllerService, InstrumentResponse, OrderControllerService, OrderResponse, PlaceOrderRequest, PortfolioControllerService, PortfolioSnapshotResponse } from '../../generated/trading-api-client';
 import { PriceChartComponent, TradeQuote } from '../../features/trade/price-chart.component';
 import { orderError } from '../../features/trade/order-error';
 import { OrderConfirmationComponent } from '../../features/trade/order-confirmation.component';
+import { newUuid } from '../../core/uuid';
 import { AccountService } from '../../services/account.service';
 
 @Component({
@@ -85,6 +87,8 @@ export class OrderFormComponent {
       this.form.controls.price.setValidators(type === 'LIMIT' ? [Validators.required, Validators.min(.01), Validators.pattern(/^\d+(\.\d{1,2})?$/)] : []);
       this.form.controls.price.updateValueAndValidity();
     });
+    // A limit price belongs to one instrument; carrying it to another symbol would submit a stale price.
+    this.form.controls.symbol.valueChanges.pipe(distinctUntilChanged(), takeUntilDestroyed()).subscribe(() => this.form.controls.price.setValue(null));
     this.loadInstruments();
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(params => {
       const symbol = params.get('symbol')?.toUpperCase() || this.form.controls.symbol.value;
@@ -102,6 +106,8 @@ export class OrderFormComponent {
     effect(() => { this.accountId(); this.review.set(null); this.result.set(null); this.error.set(null); });
     this.form.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => { this.review.set(null); this.error.set(null); this.result.set(null); });
     this.submissions.pipe(exhaustMap(request => this.api.placeOrder(request).pipe(catchError(error => {
+      // A definitive 4xx rejection must not replay the same key on retry; ambiguous failures keep it so a retry stays safe.
+      if (error instanceof HttpErrorResponse && error.status >= 400 && error.status < 500) this.lastFingerprint = '';
       this.error.set(orderError(error)); return of(null);
     }))), takeUntilDestroyed()).subscribe(order => {
       this.submitting.set(false);
@@ -145,7 +151,7 @@ export class OrderFormComponent {
     if (value.orderType === 'LIMIT' && (value.price == null || !Number.isFinite(value.price) || value.price <= 0)) { this.error.set('Enter a positive limit price.'); return; }
     const request = { accountId: id, symbol: value.symbol, side: value.side, quantity: value.quantity, orderType: value.orderType, ...(value.orderType === 'LIMIT' ? { price: value.price! } : {}) };
     const fingerprint = JSON.stringify(request);
-    if (fingerprint !== this.lastFingerprint) { this.lastFingerprint = fingerprint; this.key = crypto.randomUUID(); }
+    if (fingerprint !== this.lastFingerprint) { this.lastFingerprint = fingerprint; this.key = newUuid(); }
     this.confirmationOrder.set({ ...request, idempotencyKey: this.key });
     this.confirmationTotal.set(this.total());
     this.confirmationCashAfter.set(this.cashAfter());
