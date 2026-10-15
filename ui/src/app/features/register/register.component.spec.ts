@@ -1,3 +1,4 @@
+import { RegisterResponse } from '../../generated/auth-api-client';
 import { Component } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { fakeAsync, TestBed, tick } from '@angular/core/testing';
@@ -13,7 +14,7 @@ class BlankComponent {}
 
 describe('RegisterComponent', () => {
   let auth: jasmine.SpyObj<AuthService>;
-  let registerResult: Subject<any>;
+  let registerResult: Subject<RegisterResponse>;
   let harness: RouterTestingHarness;
   let page: HTMLElement;
 
@@ -38,7 +39,7 @@ describe('RegisterComponent', () => {
   }
 
   beforeEach(async () => {
-    registerResult = new Subject<any>();
+    registerResult = new Subject<RegisterResponse>();
     auth = jasmine.createSpyObj<AuthService>('AuthService', ['register']);
     auth.register.and.returnValue(registerResult);
 
@@ -109,7 +110,9 @@ describe('RegisterComponent', () => {
 
     submit();
 
-    expect(text()).toContain('Password must contain a digit, uppercase letter, lowercase letter, and special character');
+    expect(text()).toContain(
+      'Password must contain a digit, uppercase letter, lowercase letter, and special character',
+    );
     expect(auth.register).not.toHaveBeenCalled();
   });
 
@@ -152,7 +155,7 @@ describe('RegisterComponent', () => {
     type('confirmPassword', 'Trader.Pass01');
     submit();
 
-    registerResult.next({});
+    registerResult.next({ username: 'testuser' });
     harness.detectChanges();
     expect(page.querySelector('[role=status]')?.textContent).toContain('Registration successful');
 
@@ -184,10 +187,12 @@ describe('RegisterComponent', () => {
     type('confirmPassword', 'Trader.Pass01');
     submit();
 
-    registerResult.error(new HttpErrorResponse({
-      status: 400,
-      error: { message: 'Username is not available' },
-    }));
+    registerResult.error(
+      new HttpErrorResponse({
+        status: 400,
+        error: { message: 'Username is not available' },
+      }),
+    );
     harness.detectChanges();
 
     expect(page.querySelector('[role=alert]')?.textContent).toContain('Username is not available');

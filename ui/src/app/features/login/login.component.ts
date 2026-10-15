@@ -68,16 +68,14 @@ export class LoginComponent {
         // 0 = no response (server down); 5xx = server error. Anything else (401, 400) is bad credentials.
         const serverProblem = err.status === 0 || err.status >= 500;
         this.error.set(
-          serverProblem
-            ? "We can't reach TechNova right now. Try again in a moment."
-            : INVALID_CREDENTIALS,
+          serverProblem ? "We can't reach TechNova right now. Try again in a moment." : INVALID_CREDENTIALS,
         );
       },
     });
   }
 
   togglePassword(): void {
-    this.showPassword.update(shown => !shown);
+    this.showPassword.update((shown) => !shown);
   }
 
   dismissError(): void {

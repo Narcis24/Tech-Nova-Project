@@ -1,4 +1,13 @@
 services:
+  ui:
+    build: ./ui
+    restart: unless-stopped
+    depends_on: [app, auth-service]
+    ports:
+      - "${UI_PORT:-8091}:8080"
+    networks:
+      - tech-nova-network
+
   db:
     image: postgres:16-alpine
     restart: unless-stopped

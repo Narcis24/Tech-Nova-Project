@@ -55,7 +55,7 @@
           [allocation]="store.allocation(position.marketValue)"
           [closeDisabled]="pendingSells().has(position.symbol ?? '')"
           [style.flex-grow]="Math.max(0, store.allocation(position.marketValue) ?? 0)"
-          (close)="closing.set($event)"
+          (closePosition)="closing.set($event)"
         />
       }
       <div class="cash-card">
@@ -71,7 +71,7 @@
       [positions]="store.holdings()"
       [instruments]="store.instruments()"
       [pendingSells]="pendingSells()"
-      (close)="closing.set($event)"
+      (closePosition)="closing.set($event)"
     />
     <div class="details">
       <app-market-overview

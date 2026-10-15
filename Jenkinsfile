@@ -21,7 +21,23 @@ pipeline {
                 sh 'docker build -t team-skeleton:latest -f app/Dockerfile .'
                 sh 'docker build -t tech-nova-pipeline:latest ./data-pipeline'
                 sh 'docker build -t tech-nova-auth:latest ./auth'
+                sh 'docker build -t tech-nova-ui:latest ./ui'
                 sh 'docker build -t tech-nova-execution-engine:latest -f execution-engine/Dockerfile .'
+            }
+        }
+        stage('UI Checks') {
+            steps {
+                sh 'docker build --target ci -t tech-nova-ui-ci:latest ./ui'
+                sh '''
+                    docker run --rm --init --shm-size=1g --user "$(id -u):$(id -g)" \
+                      -e CI=true -e HOME=/tmp -v "$WORKSPACE/ui:/workspace/ui" -w /workspace/ui \
+                      tech-nova-ui-ci:latest sh -c 'npm ci && npm run check'
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'ui/coverage/**', allowEmptyArchive: true
+                }
             }
         }
         stage('Unit Tests') {
@@ -61,10 +77,12 @@ pipeline {
         }
         stage('Trivy - Vulnerability Scanning') {
             steps {
+                // Bundled browser dependencies are not discoverable from the Nginx image.
+                sh 'docker run --rm -v "$WORKSPACE/ui/package-lock.json:/scan/package-lock.json:ro" -v trivy-cache:/root/.cache aquasec/trivy:latest fs --scanners vuln --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed /scan'
                 // scans each image's full dependency tree (JARs, Python packages, OS packages);
                 // fails the build on any HIGH or CRITICAL vulnerability that has a fix available
                 script {
-                    for (img in ['team-skeleton', 'tech-nova-pipeline', 'tech-nova-auth', 'tech-nova-execution-engine']) {
+                    for (img in ['team-skeleton', 'tech-nova-pipeline', 'tech-nova-auth', 'tech-nova-execution-engine', 'tech-nova-ui']) {
                         sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache aquasec/trivy:latest image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed ${img}:latest"
                     }
                 }

@@ -8,8 +8,6 @@ import { RouterLink } from '@angular/router';
     <h1>Page not found</h1>
     <a routerLink="/dashboard">Go to dashboard</a>
   `,
-  styles: ``
+  styles: ``,
 })
-export class NotFoundComponent {
-
-}
+export class NotFoundComponent {}

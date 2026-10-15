@@ -10,15 +10,17 @@ import { AccountService } from '../../services/account.service';
   selector: 'app-shell',
   imports: [RouterOutlet, NavBarComponent],
   templateUrl: './shell.component.html',
-  styleUrl: './shell.component.css'
+  styleUrl: './shell.component.css',
 })
 export class ShellComponent {
   private readonly router = inject(Router);
-  readonly tradePage = toSignal(this.router.events.pipe(
-    filter(event => event instanceof NavigationEnd),
-    map(() => this.router.url.split('?')[0] === '/trade'),
-    startWith(this.router.url.split('?')[0] === '/trade'),
-  ));
+  readonly tradePage = toSignal(
+    this.router.events.pipe(
+      filter((event) => event instanceof NavigationEnd),
+      map(() => this.router.url.split('?')[0] === '/trade'),
+      startWith(this.router.url.split('?')[0] === '/trade'),
+    ),
+  );
   constructor() {
     inject(AccountService).loadAccounts().subscribe();
   }

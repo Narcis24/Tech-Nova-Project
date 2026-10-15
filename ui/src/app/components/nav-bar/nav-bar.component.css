@@ -44,7 +44,9 @@
 
 .tab.active {
   background: var(--color-surface);
-  box-shadow: 0 1px 2px rgba(20, 24, 43, 0.08), 0 0 0 1px rgba(20, 24, 43, 0.04);
+  box-shadow:
+    0 1px 2px rgba(20, 24, 43, 0.08),
+    0 0 0 1px rgba(20, 24, 43, 0.04);
   color: var(--color-ink);
   font-weight: 600;
 }
@@ -124,7 +126,9 @@
   padding: 6px;
   border-radius: 12px;
   background: var(--color-surface);
-  box-shadow: 0 8px 24px rgba(20, 24, 43, 0.12), 0 0 0 1px rgba(20, 24, 43, 0.06);
+  box-shadow:
+    0 8px 24px rgba(20, 24, 43, 0.12),
+    0 0 0 1px rgba(20, 24, 43, 0.06);
 }
 
 .account-option {
@@ -201,7 +205,9 @@
   padding: 12px;
   border-radius: 12px;
   background: var(--color-surface);
-  box-shadow: 0 8px 24px rgba(20, 24, 43, 0.12), 0 0 0 1px rgba(20, 24, 43, 0.06);
+  box-shadow:
+    0 8px 24px rgba(20, 24, 43, 0.12),
+    0 0 0 1px rgba(20, 24, 43, 0.06);
 }
 
 .menu-name,
@@ -288,8 +294,19 @@
 }
 
 @media (max-width: 767.98px) {
-  .nav-bar.compact-trade { padding: 0; }
-  .compact-trade .brand, .compact-trade .account-cluster { display: none; }
+  .nav-bar.compact-trade {
+    padding: 0;
+  }
+  .compact-trade .brand,
+  .compact-trade .account-cluster {
+    display: none;
+  }
 }
 
-@media(max-width:767.98px){.tabs{box-shadow:0 6px 24px #14182b14,0 0 0 1px #14182b06}}
+@media (max-width: 767.98px) {
+  .tabs {
+    box-shadow:
+      0 6px 24px #14182b14,
+      0 0 0 1px #14182b06;
+  }
+}

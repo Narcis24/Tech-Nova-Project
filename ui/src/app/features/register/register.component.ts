@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -12,7 +13,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './register.component.html',
-  styleUrls: ['./register.component.css']
+  styleUrls: ['./register.component.css'],
 })
 export class RegisterComponent {
   registerForm: FormGroup;
@@ -25,31 +26,36 @@ export class RegisterComponent {
   constructor(
     private formBuilder: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
   ) {
-    this.registerForm = this.formBuilder.group({
-      username: ['', [
+    this.registerForm = this.formBuilder.group(
+      {
+        username: [
+          '',
+          [
             Validators.required,
             Validators.minLength(8),
             Validators.maxLength(16),
-            Validators.pattern(/^[A-Za-z0-9_]+$/)
-      ]],
-      email: ['', [
-            Validators.required,
-            Validators.pattern(EMAIL_PATTERN),
-            Validators.maxLength(254)
-      ]],
-      password: ['', [
+            Validators.pattern(/^[A-Za-z0-9_]+$/),
+          ],
+        ],
+        email: ['', [Validators.required, Validators.pattern(EMAIL_PATTERN), Validators.maxLength(254)]],
+        password: [
+          '',
+          [
             Validators.required,
             Validators.minLength(12),
-        Validators.maxLength(20),
-        Validators.pattern(/^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[^A-Za-z0-9]).+$/)
-      ]],
-      confirmPassword: ['', [Validators.required]]
-    }, { validators: this.passwordMatchValidator });
+            Validators.maxLength(20),
+            Validators.pattern(/^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[^A-Za-z0-9]).+$/),
+          ],
+        ],
+        confirmPassword: ['', [Validators.required]],
+      },
+      { validators: this.passwordMatchValidator },
+    );
   }
 
-  passwordMatchValidator(control: AbstractControl): { [key: string]: any } | null {
+  passwordMatchValidator(control: AbstractControl): Record<string, boolean> | null {
     const password = control.get('password');
     const confirmPassword = control.get('confirmPassword');
 
@@ -99,7 +105,7 @@ export class RegisterComponent {
           this.router.navigate(['/login']);
         }, 2000);
       },
-      error: (err: any) => {
+      error: (err: HttpErrorResponse) => {
         const validationErrors = err.error?.errors;
         const details = validationErrors
           ? Object.values(validationErrors).join(' ')
@@ -107,11 +113,12 @@ export class RegisterComponent {
             ? err.error.message.join(' ')
             : err.error?.message;
         const status = err.status || err.error?.httpStatus;
-        this.error = status === 409
-          ? 'Username or email already registered. Please choose another.'
-          : details || 'Registration failed. Please try again.';
+        this.error =
+          status === 409
+            ? 'Username or email already registered. Please choose another.'
+            : details || 'Registration failed. Please try again.';
         this.loading = false;
-      }
+      },
     });
   }
 }

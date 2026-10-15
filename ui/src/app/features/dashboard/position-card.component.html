@@ -24,5 +24,5 @@
 <app-action-buttons
   [symbol]="position().symbol ?? ''"
   [closeDisabled]="closeDisabled()"
-  (close)="close.emit(position())"
+  (closePosition)="closePosition.emit(position())"
 />

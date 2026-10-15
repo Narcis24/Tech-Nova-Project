@@ -8,12 +8,19 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "fetch:trading-spec": "node scripts/fetch-spec.mjs http://localhost:8081/api/v3/api-docs ../contracts/trading-api.json",
-    "fetch:auth-spec": "node scripts/fetch-spec.mjs http://localhost:8082/auth/docs-json ../contracts/auth-api.json",
+    "fetch:trading-spec": "curl --fail --silent --show-error http://localhost:8081/api/v3/api-docs --output ../contracts/trading-api.json",
+    "fetch:auth-spec": "curl --fail --silent --show-error http://localhost:8082/auth/docs-json --output ../contracts/auth-api.json",
     "fetch:specs": "npm run fetch:trading-spec && npm run fetch:auth-spec",
     "generate:trading-client": "openapi-generator-cli generate -i ../contracts/trading-api.json -g typescript-angular -o src/app/generated/trading-api-client --additional-properties=ngVersion=19.2.0,providedInRoot=true",
     "generate:auth-client": "openapi-generator-cli generate -i ../contracts/auth-api.json -g typescript-angular -o src/app/generated/auth-api-client --additional-properties=ngVersion=19.2.0,providedInRoot=true,serviceSuffix=Api",
-    "generate:clients": "npm run generate:trading-client && npm run generate:auth-client"
+    "generate:clients": "npm run generate:trading-client && npm run generate:auth-client",
+    "lint": "eslint src e2e --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test:ci": "ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage",
+    "test:smoke": "playwright test --config=e2e/playwright.config.ts",
+    "check": "npm run lint && npm run typecheck:e2e && npm run format:check && npm run test:ci && npm run build",
+    "typecheck:e2e": "tsc --project e2e/tsconfig.json"
   },
   "private": true,
   "dependencies": {
@@ -32,14 +39,21 @@
     "@angular-devkit/build-angular": "^19.2.27",
     "@angular/cli": "^19.2.27",
     "@angular/compiler-cli": "^19.2.0",
+    "@eslint/js": "9.39.5",
     "@openapitools/openapi-generator-cli": "^2.29.0",
+    "@playwright/test": "1.64.1",
     "@types/jasmine": "~5.1.0",
+    "@types/node": "22.20.5",
+    "angular-eslint": "19.8.1",
+    "eslint": "9.39.5",
     "jasmine-core": "~5.6.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.7.2"
+    "prettier": "3.9.10",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "8.71.2"
   }
 }

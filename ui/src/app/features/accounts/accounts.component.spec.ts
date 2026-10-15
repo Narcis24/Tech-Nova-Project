@@ -34,8 +34,7 @@ describe('AccountsComponent', () => {
     await TestBed.configureTestingModule({
       imports: [AccountsComponent],
       providers: [{ provide: AccountService, useValue: accountService }],
-    })
-    .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(AccountsComponent);
     fixture.detectChanges();
@@ -49,8 +48,8 @@ describe('AccountsComponent', () => {
     expect(fixture.nativeElement.querySelector('h1').textContent).toContain('Accounts');
   });
 
-  it("lists every account, marking the current one", () => {
-    expect(options().map(option => option.querySelector('.account-id')?.textContent)).toEqual(['ACC001', 'ACC002']);
+  it('lists every account, marking the current one', () => {
+    expect(options().map((option) => option.querySelector('.account-id')?.textContent)).toEqual(['ACC001', 'ACC002']);
     expect(options()[0].getAttribute('aria-current')).toBe('true');
     expect(options()[1].hasAttribute('aria-current')).toBeFalse();
   });
