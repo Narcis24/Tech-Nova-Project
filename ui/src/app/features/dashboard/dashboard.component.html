@@ -6,7 +6,7 @@
   @if (store.state().loading && !store.state().portfolio) { <p class="notice" role="status">Loading portfolio…</p> }
   @if (feedback()) { <p class="notice" role="status">{{ feedback() }}</p> }
   @if (store.state().portfolio; as portfolio) {
-    <section class="summary" aria-label="Portfolio summary"><app-balance-card [portfolio]="portfolio" [history]="store.state().history" [historyError]="store.state().historyError" /><app-cash-actions [accountId]="account()!.accountId" [cashBalance]="portfolio.cashBalance ?? 0" (completed)="store.refresh()" /></section>
+    <section class="summary" aria-label="Portfolio summary"><app-balance-card [portfolio]="portfolio" [dayChange]="store.dayChange()" /><app-cash-actions [accountId]="account()!.accountId" [cashBalance]="portfolio.cashBalance ?? 0" (completed)="store.refresh()" /></section>
     <p class="description">Unrealized P&amp;L: <span class="gain" [class.loss]="store.gain() < 0">{{ store.gain() > 0 ? '+' : '' }}{{ store.gain() | currency:'USD' }} @if (store.returnOnCost() != null) { ({{ store.returnOnCost() | percent:'1.2-2' }}) }</span> on {{ store.holdings().length }} open {{ store.holdings().length === 1 ? 'position' : 'positions' }}.</p>
     <section class="allocation" aria-label="Positions, sized by market value">
       @for (position of store.holdings(); track position.symbol) { <app-position-card [position]="position" [assetClass]="store.instruments().get(position.symbol ?? '')?.assetClass" [allocation]="store.allocation(position.marketValue)" [closeDisabled]="pendingSells().has(position.symbol ?? '')" [style.flex-grow]="Math.max(0,store.allocation(position.marketValue) ?? 0)" (close)="closing.set($event)" /> }

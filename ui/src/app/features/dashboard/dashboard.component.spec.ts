@@ -13,7 +13,7 @@ describe('DashboardComponent', () => {
   beforeEach(async () => {
     currentAccountId.set('ACC001');
     await TestBed.configureTestingModule({ imports: [DashboardComponent], providers: [provideRouter([]),
-      { provide: DashboardControllerService, useValue: { getBalanceHistory: () => of({}), getMarketOverview: () => of([]) } },
+      { provide: DashboardControllerService, useValue: { getMarketOverview: () => of([]) } },
       { provide: AccountService, useValue: { currentAccountId, accounts: signal([{ accountId: 'ACC001', holderName: 'Trader' }] as Account[]) } },
       { provide: PortfolioControllerService, useValue: { getPortfolioMetrics: () => of({ totalPortfolioValue: 120, cashBalance: 10, totalUnrealizedPnL: 10, positions: [{ symbol: 'SPY', quantity: 2, averageCost: 50, currentPrice: 55, marketValue: 110, unrealizedPnL: 10 }] }) } },
       { provide: InstrumentControllerService, useValue: { getInstruments: () => of([{ symbol: 'SPY', name: 'SPDR S&P 500 ETF', assetClass: 'ETF' }]) } },

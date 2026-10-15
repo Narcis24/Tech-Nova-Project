@@ -21,7 +21,7 @@ describe('DashboardStore', () => {
     instrumentsApi = jasmine.createSpyObj('InstrumentControllerService', ['getInstruments']);
     instrumentsApi.getInstruments.and.returnValue(of([]));
     TestBed.configureTestingModule({ providers: [DashboardStore,
-      { provide: DashboardControllerService, useValue: { getBalanceHistory: () => of({}), getMarketOverview: () => of([]) } },
+      { provide: DashboardControllerService, useValue: { getMarketOverview: () => of([]) } },
       { provide: AccountService, useValue: { currentAccountId } },
       { provide: PortfolioControllerService, useValue: portfolioApi },
       { provide: AccountControllerService, useValue: accountApi },
@@ -104,4 +104,15 @@ describe('DashboardStore', () => {
     expect(instrumentsApi.getInstruments).toHaveBeenCalledTimes(1);
     expect(store.instruments().has('SPY')).toBeTrue();
   }));
+
+  it('values the change since the previous close across all holdings', () => {
+    TestBed.flushEffects();
+    const portfolio = { positions: [{ symbol: 'SPY', quantity: 2 }, { symbol: 'QQQ', quantity: 1 }] };
+    store.state.update(state => ({ ...state, portfolio, market: [{ symbol: 'SPY', previousClose: 100, change: 5 }, { symbol: 'QQQ', previousClose: 50, change: -2 }] }));
+    expect(store.dayChange()).toEqual({ amount: 8, percent: 8 / 250 });
+    store.state.update(state => ({ ...state, market: [{ symbol: 'SPY', previousClose: 100, change: 5 }] }));
+    expect(store.dayChange()).toBeNull();
+    store.state.update(state => ({ ...state, portfolio: { positions: [] } }));
+    expect(store.dayChange()).toBeNull();
+  });
 });

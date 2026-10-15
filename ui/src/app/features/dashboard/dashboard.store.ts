@@ -2,7 +2,7 @@ import { DOCUMENT } from '@angular/common';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { catchError, exhaustMap, filter, forkJoin, map, merge, of, startWith, switchMap, timer } from 'rxjs';
-import { AccountControllerService, DashboardControllerService, InstrumentControllerService, PortfolioControllerService, PortfolioMetricsResponse, OrderResponse, BalanceHistoryResponse, MarketAssetResponse } from '../../generated/trading-api-client';
+import { AccountControllerService, DashboardControllerService, InstrumentControllerService, PortfolioControllerService, PortfolioMetricsResponse, OrderResponse, MarketAssetResponse } from '../../generated/trading-api-client';
 import { AccountService } from '../../services/account.service';
 
 interface DashboardState {
@@ -10,10 +10,8 @@ interface DashboardState {
   loading: boolean;
   portfolio: PortfolioMetricsResponse | null;
   orders: OrderResponse[];
-  history: BalanceHistoryResponse | null;
   market: MarketAssetResponse[];
   ordersError: boolean;
-  historyError: boolean;
   marketError: boolean;
   error: boolean;
   updatedAt: number | null;
@@ -30,7 +28,7 @@ export class DashboardStore {
   private readonly revision = signal(0);
   private readonly request = computed(() => ({ accountId: this.accounts.currentAccountId(), revision: this.revision() }));
   private empty(accountId: string | null): DashboardState {
-    return { accountId, loading: false, portfolio: null, orders: [], history: null, market: [], ordersError: false, historyError: false, marketError: false, error: false, updatedAt: null };
+    return { accountId, loading: false, portfolio: null, orders: [], market: [], ordersError: false, marketError: false, error: false, updatedAt: null };
   }
   readonly state = signal<DashboardState>(this.empty(null));
   readonly instruments = signal(new Map<string, { name?: string; assetClass?: string }>());
@@ -38,6 +36,18 @@ export class DashboardStore {
   readonly cost = computed(() => this.holdings().reduce((sum, p) => sum + Number(p.averageCost ?? 0) * Number(p.quantity ?? 0), 0));
   readonly gain = computed(() => Number(this.state().portfolio?.totalUnrealizedPnL ?? 0));
   readonly returnOnCost = computed(() => this.cost() > 0 ? this.gain() / this.cost() : null);
+  /** Holdings valued at the change since each instrument's previous close; null unless every holding has one. */
+  readonly dayChange = computed(() => {
+    const market = new Map(this.state().market.map(asset => [asset.symbol, asset]));
+    let change = 0, previousValue = 0;
+    for (const position of this.holdings()) {
+      const asset = market.get(position.symbol);
+      if (asset?.change == null || asset.previousClose == null) return null;
+      change += Number(position.quantity) * asset.change;
+      previousValue += Number(position.quantity) * asset.previousClose;
+    }
+    return this.holdings().length ? { amount: change, percent: previousValue > 0 ? change / previousValue : null } : null;
+  });
 
   constructor() {
     toObservable(this.request).pipe(
@@ -53,16 +63,15 @@ export class DashboardStore {
             return forkJoin({
               portfolio: this.portfolioApi.getPortfolioMetrics(accountId),
               orders: optional(this.accountApi.getAccountOrders(accountId), []),
-              history: optional(this.dashboardApi.getBalanceHistory(accountId), null),
               market: optional(this.dashboardApi.getMarketOverview(), []),
               // The instrument list is effectively static, so fetch it once instead of on every poll.
               instruments: this.instruments().size ? of({ value: null, failed: false }) : optional(this.instrumentsApi.getInstruments(), []),
             }).pipe(
-              map(({ portfolio, orders, history, market, instruments }) => {
+              map(({ portfolio, orders, market, instruments }) => {
                 if (!instruments.failed && instruments.value) this.instruments.set(new Map(instruments.value.filter(i => i.symbol).map(i => [i.symbol!, i])));
                 return { ...this.empty(accountId), portfolio, orders: orders.failed ? previous.orders : orders.value,
-                  history: history.failed ? previous.history : history.value, market: market.failed ? previous.market : market.value,
-                  ordersError: orders.failed, historyError: history.failed, marketError: market.failed, updatedAt: Date.now() };
+                  market: market.failed ? previous.market : market.value,
+                  ordersError: orders.failed, marketError: market.failed, updatedAt: Date.now() };
               }),
               catchError(() => of({ ...previous, loading: false, error: true })),
               startWith({ ...previous, loading: true, error: false }),

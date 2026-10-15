@@ -1,5 +1,4 @@
 export * from './accountResponse';
-export * from './balanceHistoryResponse';
 export * from './balanceResponse';
 export * from './cashAmountRequest';
 export * from './instrumentResponse';

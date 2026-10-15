@@ -1,6 +1,7 @@
 package com.neueda.app.services;
 
 import com.neueda.app.dtos.MarketAssetResponse;
+import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Price;
 import com.neueda.app.repositories.InstrumentRepository;
 import com.neueda.app.repositories.PriceRepository;
@@ -8,46 +9,55 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 @Service
 public class MarketOverviewService {
-    private final PriceRepository prices;
-    private final InstrumentRepository instruments;
-    public MarketOverviewService(PriceRepository prices, InstrumentRepository instruments) {
-        this.prices = prices; this.instruments = instruments;
+
+    private final PriceRepository priceRepository;
+    private final InstrumentRepository instrumentRepository;
+
+    public MarketOverviewService(PriceRepository priceRepository, InstrumentRepository instrumentRepository) {
+        this.priceRepository = priceRepository;
+        this.instrumentRepository = instrumentRepository;
     }
 
-    /** Daily closes change at most once a minute; share one result across polling tabs and users. */
-    private static final long CACHE_TTL_NANOS = TimeUnit.SECONDS.toNanos(15);
-    private List<MarketAssetResponse> cached;
-    private long cachedAt;
+    /** Every priced instrument with its latest close, change since the previous close and recent closes. */
+    public List<MarketAssetResponse> overview() {
+        Map<String, List<Price>> pricesBySymbol = priceRepository.findRecentPrices().stream()
+            .collect(Collectors.groupingBy(Price::getSymbol));
 
-    public synchronized List<MarketAssetResponse> overview() {
-        long now = System.nanoTime();
-        if (cached == null || now - cachedAt >= CACHE_TTL_NANOS) {
-            cached = load();
-            cachedAt = now;
-        }
-        return cached;
+        return instrumentRepository.findAll().stream()
+            .filter(instrument -> pricesBySymbol.containsKey(instrument.getSymbol()))
+            .sorted(Comparator.comparing(Instrument::getSymbol))
+            .map(instrument -> toAsset(instrument, pricesBySymbol.get(instrument.getSymbol())))
+            .toList();
     }
 
-    private List<MarketAssetResponse> load() {
-        var bySymbol = prices.findRecentPrices().stream().collect(Collectors.groupingBy(Price::getSymbol));
-        return instruments.findAll().stream().filter(i -> bySymbol.containsKey(i.getSymbol()))
-            .sorted(Comparator.comparing(i -> i.getSymbol()))
-            .map(i -> {
-                var bars = bySymbol.get(i.getSymbol()).stream().sorted(Comparator.comparing(Price::getTradeDate)).toList();
-                var latest = bars.getLast();
-                BigDecimal previous = bars.size() > 1 ? bars.get(bars.size() - 2).getPrice() : null;
-                BigDecimal change = previous == null ? null : latest.getPrice().subtract(previous);
-                // A zero previous close (bad provider bar) has no meaningful percentage; leave it unknown rather than failing every asset.
-                BigDecimal percent = previous == null || previous.signum() == 0 ? null : change.divide(previous, 8, RoundingMode.HALF_UP);
-                String assetClass = i.getAssetClass() == null ? null : i.getAssetClass().toString();
-                return new MarketAssetResponse(i.getSymbol(), i.getName(), assetClass, i.getCurrency(),
-                    latest.getPrice(), previous, change, percent, latest.getTradeDate(), bars.stream().map(Price::getPrice).toList());
-            }).toList();
+    private MarketAssetResponse toAsset(Instrument instrument, List<Price> prices) {
+        List<Price> bars = prices.stream().sorted(Comparator.comparing(Price::getTradeDate)).toList();
+        Price latest = bars.getLast();
+        BigDecimal previousClose = bars.size() > 1 ? bars.get(bars.size() - 2).getPrice() : null;
+        BigDecimal change = previousClose == null ? null : latest.getPrice().subtract(previousClose);
+        // A zero previous close comes from a bad bar; leave the percentage unknown rather than failing.
+        BigDecimal changePercent = previousClose == null || previousClose.signum() == 0
+            ? null
+            : change.divide(previousClose, 8, RoundingMode.HALF_UP);
+        String assetClass = instrument.getAssetClass() == null ? null : instrument.getAssetClass().toString();
+
+        return new MarketAssetResponse(
+            instrument.getSymbol(),
+            instrument.getName(),
+            assetClass,
+            instrument.getCurrency(),
+            latest.getPrice(),
+            previousClose,
+            change,
+            changePercent,
+            latest.getTradeDate(),
+            bars.stream().map(Price::getPrice).toList()
+        );
     }
 }

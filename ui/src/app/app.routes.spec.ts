@@ -25,7 +25,7 @@ describe('app routes', () => {
       providers: [
         provideRouter(routes),
         { provide: PriceControllerService, useValue: { getPriceHistory: () => of([]) } },
-        { provide: DashboardControllerService, useValue: { getBalanceHistory: () => of({}), getMarketOverview: () => of([]) } },
+        { provide: DashboardControllerService, useValue: { getMarketOverview: () => of([]) } },
         { provide: OrderControllerService, useValue: { placeOrder: () => of({}) } },
         { provide: PortfolioControllerService, useValue: { getPortfolioMetrics: () => of({}), getPortfolioSnapshot: () => of({}) } },
         { provide: AccountControllerService, useValue: { getAccountOrders: () => of([]) } },

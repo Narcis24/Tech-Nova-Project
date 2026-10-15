@@ -14,7 +14,6 @@ configuration.ts
 encoder.ts
 index.ts
 model/accountResponse.ts
-model/balanceHistoryResponse.ts
 model/balanceResponse.ts
 model/cashAmountRequest.ts
 model/instrumentResponse.ts
