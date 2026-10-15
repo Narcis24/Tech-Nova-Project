@@ -13,13 +13,13 @@ h2 {
 table {
   border-collapse: collapse;
   width: 100%;
-  min-width: 800px;
+  min-width: 820px;
   font-size: 14px;
 }
 th,
 td {
   text-align: right;
-  padding: 16px 8px;
+  padding: 16px 10px;
   border-bottom: 1px solid #eceef2;
   font-weight: 400;
 }
@@ -56,45 +56,8 @@ td.gain .name {
 .loss {
   color: var(--color-loss);
 }
-td.actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  gap: 6px;
-}
-.actions a,
-.actions button {
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  min-height: 36px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 8px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  background: var(--color-surface);
-  color: var(--color-accent);
-  cursor: pointer;
-}
-.actions button {
-  color: var(--color-loss);
-}
-.actions a:hover,
-.actions button:not(:disabled):hover {
-  background: var(--color-accent-soft);
-}
-.actions button:disabled {
-  color: var(--color-muted);
-  cursor: default;
-}
-@media (pointer: coarse) {
-  .actions a,
-  .actions button {
-    min-height: 44px;
-  }
+app-action-buttons {
+  min-width: 110px;
 }
 th:last-child {
   text-align: left;

@@ -139,6 +139,25 @@
         }
       </div>
       <div class="execution-card">
+        <div
+          class="price-ruler"
+          [style.visibility]="referencePrice() == null ? 'hidden' : null"
+          [attr.aria-hidden]="referencePrice() == null ? true : null"
+          role="img"
+          [attr.aria-label]="
+            'Last stored close ' +
+            referencePrice() +
+            (isLimit() ? ', your limit ' + values()?.price : ', market execution price is not available')
+          "
+        >
+          <div class="ruler-track"></div>
+          <div class="reference-tick"></div>
+          <span class="reference-label">Close {{ referencePrice() | number: '1.2-2' }}</span>
+          <div class="order-marker" [style.left.%]="marker()">
+            <span>{{ isLimit() ? 'Your limit' : 'Reference' }} {{ price() | number: '1.2-2' }}</span
+            ><i></i>
+          </div>
+        </div>
         <p>
           @if (isLimit()) {
             <strong>Your limit applies.</strong>
@@ -191,7 +210,7 @@
       @if (validationIssue()) {
         <p class="field-error" role="alert">{{ validationIssue() }}</p>
       }
-      @if (error() && !review()) {
+      @if (error() && !review() && !result()) {
         <p class="field-error" role="alert">{{ error() }}</p>
       }
       <button
@@ -208,11 +227,11 @@
   </form>
 }
 
-@if (review(); as review) {
+@if (review() || result()) {
   <app-order-confirmation
-    [order]="review.order"
-    [total]="review.total"
-    [cashAfter]="review.cashAfter"
+    [order]="confirmationOrder()!"
+    [total]="confirmationTotal()"
+    [cashAfter]="confirmationCashAfter()"
     [result]="result()"
     [submitting]="submitting()"
     [error]="error()"

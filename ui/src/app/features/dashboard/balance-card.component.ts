@@ -1,11 +1,6 @@
 import { CurrencyPipe, PercentPipe } from '@angular/common';
-import { Component, input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import { PortfolioMetricsResponse } from '../../generated/trading-api-client';
-
-export interface DayChange {
-  amount: number;
-  percent: number | null;
-}
 
 @Component({
   selector: 'app-balance-card',
@@ -13,14 +8,15 @@ export interface DayChange {
   template: `
     <p class="label">Portfolio value</p>
     <p class="total">{{ portfolio().totalPortfolioValue | currency: 'USD' }}</p>
-    @if (dayChange(); as change) {
-      <p class="change" [class.gain]="change.amount > 0" [class.loss]="change.amount < 0">
-        {{ change.amount > 0 ? '+' : '' }}{{ change.amount | currency: 'USD' }}
-        @if (change.percent != null) {
-          ({{ change.percent > 0 ? '+' : '' }}{{ change.percent | percent: '1.2-2' }})
+    @if (dayChange() != null) {
+      <p class="change" [class.gain]="dayChange()! > 0" [class.loss]="dayChange()! < 0">
+        {{ dayChange()! > 0 ? '+' : '' }}{{ dayChange() | currency: 'USD' }}
+        @if (percent() != null) {
+          ({{ percent()! > 0 ? '+' : '' }}{{ percent() | percent: '1.2-2' }})
         }
         <span>since the previous close</span>
       </p>
+      <p class="previous">Previous close value: {{ previousValue() | currency: 'USD' }}</p>
     }
     <div class="cash">
       <span>Available cash</span><strong>{{ portfolio().cashBalance | currency: 'USD' }}</strong>
@@ -57,6 +53,11 @@ export interface DayChange {
     .change span {
       font-size: 14px;
     }
+    .previous {
+      margin-top: 4px;
+      font-size: 14px;
+      color: var(--color-muted);
+    }
     .cash {
       display: flex;
       flex-wrap: wrap;
@@ -78,5 +79,16 @@ export interface DayChange {
 })
 export class BalanceCardComponent {
   readonly portfolio = input.required<PortfolioMetricsResponse>();
-  readonly dayChange = input<DayChange | null>(null);
+  /** Change in holdings' value since the previous close, from DashboardStore.dayChange. */
+  readonly dayChange = input<number | null>(null);
+  /** Cash is unchanged by price moves, so the previous close value is today's value minus the change. */
+  readonly previousValue = computed(() => {
+    const change = this.dayChange(),
+      total = this.portfolio().totalPortfolioValue;
+    return change == null || total == null ? null : Number(total) - change;
+  });
+  readonly percent = computed(() => {
+    const previous = this.previousValue();
+    return previous != null && previous > 0 ? this.dayChange()! / previous : null;
+  });
 }

@@ -5,10 +5,11 @@ import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { catchError, map, of, startWith, switchMap, timer } from 'rxjs';
 import { PriceControllerService, PriceHistoryPoint } from '../../generated/trading-api-client';
 
-/** The latest stored close for the charted symbol, passed to the order ticket as its reference price. */
 export interface TradeQuote {
   symbol: string;
   price: number | null;
+  previousClose: number | null;
+  date: string | null;
 }
 
 interface HistoryState {
@@ -77,6 +78,9 @@ export class PriceChartComponent {
       .map((p, i) => `${this.x(i)},${this.y(Number(p.close))}`)
       .join(' '),
   );
+  readonly area = computed(() =>
+    this.visible().length ? `${this.x(0)},208 ${this.line()} ${this.x(this.visible().length - 1)},208` : '',
+  );
   readonly selectedIndex = computed(() =>
     this.hovered() == null
       ? this.visible().length - 1
@@ -111,6 +115,8 @@ export class PriceChartComponent {
         this.quoteChange.emit({
           symbol: state.symbol,
           price: state.points.at(-1)?.close ?? null,
+          previousClose: state.points.at(-2)?.close ?? null,
+          date: state.points.at(-1)?.date ?? null,
         });
       });
   }

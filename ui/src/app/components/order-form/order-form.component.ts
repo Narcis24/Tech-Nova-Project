@@ -59,8 +59,10 @@ export class OrderFormComponent {
   readonly submitting = signal(false);
   readonly error = signal<string | null>(null);
   readonly result = signal<OrderResponse | null>(null);
-  /** The order awaiting confirmation, with estimates frozen at review time; kept after submission to show the result. */
-  readonly review = signal<{ order: PlaceOrderRequest; total: number | null; cashAfter: number | null } | null>(null);
+  readonly review = signal<PlaceOrderRequest | null>(null);
+  readonly confirmationOrder = signal<PlaceOrderRequest | null>(null);
+  readonly confirmationTotal = signal<number | null>(null);
+  readonly confirmationCashAfter = signal<number | null>(null);
   private readonly submissions = new Subject<PlaceOrderRequest>();
   private lastFingerprint = '';
   private key = '';
@@ -108,7 +110,14 @@ export class OrderFormComponent {
   readonly total = computed(() => {
     const quantity = this.values()?.quantity,
       price = this.price();
-    return quantity != null && price != null ? quantity * price : null;
+    return quantity != null &&
+      quantity > 0 &&
+      Number.isFinite(quantity) &&
+      price != null &&
+      price > 0 &&
+      Number.isFinite(price)
+      ? quantity * price
+      : null;
   });
   readonly cashAfter = computed(() =>
     this.cash() != null && this.total() != null
@@ -128,6 +137,14 @@ export class OrderFormComponent {
     if (this.isBuy() && this.cashAfter() != null && this.cashAfter()! < 0)
       return 'The estimated cost exceeds available cash. Lower the quantity or deposit cash.';
     return null;
+  });
+  readonly marker = computed(() => {
+    const reference = this.referencePrice(),
+      target = this.price();
+    if (reference == null || target == null) return 50;
+    const low = Math.min(reference, target) * 0.995,
+      high = Math.max(reference, target) * 1.005;
+    return Math.max(25, Math.min(75, ((target - low) / (high - low)) * 100));
   });
 
   constructor() {
@@ -192,6 +209,7 @@ export class OrderFormComponent {
         this.submitting.set(false);
         if (order) {
           this.result.set(order);
+          this.review.set(null);
           this.lastFingerprint = '';
           this.key = '';
           this.refreshContext();
@@ -260,6 +278,10 @@ export class OrderFormComponent {
     const value = this.form.getRawValue(),
       id = this.accountId();
     if (this.form.invalid || !id || value.quantity == null || this.validationIssue() || !this.ready()) return;
+    if (value.orderType === 'LIMIT' && (value.price == null || !Number.isFinite(value.price) || value.price <= 0)) {
+      this.error.set('Enter a positive limit price.');
+      return;
+    }
     const request = {
       accountId: id,
       symbol: value.symbol,
@@ -273,11 +295,10 @@ export class OrderFormComponent {
       this.lastFingerprint = fingerprint;
       this.key = newUuid();
     }
-    this.review.set({
-      order: { ...request, idempotencyKey: this.key },
-      total: this.total(),
-      cashAfter: this.cashAfter(),
-    });
+    this.confirmationOrder.set({ ...request, idempotencyKey: this.key });
+    this.confirmationTotal.set(this.total());
+    this.confirmationCashAfter.set(this.cashAfter());
+    this.review.set(this.confirmationOrder());
   }
   dismissConfirmation(): void {
     this.review.set(null);
@@ -285,11 +306,18 @@ export class OrderFormComponent {
     this.error.set(null);
   }
   confirm(): void {
-    // Any form or account change clears the review, so it still matches what the user sees.
-    const review = this.review();
-    if (!review || this.result() || this.submitting()) return;
+    const order = this.review();
+    if (
+      !order ||
+      this.submitting() ||
+      order.accountId !== this.accountId() ||
+      !this.ready() ||
+      this.validationIssue() ||
+      this.form.invalid
+    )
+      return;
     this.error.set(null);
     this.submitting.set(true);
-    this.submissions.next(review.order);
+    this.submissions.next(order);
   }
 }

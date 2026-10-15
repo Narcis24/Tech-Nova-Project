@@ -52,6 +52,40 @@ p {
 .muted {
   color: var(--color-muted);
 }
+.allocation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+app-position-card {
+  flex: 1 1 210px;
+}
+.cash-card {
+  flex: 1 1 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 18px;
+  min-height: 200px;
+  border: 1.5px dashed #d3d7e0;
+  border-radius: 14px;
+  box-sizing: border-box;
+}
+.cash-card strong {
+  font-size: 17px;
+}
+.cash-card p {
+  font-size: 24px;
+  overflow-wrap: anywhere;
+}
+.cash-card span {
+  font-size: 14px;
+  color: var(--color-muted);
+}
+.cash-card a {
+  font-size: 14px;
+}
 .details {
   display: flex;
   flex-wrap: wrap;
@@ -140,6 +174,15 @@ button:disabled {
 @media (max-width: 767.98px) {
   :host {
     gap: 24px;
+  }
+  app-position-card {
+    min-width: 0;
+    flex-basis: 100%;
+  }
+  .cash-card {
+    flex-basis: 100%;
+    min-height: 155px;
+    gap: 16px;
   }
   .description {
     font-size: 14px;

@@ -195,7 +195,57 @@ input {
   font-size: 14px;
   line-height: 1.5;
 }
-
+.price-ruler {
+  position: relative;
+  height: 84px;
+}
+.ruler-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 46px;
+  height: 2px;
+  background: #e4e7ec;
+}
+.reference-tick {
+  position: absolute;
+  left: 50%;
+  top: 38px;
+  width: 2px;
+  height: 18px;
+  background: var(--color-ink);
+}
+.reference-label {
+  position: absolute;
+  left: 50%;
+  top: 62px;
+  transform: translateX(-50%);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.order-marker {
+  position: absolute;
+  top: 0;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  transform: translateX(-50%);
+  transition: left 0.15s ease;
+}
+.order-marker span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--trade-side);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.order-marker i {
+  height: 24px;
+  width: 2px;
+  background: var(--trade-side);
+}
 .order-totals {
   margin: 0;
   display: flex;
@@ -285,6 +335,11 @@ dd {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .order-marker {
+    transition: none;
+  }
 }
 @media (max-width: 767.98px) {
   :host {
@@ -444,6 +499,18 @@ dd {
   .execution-card {
     padding: 12px;
     gap: 8px;
+  }
+  .price-ruler {
+    height: 72px;
+  }
+  .ruler-track {
+    top: 38px;
+  }
+  .reference-tick {
+    top: 30px;
+  }
+  .reference-label {
+    top: 54px;
   }
 }
 

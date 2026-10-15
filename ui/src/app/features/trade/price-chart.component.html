@@ -28,8 +28,40 @@
     </div>
   </div>
   @if (loading()) {
-    <!-- Same height as the loaded chart, so the order ticket doesn't jump when history arrives -->
-    <p class="chart-loading" role="status">Loading price history…</p>
+    <div class="chart-loading" role="status" aria-label="Loading price history">
+      <p class="as-of">Loading price history…</p>
+      <button type="button" class="mobile-chart-toggle" disabled>
+        Show price chart <span aria-hidden="true">+</span>
+      </button>
+      <div class="history" aria-hidden="true">
+        <div class="readout"></div>
+        <div class="plot">
+          <svg viewBox="0 0 640 220"><path class="grid" d="M0 16H640 M0 75H640 M0 133H640 M0 192H640" /></svg>
+          <div class="prices"></div>
+        </div>
+        <div class="dates"><span>—</span><span>—</span><span>—</span></div>
+        <p class="range-change">—</p>
+      </div>
+      <dl class="quote-facts" aria-hidden="true">
+        <div>
+          <dt>Bid</dt>
+          <dd>—</dd>
+        </div>
+        <div>
+          <dt>Ask</dt>
+          <dd>—</dd>
+        </div>
+        <div>
+          <dt>Spread</dt>
+          <dd>—</dd>
+        </div>
+        <div>
+          <dt>Previous close</dt>
+          <dd>—</dd>
+        </div>
+      </dl>
+      <p class="quote-note" aria-hidden="true">Loading daily price feed.</p>
+    </div>
   } @else if (!normalizedSymbol()) {
     <p class="message">Choose an instrument to see its price history.</p>
   } @else if (state().error) {
@@ -101,5 +133,24 @@
         <span class="muted">over displayed sessions · {{ visible().length }} observations</span>
       </p>
     </div>
+    <dl class="quote-facts">
+      <div>
+        <dt>Bid</dt>
+        <dd>—</dd>
+      </div>
+      <div>
+        <dt>Ask</dt>
+        <dd>—</dd>
+      </div>
+      <div>
+        <dt>Spread</dt>
+        <dd>—</dd>
+      </div>
+      <div>
+        <dt>Previous close</dt>
+        <dd>{{ (points().at(-2)?.close | number: '1.2-2') ?? '—' }}</dd>
+      </div>
+    </dl>
+    <p class="quote-note">Live bid and ask are unavailable from the daily price feed.</p>
   }
 </section>

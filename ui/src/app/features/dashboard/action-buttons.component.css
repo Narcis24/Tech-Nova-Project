@@ -1,0 +1,39 @@
+:host {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+a,
+button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  background: var(--color-surface);
+  color: var(--color-accent);
+  cursor: pointer;
+}
+button {
+  color: var(--color-loss);
+}
+a:hover,
+button:not(:disabled):hover {
+  background: var(--color-accent-soft);
+}
+button:disabled {
+  color: var(--color-muted);
+  cursor: default;
+}
+@media (pointer: coarse) {
+  a,
+  button {
+    min-height: 44px;
+  }
+}

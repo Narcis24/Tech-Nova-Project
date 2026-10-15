@@ -8,22 +8,26 @@ describe('BalanceCardComponent', () => {
     return fixture;
   }
 
-  it('shows the change since the previous close', () => {
+  it('shows the previous close value and the change since then', () => {
     const fixture = setup();
-    fixture.componentRef.setInput('dayChange', { amount: 20, percent: 0.2 });
+    fixture.componentRef.setInput('dayChange', 20);
     fixture.detectChanges();
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('+$20.00');
     expect(text).toContain('+20.00%');
+    expect(text).toContain('Previous close value: $100.00');
     expect(fixture.nativeElement.querySelector('.change').classList).toContain('gain');
   });
 
-  it('shows a loss without a percentage when the previous value is unknown', () => {
+  it('shows a loss, and no percentage when the previous value is not positive', () => {
     const fixture = setup();
-    fixture.componentRef.setInput('dayChange', { amount: -5, percent: null });
+    fixture.componentRef.setInput('dayChange', -5);
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.change').classList).toContain('loss');
-    expect(fixture.nativeElement.textContent).not.toContain('%');
+    expect(fixture.nativeElement.textContent).toContain('(-4.00%)');
+    fixture.componentRef.setInput('dayChange', 120);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.change').textContent).not.toContain('%');
   });
 
   it('hides the change line when it is unavailable', () => {
