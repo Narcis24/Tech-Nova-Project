@@ -1,5 +1,5 @@
-<app-nav-bar />
+<app-nav-bar [compactTrade]="tradePage() ?? false" />
 
-<main>
+<main [class.trade-page]="tradePage()">
   <router-outlet />
 </main>

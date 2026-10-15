@@ -365,7 +365,7 @@ class AccountServiceTest {
 
         when(accountRepository.findById(accountId))
             .thenReturn(Optional.of(account));
-        when(orderRepository.findByAccountId(accountId))
+        when(orderRepository.findByAccountIdOrderByCreatedOnDesc(accountId))
             .thenReturn(orders);
 
         // Act
@@ -375,7 +375,7 @@ class AccountServiceTest {
         assertNotNull(result);
         assertEquals(1, result.size());
         verify(accountRepository, times(1)).findById(accountId);
-        verify(orderRepository, times(1)).findByAccountId(accountId);
+        verify(orderRepository, times(1)).findByAccountIdOrderByCreatedOnDesc(accountId);
     }
 
     @Test
@@ -405,7 +405,7 @@ class AccountServiceTest {
 
         when(accountRepository.findById(accountId))
             .thenReturn(Optional.of(account));
-        when(orderRepository.findByAccountId(accountId))
+        when(orderRepository.findByAccountIdOrderByCreatedOnDesc(accountId))
             .thenReturn(new ArrayList<>());
 
         // Act
@@ -443,7 +443,7 @@ class AccountServiceTest {
 
         when(accountRepository.findById(accountId))
             .thenReturn(Optional.of(account));
-        when(orderRepository.findByAccountId(accountId))
+        when(orderRepository.findByAccountIdOrderByCreatedOnDesc(accountId))
             .thenReturn(orders);
 
         // Act

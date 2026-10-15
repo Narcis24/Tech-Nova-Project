@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.ResponseEntity;
 import jakarta.validation.constraints.Size;
 import com.neueda.app.dtos.PriceResponse;
+import com.neueda.app.dtos.PriceHistoryPoint;
+import java.util.List;
 import com.neueda.app.services.PriceService;
 
 
@@ -21,6 +23,11 @@ public class PriceController {
 
     public PriceController(PriceService priceService) {
         this.priceService = priceService;
+    }
+
+    @GetMapping("/{symbol}/history")
+    public List<PriceHistoryPoint> getPriceHistory(@PathVariable String symbol) {
+        return priceService.getHistory(symbol);
     }
 
     @GetMapping("/{symbol}")

@@ -1,0 +1,81 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 600;
+}
+.scroll {
+  overflow: auto;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 820px;
+  font-size: 14px;
+}
+th,
+td {
+  text-align: right;
+  padding: 16px 10px;
+  border-bottom: 1px solid #eceef2;
+  font-weight: 400;
+}
+thead th {
+  font-size: 13px;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+th:first-child {
+  text-align: left;
+  padding-left: 0;
+}
+tbody th a {
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--color-ink);
+}
+th:last-child,
+td:last-child {
+  padding-right: 0;
+}
+.name {
+  display: block;
+  font-size: 13px;
+  margin-top: 4px;
+  color: var(--color-muted);
+}
+td.gain .name {
+  color: inherit;
+}
+.gain {
+  color: var(--color-gain);
+}
+.loss {
+  color: var(--color-loss);
+}
+app-action-buttons {
+  min-width: 110px;
+}
+th:last-child {
+  text-align: left;
+  width: 230px;
+}
+.scroll-hint {
+  display: none;
+}
+tbody tr:hover {
+  background: #fafbfe;
+}
+@media (max-width: 1000px) {
+  .scroll-hint {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 10px;
+    color: var(--color-muted);
+    font-size: 12px;
+  }
+}

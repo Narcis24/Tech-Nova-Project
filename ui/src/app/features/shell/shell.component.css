@@ -8,6 +8,6 @@ main {
 /* Room at the bottom for the nav bar's fixed tab bar */
 @media (max-width: 767.98px) {
   main {
-    padding: 16px 20px 96px;
+    padding: 16px 20px calc(104px + env(safe-area-inset-bottom, 0px));
   }
 }

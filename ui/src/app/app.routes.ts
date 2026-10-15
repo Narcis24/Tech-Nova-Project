@@ -34,7 +34,11 @@ export const routes: Routes = [
       },
       {
         path: 'trade',
-        loadComponent: () => import('./features/trade/trade.component').then(m => m.TradeComponent),
+        loadComponent: () => import('./pages/order-ticket/order-ticket.component').then(m => m.OrderTicketComponent),
+      },
+      {
+        path: 'orders/:orderId',
+        loadComponent: () => import('./pages/order-result/order-result.component').then(m => m.OrderResultComponent),
       },
       {
         path: 'orders',

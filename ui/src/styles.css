@@ -7,7 +7,9 @@
   --color-accent: #3044e0;
   --color-accent-hover: #1f2da8;
   --color-accent-soft: #e3e7fc;
-  --color-loss: #b54c0b;
+  --color-gain: #147547;
+  --color-loss: #b42332;
+  --color-sell: #b54c0b;
 }
 
 body {
@@ -30,4 +32,10 @@ a:hover {
 :focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+html { scroll-padding-bottom: 112px; }
+button, a, input, select { transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
 }

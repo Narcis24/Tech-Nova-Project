@@ -13,4 +13,9 @@ To add an instrument, add it to `V003_seed_data.sql` and reset. Seed orders use 
 
 Bonds and commodities are loaded as ETFs (`TLT`, `GLD`...). Yahoo has no tradable bond prices, and its futures tickers (`GC=F`) have gaps.
 
-Name new migrations `V006_...`. Without zero padding, `V10` would run before `V2`.
+Name new migrations with the next free number, zero padded (currently `V012_...`). Without zero padding, `V10` would run before `V2`.
+
+### Dashboard market data
+
+Market overview uses the latest 20 stored daily closes per instrument. Prices are daily closes
+loaded by `data-pipeline/load.py`, so each asset shows its as-of date; they are not live quotes.
