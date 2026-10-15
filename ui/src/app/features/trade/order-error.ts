@@ -1,8 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
+/** A 4xx is a definitive rejection: the order was not placed, so a retry needs a new idempotency key. */
+export function isRejection(error: unknown): error is HttpErrorResponse {
+  return error instanceof HttpErrorResponse && error.status >= 400 && error.status < 500;
+}
+
 /** Show known API rejections; keep ambiguous network/server failures retry-safe. */
 export function orderError(error: unknown): string {
-  if (error instanceof HttpErrorResponse && error.status >= 400 && error.status < 500) {
+  if (isRejection(error)) {
     const message = error.error?.message;
     if (typeof message === 'string' && message.trim()) return message;
     if (error.status === 401) return 'Your session has expired. Sign in again before placing an order.';

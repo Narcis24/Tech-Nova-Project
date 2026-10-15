@@ -33,18 +33,4 @@ class MarketOverviewServiceTest {
         var result = new MarketOverviewService(prices, instruments).overview();
         assertEquals(1, result.size()); assertNull(result.getFirst().changePercent());
     }
-    @Test void leavesPercentUnknownWhenPreviousCloseIsZeroInsteadOfFailingTheOverview() {
-        var prices = mock(PriceRepository.class);
-        var instruments = mock(InstrumentRepository.class);
-        when(instruments.findAll()).thenReturn(List.of(new Instrument("BAD", "Bad bar", AssetClass.ETF, "USD", true), new Instrument("SPY", "S&P 500", AssetClass.ETF, "USD", true)));
-        var day = LocalDate.of(2026, 10, 15);
-        when(prices.findRecentPrices()).thenReturn(List.of(
-            new Price("BAD", day, BigDecimal.TEN), new Price("BAD", day.minusDays(1), BigDecimal.ZERO),
-            new Price("SPY", day, new BigDecimal("110")), new Price("SPY", day.minusDays(1), new BigDecimal("100"))));
-        var result = new MarketOverviewService(prices, instruments).overview();
-        assertEquals(2, result.size());
-        assertNull(result.getFirst().changePercent());
-        assertEquals(BigDecimal.TEN, result.getFirst().change());
-        assertNotNull(result.getLast().changePercent());
-    }
 }

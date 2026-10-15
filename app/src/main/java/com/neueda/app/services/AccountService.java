@@ -94,8 +94,8 @@ public class AccountService {
                 ACCOUNT_NOT_FOUND + accountId
             ));
         
-        // Retrieve all orders for the account
-        List<Order> orders = orderRepository.findByAccountId(accountId);
+        // Newest first, so the dashboard can show the most recent orders
+        List<Order> orders = orderRepository.findByAccountIdOrderByCreatedOnDesc(accountId);
         
         // Convert to OrderResponse DTOs
         return orders.stream()

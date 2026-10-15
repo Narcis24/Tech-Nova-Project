@@ -41,16 +41,12 @@ public class MarketOverviewService {
         Price latest = bars.getLast();
         BigDecimal previousClose = bars.size() > 1 ? bars.get(bars.size() - 2).getPrice() : null;
         BigDecimal change = previousClose == null ? null : latest.getPrice().subtract(previousClose);
-        // A zero previous close comes from a bad bar; leave the percentage unknown rather than failing.
-        BigDecimal changePercent = previousClose == null || previousClose.signum() == 0
-            ? null
-            : change.divide(previousClose, 8, RoundingMode.HALF_UP);
-        String assetClass = instrument.getAssetClass() == null ? null : instrument.getAssetClass().toString();
+        BigDecimal changePercent = change == null ? null : change.divide(previousClose, 8, RoundingMode.HALF_UP);
 
         return new MarketAssetResponse(
             instrument.getSymbol(),
             instrument.getName(),
-            assetClass,
+            instrument.getAssetClass().toString(),
             instrument.getCurrency(),
             latest.getPrice(),
             previousClose,

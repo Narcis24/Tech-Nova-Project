@@ -1,9 +1,9 @@
 import { CurrencyPipe } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { HttpErrorResponse } from '@angular/common/http';
 import { Subject, exhaustMap, catchError, of } from 'rxjs';
 import { newUuid } from '../../core/uuid';
+import { isRejection, orderError } from '../trade/order-error';
 import { OrderControllerService, PositionResponse } from '../../generated/trading-api-client';
 @Component({
   selector: 'app-close-position',
@@ -37,11 +37,8 @@ export class ClosePositionComponent implements AfterViewInit {
             })
             .pipe(
               catchError((error) => {
-                if (error instanceof HttpErrorResponse && error.status >= 400 && error.status < 500)
-                  this.key = newUuid();
-                this.error.set(
-                  "Couldn't confirm submission. Try again; retrying uses the same order ID to prevent duplicates.",
-                );
+                if (isRejection(error)) this.key = newUuid();
+                this.error.set(orderError(error));
                 return of(null);
               }),
             ),

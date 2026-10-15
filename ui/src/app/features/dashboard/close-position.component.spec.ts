@@ -51,8 +51,11 @@ describe('ClosePositionComponent', () => {
     expect(retryKey).not.toBe(rejectedKey);
     component.confirm();
     expect(api.placeOrder.calls.mostRecent().args[0].idempotencyKey).toBe(retryKey);
-    api.placeOrder.and.returnValue(throwError(() => new HttpErrorResponse({ status: 422 })));
+    api.placeOrder.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 422, error: { message: 'Insufficient holdings' } })),
+    );
     component.confirm();
+    expect(component.error()).toBe('Insufficient holdings');
     api.placeOrder.and.returnValue(of({ status: 'PENDING' }));
     component.confirm();
     expect(api.placeOrder.calls.mostRecent().args[0].idempotencyKey).not.toBe(retryKey);
