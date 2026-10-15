@@ -81,12 +81,12 @@ describe('AccountService', () => {
 
     it('adds the new account and selects it', () => {
       let opened: Account | undefined;
-      service.openAccount('Test Trader').subscribe(account => (opened = account));
+      service.openAccount('Test Trader').subscribe((account) => (opened = account));
 
       http.expectOne(ACCOUNTS_URL).flush({ accountId: 'ACC-NEW' } as Account);
 
       expect(opened?.accountId).toBe('ACC-NEW');
-      expect(service.accounts().map(account => account.accountId)).toEqual(['ACC001', 'ACC-NEW']);
+      expect(service.accounts().map((account) => account.accountId)).toEqual(['ACC001', 'ACC-NEW']);
       expect(service.currentAccountId()).toBe('ACC-NEW');
     });
 
@@ -94,10 +94,12 @@ describe('AccountService', () => {
       let failed = false;
       service.openAccount('Test Trader').subscribe({ error: () => (failed = true) });
 
-      http.expectOne(ACCOUNTS_URL).flush({ message: 'Holder name is required' }, { status: 400, statusText: 'Bad Request' });
+      http
+        .expectOne(ACCOUNTS_URL)
+        .flush({ message: 'Holder name is required' }, { status: 400, statusText: 'Bad Request' });
 
       expect(failed).toBeTrue();
-      expect(service.accounts().map(account => account.accountId)).toEqual(['ACC001']);
+      expect(service.accounts().map((account) => account.accountId)).toEqual(['ACC001']);
       expect(service.currentAccountId()).toBe('ACC001');
     });
   });

@@ -60,7 +60,7 @@ export class ResetPasswordComponent {
   }
 
   togglePassword(): void {
-    this.showPassword.update(shown => !shown);
+    this.showPassword.update((shown) => !shown);
   }
 
   dismissError(): void {

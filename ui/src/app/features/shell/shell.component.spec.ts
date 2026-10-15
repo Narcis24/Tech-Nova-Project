@@ -23,8 +23,7 @@ describe('ShellComponent', () => {
           useValue: { accounts: signal([]), currentAccountId: signal(null), loadAccounts: () => of(undefined) },
         },
       ],
-    })
-    .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(ShellComponent);
     component = fixture.componentInstance;

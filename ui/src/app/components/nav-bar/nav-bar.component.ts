@@ -48,11 +48,11 @@ export class NavBarComponent {
   readonly menuOpen = signal(false);
 
   toggleAccountMenu(): void {
-    this.accountMenuOpen.update(open => !open);
+    this.accountMenuOpen.update((open) => !open);
   }
 
   toggleMenu(): void {
-    this.menuOpen.update(open => !open);
+    this.menuOpen.update((open) => !open);
   }
 
   selectAccount(accountId: string): void {

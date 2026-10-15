@@ -21,10 +21,18 @@
       <input id="username" type="text" formControlName="username" autocomplete="username" required />
       @if (showFieldErrors('username') && f['username'].errors) {
         <p class="field-error">
-          @if (f['username'].errors['required']) { Username is required }
-          @if (f['username'].errors['minlength']) { Username must be at least 8 characters }
-          @if (f['username'].errors['maxlength']) { Username must be at most 16 characters }
-          @if (f['username'].errors['pattern']) { Username may contain only letters, numbers, and underscores }
+          @if (f['username'].errors['required']) {
+            Username is required
+          }
+          @if (f['username'].errors['minlength']) {
+            Username must be at least 8 characters
+          }
+          @if (f['username'].errors['maxlength']) {
+            Username must be at most 16 characters
+          }
+          @if (f['username'].errors['pattern']) {
+            Username may contain only letters, numbers, and underscores
+          }
         </p>
       }
 
@@ -32,38 +40,70 @@
       <input id="email" type="email" formControlName="email" autocomplete="email" required />
       @if (showFieldErrors('email') && f['email'].errors) {
         <p class="field-error">
-          @if (f['email'].errors['required']) { Email is required }
-          @if (f['email'].errors['pattern'] || f['email'].errors['maxlength']) { Enter a valid email address }
+          @if (f['email'].errors['required']) {
+            Email is required
+          }
+          @if (f['email'].errors['pattern'] || f['email'].errors['maxlength']) {
+            Enter a valid email address
+          }
         </p>
       }
 
       <label for="password">Password</label>
       <div class="password">
-        <input id="password" [type]="showPassword ? 'text' : 'password'" formControlName="password" autocomplete="new-password" required />
+        <input
+          id="password"
+          [type]="showPassword ? 'text' : 'password'"
+          formControlName="password"
+          autocomplete="new-password"
+          required
+        />
         <button type="button" class="show" (click)="togglePasswordVisibility()">
           {{ showPassword ? 'Hide' : 'Show' }}
         </button>
       </div>
       @if (showFieldErrors('password') && f['password'].errors) {
         <p class="field-error">
-          @if (f['password'].errors['required']) { Password is required }
-          @if (f['password'].errors['minlength']) { Password must be at least 12 characters }
-          @if (f['password'].errors['maxlength']) { Password must be at most 20 characters }
-          @if (f['password'].errors['pattern']) { Password must contain a digit, uppercase letter, lowercase letter, and special character }
+          @if (f['password'].errors['required']) {
+            Password is required
+          }
+          @if (f['password'].errors['minlength']) {
+            Password must be at least 12 characters
+          }
+          @if (f['password'].errors['maxlength']) {
+            Password must be at most 20 characters
+          }
+          @if (f['password'].errors['pattern']) {
+            Password must contain a digit, uppercase letter, lowercase letter, and special character
+          }
         </p>
       }
 
       <label for="confirmPassword">Confirm password</label>
       <div class="password">
-        <input id="confirmPassword" [type]="showConfirmPassword ? 'text' : 'password'" formControlName="confirmPassword" autocomplete="new-password" required />
+        <input
+          id="confirmPassword"
+          [type]="showConfirmPassword ? 'text' : 'password'"
+          formControlName="confirmPassword"
+          autocomplete="new-password"
+          required
+        />
         <button type="button" class="show" (click)="toggleConfirmPasswordVisibility()">
           {{ showConfirmPassword ? 'Hide' : 'Show' }}
         </button>
       </div>
-      @if (showFieldErrors('confirmPassword') && f['password'].value && (f['confirmPassword'].errors || registerForm.errors?.['passwordMismatch'])) {
+      @if (
+        showFieldErrors('confirmPassword') &&
+        f['password'].value &&
+        (f['confirmPassword'].errors || registerForm.errors?.['passwordMismatch'])
+      ) {
         <p class="field-error">
-          @if (f['confirmPassword'].errors?.['required']) { Please confirm your password }
-          @if (registerForm.errors?.['passwordMismatch'] && f['confirmPassword'].value) { Passwords do not match }
+          @if (f['confirmPassword'].errors?.['required']) {
+            Please confirm your password
+          }
+          @if (registerForm.errors?.['passwordMismatch'] && f['confirmPassword'].value) {
+            Passwords do not match
+          }
         </p>
       }
 

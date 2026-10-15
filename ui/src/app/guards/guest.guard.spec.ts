@@ -16,9 +16,7 @@ describe('guestGuard', () => {
   });
 
   function runGuard() {
-    return TestBed.runInInjectionContext(() =>
-      guestGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot),
-    );
+    return TestBed.runInInjectionContext(() => guestGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot));
   }
 
   it('lets an unauthenticated user through', () => {

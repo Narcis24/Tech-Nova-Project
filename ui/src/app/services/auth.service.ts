@@ -27,7 +27,7 @@ export class AuthService {
 
   login(credentials: LoginRequest): Observable<void> {
     return this.authApi.login(credentials).pipe(
-      tap(tokens => this.storeTokens(tokens)),
+      tap((tokens) => this.storeTokens(tokens)),
       map(() => undefined),
     );
   }
@@ -65,8 +65,8 @@ export class AuthService {
     }
 
     this.refreshInFlight$ = this.authApi.refresh({ refreshToken }).pipe(
-      tap(tokens => this.storeTokens(tokens)),
-      map(tokens => tokens.accessToken),
+      tap((tokens) => this.storeTokens(tokens)),
+      map((tokens) => tokens.accessToken),
       finalize(() => (this.refreshInFlight$ = null)),
       shareReplay(1),
     );
@@ -117,7 +117,7 @@ export class AuthService {
 function usernameFrom(token: string | null): string | null {
   const payload = token?.split('.')[1];
   if (!payload) {
-    return null;    
+    return null;
   }
 
   try {

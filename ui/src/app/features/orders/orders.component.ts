@@ -5,10 +5,8 @@ import { Component } from '@angular/core';
   imports: [],
   template: `
     <h1>Orders</h1>
-    <p> TBD </p>
+    <p>TBD</p>
   `,
-  styles: ``
+  styles: ``,
 })
-export class OrdersComponent {
-
-}
+export class OrdersComponent {}

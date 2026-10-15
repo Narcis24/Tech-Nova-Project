@@ -9,51 +9,51 @@ export const routes: Routes = [
   {
     path: 'login',
     canActivate: [guestGuard],
-    loadComponent: () => import('./features/login/login.component').then(m => m.LoginComponent),
+    loadComponent: () => import('./features/login/login.component').then((m) => m.LoginComponent),
   },
   {
     path: 'register',
     canActivate: [guestGuard],
-    loadComponent: () => import('./features/register/register.component').then(m => m.RegisterComponent),
+    loadComponent: () => import('./features/register/register.component').then((m) => m.RegisterComponent),
   },
   {
     path: 'forgot-password',
     canActivate: [guestGuard],
     loadComponent: () =>
-      import('./features/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent),
+      import('./features/forgot-password/forgot-password.component').then((m) => m.ForgotPasswordComponent),
   },
   {
     // No guard: the link from the email must work even if someone is signed in on this browser
     path: 'reset-password',
     loadComponent: () =>
-      import('./features/reset-password/reset-password.component').then(m => m.ResetPasswordComponent),
+      import('./features/reset-password/reset-password.component').then((m) => m.ResetPasswordComponent),
   },
   {
     path: '',
     canActivate: [authGuard],
-    loadComponent: () => import('./features/shell/shell.component').then(m => m.ShellComponent),
+    loadComponent: () => import('./features/shell/shell.component').then((m) => m.ShellComponent),
     children: [
       {
         path: 'dashboard',
-        loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
+        loadComponent: () => import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
       {
         path: 'trade',
-        loadComponent: () => import('./pages/order-ticket/order-ticket.component').then(m => m.OrderTicketComponent),
+        loadComponent: () => import('./pages/order-ticket/order-ticket.component').then((m) => m.OrderTicketComponent),
       },
       {
         path: 'orders/:orderId',
-        loadComponent: () => import('./pages/order-result/order-result.component').then(m => m.OrderResultComponent),
+        loadComponent: () => import('./pages/order-result/order-result.component').then((m) => m.OrderResultComponent),
       },
       {
         path: 'orders',
-        loadComponent: () => import('./features/orders/orders.component').then(m => m.OrdersComponent),
+        loadComponent: () => import('./features/orders/orders.component').then((m) => m.OrdersComponent),
       },
       {
         path: 'accounts',
-        loadComponent: () => import('./features/accounts/accounts.component').then(m => m.AccountsComponent),
+        loadComponent: () => import('./features/accounts/accounts.component').then((m) => m.AccountsComponent),
       },
-    ]
+    ],
   },
   { path: '**', component: NotFoundComponent },
 ];

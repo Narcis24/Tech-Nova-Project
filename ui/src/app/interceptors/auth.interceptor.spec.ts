@@ -97,7 +97,7 @@ describe('authInterceptor', () => {
     it('refreshes the token and retries the request with the new one', () => {
       logIn();
       let orders: unknown;
-      client.get(ORDERS_URL).subscribe(body => (orders = body));
+      client.get(ORDERS_URL).subscribe((body) => (orders = body));
 
       http.expectOne(ORDERS_URL).flush(null, UNAUTHORIZED);
       http.expectOne(REFRESH_URL).flush(NEW_TOKENS);
@@ -113,12 +113,12 @@ describe('authInterceptor', () => {
       client.get(ORDERS_URL).subscribe();
       client.get(ORDERS_URL).subscribe();
 
-      http.match(ORDERS_URL).forEach(req => req.flush(null, UNAUTHORIZED));
+      http.match(ORDERS_URL).forEach((req) => req.flush(null, UNAUTHORIZED));
       http.expectOne(REFRESH_URL).flush(NEW_TOKENS);
 
       const retries = http.match(ORDERS_URL);
       expect(retries.length).toBe(2);
-      retries.forEach(req => {
+      retries.forEach((req) => {
         expect(req.request.headers.get('Authorization')).toBe('Bearer access-2');
         req.flush([]);
       });
@@ -127,7 +127,7 @@ describe('authInterceptor', () => {
     it('logs out and fails the request when the refresh fails', () => {
       logIn();
       let error: unknown;
-      client.get(ORDERS_URL).subscribe({ error: e => (error = e) });
+      client.get(ORDERS_URL).subscribe({ error: (e) => (error = e) });
 
       http.expectOne(ORDERS_URL).flush(null, UNAUTHORIZED);
       http.expectOne(REFRESH_URL).flush(null, UNAUTHORIZED);
@@ -141,7 +141,7 @@ describe('authInterceptor', () => {
     it('retries at most once', () => {
       logIn();
       let error: HttpErrorResponse | undefined;
-      client.get(ORDERS_URL).subscribe({ error: e => (error = e) });
+      client.get(ORDERS_URL).subscribe({ error: (e) => (error = e) });
 
       http.expectOne(ORDERS_URL).flush(null, UNAUTHORIZED);
       http.expectOne(REFRESH_URL).flush(NEW_TOKENS);
@@ -154,7 +154,7 @@ describe('authInterceptor', () => {
     it('passes other errors through without refreshing', () => {
       logIn();
       let error: HttpErrorResponse | undefined;
-      client.get(ORDERS_URL).subscribe({ error: e => (error = e) });
+      client.get(ORDERS_URL).subscribe({ error: (e) => (error = e) });
 
       http.expectOne(ORDERS_URL).flush(null, { status: 500, statusText: 'Server Error' });
 

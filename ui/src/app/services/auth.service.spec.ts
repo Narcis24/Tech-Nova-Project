@@ -29,11 +29,7 @@ describe('AuthService', () => {
     router.navigateByUrl.and.resolveTo(true);
 
     TestBed.configureTestingModule({
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: Router, useValue: router },
-      ],
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: Router, useValue: router }],
     });
     service = TestBed.inject(AuthService);
     http = TestBed.inject(HttpTestingController);
@@ -98,9 +94,11 @@ describe('AuthService', () => {
 
     it('passes a rejected reset link on to the caller', () => {
       let status = 0;
-      service.resetPassword('bad-token', 'NewPassword123').subscribe({ error: err => (status = err.status) });
+      service.resetPassword('bad-token', 'NewPassword123').subscribe({ error: (err) => (status = err.status) });
 
-      http.expectOne(RESET_URL).flush({ message: 'Invalid or expired reset link' }, { status: 400, statusText: 'Bad Request' });
+      http
+        .expectOne(RESET_URL)
+        .flush({ message: 'Invalid or expired reset link' }, { status: 400, statusText: 'Bad Request' });
       expect(status).toBe(400);
     });
   });
@@ -109,7 +107,7 @@ describe('AuthService', () => {
     it('sends the stored refresh token and stores the rotated pair', () => {
       localStorage.setItem(REFRESH_TOKEN_KEY, 'refresh-1');
       let token: string | undefined;
-      service.refresh().subscribe(t => (token = t));
+      service.refresh().subscribe((t) => (token = t));
 
       const req = http.expectOne(REFRESH_URL);
       expect(req.request.body).toEqual({ refreshToken: 'refresh-1' });
@@ -123,9 +121,9 @@ describe('AuthService', () => {
     it('shares one request between concurrent callers', () => {
       localStorage.setItem(REFRESH_TOKEN_KEY, 'refresh-1');
       const tokens: string[] = [];
-      service.refresh().subscribe(t => tokens.push(t));
-      service.refresh().subscribe(t => tokens.push(t));
-      service.refresh().subscribe(t => tokens.push(t));
+      service.refresh().subscribe((t) => tokens.push(t));
+      service.refresh().subscribe((t) => tokens.push(t));
+      service.refresh().subscribe((t) => tokens.push(t));
 
       http.expectOne(REFRESH_URL).flush(NEW_TOKENS);
 

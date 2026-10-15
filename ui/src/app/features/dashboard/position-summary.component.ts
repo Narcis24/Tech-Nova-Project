@@ -13,7 +13,7 @@ export class PositionSummaryComponent {
   readonly positions = input.required<PositionResponse[]>();
   readonly instruments = input.required<Map<string, { name?: string }>>();
   readonly pendingSells = input(new Set<string>());
-  readonly close = output<PositionResponse>();
+  readonly closePosition = output<PositionResponse>();
   positionReturn(p: PositionResponse): number | null {
     const cost = Number(p.quantity) * Number(p.averageCost);
     return cost > 0 && p.unrealizedPnL != null ? Number(p.unrealizedPnL) / cost : null;

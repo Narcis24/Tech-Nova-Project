@@ -9,5 +9,5 @@ import { RouterLink } from '@angular/router';
 export class ActionButtonsComponent {
   readonly symbol = input.required<string>();
   readonly closeDisabled = input(false);
-  readonly close = output<void>();
+  readonly closePosition = output<void>();
 }
