@@ -1,3 +1,4 @@
+import { sessionDate } from '../../core/session-date';
 import { CurrencyPipe, DatePipe, PercentPipe } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 import { BalanceHistoryResponse, PortfolioMetricsResponse } from '../../generated/trading-api-client';
@@ -8,7 +9,7 @@ import { BalanceHistoryResponse, PortfolioMetricsResponse } from '../../generate
     <p class="label">Portfolio value</p>
     <p class="total">{{ portfolio().totalPortfolioValue | currency:'USD' }}</p>
     @if (history()?.portfolioValue != null) {
-      <p class="previous">Previous session ({{ history()?.sessionDate | date:'mediumDate':'UTC' }}): {{ history()?.portfolioValue | currency:'USD' }}</p>
+      <p class="previous">Previous session ({{ sessionDate(history()?.sessionDate) | date:'mediumDate':'UTC' }}): {{ history()?.portfolioValue | currency:'USD' }}</p>
       <p class="change" [class.loss]="change()! < 0" [class.gain]="change()! > 0">
         {{ change()! > 0 ? '+' : '' }}{{ change() | currency:'USD' }}
         @if (percentage() != null) { ({{ percentage()! > 0 ? '+' : '' }}{{ percentage() | percent:'1.2-2' }}) }
@@ -22,6 +23,7 @@ import { BalanceHistoryResponse, PortfolioMetricsResponse } from '../../generate
   styles: `:host{display:block;max-width:760px}p{margin:0}.label,.previous,.cash span,.change span{color:var(--color-muted)}.label{font-size:14px;margin-bottom:8px}.total{font-size:clamp(38px,6vw,72px);line-height:1.1;letter-spacing:-.035em;overflow-wrap:anywhere}.previous{font-size:14px;margin-top:12px;line-height:1.5}.change{margin-top:8px;font-size:17px;line-height:1.5}.change span{font-size:14px}.cash{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:baseline;margin-top:24px}.cash strong{font-size:28px;font-weight:500}.gain{color:var(--color-gain)}.loss{color:var(--color-loss)}`,
 })
 export class BalanceCardComponent {
+  readonly sessionDate = sessionDate;
   readonly portfolio = input.required<PortfolioMetricsResponse>();
   readonly history = input<BalanceHistoryResponse | null>(null);
   readonly historyError = input(false);

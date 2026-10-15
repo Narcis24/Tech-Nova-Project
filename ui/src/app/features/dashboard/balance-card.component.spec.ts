@@ -7,6 +7,7 @@ describe('BalanceCardComponent', () => {
     fixture.componentRef.setInput('history',{portfolioValue:100,cashBalance:10,sessionDate:'2026-10-14'}); fixture.detectChanges();
     expect(fixture.componentInstance.change()).toBe(20); expect(fixture.componentInstance.percentage()).toBe(0.2);
     expect(fixture.nativeElement.textContent).toContain('+20.00%');
+    expect(fixture.nativeElement.textContent).toContain('Oct 14, 2026');
     fixture.componentRef.setInput('history',{portfolioValue:0}); fixture.detectChanges();
     expect(fixture.componentInstance.percentage()).toBeNull(); expect(fixture.nativeElement.textContent).not.toContain('Infinity');
   });

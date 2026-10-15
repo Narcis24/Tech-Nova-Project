@@ -1,3 +1,4 @@
+import { sessionDate } from '../../core/session-date';
 import { CurrencyPipe, DatePipe, PercentPipe } from '@angular/common';
 import { Component, computed, effect, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -18,13 +19,14 @@ import { MarketAssetResponse } from '../../generated/trading-api-client';
           <p class="name">{{ asset.name }}</p><p class="price">{{ asset.currentPrice | currency:(asset.currency ?? 'USD') }}</p>
           <p class="change" [class.gain]="(asset.change ?? 0) > 0" [class.loss]="(asset.change ?? 0) < 0">{{ (asset.change ?? 0) > 0 ? '+' : '' }}{{ (asset.change | currency:(asset.currency ?? 'USD')) ?? '—' }} ({{ (asset.changePercent | percent:'1.2-2') ?? '—' }})</p>
           <svg viewBox="0 0 160 40" role="img" [attr.aria-label]="asset.symbol + ', last ' + (asset.history?.length ?? 0) + ' daily closes'" [class.loss]="(asset.change ?? 0) < 0"><polyline [attr.points]="sparkline(asset.history ?? [])" /></svg>
-          <p class="as-of">As of {{ asset.priceDate | date:'mediumDate':'UTC' }}</p>
+          <p class="as-of">As of {{ sessionDate(asset.priceDate) | date:'mediumDate':'UTC' }}</p>
         </article>
       }</div>
     } @else if (!error()) { <p class="empty">{{ view() === 'watchlist' ? 'Your watchlist is empty. Add an instrument above.' : 'No market data available for this view yet.' }}</p> }`,
   styles: `:host{display:block}h2,p{margin:0}.heading{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;align-items:center}h2{font-size:18px}.heading p,.name,.as-of{color:var(--color-muted);font-size:13px;line-height:1.5;margin-top:6px}.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:20px 0}button,select{min-height:40px;padding:0 12px;border:0;border-radius:8px;font:inherit;font-size:14px;background:var(--color-track);color:var(--color-ink)}button{cursor:pointer}button[aria-pressed=true]{background:var(--color-accent-soft);color:var(--color-accent)}button:disabled{opacity:.6}.assets{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:10px}article{padding:18px;background:var(--color-card);border-radius:14px;min-width:0}.asset-heading{display:flex;align-items:center;justify-content:space-between}.asset-heading a{font-weight:600;text-decoration:none;color:var(--color-ink)}.asset-heading button{font-size:20px;min-height:36px;background:none}.name{min-height:40px}.price{font-size:22px;margin:12px 0 6px}.change{font-size:14px}.gain{color:var(--color-gain)}.loss,.error{color:var(--color-loss)}svg{width:100%;height:40px;margin-top:16px;fill:none;stroke:var(--color-gain);stroke-width:2}svg.loss{stroke:var(--color-loss)}.as-of{font-size:12px}.add{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px;margin-bottom:20px}.add select{max-width:100%}.empty{color:var(--color-muted);padding:20px 0}`,
 })
 export class MarketOverviewComponent {
+  readonly sessionDate = sessionDate;
   readonly assets = input.required<MarketAssetResponse[]>(); readonly loading = input(false); readonly error = input(false); readonly refresh = output<void>();
   readonly tabs = [{ value: 'watchlist', label: 'Watchlist' }, { value: 'gainers', label: 'Top gainers' }, { value: 'losers', label: 'Top losers' }, { value: 'all', label: 'All assets' }];
   readonly view = signal('watchlist');
