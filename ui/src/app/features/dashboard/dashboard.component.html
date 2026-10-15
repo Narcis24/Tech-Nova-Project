@@ -16,7 +16,7 @@
     <div class="details"><app-market-overview [assets]="store.state().market" [loading]="store.state().loading" [error]="store.state().marketError" (refresh)="store.refresh()" />
       <section class="orders" aria-labelledby="orders-heading"><div class="section-heading"><h2 id="orders-heading">Orders</h2><a routerLink="/orders">All orders</a></div>
         @if (store.state().ordersError) { <p role="status">Couldn't update orders. <button class="text-button" type="button" (click)="store.refresh()">Try again</button></p> }
-        @if (store.state().orders.length) { <ul>@for (order of store.state().orders.slice(0,5); track order.orderId ?? $index) { <li><span class="order-status" [class.loss]="order.status === 'REJECTED'">{{ order.status?.replaceAll('_',' ') | titlecase }}</span><span>{{ order.side | titlecase }} {{ order.quantity | number }} {{ order.symbol }} @if (order.price != null) { at {{ order.price | number:'1.2-2' }} }<span class="order-message">{{ order.message }}</span></span></li> }</ul> }
+        @if (store.state().orders.length) { <ul>@for (order of store.state().orders.slice(0,5); track order.orderId ?? $index) { <li><a class="order-status" [routerLink]="['/orders', order.orderId]" [class.loss]="order.status === 'REJECTED'">{{ order.status?.replaceAll('_',' ') | titlecase }}</a><span>{{ order.side | titlecase }} {{ order.quantity | number }} {{ order.symbol }} @if (order.price != null) { at {{ order.price | number:'1.2-2' }} }<span class="order-message">{{ order.message }}</span></span></li> }</ul> }
         @else if (!store.state().ordersError) { <p class="muted">No orders for this account yet.</p> }
       </section>
     </div>
