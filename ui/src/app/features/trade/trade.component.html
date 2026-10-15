@@ -1,0 +1,18 @@
+<h1>Trade</h1><a routerLink="/dashboard">← Back to portfolio</a>
+@if (!accountId()) { <p>Select an account before trading. <a routerLink="/accounts">Manage accounts</a></p> }
+@else {
+  <p class="muted">Account {{ accountId() }}</p>
+  <form [formGroup]="form" (ngSubmit)="prepare()"><fieldset [disabled]="submitting()">
+    <label for="trade-symbol">Symbol</label><input id="trade-symbol" formControlName="symbol" list="trade-instruments" placeholder="e.g. AAPL" autocapitalize="characters" /><datalist id="trade-instruments">@for (asset of instruments(); track asset.symbol) { <option [value]="asset.symbol">{{ asset.name }}</option> }</datalist>
+    <label for="trade-side">Side</label><select id="trade-side" formControlName="side"><option value="BUY">Buy</option><option value="SELL">Sell</option></select>
+    <label for="trade-quantity">Quantity (whole shares)</label><input id="trade-quantity" type="number" min="1" max="100000" step="1" formControlName="quantity" />
+    <label for="trade-type">Order type</label><select id="trade-type" formControlName="orderType"><option value="MARKET">Market</option><option value="LIMIT">Limit</option></select>
+    @if (form.controls.orderType.value === 'LIMIT') { <label for="trade-price">Limit price (USD)</label><input id="trade-price" type="number" min="0.01" step="0.01" formControlName="price" /> }
+    <p class="muted">Market orders execute at the available market price. Placement does not guarantee a fill.</p>
+    @if (form.touched && form.invalid) { <p class="error" role="alert">Enter a symbol and a whole-share quantity between 1 and 100,000.</p> }
+    <button type="submit">Review order</button>
+  </fieldset></form>
+  @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+  @if (review(); as order) { <section class="review" aria-label="Order review"><h2>Review order</h2><p>{{ order.side }} {{ order.quantity }} {{ order.symbol }} · {{ order.orderType }} @if (order.price != null) { at {{ order.price }} USD }</p><p>Account {{ order.accountId }}</p><div class="actions"><button type="button" (click)="confirm()" [disabled]="submitting()">{{ submitting() ? 'Submitting…' : 'Confirm order' }}</button><button type="button" (click)="review.set(null)" [disabled]="submitting()">Edit</button></div></section> }
+  @if (result(); as order) { <section class="review" role="status"><h2>Order {{ order.status }}</h2><p>{{ order.side }} {{ order.quantity }} {{ order.symbol }}</p><p>Order ID: {{ order.orderId }}</p><p>{{ order.message }}</p><p>Positions update after execution. <a routerLink="/dashboard">Return to portfolio</a>.</p></section> }
+}
