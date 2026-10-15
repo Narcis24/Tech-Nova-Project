@@ -1,0 +1,14 @@
+:host { display: block; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+button { min-height: 48px; padding: 0 22px; border: 0; border-radius: 12px; background: var(--color-track); color: var(--color-ink); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+.primary { background: var(--color-ink); color: white; }
+button:hover { filter: brightness(.94); }
+button:disabled { opacity: .55; cursor: wait; }
+form { display: flex; flex-direction: column; gap: 12px; max-width: 340px; padding: 22px; margin-top: 16px; border-radius: 14px; background: var(--color-card); }
+p { margin: 0; line-height: 1.5; }
+form > p:first-child { font-weight: 600; }
+.available, #cash-amount-help { color: var(--color-muted); font-size: 14px; }
+label { font-size: 14px; font-weight: 600; }
+input { box-sizing: border-box; width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #d3d7e0; border-radius: 8px; font: inherit; }
+.error { color: var(--color-loss); font-size: 14px; }
+.success { color: var(--color-accent); margin-top: 12px; }

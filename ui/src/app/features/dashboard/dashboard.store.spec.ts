@@ -65,6 +65,19 @@ describe('DashboardStore', () => {
     expect(store.allocation(0)).toBeNull();
   });
 
+
+  it('keeps the same account visible during a refresh', () => {
+    portfolioApi.getPortfolioMetrics.and.returnValue(of({ accountId: 'ACC001', totalPortfolioValue: 120 }));
+    TestBed.flushEffects();
+    const pending = new Subject<PortfolioMetricsResponse>();
+    portfolioApi.getPortfolioMetrics.and.returnValue(pending);
+    store.refresh(); TestBed.flushEffects();
+    expect(store.state().loading).toBeTrue();
+    expect(store.state().portfolio?.totalPortfolioValue).toBe(120);
+    pending.next({ accountId: 'ACC001', totalPortfolioValue: 130 }); pending.complete();
+    expect(store.state().portfolio?.totalPortfolioValue).toBe(130);
+  });
+
   it('does not request a portfolio without an account', () => {
     currentAccountId.set(null); TestBed.flushEffects();
     expect(portfolioApi.getPortfolioMetrics).not.toHaveBeenCalled();

@@ -46,7 +46,8 @@ export class DashboardStore {
         }).pipe(
           map(({ portfolio, orders }) => ({ ...empty, portfolio, orders: orders.orders, ordersError: orders.failed })),
           catchError(() => of({ ...empty, error: true })),
-          startWith({ ...empty, loading: true }),
+          // Keep the same account visible during a refresh, including cash confirmation and focus.
+          startWith({ ...empty, ...(this.state().portfolio?.accountId === accountId ? this.state() : {}), loading: true, error: false }),
         );
       }),
       takeUntilDestroyed(),
