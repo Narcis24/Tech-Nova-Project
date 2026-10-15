@@ -76,6 +76,7 @@ export class RegisterComponent {
     this.error = '';
 
     if (this.registerForm.invalid) {
+      this.registerForm.markAllAsTouched();
       return;
     }
 
