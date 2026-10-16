@@ -90,7 +90,9 @@ export class OrderFormComponent {
   });
   readonly values = toSignal(this.form.valueChanges.pipe(startWith(this.form.getRawValue())));
   readonly chartSymbol = computed(() => this.values()?.symbol ?? '');
-  readonly instrumentName = computed(() => this.instruments().find((i) => i.symbol === this.chartSymbol())?.name ?? '');
+  readonly instrumentName = computed(
+    () => this.instruments().find((i) => i.symbol?.trim().toUpperCase() === this.chartSymbol().trim().toUpperCase())?.name ?? '',
+  );
   readonly isBuy = computed(() => this.values()?.side !== 'SELL');
   readonly isLimit = computed(() => this.values()?.orderType === 'LIMIT');
   readonly quote = signal<TradeQuote | null>(null);

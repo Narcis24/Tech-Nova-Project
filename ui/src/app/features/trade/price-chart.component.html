@@ -2,7 +2,14 @@
   <div class="heading">
     <div class="instrument">
       <h1>
-        <button type="button" class="symbol-button" (click)="changeInstrument.emit()" aria-label="Change instrument">
+        <button
+          type="button"
+          class="symbol-button"
+          (click)="changeInstrument.emit()"
+          [attr.aria-label]="
+            'Change instrument: ' + (normalizedSymbol() || (pendingSymbol() ? 'Pending instrument' : 'Select instrument'))
+          "
+        >
           {{ normalizedSymbol() || (pendingSymbol() ? '—' : 'Select instrument')
           }}<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4 3 3 3-3" /></svg>
         </button>
