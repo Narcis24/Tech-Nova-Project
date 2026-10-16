@@ -96,12 +96,10 @@ button {
   cursor: pointer;
 }
 .ranges button[aria-pressed='true'] {
-  background: var(--background-color);
+  background: var(--elevated-background-color);
   color: var(--text-color);
   font-weight: 600;
-  box-shadow:
-    0 1px 2px #14182b14,
-    0 0 0 1px #14182b0a;
+  box-shadow: var(--card-shadow);
 }
 .as-of {
   font-size: 12px;
@@ -153,7 +151,7 @@ line {
   vector-effect: non-scaling-stroke;
 }
 .grid {
-  stroke: #f0f1f4;
+  stroke: var(--subtle-border-color);
   stroke-width: 1;
 }
 .line {
@@ -197,7 +195,7 @@ circle {
 }
 .current-price {
   z-index: 1;
-  color: white;
+  color: var(--background-color);
   background: var(--text-color);
   border-radius: 8px;
   padding: 5px 6px;
@@ -218,7 +216,7 @@ circle {
 .quote-facts {
   margin: 28px 0 0;
   padding-top: 24px;
-  border-top: 1px solid #eceef2;
+  border-top: 1px solid var(--subtle-border-color);
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
@@ -342,7 +340,7 @@ dd {
   color: var(--primary-color);
 }
 .ranges button:not([aria-pressed='true']):hover {
-  background: #e9ebf0;
+  background: var(--control-background-color);
 }
 @media (pointer: coarse) {
   .symbol-button,
