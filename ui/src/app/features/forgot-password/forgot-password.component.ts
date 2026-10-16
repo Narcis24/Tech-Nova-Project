@@ -6,7 +6,7 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 // Something@domain.tld: Angular's Validators.email also accepts 'john@example', which the auth service refuses
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+\.[^\s@]+$/;
 
 @Component({
   selector: 'app-forgot-password',
