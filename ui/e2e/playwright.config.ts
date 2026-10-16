@@ -5,7 +5,12 @@ export default defineConfig({
   outputDir: '../test-results',
   forbidOnly: !!process.env['CI'],
   workers: 1,
-  reporter: [['list'], ['junit', { outputFile: '../test-results/smoke.xml' }]],
+  reporter: [
+    ['list'],
+    ['junit', { outputFile: '../test-results/smoke.xml' }],
+    // Browse it with: npx playwright show-report
+    ['html', { outputFolder: '../playwright-report', open: 'never' }],
+  ],
   use: {
     baseURL: process.env['UI_BASE_URL'] || 'http://localhost:8091',
     trace: 'retain-on-failure',
