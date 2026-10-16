@@ -121,7 +121,7 @@ function usernameFrom(token: string | null): string | null {
   }
 
   try {
-    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    const json = atob(payload.replaceAll('-', '+').replaceAll('_', '/'));
     const stub: unknown = JSON.parse(json).sub;
     return typeof stub === 'string' ? stub : null;
   } catch {
