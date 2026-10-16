@@ -140,18 +140,4 @@ export class PriceChartComponent {
       Math.round(Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)) * (this.visible().length - 1)),
     );
   }
-  move(event: KeyboardEvent): void {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault();
-    this.hovered.set(
-      event.key === 'Home'
-        ? 0
-        : event.key === 'End'
-          ? this.visible().length - 1
-          : Math.max(
-              0,
-              Math.min(this.visible().length - 1, this.selectedIndex() + (event.key === 'ArrowLeft' ? -1 : 1)),
-            ),
-    );
-  }
 }

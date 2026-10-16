@@ -1,4 +1,4 @@
-import { fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { Observable, of, Subject, throwError } from 'rxjs';
 import { PriceControllerService, PriceHistoryPoint } from '../../generated/trading-api-client';
 import { PriceChartComponent } from './price-chart.component';
@@ -20,6 +20,12 @@ describe('PriceChartComponent', () => {
     fixture.componentRef.setInput('symbol', symbol);
     fixture.detectChanges();
     return fixture;
+  }
+  // Moves the chart's range input the way a keyboard or touch user would
+  function inspect(fixture: ComponentFixture<PriceChartComponent>, index: number) {
+    const range: HTMLInputElement = fixture.nativeElement.querySelector('.plot input[type="range"]');
+    range.value = String(index);
+    range.dispatchEvent(new Event('input'));
   }
   it('shows the latest close, actual date, daily change, and calendar-month ranges', fakeAsync(() => {
     const fixture = setup();
@@ -48,13 +54,13 @@ describe('PriceChartComponent', () => {
     expect(root.querySelector('.chart-loading')).not.toBeNull();
     expect(root.querySelector('.history .plot svg')).not.toBeNull();
     expect(root.querySelector('.quote-facts')).not.toBeNull();
-    expect(root.querySelector('svg[role="slider"]')).toBeNull();
+    expect(root.querySelector('svg[role="img"]')).toBeNull();
     pending.next(points);
     pending.complete();
     fixture.detectChanges();
     expect(root.querySelector('.quote')).toBe(quote);
     expect(root.querySelector('.chart-loading')).toBeNull();
-    expect(root.querySelector('svg[role="slider"]')).not.toBeNull();
+    expect(root.querySelector('svg[role="img"]')).not.toBeNull();
   }));
   it('cancels an old symbol request and never labels its data as the new instrument', fakeAsync(() => {
     const fixture = setup();
@@ -100,9 +106,9 @@ describe('PriceChartComponent', () => {
     const component = fixture.componentInstance;
     expect(component.line()).not.toMatch(/NaN|Infinity/);
     expect(component.y(5)).toBe(104);
-    component.move(new KeyboardEvent('keydown', { key: 'Home' }));
+    inspect(fixture, 0);
     expect(component.selected()?.date).toBe('2026-03-30');
-    component.move(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+    inspect(fixture, 1);
     expect(component.selected()?.date).toBe('2026-03-31');
   }));
   it('keeps the axis badge aligned with the price being inspected', fakeAsync(() => {
@@ -118,7 +124,7 @@ describe('PriceChartComponent', () => {
     const badge: HTMLElement = fixture.nativeElement.querySelector('.current-price');
     expect(badge.textContent).toContain('10.00');
     expect(parseFloat(badge.style.top)).toBeGreaterThan(75);
-    fixture.componentInstance.move(new KeyboardEvent('keydown', { key: 'Home' }));
+    inspect(fixture, 0);
     fixture.detectChanges();
     expect(badge.textContent).toContain('20.00');
     expect(parseFloat(badge.style.top)).toBeLessThan(25);
@@ -129,7 +135,7 @@ describe('PriceChartComponent', () => {
     tick(250);
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('No stored price history');
-    expect(fixture.nativeElement.querySelector('svg[role="slider"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('svg[role="img"]')).toBeNull();
   }));
   it('keeps the loading layout while the default instrument is being resolved', fakeAsync(() => {
     const fixture = setup('');
