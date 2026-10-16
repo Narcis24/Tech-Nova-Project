@@ -121,6 +121,7 @@ class OrderServiceTest {
         assertEquals(OrderStatus.PENDING, response.getStatus());
         assertEquals(OrderType.LIMIT, response.getOrderType());
         assertEquals(new BigDecimal("150.00"), response.getPrice());
+        assertNotNull(response.getCreatedOn());
         assertEquals(new BigDecimal("2000.00"), account.getCashBalance());
         verify(orderRepository, times(1)).save(any(Order.class));
         verifyNoInteractions(priceService);

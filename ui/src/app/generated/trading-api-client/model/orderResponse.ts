@@ -19,6 +19,7 @@ export interface OrderResponse {
     price?: number;
     status?: OrderResponse.StatusEnum;
     message?: string;
+    createdOn?: string;
 }
 export namespace OrderResponse {
     export const OrderTypeEnum = {
