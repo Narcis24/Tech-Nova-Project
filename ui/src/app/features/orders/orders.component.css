@@ -151,9 +151,9 @@ button.tile:hover {
   font-weight: 600;
 }
 .filters button[aria-pressed='true'] {
-  background: var(--background-color);
+  background: var(--elevated-background-color);
   color: var(--text-color);
-  box-shadow: 0 1px 3px #14182b1a;
+  box-shadow: var(--card-shadow);
 }
 .count {
   margin-left: 4px;
@@ -186,7 +186,7 @@ button.tile:hover {
   margin: 0;
   padding: 0;
   list-style: none;
-  border-top: 1px solid #e4e7ec;
+  border-top: 1px solid var(--border-color);
 }
 .order {
   display: grid;
@@ -194,7 +194,7 @@ button.tile:hover {
   align-items: center;
   gap: 16px;
   padding: 16px 4px;
-  border-bottom: 1px solid #e4e7ec;
+  border-bottom: 1px solid var(--border-color);
   font-size: 14px;
 }
 .side {
@@ -207,7 +207,7 @@ button.tile:hover {
   font-weight: 600;
 }
 .order.sell .side {
-  background: #fbebe0;
+  background: var(--sell-background-color);
   color: var(--sell-color);
 }
 .instrument {
@@ -258,11 +258,11 @@ button.tile:hover {
   white-space: nowrap;
 }
 .status.filled {
-  background: #e2f1e9;
+  background: var(--gain-background-color);
   color: var(--gain-color);
 }
 .status.rejected {
-  background: #fcefe6;
+  background: var(--loss-background-color);
   color: var(--loss-color);
 }
 .status.closed {
@@ -299,7 +299,7 @@ button.tile:hover {
   border: 0;
   border-radius: 10px;
   background: var(--loss-color);
-  color: var(--background-color);
+  color: var(--text-on-primary-color);
   font-weight: 600;
 }
 

@@ -53,11 +53,11 @@ h2 {
   font-weight: 600;
 }
 .status.rejected {
-  background: #fcefe6;
+  background: var(--loss-background-color);
   color: var(--loss-color);
 }
 .status.filled {
-  background: #e2f1e9;
+  background: var(--gain-background-color);
   color: var(--gain-color);
 }
 .explanation {
@@ -71,7 +71,7 @@ dl {
   gap: 24px;
   margin: 0;
   padding: 24px 0;
-  border-top: 1px solid #dfe3eb;
+  border-top: 1px solid var(--border-color);
 }
 dt {
   font-size: 13px;
@@ -107,7 +107,7 @@ button,
   border: 0;
   border-radius: 12px;
   background: var(--primary-color);
-  color: white;
+  color: var(--text-on-primary-color);
   font: inherit;
   font-size: 14px;
   font-weight: 600;
@@ -120,9 +120,9 @@ button:disabled {
 }
 .heading button,
 .secondary {
-  background: white !important;
+  background: var(--elevated-background-color) !important;
   color: var(--text-color) !important;
-  box-shadow: 0 0 0 1px #dfe3eb;
+  box-shadow: 0 0 0 1px var(--border-color);
 }
 .notice {
   padding: 24px;
