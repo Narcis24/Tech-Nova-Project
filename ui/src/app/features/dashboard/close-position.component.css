@@ -4,12 +4,13 @@ dialog {
   border: 0;
   border-radius: 18px;
   padding: 28px;
+  background: var(--elevated-background-color);
   color: var(--text-color);
   font: inherit;
-  box-shadow: 0 20px 80px #14182b33;
+  box-shadow: var(--dialog-shadow);
 }
 dialog::backdrop {
-  background: #14182b66;
+  background: var(--overlay-color);
 }
 h2 {
   margin: 0;
@@ -37,7 +38,7 @@ button {
 }
 button:first-child {
   background: var(--loss-color);
-  color: white;
+  color: var(--text-on-primary-color);
 }
 button:disabled {
   opacity: 0.6;

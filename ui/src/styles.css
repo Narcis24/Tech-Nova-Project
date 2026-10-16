@@ -25,6 +25,8 @@
   --border-color: color-mix(in srgb, var(--secondary-text-color) 18%, var(--background-color));
   --strong-border-color: color-mix(in srgb, var(--secondary-text-color) 28%, var(--background-color));
   --hover-border-color: color-mix(in srgb, var(--secondary-text-color) 52%, var(--background-color));
+  /* Blue-grey border around pop-up notices; kept exact, as no mix of the base colours matches it */
+  --toast-border-color: #d6dfed;
 
   /* Status: text colour, plus a tinted background to put behind it */
   --gain-color: #147547;
