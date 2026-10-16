@@ -25,6 +25,8 @@
   --border-color: color-mix(in srgb, var(--secondary-text-color) 18%, var(--background-color));
   --strong-border-color: color-mix(in srgb, var(--secondary-text-color) 28%, var(--background-color));
   --hover-border-color: color-mix(in srgb, var(--secondary-text-color) 52%, var(--background-color));
+  /* Track of an on/off switch while it is off */
+  --switch-background-color: color-mix(in srgb, var(--secondary-text-color) 36%, var(--background-color));
   /* Blue-grey border around pop-up notices; kept exact, as no mix of the base colours matches it */
   --toast-border-color: #d6dfed;
 
@@ -52,6 +54,7 @@
   --floating-shadow:
     0 6px 24px color-mix(in srgb, var(--shadow-color) 8%, transparent),
     0 0 0 1px color-mix(in srgb, var(--shadow-color) 2.4%, transparent);
+  --switch-knob-shadow: 0 1px 3px color-mix(in srgb, var(--shadow-color) 20%, transparent);
   --dialog-shadow: 0 24px 80px color-mix(in srgb, var(--shadow-color) 20%, transparent);
 }
 

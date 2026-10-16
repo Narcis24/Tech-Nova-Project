@@ -20,7 +20,7 @@ th,
 td {
   text-align: right;
   padding: 16px 10px;
-  border-bottom: 1px solid #eceef2;
+  border-bottom: 1px solid var(--subtle-border-color);
   font-weight: 400;
 }
 thead th {
@@ -67,7 +67,7 @@ th:last-child {
   display: none;
 }
 tbody tr:hover {
-  background: #fafbfe;
+  background: var(--hover-background-color);
 }
 @media (max-width: 1000px) {
   .scroll-hint {

@@ -59,7 +59,7 @@ h1 {
   width: 100%;
   min-height: 52px;
   margin-top: 16px;
-  border: 1.5px dashed var(--border-color, #e1e4ea);
+  border: 1.5px dashed var(--border-color);
   border-radius: 14px;
   background: none;
   font: inherit;

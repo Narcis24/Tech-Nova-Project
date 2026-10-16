@@ -68,7 +68,7 @@ app-position-card {
   gap: 24px;
   padding: 18px;
   min-height: 200px;
-  border: 1.5px dashed #d3d7e0;
+  border: 1.5px dashed var(--strong-border-color);
   border-radius: 14px;
   box-sizing: border-box;
 }

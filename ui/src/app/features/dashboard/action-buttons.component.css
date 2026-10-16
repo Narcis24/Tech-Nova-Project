@@ -16,7 +16,7 @@ button {
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
-  background: var(--background-color);
+  background: var(--elevated-background-color);
   color: var(--primary-color);
   cursor: pointer;
 }
