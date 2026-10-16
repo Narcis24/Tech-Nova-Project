@@ -1,0 +1,259 @@
+/* Shared by the sign-in, forgot password and reset password pages. Colours taken from the design PDF. */
+:host {
+  --auth-text-color: #13182b;
+  --auth-brand-background-color: #13182b;
+  --auth-button-background-color: #13182b;
+  --auth-secondary-text-color: #6b7083;
+  --auth-input-background-color: #f3f4f8;
+  --auth-link-color: #2d44e0;
+  --auth-tagline-color: #b9bed1;
+  --auth-error-color: #b42318;
+  --auth-error-background-color: #fdecea;
+}
+
+.page {
+  display: flex;
+  min-height: 100vh;
+  padding: 20px;
+  gap: 20px;
+  box-sizing: border-box;
+}
+
+/* Left: dark panel with the wordmark */
+.brand {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--auth-brand-background-color);
+  border-radius: 24px;
+  color: #fff;
+  text-align: center;
+  padding: 24px;
+}
+
+.wordmark {
+  margin: 0;
+  font-size: clamp(48px, 8vw, 117px);
+  font-weight: 700;
+  font-stretch: 125%;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.tagline {
+  margin: 16px 0 0;
+  font-size: 22px;
+  color: var(--auth-tagline-color);
+}
+
+/* Right: the form, centred */
+.content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form {
+  width: 100%;
+  max-width: 377px;
+  display: flex;
+  flex-direction: column;
+}
+
+h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--auth-text-color);
+}
+
+.subtitle {
+  margin: 4px 0 24px;
+  font-size: 16px;
+  color: var(--auth-secondary-text-color);
+}
+
+label {
+  margin: 16px 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--auth-text-color);
+}
+
+input {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--auth-input-background-color);
+  font: inherit;
+  color: var(--auth-text-color);
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--auth-link-color);
+}
+
+/* Edge adds its own reveal button; we already have Show/Hide */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+.password {
+  position: relative;
+}
+
+.password input {
+  padding-right: 64px;
+}
+
+.show {
+  position: absolute;
+  top: 0;
+  right: 4px;
+  height: 48px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--auth-link-color);
+  cursor: pointer;
+}
+
+.field-error {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--auth-error-color);
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 8px 12px 16px;
+  border-radius: 10px;
+  background: var(--auth-error-background-color);
+  color: var(--auth-error-color);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Success messages, e.g. "we've sent a reset link" */
+.notice {
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--auth-input-background-color);
+  color: var(--auth-text-color);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.alert-close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.submit {
+  margin-top: 40px;
+  height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--auth-button-background-color);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.submit:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--auth-link-color);
+  outline-offset: 2px;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+/* "Back to sign in" under the forgot and reset password forms */
+.back {
+  margin: 20px 0 0;
+  text-align: center;
+  font-size: 15px;
+}
+
+.back a {
+  color: var(--auth-link-color);
+  font-weight: 600;
+}
+
+/* Tablet: narrower panel */
+@media (max-width: 1024px) {
+  .brand {
+    flex: 0.7;
+  }
+}
+
+/* Phone: panel becomes a band above the form */
+@media (max-width: 720px) {
+  .page {
+    flex-direction: column;
+    padding: 12px;
+  }
+
+  .brand {
+    flex: none;
+    padding: 40px 16px;
+  }
+
+  .tagline {
+    font-size: 16px;
+  }
+
+  .content {
+    padding: 16px 8px 32px;
+  }
+}

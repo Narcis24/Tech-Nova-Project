@@ -1,0 +1,9 @@
+node_modules/
+.angular/
+dist/
+coverage/
+playwright-report/
+test-results/
+src/app/generated/
+src/app/api/auth-api.ts
+package-lock.json

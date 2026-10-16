@@ -129,4 +129,27 @@ public final class Trader {
         request().delete("/v1/orders/" + orderId).then().statusCode(200);
         return order(orderId);
     }
+
+    // ---- risk ----
+
+    /** POST /v1/risk/check with the same body as the order, accepted or not. Places nothing. */
+    public Response checkRisk(OrderRequest order) {
+        return request().body(order.toJson()).post("/v1/risk/check");
+    }
+
+    /** GET /v1/accounts/{id}/risk-limits, accepted or not. */
+    public Response riskLimits(String accountId) {
+        return request().get("/v1/accounts/" + accountId + "/risk-limits");
+    }
+
+    /** PUT /v1/accounts/{id}/risk-limits/{rule}, accepted or not. */
+    public Response setRiskLimit(String accountId, String rule, String thresholdPct, boolean enabled) {
+        return request().body(Map.of("thresholdPct", new BigDecimal(thresholdPct), "enabled", enabled))
+            .put("/v1/accounts/" + accountId + "/risk-limits/" + rule);
+    }
+
+    /** DELETE /v1/accounts/{id}/risk-limits/{rule}, accepted or not. */
+    public Response resetRiskLimit(String accountId, String rule) {
+        return request().delete("/v1/accounts/" + accountId + "/risk-limits/" + rule);
+    }
 }

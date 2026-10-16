@@ -1,0 +1,387 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+section {
+  min-width: 0;
+}
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+.instrument {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  flex-basis: 100%;
+}
+h1,
+p {
+  margin: 0;
+}
+h1 {
+  font-size: 32px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+.symbol-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  background: none;
+  color: var(--text-color);
+  font-size: inherit;
+  font-weight: inherit;
+  min-height: 0;
+  border-radius: 4px;
+}
+.symbol-button svg {
+  width: 12px;
+  height: 12px;
+  stroke: var(--secondary-text-color);
+  fill: none;
+  stroke-width: 1.5;
+}
+.instrument-name {
+  font-size: 17px;
+  color: var(--secondary-text-color);
+}
+.quote {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.quote strong {
+  font-size: 72px;
+  line-height: 1;
+  font-weight: 400;
+  letter-spacing: -0.035em;
+}
+.quote p {
+  font-size: 15px;
+  color: var(--secondary-text-color);
+  line-height: 1.5;
+}
+.change {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+.change.loss {
+  color: var(--sell-color);
+}
+.ranges {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: var(--muted-background-color);
+  border-radius: 12px;
+}
+button {
+  min-height: 40px;
+  min-width: 52px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  background: transparent;
+  color: var(--secondary-text-color);
+  cursor: pointer;
+}
+.ranges button[aria-pressed='true'] {
+  background: var(--elevated-background-color);
+  color: var(--text-color);
+  font-weight: 600;
+  box-shadow: var(--card-shadow);
+}
+.as-of {
+  font-size: 12px;
+  color: var(--secondary-text-color);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.readout {
+  height: 20px;
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--secondary-text-color);
+}
+.hidden {
+  visibility: hidden;
+}
+.plot {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  color: var(--primary-color);
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+/* The range input is hidden, so show its keyboard focus on the chart */
+.plot:has(input:focus-visible) svg {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+svg {
+  display: block;
+  width: 100%;
+  height: 240px;
+  min-width: 0;
+  overflow: visible;
+  touch-action: pan-y;
+}
+path,
+polyline,
+line {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+.grid {
+  stroke: var(--subtle-border-color);
+  stroke-width: 1;
+}
+.line {
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.cursor {
+  stroke: var(--secondary-text-color);
+  stroke-dasharray: 3 4;
+  opacity: 0.6;
+}
+circle {
+  fill: currentColor;
+  vector-effect: non-scaling-stroke;
+}
+.halo {
+  opacity: 0.14;
+}
+.prices {
+  position: relative;
+  font-size: 14px;
+  min-width: 64px;
+  text-align: right;
+  color: var(--secondary-text-color);
+}
+.prices > span {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+}
+.axis-top {
+  top: 7.27%;
+}
+.axis-mid {
+  top: 47.27%;
+}
+.axis-bottom {
+  top: 87.27%;
+}
+.current-price {
+  z-index: 1;
+  color: var(--background-color);
+  background: var(--text-color);
+  border-radius: 8px;
+  padding: 5px 6px;
+}
+.dates {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-right: 76px;
+  font-size: 14px;
+  color: var(--secondary-text-color);
+}
+.range-change {
+  font-size: 12px;
+  color: var(--secondary-text-color);
+  margin-top: 16px;
+}
+.quote-facts {
+  margin: 28px 0 0;
+  padding-top: 24px;
+  border-top: 1px solid var(--subtle-border-color);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+dt {
+  font-size: 14px;
+  color: var(--secondary-text-color);
+}
+dd {
+  margin: 6px 0 0;
+  font-size: 22px;
+  font-weight: 500;
+}
+.quote-note {
+  font-size: 12px;
+  color: var(--secondary-text-color);
+  margin-top: 12px;
+}
+.message {
+  padding: 32px 0;
+  color: var(--secondary-text-color);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.message button {
+  margin-top: 12px;
+  background: var(--muted-background-color);
+  color: var(--text-color);
+}
+.mobile-chart-toggle {
+  display: none;
+}
+@media (max-width: 767.98px) {
+  .heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 12px;
+    align-items: start;
+  }
+  .instrument {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    align-items: flex-start;
+    padding-left: 26px;
+  }
+  h1 {
+    font-size: 20px;
+    line-height: 1.2;
+  }
+  .instrument-name {
+    font-size: 14px;
+  }
+  .quote {
+    gap: 4px;
+    align-items: flex-end;
+    text-align: right;
+  }
+  .quote strong {
+    font-size: 26px;
+    letter-spacing: -0.02em;
+  }
+  .quote p {
+    font-size: 12px;
+  }
+  .session-copy {
+    display: none;
+  }
+  .ranges {
+    grid-column: 1/-1;
+    justify-self: start;
+    display: none;
+    margin-top: 14px;
+  }
+  .expanded .ranges {
+    display: flex;
+  }
+  .as-of {
+    font-size: 11px;
+    margin-top: 10px;
+  }
+  .history,
+  .quote-facts,
+  .quote-note {
+    display: none;
+  }
+  .expanded .history {
+    display: block;
+  }
+  .mobile-chart-toggle {
+    display: flex;
+    min-width: 0;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 32px;
+    padding: 0;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--secondary-text-color);
+  }
+  .readout {
+    margin-top: 10px;
+  }
+  svg {
+    height: 180px;
+  }
+  .prices {
+    font-size: 11px;
+    min-width: 55px;
+  }
+  .dates {
+    font-size: 11px;
+    padding-right: 67px;
+  }
+  .range-change {
+    margin-top: 10px;
+  }
+}
+
+.symbol-button:hover {
+  color: var(--primary-color);
+}
+.ranges button:not([aria-pressed='true']):hover {
+  background: var(--control-background-color);
+}
+@media (pointer: coarse) {
+  .symbol-button,
+  .mobile-chart-toggle {
+    min-height: 44px;
+  }
+  .symbol-button {
+    margin-block: -10px;
+  }
+}
+
+@media (max-width: 767.98px) and (max-height: 740px) {
+  .mobile-chart-toggle {
+    min-height: 44px;
+    margin-block: 0;
+  }
+}
+
+.instrument-name {
+  min-height: 20px;
+}
+.quote {
+  min-width: 240px;
+}
+.pending strong {
+  color: var(--muted-background-color);
+}
+.pending .change {
+  color: var(--secondary-text-color);
+}
+@media (max-width: 767.98px) {
+  .quote {
+    min-width: 0;
+  }
+  .instrument-name {
+    min-height: 16px;
+  }
+}
+
+@media (max-width: 359.98px) {
+  .as-of {
+    min-height: 33px;
+  }
+}

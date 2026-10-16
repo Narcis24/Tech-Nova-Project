@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: TechNova Auth Service API
-  version: 2.0.0
+  version: 3.0.0
   description: |
     Identity provider for TechNova. Registers users, checks credentials and issues the JWTs
     that the Trade REST API (app) accepts. Replaces the Spring Boot auth service; paths, port
@@ -25,6 +25,13 @@ info:
     An opaque random string (not a JWT), valid for 7 days. The service stores only a hash
     of it. Each use of `/v1/auth/refresh` revokes it and issues a new one (rotation);
     `/v1/auth/logout` revokes it.
+
+    ## Password reset
+    `/v1/auth/forgot-password` takes an email and always answers 202, whether or not an account
+    uses it, so the endpoint does not reveal which emails are registered. If one does, the user
+    is emailed a link with a reset token: random (32 bytes), stored only as a hash, valid for
+    30 minutes and usable once. `/v1/auth/reset-password` sets the new password and revokes
+    every refresh token of that user, signing them out everywhere.
 
     ## Passwords
     Hashed with bcrypt at cost 12 or above (or argon2id) and never logged or returned.
@@ -56,7 +63,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Credentials'
+              $ref: '#/components/schemas/RegisterRequest'
       responses:
         '201':
           description: User registered
@@ -67,7 +74,7 @@ paths:
         '400':
           $ref: '#/components/responses/ValidationFailed'
         '409':
-          description: Username already registered
+          description: Username or email already registered; the body does not say which
           content:
             application/json:
               schema:
@@ -75,7 +82,7 @@ paths:
               example:
                 statusCode: 409
                 error: Conflict
-                message: Username already registered
+                message: Username or email already registered
 
   /v1/auth/login:
     post:
@@ -156,6 +163,54 @@ paths:
         '400':
           $ref: '#/components/responses/ValidationFailed'
 
+  /v1/auth/forgot-password:
+    post:
+      tags: [auth]
+      operationId: forgotPassword
+      security: []
+      summary: Email a password reset link
+      description: |
+        Always 202 for a well-formed email, whether or not an account uses it. If one does, a
+        reset link is emailed to it; an earlier unused link for that user stops working.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '202':
+          description: Request accepted (a link was sent only if an account uses the email)
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /v1/auth/reset-password:
+    post:
+      tags: [auth]
+      operationId: resetPassword
+      security: []
+      summary: Set a new password with the token from a reset link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '204':
+          description: Password changed; every refresh token of the user is revoked
+        '400':
+          description: |
+            Reset token unknown, expired or already used, or the new password breaks a field rule
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                statusCode: 400
+                error: Bad Request
+                message: Invalid or expired reset link
+
 components:
   schemas:
     Credentials:
@@ -176,6 +231,42 @@ components:
           minLength: 12
           maxLength: 20
           example: Something123@
+
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [username, password, email]
+      properties:
+        username:
+          $ref: '#/components/schemas/Credentials/properties/username'
+        password:
+          $ref: '#/components/schemas/Credentials/properties/password'
+        email:
+          $ref: '#/components/schemas/ForgotPasswordRequest/properties/email'
+
+    ForgotPasswordRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          example: john.doe@example.com
+
+    ResetPasswordRequest:
+      type: object
+      additionalProperties: false
+      required: [token, newPassword]
+      properties:
+        token:
+          type: string
+          minLength: 1
+          description: The token from the reset link
+          example: Zq8-1rEXAMPLEp4XcT0mWb7LqN2yHs5aVd3uKf9
+        newPassword:
+          $ref: '#/components/schemas/Credentials/properties/password'
 
     RegisterResponse:
       type: object

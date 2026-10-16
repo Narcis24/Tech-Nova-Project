@@ -4,15 +4,16 @@ import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { AppModule } from './../src/app.module.js';
-import { AuthRepository, User } from './../src/auth.repository.js';
+import { AuthRepository, NewUser } from './../src/auth.repository.js';
 import { configure } from './../src/configure.js';
 import { JwtService } from './../src/jwt.service.js';
+import { MailService } from './../src/mail.service.js';
 
 const SECRET = '0123456789abcdef0123456789abcdef';
 
-/** In-memory stand-in for the users and refresh_tokens tables, with the same rules as the SQL. */
+/** In-memory stand-in for the users, refresh_tokens and password_reset_tokens tables, with the same rules as the SQL. */
 class FakeAuthRepository {
-  readonly users = new Map<string, User>();
+  readonly users = new Map<string, NewUser>();
   readonly tokens = new Map<
     string,
     { username: string; expiresAt: number; revoked: boolean }
@@ -21,8 +22,18 @@ class FakeAuthRepository {
   async findUser(username: string) {
     return this.users.get(username) ?? null;
   }
-  async createUser(user: User) {
-    if (this.users.has(user.username)) return false;
+  async findUserByEmail(email: string) {
+    for (const user of this.users.values()) {
+      if (user.email.toLowerCase() === email.toLowerCase()) return user;
+    }
+    return null;
+  }
+  async createUser(user: NewUser) {
+    if (
+      this.users.has(user.username) ||
+      (await this.findUserByEmail(user.email))
+    )
+      return false;
     this.users.set(user.username, user);
     return true;
   }
@@ -44,16 +55,53 @@ class FakeAuthRepository {
     const token = this.tokens.get(hash);
     if (token) token.revoked = true;
   }
+
+  readonly resetTokens = new Map<
+    string,
+    { username: string; expiresAt: number; used: boolean }
+  >();
+  async saveResetToken(hash: string, username: string, ttl: number) {
+    for (const token of this.resetTokens.values()) {
+      if (token.username === username) token.used = true;
+    }
+    this.resetTokens.set(hash, {
+      username,
+      expiresAt: Date.now() + ttl * 1000,
+      used: false,
+    });
+  }
+  async resetPassword(tokenHash: string, passwordHash: string) {
+    const token = this.resetTokens.get(tokenHash);
+    if (!token || token.used || token.expiresAt <= Date.now()) return false;
+    token.used = true;
+    this.users.get(token.username)!.passwordHash = passwordHash;
+    for (const refresh of this.tokens.values()) {
+      if (refresh.username === token.username) refresh.revoked = true;
+    }
+    return true;
+  }
+}
+
+/** Keeps the emails instead of sending them. */
+class FakeMailService {
+  readonly sent: { to: string; link: string }[] = [];
+  async sendPasswordReset(to: string, link: string) {
+    this.sent.push({ to, link });
+  }
 }
 
 const VALID = { username: 'john_doe1', password: 'Something123@' };
+const EMAIL = 'john.doe@example.com';
+const REGISTRATION = { ...VALID, email: EMAIL };
 
 describe('Auth (e2e)', () => {
   let app: NestExpressApplication;
   let repository: FakeAuthRepository;
+  let mail: FakeMailService;
 
   beforeEach(async () => {
     repository = new FakeAuthRepository();
+    mail = new FakeMailService();
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -61,6 +109,8 @@ describe('Auth (e2e)', () => {
       .useValue(repository)
       .overrideProvider(JwtService)
       .useValue(new JwtService(SECRET))
+      .overrideProvider(MailService)
+      .useValue(mail)
       .compile();
 
     app = moduleFixture.createNestApplication<NestExpressApplication>();
@@ -75,7 +125,7 @@ describe('Auth (e2e)', () => {
   const http = () => request(app.getHttpServer() as App);
   const post = (path: string) => http().post(`/auth/v1/auth/${path}`);
   const loggedIn = async () => {
-    await post('register').send(VALID).expect(201);
+    await post('register').send(REGISTRATION).expect(201);
     return (await post('login').send(VALID).expect(200)).body as {
       accessToken: string;
       refreshToken: string;
@@ -84,30 +134,52 @@ describe('Auth (e2e)', () => {
 
   describe('register', () => {
     it('returns 201 with the username', async () => {
-      const res = await post('register').send(VALID).expect(201);
+      const res = await post('register').send(REGISTRATION).expect(201);
       expect(res.body).toEqual({ username: 'john_doe1' });
     });
 
     it('accepts any 12-20 character password', async () => {
-      await post('register')
-        .send({ username: 'john_doe1', password: 'alllowercase' })
+      const res = await post('register')
+        .send({ username: 'john_doe1', password: 'alllowercase', email: EMAIL })
         .expect(201);
+      expect(res.body).toEqual({ username: 'john_doe1' });
     });
 
     it('rejects a taken username with 409', async () => {
-      await post('register').send(VALID).expect(201);
-      const res = await post('register').send(VALID).expect(409);
+      await post('register').send(REGISTRATION).expect(201);
+      const res = await post('register')
+        .send({ ...REGISTRATION, email: 'other@example.com' })
+        .expect(409);
       expect(res.body).toEqual({
         statusCode: 409,
         error: 'Conflict',
-        message: 'Username already registered',
+        message: 'Username or email already registered',
       });
+    });
+
+    it('rejects a taken email, ignoring case, with the same 409', async () => {
+      await post('register').send(REGISTRATION).expect(201);
+      const res = await post('register')
+        .send({
+          ...REGISTRATION,
+          username: 'jane_doe1',
+          email: 'John.Doe@Example.COM',
+        })
+        .expect(409);
+      expect(res.body.message).toBe('Username or email already registered');
+    });
+
+    it('requires a valid email', async () => {
+      const res = await post('register')
+        .send({ ...VALID, email: 'not-an-email' })
+        .expect(400);
+      expect(res.body.message).toEqual(['email must be an email']);
     });
   });
 
   describe('login', () => {
     it('returns an access token and a refresh token', async () => {
-      await post('register').send(VALID).expect(201);
+      await post('register').send(REGISTRATION).expect(201);
       const res = await post('login').send(VALID).expect(200);
 
       expect(res.body).toEqual({
@@ -128,7 +200,7 @@ describe('Auth (e2e)', () => {
     });
 
     it('gives an identical 401 for a wrong password and an unknown user', async () => {
-      await post('register').send(VALID).expect(201);
+      await post('register').send(REGISTRATION).expect(201);
       const expected = {
         statusCode: 401,
         error: 'Unauthorized',
@@ -171,12 +243,21 @@ describe('Auth (e2e)', () => {
     });
 
     it('rejects an unknown or expired token', async () => {
-      await post('refresh').send({ refreshToken: 'unknown' }).expect(401);
+      const rejected = {
+        statusCode: 401,
+        error: 'Unauthorized',
+        message: 'Invalid or expired refresh token',
+      };
+      const unknown = await post('refresh')
+        .send({ refreshToken: 'unknown' })
+        .expect(401);
+      expect(unknown.body).toEqual(rejected);
 
       const { refreshToken } = await loggedIn();
       for (const token of repository.tokens.values())
         token.expiresAt = Date.now() - 1;
-      await post('refresh').send({ refreshToken }).expect(401);
+      const expired = await post('refresh').send({ refreshToken }).expect(401);
+      expect(expired.body).toEqual(rejected);
     });
 
     it('does not store the token itself', async () => {
@@ -195,10 +276,100 @@ describe('Auth (e2e)', () => {
     });
 
     it('returns 204 for an unknown or already revoked token', async () => {
-      await post('logout').send({ refreshToken: 'unknown' }).expect(204);
+      const unknown = await post('logout')
+        .send({ refreshToken: 'unknown' })
+        .expect(204);
+      expect(unknown.text).toBe('');
       const { refreshToken } = await loggedIn();
       await post('logout').send({ refreshToken }).expect(204);
-      await post('logout').send({ refreshToken }).expect(204);
+      const revoked = await post('logout').send({ refreshToken }).expect(204);
+      expect(revoked.text).toBe('');
+    });
+  });
+
+  describe('password reset', () => {
+    const NEW_PASSWORD = 'NewPassword123';
+
+    // forgot-password answers before the email is sent, so wait for it
+    const resetToken = async () => {
+      await vi.waitFor(() => expect(mail.sent).toHaveLength(1));
+      return mail.sent[0].link.split('#token=')[1];
+    };
+
+    it('answers 202 and sends nothing for an email no account uses', async () => {
+      const res = await post('forgot-password')
+        .send({ email: 'nobody@example.com' })
+        .expect(202);
+      expect(res.text).toBe('');
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(mail.sent).toEqual([]);
+    });
+
+    it('emails a link that sets a new password once and signs the user out everywhere', async () => {
+      const { refreshToken } = await loggedIn();
+
+      await post('forgot-password')
+        .send({ email: 'JOHN.DOE@example.com' })
+        .expect(202);
+      const token = await resetToken();
+      expect(mail.sent[0].to).toBe('JOHN.DOE@example.com');
+      expect(mail.sent[0].link).toBe(
+        `http://localhost:4200/reset-password#token=${token}`,
+      );
+
+      const res = await post('reset-password')
+        .send({ token, newPassword: NEW_PASSWORD })
+        .expect(204);
+      expect(res.text).toBe('');
+
+      await post('login').send(VALID).expect(401);
+      await post('login')
+        .send({ ...VALID, password: NEW_PASSWORD })
+        .expect(200);
+      await post('refresh').send({ refreshToken }).expect(401);
+
+      const again = await post('reset-password')
+        .send({ token, newPassword: 'AnotherPass123' })
+        .expect(400);
+      expect(again.body.message).toBe('Invalid or expired reset link');
+    });
+
+    it('stores only a hash of the reset token', async () => {
+      await post('register').send(REGISTRATION).expect(201);
+      await post('forgot-password').send({ email: EMAIL }).expect(202);
+      const token = await resetToken();
+
+      expect(repository.resetTokens.has(token)).toBe(false);
+    });
+
+    it('rejects an unknown or expired reset token with 400', async () => {
+      const unknown = await post('reset-password')
+        .send({ token: 'unknown', newPassword: NEW_PASSWORD })
+        .expect(400);
+      expect(unknown.body.message).toBe('Invalid or expired reset link');
+
+      await post('register').send(REGISTRATION).expect(201);
+      await post('forgot-password').send({ email: EMAIL }).expect(202);
+      const token = await resetToken();
+      for (const reset of repository.resetTokens.values())
+        reset.expiresAt = Date.now() - 1;
+      await post('reset-password')
+        .send({ token, newPassword: NEW_PASSWORD })
+        .expect(400);
+    });
+
+    it('validates the request bodies', async () => {
+      const forgot = await post('forgot-password')
+        .send({ email: 'not-an-email' })
+        .expect(400);
+      expect(forgot.body.message).toEqual(['email must be an email']);
+
+      const reset = await post('reset-password')
+        .send({ token: 'abc', newPassword: 'short' })
+        .expect(400);
+      expect(reset.body.message).toEqual([
+        'newPassword must be longer than or equal to 12 characters',
+      ]);
     });
   });
 
@@ -224,7 +395,11 @@ describe('Auth (e2e)', () => {
 
     it('rejects too long values', async () => {
       const res = await post('register')
-        .send({ username: 'a'.repeat(17), password: 'a'.repeat(21) })
+        .send({
+          username: 'a'.repeat(17),
+          password: 'a'.repeat(21),
+          email: EMAIL,
+        })
         .expect(400);
       expect(res.body.message).toEqual([
         'username must be shorter than or equal to 16 characters',
@@ -246,7 +421,7 @@ describe('Auth (e2e)', () => {
 
     it('rejects unknown properties', async () => {
       const res = await post('register')
-        .send({ ...VALID, role: 'ADMIN' })
+        .send({ ...REGISTRATION, role: 'ADMIN' })
         .expect(400);
       expect(res.body).toEqual(badRequest(['property role should not exist']));
     });
@@ -276,17 +451,20 @@ describe('Auth (e2e)', () => {
 
   describe('operational endpoints', () => {
     it('reports health', async () => {
-      await http().get('/auth/health').expect(200);
+      const res = await http().get('/auth/health').expect(200);
+      expect(res.body).toEqual({ status: 'ok' });
     });
 
     it('serves the OpenAPI document with the contract paths', async () => {
       const res = await http().get('/auth/docs-json').expect(200);
       expect(res.body.servers).toEqual([{ url: '/auth' }]);
       expect(Object.keys(res.body.paths).sort()).toEqual([
+        '/v1/auth/forgot-password',
         '/v1/auth/login',
         '/v1/auth/logout',
         '/v1/auth/refresh',
         '/v1/auth/register',
+        '/v1/auth/reset-password',
       ]);
       expect(res.body.paths['/v1/auth/login'].post.operationId).toBe('login');
     });

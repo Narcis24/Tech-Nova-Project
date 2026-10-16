@@ -1,0 +1,107 @@
+<a class="back" routerLink="/orders">← Back to orders</a>
+<div class="heading">
+  <h1>Order details</h1>
+  <button type="button" (click)="refresh()" [disabled]="state().loading">
+    {{ state().loading ? 'Updating…' : 'Refresh status' }}
+  </button>
+</div>
+@if (state().error) {
+  <div class="notice" role="alert">
+    <p>
+      {{
+        order()
+          ? "Couldn't update this order. Showing the last successful response."
+          : "Couldn't load this order. It may be unavailable or you may not have access."
+      }}
+    </p>
+    <button type="button" (click)="refresh()">Try again</button>
+  </div>
+}
+@if (state().loading && !order()) {
+  <p class="notice" role="status">Loading order details…</p>
+}
+@if (order(); as item) {
+  <section class="order" aria-labelledby="order-summary" [attr.aria-busy]="state().loading">
+    <div class="summary">
+      <div>
+        <p class="eyebrow">{{ item.side | titlecase }} order · {{ item.orderType | titlecase }}</p>
+        <h2 id="order-summary">{{ item.quantity | number }} {{ item.symbol }}</h2>
+      </div>
+      <span class="status" [class.rejected]="item.status === 'REJECTED'" [class.filled]="item.status === 'FILLED'">{{
+        item.status?.replaceAll('_', ' ') | titlecase
+      }}</span>
+    </div>
+    <p class="explanation" role="status">
+      {{
+        item.message ||
+          (item.status === 'FILLED'
+            ? 'This order has been filled.'
+            : item.status === 'REJECTED'
+              ? 'This order was rejected.'
+              : terminal()
+                ? 'This order is no longer active.'
+                : 'Your order has been placed. Execution is pending; placement does not guarantee a fill.')
+      }}
+    </p>
+    <dl>
+      <div>
+        <dt>Account</dt>
+        <dd>{{ item.accountId }}</dd>
+      </div>
+      <div>
+        <dt>Symbol</dt>
+        <dd>{{ item.symbol }}</dd>
+      </div>
+      <div>
+        <dt>Side</dt>
+        <dd>{{ item.side | titlecase }}</dd>
+      </div>
+      <div>
+        <dt>Quantity</dt>
+        <dd>{{ item.quantity | number }} shares</dd>
+      </div>
+      <div>
+        <dt>Order type</dt>
+        <dd>{{ item.orderType | titlecase }}</dd>
+      </div>
+      <div>
+        <dt>
+          {{
+            item.orderType === 'LIMIT'
+              ? 'Limit price'
+              : item.status === 'FILLED'
+                ? 'Execution price'
+                : 'Reference price'
+          }}
+        </dt>
+        <dd>{{ (item.price | currency: 'USD') ?? '—' }}</dd>
+      </div>
+      <div>
+        <dt>
+          {{
+            item.orderType === 'LIMIT'
+              ? 'Value at limit'
+              : item.status === 'FILLED'
+                ? 'Order value'
+                : 'Estimated order value'
+          }}
+        </dt>
+        <dd>{{ (value() | currency: 'USD') ?? '—' }}</dd>
+      </div>
+      <div class="identifier">
+        <dt>Order ID</dt>
+        <dd>{{ item.orderId }}</dd>
+      </div>
+    </dl>
+    @if (!terminal()) {
+      <p class="note">
+        Status updates every 15 seconds while this page is visible. Market reference prices are estimates, not
+        guaranteed execution prices.
+      </p>
+    }
+    <div class="actions">
+      <a routerLink="/trade" [queryParams]="{ symbol: item.symbol, side: item.side }">Place another order</a
+      ><a class="secondary" routerLink="/dashboard">View portfolio</a>
+    </div>
+  </section>
+}

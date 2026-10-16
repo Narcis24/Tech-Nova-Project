@@ -125,8 +125,9 @@ class EventProducerServiceTest {
             .thenThrow(new RuntimeException("Serialization failed"));
 
         // Act & Assert - RuntimeException from mocking bubbles up
+        Object payload = new Object();
         assertThrows(RuntimeException.class, () ->
-            badProducer.publishEvent("topic", "key", "TYPE", "source", new Object())
+            badProducer.publishEvent("topic", "key", "TYPE", "source", payload)
         );
     }
 

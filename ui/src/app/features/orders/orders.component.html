@@ -1,0 +1,127 @@
+<div class="heading">
+  <div>
+    <h1>Orders</h1>
+    @if (accountId()) {
+      <p class="account">For account {{ accountId() }}</p>
+    }
+  </div>
+  <a class="new-order" routerLink="/trade">New order</a>
+</div>
+
+@if (!accountId()) {
+  <p class="muted">Select an account to see its orders.</p>
+} @else if (loading()) {
+  <p class="muted" role="status">Loading your orders…</p>
+} @else if (error() && !orders().length) {
+  <div class="notice" role="alert">
+    <p>Couldn't load your orders.</p>
+    <button type="button" class="text-button" (click)="retry()">Try again</button>
+  </div>
+} @else if (!orders().length) {
+  <div class="empty">
+    <p>No orders yet.</p>
+    <a class="new-order" routerLink="/trade">Place your first order</a>
+  </div>
+} @else {
+  @if (error()) {
+    <p class="notice" role="status">
+      Couldn't update orders.
+      <button type="button" class="text-button" (click)="retry()">Try again</button>
+    </p>
+  }
+
+  <div class="tiles">
+    <button type="button" class="tile" (click)="filter.set('OPEN')">
+      <span class="tile-label">Open</span>
+      <span class="tile-value">{{ counts().OPEN }}</span>
+    </button>
+    <button type="button" class="tile" (click)="filter.set('FILLED')">
+      <span class="tile-label">Filled</span>
+      <span class="tile-value">{{ counts().FILLED }}</span>
+    </button>
+    <button type="button" class="tile" (click)="filter.set('REJECTED')">
+      <span class="tile-label">Rejected</span>
+      <span class="tile-value">{{ counts().REJECTED }}</span>
+    </button>
+    <div class="tile totals">
+      <span class="tile-label">Bought</span>
+      <span class="tile-amount">{{ filledTotals().bought | currency: 'USD' }}</span>
+      <span class="tile-label">Sold</span>
+      <span class="tile-amount">{{ filledTotals().sold | currency: 'USD' }}</span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="filters" role="group" aria-label="Filter by status">
+      @for (option of filters; track option) {
+        <button type="button" [attr.aria-pressed]="filter() === option" (click)="filter.set(option)">
+          {{ option | titlecase }} <span class="count">{{ counts()[option] }}</span>
+        </button>
+      }
+    </div>
+    <input
+      class="search"
+      type="search"
+      placeholder="Search symbol or company"
+      aria-label="Search symbol or company"
+      [value]="search()"
+      (input)="setSearch($event)"
+    />
+  </div>
+
+  @for (group of groups(); track group.label) {
+    <section class="day" [attr.aria-label]="group.label">
+      <h2>{{ group.label }}</h2>
+      <ul>
+        @for (order of group.orders; track order.orderId) {
+          <li class="order" [class.sell]="order.side === 'SELL'">
+            <span class="side">{{ order.side | titlecase }}</span>
+            <a class="instrument" [routerLink]="['/orders', order.orderId]">
+              <span class="symbol">{{ order.symbol }}</span>
+              <span class="name">{{ names()[order.symbol ?? ''] }}</span>
+            </a>
+            <span class="detail">{{ order.quantity | number }} shares · {{ order.orderType | titlecase }}</span>
+            <span class="money">
+              <span class="amount">{{ amount(order) | currency: 'USD' }}</span>
+              <span class="price">{{ priceLabel(order) }} {{ order.price | currency: 'USD' }}</span>
+            </span>
+            <span
+              class="status"
+              [class.filled]="order.status === 'FILLED'"
+              [class.rejected]="order.status === 'REJECTED'"
+              [class.closed]="order.status === 'CANCELLED' || order.status === 'EXPIRED'"
+              >{{ statusLabel(order) }}</span
+            >
+            <span class="time">{{ order.createdOn | date: 'HH:mm' }}</span>
+
+            @if (order.status === 'REJECTED' && order.message) {
+              <p class="reason">{{ order.message }}</p>
+            }
+
+            <!-- Only a pending order can be cancelled -->
+            @if (order.status === 'PENDING') {
+              <div class="cancel">
+                @if (confirmingCancel() === order.orderId) {
+                  <span>Cancel this order?</span>
+                  <button type="button" class="danger" [disabled]="cancelling()" (click)="cancel(order.orderId!)">
+                    {{ cancelling() ? 'Cancelling…' : 'Yes, cancel' }}
+                  </button>
+                  <button type="button" class="text-button" [disabled]="cancelling()" (click)="keepOrder()">
+                    Keep
+                  </button>
+                  @if (cancelError()) {
+                    <p class="reason" role="alert">{{ cancelError() }}</p>
+                  }
+                } @else {
+                  <button type="button" class="text-button" (click)="askCancel(order.orderId!)">Cancel</button>
+                }
+              </div>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  } @empty {
+    <p class="muted">No orders match.</p>
+  }
+}

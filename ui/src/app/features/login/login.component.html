@@ -1,0 +1,55 @@
+<div class="page">
+  <section class="brand">
+    <p class="wordmark">TechNova</p>
+    <p class="tagline">Every market, one account.</p>
+  </section>
+
+  <main class="content">
+    <form class="form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <h1>Welcome back</h1>
+      <p class="subtitle">Sign in to your account.</p>
+
+      @if (error()) {
+        <div class="alert" role="alert">
+          <span>{{ error() }}</span>
+          <button type="button" class="alert-close" aria-label="Dismiss" (click)="dismissError()">×</button>
+        </div>
+      }
+
+      <label for="username">Username</label>
+      <input id="username" type="text" formControlName="username" autocomplete="username" required />
+      @if (showRequired('username')) {
+        <p class="field-error">Username is required</p>
+      }
+
+      <label for="password">Password</label>
+      <div class="password">
+        <input
+          id="password"
+          [type]="showPassword() ? 'text' : 'password'"
+          formControlName="password"
+          autocomplete="current-password"
+          required
+        />
+        <button type="button" class="show" (click)="togglePassword()">
+          {{ showPassword() ? 'Hide' : 'Show' }}
+        </button>
+      </div>
+      @if (showRequired('password')) {
+        <p class="field-error">Password is required</p>
+      }
+      <a class="forgot" routerLink="/forgot-password">Forgot password?</a>
+
+      <button type="submit" class="submit" [disabled]="submitting()">
+        @if (submitting()) {
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="visually-hidden">Signing in</span>
+        } @else {
+          Sign in
+        }
+      </button>
+
+      <p class="signup">New to TechNova? <a routerLink="/register">Create an account</a></p>
+    </form>
+  </main>
+</div>

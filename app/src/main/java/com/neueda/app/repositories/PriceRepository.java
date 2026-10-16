@@ -6,12 +6,25 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface PriceRepository extends JpaRepository<Price, PriceKey> {
+    /** Last 20 sessions per instrument, bounded in the database and fetched in one query. */
+    @Query(value = """
+        SELECT symbol, trade_date, close FROM (
+            SELECT symbol, trade_date, close,
+                   ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY trade_date DESC) AS rank
+            FROM price_data
+        ) recent WHERE rank <= 20
+        """, nativeQuery = true)
+    List<Price> findRecentPrices();
+
+    List<Price> findBySymbolAndTradeDateGreaterThanEqualOrderByTradeDateAsc(String symbol, LocalDate start);
+
     Optional<Price> findFirstBySymbolOrderByTradeDateDesc(String symbol);
 
     /** Latest bar for each of the given symbols, in one query. Symbols with no price data are absent. */

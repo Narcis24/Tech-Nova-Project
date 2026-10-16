@@ -45,6 +45,8 @@ market-data:
   interval-seconds: ${MARKET_DATA_INTERVAL_SECONDS:120}
   daily-quota: 2000
   max-quote-age-seconds: 600
+  # Orders placed outside US hours (Mon-Fri 09:30-16:00 New York) wait for the open
+  enforce-market-hours: true
   key-id: ${ALPACA_KEY_ID:}
   secret-key: ${ALPACA_SECRET_KEY:}
   symbols: AAPL,MSFT,NVDA,AMZN,GOOGL,META,TSLA,AVGO,BRK-B,JPM,LLY,V,XOM,UNH,MA,JNJ,PG,HD,COST,ABBV,WMT,KO,PEP,BAC,CVX,SPY,QQQ,IWM,DIA,VTI,EFA,XLK,XLE,TLT,IEF,AGG,LQD,GLD,SLV

@@ -1,0 +1,16 @@
+<dialog #dialog aria-labelledby="close-title" (cancel)="onCancel($event)" (close)="dismiss.emit()">
+  <h2 id="close-title">Close {{ position().symbol }} position?</h2>
+  <p>Submit a market sell order for all {{ position().quantity }} shares in {{ accountId() }}.</p>
+  <p>
+    Last stored price: {{ position().currentPrice | currency: 'USD' }}. The execution price may differ. Your position
+    remains open until the order fills.
+  </p>
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+  <div class="actions">
+    <button type="button" (click)="confirm()" [disabled]="submitting()">
+      {{ submitting() ? 'Submitting…' : 'Confirm market sell' }}</button
+    ><button type="button" (click)="dismiss.emit()" [disabled]="submitting()">Cancel</button>
+  </div>
+</dialog>

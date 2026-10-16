@@ -35,6 +35,11 @@ public final class Auth {
         return Map.of("username", username, "password", Trader.PASSWORD);
     }
 
+    /** What registering takes: the credentials plus an email that is unique because the username is. */
+    public static Map<String, String> registration(String username) {
+        return Map.of("username", username, "password", Trader.PASSWORD, "email", username + "@e2e.test");
+    }
+
     /** POST /v1/auth/{path} with a JSON body, accepted or not. */
     public static Response post(String path, Object body) {
         return given().baseUri(Stack.authUrl()).contentType(ContentType.JSON).body(body).post("/v1/auth/" + path);
@@ -47,7 +52,7 @@ public final class Auth {
 
     /** Registers the user and logs in; returns the token response. */
     public static JsonPath registerAndLogin(String username) {
-        post("register", credentials(username)).then().statusCode(201);
+        post("register", registration(username)).then().statusCode(201);
         return post("login", credentials(username)).then().statusCode(200).extract().jsonPath();
     }
 

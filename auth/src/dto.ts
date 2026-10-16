@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class Credentials {
   @ApiProperty({
@@ -12,7 +18,8 @@ export class Credentials {
   @IsString()
   @MinLength(8)
   @MaxLength(16)
-  @Matches(/^[A-Za-z0-9_]+$/)
+  // spelled out rather than \w: the pattern is quoted in the public 400 message and the contract
+  @Matches(/^[A-Za-z0-9_]+$/) // NOSONAR
   username: string;
 
   @ApiProperty({
@@ -25,6 +32,51 @@ export class Credentials {
   @MinLength(12)
   @MaxLength(20)
   password: string;
+}
+
+/** Login keeps Credentials; registering also takes the email that password reset links go to. */
+export class RegisterRequest extends Credentials {
+  @ApiProperty({
+    format: 'email',
+    maxLength: 254,
+    example: 'john.doe@example.com',
+  })
+  @IsEmail()
+  @MaxLength(254)
+  email: string;
+}
+
+export class ForgotPasswordRequest {
+  @ApiProperty({
+    format: 'email',
+    maxLength: 254,
+    example: 'john.doe@example.com',
+  })
+  @IsEmail()
+  @MaxLength(254)
+  email: string;
+}
+
+export class ResetPasswordRequest {
+  @ApiProperty({
+    minLength: 1,
+    description: 'The token from the reset link',
+    example: 'Zq8-1rEXAMPLEp4XcT0mWb7LqN2yHs5aVd3uKf9',
+  })
+  @IsString()
+  @MinLength(1)
+  token: string;
+
+  @ApiProperty({
+    format: 'password',
+    minLength: 12,
+    maxLength: 20,
+    example: 'Something123@',
+  })
+  @IsString()
+  @MinLength(12)
+  @MaxLength(20)
+  newPassword: string;
 }
 
 export class RefreshTokenRequest {

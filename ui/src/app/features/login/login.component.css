@@ -1,0 +1,20 @@
+/* The rest of the page comes from shared/auth-page.css */
+.forgot {
+  align-self: flex-end;
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--auth-link-color);
+}
+
+.signup {
+  margin: 20px 0 0;
+  text-align: center;
+  font-size: 15px;
+  color: var(--auth-secondary-text-color);
+}
+
+.signup a {
+  color: var(--auth-link-color);
+  font-weight: 600;
+}

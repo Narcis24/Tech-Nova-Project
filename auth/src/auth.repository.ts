@@ -11,6 +11,10 @@ export interface User {
   passwordHash: string;
 }
 
+export interface NewUser extends User {
+  email: string;
+}
+
 @Injectable()
 export class AuthRepository implements OnModuleInit, OnModuleDestroy {
   private readonly pool = new pg.Pool({
@@ -29,14 +33,19 @@ export class AuthRepository implements OnModuleInit, OnModuleDestroy {
     );
   }
 
-  /** Fails startup if the database is unreachable or a table is missing (run migration V010). */
+  /** Fails startup if the database is unreachable or a table or column is missing (run migrations V010 and V012). */
   async onModuleInit() {
     if (process.env.DB_PASSWORD === undefined) {
       throw new Error('DB_PASSWORD is not set');
     }
-    await this.pool.query('SELECT username, password_hash FROM users LIMIT 0');
+    await this.pool.query(
+      'SELECT username, password_hash, email FROM users LIMIT 0',
+    );
     await this.pool.query(
       'SELECT token_hash, username, expires_at, revoked_at FROM refresh_tokens LIMIT 0',
+    );
+    await this.pool.query(
+      'SELECT token_hash, username, expires_at, used_at FROM password_reset_tokens LIMIT 0',
     );
   }
 
@@ -56,11 +65,25 @@ export class AuthRepository implements OnModuleInit, OnModuleDestroy {
       : { username: rows[0].username, passwordHash: rows[0].password_hash };
   }
 
-  /** False if the username is taken. */
-  async createUser(user: User): Promise<boolean> {
+  /** Ignores the case of the email. */
+  async findUserByEmail(email: string): Promise<User | null> {
+    const { rows } = await this.pool.query<{
+      username: string;
+      password_hash: string;
+    }>(
+      'SELECT username, password_hash FROM users WHERE LOWER(email) = LOWER($1)',
+      [email],
+    );
+    return rows.length === 0
+      ? null
+      : { username: rows[0].username, passwordHash: rows[0].password_hash };
+  }
+
+  /** False if the username or the email (ignoring case) is taken. */
+  async createUser(user: NewUser): Promise<boolean> {
     const { rowCount } = await this.pool.query(
-      'INSERT INTO users (username, password_hash) VALUES ($1, $2) ON CONFLICT (username) DO NOTHING',
-      [user.username, user.passwordHash],
+      'INSERT INTO users (username, password_hash, email) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+      [user.username, user.passwordHash, user.email],
     );
     return rowCount === 1;
   }
@@ -104,5 +127,52 @@ export class AuthRepository implements OnModuleInit, OnModuleDestroy {
       'UPDATE refresh_tokens SET revoked_at = now() WHERE token_hash = $1 AND revoked_at IS NULL',
       [tokenHash],
     );
+  }
+
+  /** Stores a new reset token for the user; any earlier unused one stops working. */
+  async saveResetToken(
+    tokenHash: string,
+    username: string,
+    ttlSeconds: number,
+  ) {
+    await this.pool.query(
+      `WITH cancelled AS (
+         UPDATE password_reset_tokens SET used_at = now()
+         WHERE username = $2 AND used_at IS NULL
+       )
+       INSERT INTO password_reset_tokens (token_hash, username, expires_at)
+       VALUES ($1, $2, now() + $3 * interval '1 second')`,
+      [tokenHash, username, ttlSeconds],
+    );
+  }
+
+  /**
+   * Uses a reset token, sets the new password and signs the user out everywhere, in one statement
+   * so a token works only once. False if the token was unknown, used or expired.
+   */
+  async resetPassword(
+    tokenHash: string,
+    passwordHash: string,
+  ): Promise<boolean> {
+    const { rows } = await this.pool.query<{ username: string }>(
+      `WITH used AS (
+         UPDATE password_reset_tokens SET used_at = now()
+         WHERE token_hash = $1 AND used_at IS NULL AND expires_at > now()
+         RETURNING username
+       ),
+       updated AS (
+         UPDATE users SET password_hash = $2
+         FROM used WHERE users.username = used.username
+         RETURNING users.username
+       ),
+       revoked AS (
+         UPDATE refresh_tokens SET revoked_at = now()
+         FROM updated
+         WHERE refresh_tokens.username = updated.username AND refresh_tokens.revoked_at IS NULL
+       )
+       SELECT username FROM updated`,
+      [tokenHash, passwordHash],
+    );
+    return rows.length === 1;
   }
 }

@@ -8,8 +8,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +35,11 @@ class ExecutionEngineTest {
     private EventProducerService producer;
     private QuoteCache cache;
     private ExecutionEngine engine;
+    private Clock clock;
+
+    // Wednesday 11:00 and Friday 03:24 in New York
+    private static final Instant MARKET_OPEN = Instant.parse("2026-10-14T15:00:00Z");
+    private static final Instant MARKET_CLOSED = Instant.parse("2026-10-16T07:24:00Z");
 
     @BeforeEach
     void setUp() {
@@ -40,7 +47,9 @@ class ExecutionEngineTest {
         cache = new QuoteCache();
         MarketDataProperties props =
             new MarketDataProperties(List.of("AAPL"), 120, 25, 2000, 600, "http://x", "", "");
-        engine = new ExecutionEngine(mapper, producer, cache, props);
+        clock = mock(Clock.class);
+        when(clock.instant()).thenReturn(MARKET_OPEN);
+        engine = new ExecutionEngine(mapper, producer, cache, props, clock, true);
     }
 
     private void place(String type, String limit) throws Exception {
@@ -168,6 +177,73 @@ class ExecutionEngineTest {
         ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
         verify(producer).publishEvent(eq("order-execution"), eq(orderId.toString()),
             eq("ORDER_REJECTED"), any(), payload.capture());
+    }
+
+    @Test
+    void marketOrderPlacedWhileClosedWaitsAndFillsOnTheFirstQuoteAfterTheOpen() throws Exception {
+        when(clock.instant()).thenReturn(MARKET_CLOSED);
+        cache.put(new Quote("AAPL", new BigDecimal("99.50"), new BigDecimal("100.50"), Instant.now()));
+
+        place("MARKET", null);
+        engine.onQuote(quoteMessage("99.00", "100.00"));
+        verify(producer, never()).publishEvent(any(), any(), any(), any(), any());
+
+        when(clock.instant()).thenReturn(MARKET_OPEN);
+        engine.onQuote(quoteMessage("101.00", "102.00"));
+
+        ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
+        verify(producer).publishEvent(eq("order-execution"), eq(orderId.toString()),
+            eq("ORDER_EXECUTED"), any(), payload.capture());
+        assertEquals(new BigDecimal("102.00"), ((OrderExecutedEvent) payload.getValue()).executionPrice());
+    }
+
+    @Test
+    void limitPlacedWhileClosedFillsOnlyOnceOpenAndCrossed() throws Exception {
+        when(clock.instant()).thenReturn(MARKET_CLOSED);
+        place("LIMIT", "90.00");
+
+        // crosses, but the market is closed
+        engine.onQuote(quoteMessage("88.50", "89.00"));
+        verify(producer, never()).publishEvent(any(), any(), any(), any(), any());
+
+        when(clock.instant()).thenReturn(MARKET_OPEN);
+        // open, but the ask is above the limit
+        engine.onQuote(quoteMessage("94.50", "95.00"));
+        verify(producer, never()).publishEvent(any(), any(), any(), any(), any());
+
+        engine.onQuote(quoteMessage("88.50", "89.00"));
+        verify(producer, times(1)).publishEvent(any(), any(), eq("ORDER_EXECUTED"), any(), any());
+    }
+
+    @Test
+    void marketOrderQueuedOvernightIsRejectedIfTheFirstOpenQuoteHasNoPrice() throws Exception {
+        when(clock.instant()).thenReturn(MARKET_CLOSED);
+        place("MARKET", null);
+
+        when(clock.instant()).thenReturn(MARKET_OPEN);
+        engine.onQuote(quoteMessage("0", "0"));
+
+        verify(producer).publishEvent(eq("order-execution"), eq(orderId.toString()),
+            eq("ORDER_REJECTED"), any(), any());
+    }
+
+    @Test
+    void withMarketHoursOffOrdersFillAtAnyTime() throws Exception {
+        MarketDataProperties props =
+            new MarketDataProperties(List.of("AAPL"), 120, 25, 2000, 600, "http://x", "", "");
+        engine = new ExecutionEngine(mapper, producer, cache, props, clock, false);
+        when(clock.instant()).thenReturn(MARKET_CLOSED);
+        cache.put(new Quote("AAPL", new BigDecimal("99.50"), new BigDecimal("100.50"), Instant.now()));
+
+        place("MARKET", null);
+
+        verify(producer).publishEvent(any(), any(), eq("ORDER_EXECUTED"), any(), any());
+    }
+
+    @Test
+    void announcesItsStartSoTheAppSendsPendingOrdersAgain() {
+        engine.announceStarted();
+        verify(producer).publishEvent(eq("order-execution"), any(), eq("ENGINE_STARTED"), any(), any());
     }
 
     private String quoteMessage(String bid, String ask) throws Exception {

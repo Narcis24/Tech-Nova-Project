@@ -1,0 +1,46 @@
+<h2>Holdings</h2>
+@if (positions().length) {
+  <p class="scroll-hint" aria-hidden="true">Swipe across for prices and actions <span>→</span></p>
+  <div class="scroll" role="region" aria-label="Holdings table, scroll horizontally for all columns">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Instrument</th>
+          <th scope="col">Quantity</th>
+          <th scope="col">Entry price</th>
+          <th scope="col">Current price</th>
+          <th scope="col">Value</th>
+          <th scope="col">P&amp;L</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of positions(); track p.symbol) {
+          <tr>
+            <th scope="row">
+              <a routerLink="/trade" [queryParams]="{ symbol: p.symbol, side: 'BUY' }">{{ p.symbol }}</a
+              ><span class="name">{{ instruments().get(p.symbol ?? '')?.name }}</span>
+            </th>
+            <td>{{ p.quantity | number }}</td>
+            <td>{{ p.averageCost | number: '1.2-2' }}</td>
+            <td>{{ p.currentPrice | number: '1.2-2' }}</td>
+            <td>{{ p.marketValue | number: '1.2-2' }}</td>
+            <td class="gain" [class.loss]="(p.unrealizedPnL ?? 0) < 0">
+              {{ (p.unrealizedPnL ?? 0) > 0 ? '+' : '' }}{{ p.unrealizedPnL | number: '1.2-2'
+              }}<span class="name">{{ positionReturn(p) | percent: '1.2-2' }}</span>
+            </td>
+            <td>
+              <app-action-buttons
+                [symbol]="p.symbol ?? ''"
+                [closeDisabled]="pendingSells().has(p.symbol ?? '')"
+                (closePosition)="closePosition.emit(p)"
+              />
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+} @else {
+  <p>No open positions yet. <a routerLink="/trade">Place your first trade</a>.</p>
+}

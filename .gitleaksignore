@@ -1,5 +1,5 @@
-# Known false positives: example values in docs (idempotency keys, truncated/invalid sample JWTs)
-# and the dummy JWT secret in the auth service's tests.
+# Known false positives: example values in docs (idempotency keys, truncated/invalid sample JWTs),
+# the dummy JWT secret in the auth service's tests. The curl token variable in sonar/quality-gate.sh is allowlisted in .gitleaks.toml.
 # Generated with: gitleaks detect --report-format json; each line is a finding's Fingerprint.
 23c3e5774939925579ade08bccb685848c3b796d:app/docs/Authentication/jwt_authentication.md:curl-auth-header:122
 23c3e5774939925579ade08bccb685848c3b796d:app/docs/Authentication/jwt_authentication.md:curl-auth-header:94

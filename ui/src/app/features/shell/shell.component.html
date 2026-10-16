@@ -1,0 +1,5 @@
+<app-nav-bar [compactTrade]="tradePage() ?? false" />
+
+<main [class.trade-page]="tradePage()">
+  <router-outlet />
+</main>

@@ -1,0 +1,14 @@
+<a routerLink="/trade" [queryParams]="{ symbol: symbol(), side: 'BUY' }" [attr.aria-label]="'Buy more ' + symbol()"
+  >Buy more</a
+>
+<a routerLink="/trade" [queryParams]="{ symbol: symbol(), side: 'SELL' }" [attr.aria-label]="'Sell ' + symbol()"
+  >Sell</a
+>
+<button
+  type="button"
+  (click)="closePosition.emit()"
+  [disabled]="closeDisabled()"
+  [attr.aria-label]="'Close ' + symbol() + ' position'"
+>
+  {{ closeDisabled() ? 'Sell pending' : 'Close' }}
+</button>

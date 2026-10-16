@@ -15,13 +15,16 @@ class JwtUtilTest {
 
     @Test
     void rejectsMissingSecret() {
-        assertThrows(IllegalStateException.class, () -> withSecret("").validateSecret());
-        assertThrows(IllegalStateException.class, () -> withSecret(null).validateSecret());
+        JwtUtil emptySecret = withSecret("");
+        JwtUtil nullSecret = withSecret(null);
+        assertThrows(IllegalStateException.class, emptySecret::validateSecret);
+        assertThrows(IllegalStateException.class, nullSecret::validateSecret);
     }
 
     @Test
     void rejectsSecretShorterThan32Bytes() {
-        assertThrows(IllegalStateException.class, () -> withSecret("too-short-secret").validateSecret());
+        JwtUtil shortSecret = withSecret("too-short-secret");
+        assertThrows(IllegalStateException.class, shortSecret::validateSecret);
     }
 
     @Test

@@ -7,7 +7,6 @@ import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.enums.OrderType;
 import com.neueda.app.dtos.OrderResponse;
-import com.neueda.app.exceptions.OrderNotTriggeredException;
 import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.exceptions.DuplicateOrderException;
 import com.neueda.app.exceptions.InsufficientFundsException;
@@ -15,7 +14,6 @@ import com.neueda.app.exceptions.InsufficientHoldingsException;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Order;
-import com.neueda.app.models.Position;
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.InstrumentRepository;
 import com.neueda.app.repositories.OrderRepository;
@@ -25,9 +23,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -53,12 +52,10 @@ class OrderServiceTest {
         priceService = mock(PriceService.class);
         eventProducerService = mock(EventProducerService.class);
 
+        // Real validator over the mocked repositories, so these tests still cover every placement check
         orderService = new OrderService(
             orderRepository,
-            accountRepository,
-            positionRepository,
-            instrumentRepository,
-            priceService,
+            new OrderValidator(accountRepository, positionRepository, instrumentRepository, priceService),
             eventProducerService
         );
     }
@@ -127,6 +124,7 @@ class OrderServiceTest {
         assertEquals(OrderStatus.PENDING, response.getStatus());
         assertEquals(OrderType.LIMIT, response.getOrderType());
         assertEquals(new BigDecimal("150.00"), response.getPrice());
+        assertNotNull(response.getCreatedOn());
         assertEquals(new BigDecimal("2000.00"), account.getCashBalance());
         verify(orderRepository, times(1)).save(any(Order.class));
         verifyNoInteractions(priceService);
@@ -153,31 +151,53 @@ class OrderServiceTest {
     }
 
     @Test
+    void republishPendingSendsEveryPendingOrderToTheEngineAgain() {
+        LocalDateTime placed = LocalDateTime.of(2026, 10, 16, 7, 0);
+        Order limit = new Order(UUID.randomUUID(), activeAccount(), aapl(), OrderSide.BUY, OrderType.LIMIT, 10,
+            new BigDecimal("150.00"), "key-a", placed);
+        Order market = new Order(UUID.randomUUID(), activeAccount(), aapl(), OrderSide.BUY, OrderType.MARKET, 5,
+            new BigDecimal("151.00"), "key-b", placed);
+        when(orderRepository.findByStatus(OrderStatus.PENDING)).thenReturn(List.of(limit, market));
+
+        orderService.republishPending();
+
+        verify(eventProducerService).publishEvent(
+            eq("order-request"), eq(limit.getId().toString()), eq("ORDER_PLACED"), anyString(), any());
+        verify(eventProducerService).publishEvent(
+            eq("order-request"), eq(market.getId().toString()), eq("ORDER_PLACED"), anyString(), any());
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
     void testPlaceMarketOrderFailsWithoutPriceData() {
         stubAccountAndInstrument(activeAccount(), aapl());
         when(priceService.getCurrentPrice("AAPL")).thenThrow(new PriceNotFoundException("No price data"));
 
-        assertThrows(PriceNotFoundException.class, () -> orderService.placeOrder(new PlaceOrderRequest(
-            "12345", "AAPL", "BUY", "MARKET", 10, null, "key-1")));
+        PlaceOrderRequest request = new PlaceOrderRequest(
+            "12345", "AAPL", "BUY", "MARKET", 10, null, "key-1");
+        assertThrows(PriceNotFoundException.class, () -> orderService.placeOrder(request));
         verify(orderRepository, never()).save(any());
     }
 
     @Test
     void testPlaceLimitOrderRequiresPrice() {
-        assertThrows(IllegalArgumentException.class, () -> orderService.placeOrder(new PlaceOrderRequest(
-            "12345", "AAPL", "BUY", "LIMIT", 10, null, "key-1")));
+        PlaceOrderRequest request = new PlaceOrderRequest(
+            "12345", "AAPL", "BUY", "LIMIT", 10, null, "key-1");
+        assertThrows(IllegalArgumentException.class, () -> orderService.placeOrder(request));
     }
 
     @Test
     void testPlaceMarketOrderRejectsPrice() {
-        assertThrows(IllegalArgumentException.class, () -> orderService.placeOrder(new PlaceOrderRequest(
-            "12345", "AAPL", "BUY", "MARKET", 10, new BigDecimal("150.00"), "key-1")));
+        PlaceOrderRequest request = new PlaceOrderRequest(
+            "12345", "AAPL", "BUY", "MARKET", 10, new BigDecimal("150.00"), "key-1");
+        assertThrows(IllegalArgumentException.class, () -> orderService.placeOrder(request));
     }
 
     @Test
     void testPlaceOrderRejectsUnknownOrderType() {
-        assertThrows(IllegalArgumentException.class, () -> orderService.placeOrder(new PlaceOrderRequest(
-            "12345", "AAPL", "BUY", "STOP", 10, new BigDecimal("150.00"), "key-1")));
+        PlaceOrderRequest request = new PlaceOrderRequest(
+            "12345", "AAPL", "BUY", "STOP", 10, new BigDecimal("150.00"), "key-1");
+        assertThrows(IllegalArgumentException.class, () -> orderService.placeOrder(request));
     }
 
 }

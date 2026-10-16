@@ -1,0 +1,85 @@
+<header class="nav-bar" [class.compact-trade]="compactTrade()">
+  <a class="brand" routerLink="/dashboard">TechNova</a>
+
+  <nav class="tabs" aria-label="Main">
+    @for (tab of tabs; track tab.path) {
+      <a class="tab" [routerLink]="tab.path" routerLinkActive="active" ariaCurrentWhenActive="page">{{ tab.label }}</a>
+    }
+  </nav>
+
+  <div class="account-cluster">
+    @if (accountId(); as id) {
+      <div class="account-switcher">
+        <button
+          type="button"
+          class="account"
+          [attr.aria-label]="'Switch account, current account ' + id"
+          [attr.aria-expanded]="accountMenuOpen()"
+          aria-controls="account-menu"
+          (click)="toggleAccountMenu()"
+        >
+          {{ id }}
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            aria-hidden="true"
+          >
+            <path d="M2.5 4.5 6 8l3.5-3.5" />
+          </svg>
+        </button>
+
+        @if (accountMenuOpen()) {
+          <ul class="account-menu" id="account-menu">
+            @for (account of accounts(); track account.accountId) {
+              <li>
+                <button
+                  type="button"
+                  class="account-option"
+                  [attr.aria-current]="account.accountId === id ? 'true' : null"
+                  (click)="selectAccount(account.accountId)"
+                >
+                  {{ account.accountId }}
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
+
+    @if (username(); as name) {
+      <div class="user">
+        <button
+          type="button"
+          class="menu-button"
+          [attr.aria-label]="'Account menu for ' + name"
+          [attr.aria-expanded]="menuOpen()"
+          aria-controls="user-menu"
+          (click)="toggleMenu()"
+        >
+          <span class="avatar" aria-hidden="true">{{ initial() }}</span>
+          <span class="username">{{ name }}</span>
+        </button>
+        <button type="button" class="sign-out" (click)="signOut()">Sign out</button>
+
+        @if (menuOpen()) {
+          <div class="menu" id="user-menu">
+            <p class="menu-name">{{ name }}</p>
+            @if (accountId(); as id) {
+              <p class="menu-account">{{ id }}</p>
+            }
+            <a class="menu-change-account" routerLink="/accounts" (click)="closeMenus()">Accounts</a>
+            <a class="menu-change-account menu-risk-limits" routerLink="/risk-limits" (click)="closeMenus()"
+              >Risk limits</a
+            >
+            <button type="button" class="menu-sign-out" (click)="signOut()">Sign out</button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</header>

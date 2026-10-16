@@ -2,22 +2,17 @@ package com.neueda.app.services;
 
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
-import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.enums.AssetClass;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Order;
-import com.neueda.app.models.Position;
-import com.neueda.app.models.Price;
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.InstrumentRepository;
 import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
 import com.neueda.app.repositories.PriceRepository;
-import com.neueda.app.services.OrderService;
-import com.neueda.app.services.PriceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,18 +30,17 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({OrderService.class, PriceService.class})
+@Import({OrderService.class, OrderValidator.class, PriceService.class})
 // Uses application-test.properties imports for Integration Testing
 @ActiveProfiles("test")
 @DisplayName("OrderService End-to-End Integration Tests")
-public class OrderServiceEndToEndTest {
+class OrderServiceEndToEndTest {
 
     // Injects a connection to the repos
     @Autowired
@@ -172,10 +166,7 @@ public class OrderServiceEndToEndTest {
         orderRepository.transition(orderId, OrderStatus.PENDING, OrderStatus.FILLED, new BigDecimal("149.00"));
 
         stale.cancel();
-        assertThrows(OptimisticLockingFailureException.class, () -> {
-            orderRepository.save(stale);
-            entityManager.flush();
-        });
+        assertThrows(OptimisticLockingFailureException.class, () -> orderRepository.saveAndFlush(stale));
     }
 
     @Test
