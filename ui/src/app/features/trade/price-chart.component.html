@@ -95,8 +95,14 @@
         <svg
           viewBox="0 0 640 220"
           preserveAspectRatio="none"
-          role="img"
+          role="slider"
           tabindex="0"
+          aria-valuemin="0"
+          [attr.aria-valuemax]="visible().length - 1"
+          [attr.aria-valuenow]="selectedIndex()"
+          [attr.aria-valuetext]="
+            (sessionDate(selected()?.date) | date: 'mediumDate' : 'UTC') + ', ' + (selected()?.close | currency: 'USD')
+          "
           [attr.aria-label]="
             normalizedSymbol() + ' daily closing prices. Use left and right arrows to inspect sessions.'
           "

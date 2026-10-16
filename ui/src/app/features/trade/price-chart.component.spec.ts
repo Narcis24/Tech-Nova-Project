@@ -48,13 +48,13 @@ describe('PriceChartComponent', () => {
     expect(root.querySelector('.chart-loading')).not.toBeNull();
     expect(root.querySelector('.history .plot svg')).not.toBeNull();
     expect(root.querySelector('.quote-facts')).not.toBeNull();
-    expect(root.querySelector('svg[role="img"]')).toBeNull();
+    expect(root.querySelector('svg[role="slider"]')).toBeNull();
     pending.next(points);
     pending.complete();
     fixture.detectChanges();
     expect(root.querySelector('.quote')).toBe(quote);
     expect(root.querySelector('.chart-loading')).toBeNull();
-    expect(root.querySelector('svg[role="img"]')).not.toBeNull();
+    expect(root.querySelector('svg[role="slider"]')).not.toBeNull();
   }));
   it('cancels an old symbol request and never labels its data as the new instrument', fakeAsync(() => {
     const fixture = setup();
@@ -129,7 +129,7 @@ describe('PriceChartComponent', () => {
     tick(250);
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('No stored price history');
-    expect(fixture.nativeElement.querySelector('svg[role="img"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('svg[role="slider"]')).toBeNull();
   }));
   it('keeps the loading layout while the default instrument is being resolved', fakeAsync(() => {
     const fixture = setup('');
