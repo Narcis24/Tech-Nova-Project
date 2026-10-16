@@ -1,6 +1,7 @@
 package com.neueda.trading.engine;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -8,7 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import tools.jackson.core.JacksonException;
@@ -31,19 +36,53 @@ public class ExecutionEngine {
     private final QuoteCache quoteCache;
     private final MarketDataProperties props;
 
-    // LIMIT orders waiting for the market, by order id. In memory: lost on restart.
+    // Orders waiting for the market, by order id: LIMIT orders not crossed yet, and any order
+    // placed while the market is closed. In memory: lost on restart.
     private final Map<UUID, OrderPlacedEvent> resting = new HashMap<>();
+    private final Clock clock;
+    private final boolean enforceMarketHours;
 
+    @Autowired
     public ExecutionEngine(
             ObjectMapper objectMapper,
             EventProducerService eventProducerService,
             QuoteCache quoteCache,
-            MarketDataProperties props) {
+            MarketDataProperties props,
+            @Value("${market-data.enforce-market-hours:true}") boolean enforceMarketHours) {
+        this(objectMapper, eventProducerService, quoteCache, props, Clock.systemUTC(), enforceMarketHours);
+    }
 
+    /** Tests pass a fixed clock to decide whether the market is open. */
+    ExecutionEngine(
+            ObjectMapper objectMapper,
+            EventProducerService eventProducerService,
+            QuoteCache quoteCache,
+            MarketDataProperties props,
+            Clock clock,
+            boolean enforceMarketHours) {
+
+        this.clock = clock;
+        this.enforceMarketHours = enforceMarketHours;
         this.objectMapper = objectMapper;
         this.eventProducerService = eventProducerService;
         this.quoteCache = quoteCache;
         this.props = props;
+    }
+
+    /**
+     * Waiting orders live only in memory, so a restart starts with none. Announcing the start
+     * makes the app send every PENDING order again (EngineStartedListener in app).
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void announceStarted() {
+        log.info("Execution engine started, asking for pending orders");
+        eventProducerService.publishEvent(
+            Topics.ORDER_EXECUTION,
+            "execution-engine",
+            EventTypes.ENGINE_STARTED,
+            "ExecutionEngine",
+            Map.of()
+        );
     }
 
     @KafkaListener(
@@ -137,7 +176,7 @@ public class ExecutionEngine {
     }
 
     /**
-     * Every new quote re-checks the LIMIT orders resting on that symbol, so there is no
+     * Every new quote re-checks the orders resting on that symbol, so there is no
      * separate schedule. Own consumer group: every executor instance needs every quote.
      */
     @KafkaListener(topics = MarketDataPoller.TOPIC, groupId = "execution-engine-quotes")
@@ -149,9 +188,15 @@ public class ExecutionEngine {
 
     /**
      * Fills what it can, rests a LIMIT that has not crossed yet, rejects what can never be
-     * priced, so an order is never left PENDING without a reason.
+     * priced, so an order is never left PENDING without a reason. While the market is closed,
+     * every order rests until the first quote after the open.
      */
     synchronized void handle(OrderPlacedEvent event) {
+        if (!marketOpen()) {
+            resting.put(event.orderId(), event);
+            log.info("Market closed, order waits for the open: orderId={}, symbol={}", event.orderId(), event.symbol());
+            return;
+        }
         boolean market = "MARKET".equals(event.orderType());
         FillRule.Decision decision = quoteCache
             .fresh(event.symbol(), Instant.now(), Duration.ofSeconds(props.maxQuoteAgeSeconds()))
@@ -171,13 +216,34 @@ public class ExecutionEngine {
     }
 
     private synchronized void recheckResting(Quote quote) {
+        // Quotes keep coming while the market is closed, but they are last session's prices
+        if (!marketOpen()) {
+            return;
+        }
         for (OrderPlacedEvent order : List.copyOf(resting.values())) {
-            if (order.symbol().equals(quote.symbol())
-                    && FillRule.decide(order, quote) instanceof FillRule.Fill(BigDecimal price)) {
-                resting.remove(order.orderId());
-                publishFill(order, price);
+            if (!order.symbol().equals(quote.symbol())) {
+                continue;
+            }
+            switch (FillRule.decide(order, quote)) {
+                case FillRule.Fill(BigDecimal price) -> {
+                    resting.remove(order.orderId());
+                    publishFill(order, price);
+                }
+                // A MARKET order queued overnight that still cannot be priced
+                case FillRule.Reject(String reason) -> {
+                    resting.remove(order.orderId());
+                    publishReject(order, reason);
+                }
+                case FillRule.Wait() -> {
+                    // stays resting
+                }
             }
         }
+    }
+
+    /** The E2E tests turn the hours off: they run at any time against a stub market. */
+    private boolean marketOpen() {
+        return !enforceMarketHours || MarketHours.isOpen(clock.instant());
     }
 
     private void publishReject(OrderPlacedEvent event, String reason) {

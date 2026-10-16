@@ -149,10 +149,12 @@ public final class Stack {
     private static GenericContainer<?> executionEngine(Network network) {
         return service("engine", "execution-engine", network)
             .withEnv("SPRING_KAFKA_BOOTSTRAP_SERVERS", KAFKA)
-            // poll the stub every second; the quota check would refuse that rate against real Alpaca
+            // poll the stub every second; the quota check would refuse that rate against real Alpaca.
+            // Market hours off: the tests run at any time and expect market orders to fill
             .withEnv("SPRING_APPLICATION_JSON", """
                 {"market-data": {"base-url": "http://alpaca:8080", "interval-seconds": 1,
-                 "daily-quota": 1000000, "key-id": "e2e", "secret-key": "e2e"}}""")
+                 "daily-quota": 1000000, "key-id": "e2e", "secret-key": "e2e",
+                 "enforce-market-hours": false}}""")
             // ready once both consumers own their partitions, so no early order or quote is missed
             .waitingFor(new WaitAllStrategy()
                 .withStrategy(Wait.forLogMessage(".*execution-engine: partitions assigned: \\[order-request.*", 1))
