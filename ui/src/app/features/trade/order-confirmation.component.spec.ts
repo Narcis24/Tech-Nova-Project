@@ -39,7 +39,8 @@ describe('OrderConfirmationComponent', () => {
     fixture.detectChanges();
     return fixture.nativeElement as HTMLElement;
   }
-  const confirmButton = (root: HTMLElement) => root.querySelector<HTMLButtonElement>('.actions button:not(.secondary)')!;
+  const confirmButton = (root: HTMLElement) =>
+    root.querySelector<HTMLButtonElement>('.actions button:not(.secondary)')!;
 
   it('looks as before when there are no warnings', () => {
     const root = setup();

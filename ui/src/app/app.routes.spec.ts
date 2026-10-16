@@ -12,8 +12,8 @@ import {
   PriceControllerService,
   InstrumentControllerService,
   PortfolioControllerService,
-  RiskControllerService, 
-  RiskLimitControllerService
+  RiskControllerService,
+  RiskLimitControllerService,
 } from './generated/trading-api-client';
 import { routes } from './app.routes';
 import { safeReturnUrl } from './core/return-url';
@@ -39,7 +39,10 @@ describe('app routes', () => {
         { provide: OrderControllerService, useValue: { placeOrder: () => of({}) } },
         { provide: RiskControllerService, useValue: { check: () => of([]) } },
         { provide: RiskLimitControllerService, useValue: { getLimits: () => of([]) } },
-        { provide: PortfolioControllerService, useValue: { getPortfolioMetrics: () => of({}), getPortfolioSnapshot: () => of({}) } },
+        {
+          provide: PortfolioControllerService,
+          useValue: { getPortfolioMetrics: () => of({}), getPortfolioSnapshot: () => of({}) },
+        },
         { provide: AccountControllerService, useValue: { getAccountOrders: () => of([]) } },
         { provide: InstrumentControllerService, useValue: { getInstruments: () => of([]) } },
         { provide: AuthService, useValue: auth },

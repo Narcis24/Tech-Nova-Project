@@ -51,7 +51,7 @@ export const routes: Routes = [
       },
       {
         path: 'risk-limits',
-        loadComponent: () => import('./features/risk-limits/risk-limits.component').then(m => m.RiskLimitsComponent),
+        loadComponent: () => import('./features/risk-limits/risk-limits.component').then((m) => m.RiskLimitsComponent),
       },
       {
         path: 'accounts',

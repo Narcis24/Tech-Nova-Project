@@ -106,7 +106,9 @@
                   <button type="button" class="danger" [disabled]="cancelling()" (click)="cancel(order.orderId!)">
                     {{ cancelling() ? 'Cancelling…' : 'Yes, cancel' }}
                   </button>
-                  <button type="button" class="text-button" [disabled]="cancelling()" (click)="keepOrder()">Keep</button>
+                  <button type="button" class="text-button" [disabled]="cancelling()" (click)="keepOrder()">
+                    Keep
+                  </button>
                   @if (cancelError()) {
                     <p class="reason" role="alert">{{ cancelError() }}</p>
                   }
