@@ -69,7 +69,7 @@ button:disabled {
   gap: 4px;
   padding: 4px;
   border-radius: 14px;
-  background: #e9ebf0;
+  background: var(--control-background-color);
 }
 .side-control button {
   flex: 1;
@@ -82,8 +82,8 @@ button:disabled {
 }
 .side-control button[aria-pressed='true'] {
   background: var(--trade-side);
-  color: white;
-  box-shadow: 0 1px 2px #14182b1f;
+  color: var(--text-on-primary-color);
+  box-shadow: var(--card-shadow);
 }
 .order-types {
   display: grid;
@@ -93,9 +93,9 @@ button:disabled {
 .order-types button {
   padding: 14px 16px;
   border-radius: 14px;
-  background: white;
+  background: var(--elevated-background-color);
   text-align: left;
-  box-shadow: 0 0 0 1px #e1e4ea;
+  box-shadow: 0 0 0 1px var(--border-color);
 }
 .order-types button[aria-pressed='true'] {
   box-shadow: 0 0 0 2px var(--text-color);
@@ -135,8 +135,8 @@ input {
   padding: 0 16px;
   border-radius: 12px;
   border: 0;
-  background: white;
-  box-shadow: 0 0 0 1px #e1e4ea;
+  background: var(--elevated-background-color);
+  box-shadow: 0 0 0 1px var(--border-color);
   font-size: 20px;
 }
 .presets {
@@ -147,13 +147,13 @@ input {
   flex: 1;
   min-height: 40px;
   border-radius: 10px;
-  background: white;
+  background: var(--elevated-background-color);
   font-size: 14px;
-  box-shadow: 0 0 0 1px #e1e4ea;
+  box-shadow: 0 0 0 1px var(--border-color);
 }
 .presets button[aria-pressed='true'] {
   background: var(--text-color);
-  color: white;
+  color: var(--text-on-primary-color);
   box-shadow: none;
 }
 .limit-control {
@@ -162,8 +162,8 @@ input {
   gap: 6px;
   padding: 4px;
   border-radius: 12px;
-  background: white;
-  box-shadow: 0 0 0 1px #e1e4ea;
+  background: var(--elevated-background-color);
+  box-shadow: 0 0 0 1px var(--border-color);
 }
 .limit-control button {
   flex: 0 0 44px;
@@ -189,7 +189,7 @@ input {
   gap: 10px;
   padding: 18px 18px 14px;
   border-radius: 16px;
-  background: white;
+  background: var(--elevated-background-color);
 }
 .execution-card p {
   font-size: 14px;
@@ -205,7 +205,7 @@ input {
   right: 0;
   top: 46px;
   height: 2px;
-  background: #e4e7ec;
+  background: var(--border-color);
 }
 .reference-tick {
   position: absolute;
@@ -236,7 +236,7 @@ input {
   padding: 4px 10px;
   border-radius: 999px;
   background: var(--trade-side);
-  color: white;
+  color: var(--text-on-primary-color);
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
@@ -276,21 +276,21 @@ dd {
   min-height: 54px;
   border-radius: 14px;
   background: var(--trade-side);
-  color: white;
+  color: var(--text-on-primary-color);
   font-size: 16px;
   font-weight: 600;
   width: 100%;
 }
 .submit-order:disabled {
-  background: #e4e7ec;
+  background: var(--control-background-color);
   color: var(--secondary-text-color);
   opacity: 1;
 }
 .field-error {
   padding: 14px 16px;
   border-radius: 12px;
-  background: #fcefe6;
-  color: #8f3b06;
+  background: var(--sell-background-color);
+  color: var(--sell-color);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -397,10 +397,8 @@ dd {
     box-shadow: none;
   }
   .order-types button[aria-pressed='true'] {
-    background: white;
-    box-shadow:
-      0 1px 2px #14182b14,
-      0 0 0 1px #14182b0a;
+    background: var(--elevated-background-color);
+    box-shadow: var(--card-shadow);
   }
   .order-types span {
     display: none;
@@ -467,10 +465,10 @@ dd {
   }
 }
 .side-control button:not([aria-pressed='true']):hover {
-  background: #dde1ea;
+  background: var(--control-hover-background-color);
 }
 .order-types button:not([aria-pressed='true']):hover {
-  box-shadow: 0 0 0 1px #aeb5c5;
+  box-shadow: 0 0 0 1px var(--hover-border-color);
 }
 .presets button:not([aria-pressed='true']):hover,
 .limit-control button:hover {
