@@ -17,11 +17,11 @@ button:disabled {
 button:focus-visible,
 a:focus-visible,
 input:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--primary-color);
   outline-offset: 2px;
 }
 .muted {
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 
 .heading {
@@ -41,7 +41,7 @@ h1 {
   margin-top: 4px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 .new-order {
   display: inline-flex;
@@ -49,8 +49,8 @@ h1 {
   min-height: 44px;
   padding: 0 18px;
   border-radius: 12px;
-  background: var(--color-ink);
-  color: var(--color-surface);
+  background: var(--text-color);
+  color: var(--background-color);
   font-weight: 600;
   text-decoration: none;
 }
@@ -60,13 +60,13 @@ h1 {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  color: var(--color-loss);
+  color: var(--loss-color);
 }
 .text-button {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--color-accent);
+  color: var(--primary-color);
   font-weight: 600;
 }
 .empty {
@@ -76,7 +76,7 @@ h1 {
   gap: 16px;
   padding: 32px;
   border-radius: 16px;
-  background: var(--color-card);
+  background: var(--card-background-color);
 }
 
 /* Summary tiles */
@@ -93,12 +93,12 @@ h1 {
   padding: 16px 18px;
   border: 0;
   border-radius: 16px;
-  background: var(--color-card);
-  color: var(--color-ink);
+  background: var(--card-background-color);
+  color: var(--text-color);
   text-align: left;
 }
 button.tile:hover {
-  background: var(--color-track);
+  background: var(--muted-background-color);
 }
 .totals {
   display: grid;
@@ -109,7 +109,7 @@ button.tile:hover {
 }
 .tile-label {
   font-size: 13px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 .tile-value {
   font-size: 26px;
@@ -136,7 +136,7 @@ button.tile:hover {
   gap: 4px;
   padding: 4px;
   border-radius: 12px;
-  background: var(--color-track);
+  background: var(--muted-background-color);
   overflow-x: auto;
 }
 .filters button {
@@ -146,19 +146,19 @@ button.tile:hover {
   border: 0;
   border-radius: 9px;
   background: none;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   font-size: 14px;
   font-weight: 600;
 }
 .filters button[aria-pressed='true'] {
-  background: var(--color-surface);
-  color: var(--color-ink);
-  box-shadow: 0 1px 3px #14182b1a;
+  background: var(--elevated-background-color);
+  color: var(--text-color);
+  box-shadow: var(--card-shadow);
 }
 .count {
   margin-left: 4px;
   font-weight: 500;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 .search {
   width: min(260px, 100%);
@@ -167,10 +167,10 @@ button.tile:hover {
   padding: 0 14px;
   border: 0;
   border-radius: 12px;
-  background: var(--color-track);
+  background: var(--muted-background-color);
   font: inherit;
   font-size: 15px;
-  color: var(--color-ink);
+  color: var(--text-color);
 }
 
 /* Orders, grouped by day */
@@ -180,13 +180,13 @@ button.tile:hover {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 .day ul {
   margin: 0;
   padding: 0;
   list-style: none;
-  border-top: 1px solid #e4e7ec;
+  border-top: 1px solid var(--border-color);
 }
 .order {
   display: grid;
@@ -194,31 +194,31 @@ button.tile:hover {
   align-items: center;
   gap: 16px;
   padding: 16px 4px;
-  border-bottom: 1px solid #e4e7ec;
+  border-bottom: 1px solid var(--border-color);
   font-size: 14px;
 }
 .side {
   justify-self: start;
   padding: 4px 8px;
   border-radius: 6px;
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--primary-background-color);
+  color: var(--primary-color);
   font-size: 12px;
   font-weight: 600;
 }
 .order.sell .side {
-  background: #fbebe0;
-  color: var(--color-sell);
+  background: var(--sell-background-color);
+  color: var(--sell-color);
 }
 .instrument {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  color: var(--color-ink);
+  color: var(--text-color);
   text-decoration: none;
 }
 .instrument:hover .symbol {
-  color: var(--color-accent);
+  color: var(--primary-color);
 }
 .symbol {
   font-size: 15px;
@@ -231,7 +231,7 @@ button.tile:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 .name,
 .price {
@@ -251,23 +251,23 @@ button.tile:hover {
   justify-self: start;
   padding: 5px 10px;
   border-radius: 999px;
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--primary-background-color);
+  color: var(--primary-color);
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
 }
 .status.filled {
-  background: #e2f1e9;
-  color: var(--color-gain);
+  background: var(--gain-background-color);
+  color: var(--gain-color);
 }
 .status.rejected {
-  background: #fcefe6;
-  color: var(--color-loss);
+  background: var(--loss-background-color);
+  color: var(--loss-color);
 }
 .status.closed {
-  background: var(--color-track);
-  color: var(--color-muted);
+  background: var(--muted-background-color);
+  color: var(--secondary-text-color);
 }
 .time {
   text-align: right;
@@ -279,7 +279,7 @@ button.tile:hover {
 }
 .reason {
   font-size: 13px;
-  color: var(--color-loss);
+  color: var(--loss-color);
 }
 .cancel {
   display: flex;
@@ -298,8 +298,8 @@ button.tile:hover {
   padding: 0 14px;
   border: 0;
   border-radius: 10px;
-  background: var(--color-loss);
-  color: var(--color-surface);
+  background: var(--loss-color);
+  color: var(--text-on-primary-color);
   font-weight: 600;
 }
 

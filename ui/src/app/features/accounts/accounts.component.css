@@ -24,21 +24,21 @@ h1 {
   box-sizing: border-box;
   border: 0;
   border-radius: 14px;
-  background: var(--color-card);
+  background: var(--card-background-color);
   font: inherit;
-  color: var(--color-ink);
+  color: var(--text-color);
   text-align: left;
   cursor: pointer;
 }
 
 .account:hover {
-  background: var(--color-track);
+  background: var(--muted-background-color);
 }
 
 /* The selected account: the same soft blue chip as the desktop dropdown */
 .account[aria-current='true'] {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--primary-background-color);
+  color: var(--primary-color);
 }
 
 .account-id {
@@ -48,23 +48,23 @@ h1 {
 
 .holder {
   font-size: 14px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 
 .empty {
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 
 .open-button {
   width: 100%;
   min-height: 52px;
   margin-top: 16px;
-  border: 1.5px dashed var(--color-border, #e1e4ea);
+  border: 1.5px dashed var(--border-color);
   border-radius: 14px;
   background: none;
   font: inherit;
   font-weight: 600;
-  color: var(--color-accent);
+  color: var(--primary-color);
   cursor: pointer;
 }
 
@@ -86,16 +86,16 @@ h1 {
   padding: 0 14px;
   border: 0;
   border-radius: 12px;
-  background: var(--color-track);
+  background: var(--muted-background-color);
   font: inherit;
   font-size: 17px;
-  color: var(--color-ink);
+  color: var(--text-color);
 }
 
 .field-error {
   margin: 0;
   font-size: 14px;
-  color: var(--color-loss);
+  color: var(--loss-color);
 }
 
 .form-actions {
@@ -115,8 +115,8 @@ h1 {
 }
 
 .primary {
-  background: var(--color-ink);
-  color: var(--color-surface);
+  background: var(--text-color);
+  color: var(--background-color);
 }
 
 .primary:disabled {
@@ -125,6 +125,6 @@ h1 {
 }
 
 .secondary {
-  background: var(--color-track);
-  color: var(--color-ink);
+  background: var(--muted-background-color);
+  color: var(--text-color);
 }

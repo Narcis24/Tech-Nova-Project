@@ -1,36 +1,82 @@
 :root {
-  --color-ink: #14182b;
-  --color-muted: #6b7186;
-  --color-surface: #ffffff;
-  --color-track: #f3f4f7;
-  --color-card: #f5f6f8;
-  --color-accent: #3044e0;
-  --color-accent-hover: #1f2da8;
-  --color-accent-soft: #e3e7fc;
-  --color-gain: #147547;
-  --color-loss: #b42332;
-  --color-sell: #b54c0b;
+  /* Backgrounds */
+  --background-color: #ffffff;
+  --muted-background-color: #f3f4f7;
+  --card-background-color: #f5f6f8;
+  /* Inputs and cards that sit on --muted-background-color */
+  --elevated-background-color: #ffffff;
+
+  /* Text */
+  --text-color: #14182b;
+  --secondary-text-color: #6b7186;
+  /* Text and icons on primary, buy and sell buttons */
+  --text-on-primary-color: #ffffff;
+
+  /* Brand */
+  --primary-color: #3044e0;
+  --primary-hover-color: #1f2da8;
+  --primary-background-color: #e3e7fc;
+
+  /* Greys mixed from --secondary-text-color, so they follow the background in either theme */
+  --hover-background-color: color-mix(in srgb, var(--secondary-text-color) 2%, var(--background-color));
+  --control-background-color: color-mix(in srgb, var(--secondary-text-color) 14%, var(--background-color));
+  --control-hover-background-color: color-mix(in srgb, var(--secondary-text-color) 20%, var(--background-color));
+  --subtle-border-color: color-mix(in srgb, var(--secondary-text-color) 12%, var(--background-color));
+  --border-color: color-mix(in srgb, var(--secondary-text-color) 18%, var(--background-color));
+  --strong-border-color: color-mix(in srgb, var(--secondary-text-color) 28%, var(--background-color));
+  --hover-border-color: color-mix(in srgb, var(--secondary-text-color) 52%, var(--background-color));
+  /* Track of an on/off switch while it is off */
+  --switch-background-color: color-mix(in srgb, var(--secondary-text-color) 36%, var(--background-color));
+  /* Blue-grey border around pop-up notices; kept exact, as no mix of the base colours matches it */
+  --toast-border-color: #d6dfed;
+
+  /* Status: text colour, plus a tinted background to put behind it */
+  --gain-color: #147547;
+  --gain-background-color: color-mix(in srgb, var(--gain-color) 12%, var(--background-color));
+  --loss-color: #b42332;
+  --loss-background-color: color-mix(in srgb, var(--loss-color) 8%, var(--background-color));
+  --sell-color: #b54c0b;
+  --sell-background-color: color-mix(in srgb, var(--sell-color) 9%, var(--background-color));
+  --warning-color: #6b4200;
+  --warning-background-color: #fff8eb;
+  --warning-border-color: #f1d29b;
+
+  /* Shadows and dialog backdrops */
+  --shadow-color: #14182b;
+  --overlay-color: color-mix(in srgb, var(--shadow-color) 40%, transparent);
+  --card-shadow:
+    0 1px 2px color-mix(in srgb, var(--shadow-color) 8%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--shadow-color) 4%, transparent);
+  --dropdown-shadow:
+    0 8px 24px color-mix(in srgb, var(--shadow-color) 12%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--shadow-color) 6%, transparent);
+  /* Bars that float over the content, like the mobile tab bar */
+  --floating-shadow:
+    0 6px 24px color-mix(in srgb, var(--shadow-color) 8%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--shadow-color) 2.4%, transparent);
+  --switch-knob-shadow: 0 1px 3px color-mix(in srgb, var(--shadow-color) 20%, transparent);
+  --dialog-shadow: 0 24px 80px color-mix(in srgb, var(--shadow-color) 20%, transparent);
 }
 
 body {
   margin: 0;
-  background: var(--color-surface);
-  color: var(--color-ink);
+  background: var(--background-color);
+  color: var(--text-color);
   font-family: 'Archivo', system-ui, sans-serif;
   /* Equal-width digits, so prices line up in columns */
   font-variant-numeric: tabular-nums;
 }
 
 a {
-  color: var(--color-accent);
+  color: var(--primary-color);
 }
 
 a:hover {
-  color: var(--color-accent-hover);
+  color: var(--primary-hover-color);
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--primary-color);
   outline-offset: 2px;
 }
 

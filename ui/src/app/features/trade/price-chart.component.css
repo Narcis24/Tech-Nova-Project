@@ -35,7 +35,7 @@ h1 {
   gap: 10px;
   padding: 0;
   background: none;
-  color: var(--color-ink);
+  color: var(--text-color);
   font-size: inherit;
   font-weight: inherit;
   min-height: 0;
@@ -44,13 +44,13 @@ h1 {
 .symbol-button svg {
   width: 12px;
   height: 12px;
-  stroke: var(--color-muted);
+  stroke: var(--secondary-text-color);
   fill: none;
   stroke-width: 1.5;
 }
 .instrument-name {
   font-size: 17px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 .quote {
   display: flex;
@@ -65,21 +65,21 @@ h1 {
 }
 .quote p {
   font-size: 15px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   line-height: 1.5;
 }
 .change {
-  color: var(--color-accent);
+  color: var(--primary-color);
   font-weight: 500;
 }
 .change.loss {
-  color: var(--color-sell);
+  color: var(--sell-color);
 }
 .ranges {
   display: flex;
   gap: 2px;
   padding: 4px;
-  background: var(--color-track);
+  background: var(--muted-background-color);
   border-radius: 12px;
 }
 button {
@@ -92,20 +92,18 @@ button {
   font-size: 14px;
   font-weight: 500;
   background: transparent;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   cursor: pointer;
 }
 .ranges button[aria-pressed='true'] {
-  background: var(--color-surface);
-  color: var(--color-ink);
+  background: var(--elevated-background-color);
+  color: var(--text-color);
   font-weight: 600;
-  box-shadow:
-    0 1px 2px #14182b14,
-    0 0 0 1px #14182b0a;
+  box-shadow: var(--card-shadow);
 }
 .as-of {
   font-size: 12px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   margin-top: 8px;
   line-height: 1.5;
 }
@@ -113,7 +111,7 @@ button {
   height: 20px;
   margin-top: 16px;
   font-size: 13px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 .hidden {
   visibility: hidden;
@@ -122,7 +120,7 @@ button {
   position: relative;
   display: flex;
   gap: 12px;
-  color: var(--color-accent);
+  color: var(--primary-color);
 }
 .visually-hidden {
   position: absolute;
@@ -134,7 +132,7 @@ button {
 }
 /* The range input is hidden, so show its keyboard focus on the chart */
 .plot:has(input:focus-visible) svg {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--primary-color);
   outline-offset: 4px;
   border-radius: 4px;
 }
@@ -153,7 +151,7 @@ line {
   vector-effect: non-scaling-stroke;
 }
 .grid {
-  stroke: #f0f1f4;
+  stroke: var(--subtle-border-color);
   stroke-width: 1;
 }
 .line {
@@ -163,7 +161,7 @@ line {
   stroke-linejoin: round;
 }
 .cursor {
-  stroke: var(--color-muted);
+  stroke: var(--secondary-text-color);
   stroke-dasharray: 3 4;
   opacity: 0.6;
 }
@@ -179,7 +177,7 @@ circle {
   font-size: 14px;
   min-width: 64px;
   text-align: right;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 .prices > span {
   position: absolute;
@@ -197,8 +195,8 @@ circle {
 }
 .current-price {
   z-index: 1;
-  color: white;
-  background: var(--color-ink);
+  color: var(--background-color);
+  background: var(--text-color);
   border-radius: 8px;
   padding: 5px 6px;
 }
@@ -208,24 +206,24 @@ circle {
   gap: 12px;
   padding-right: 76px;
   font-size: 14px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 .range-change {
   font-size: 12px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   margin-top: 16px;
 }
 .quote-facts {
   margin: 28px 0 0;
   padding-top: 24px;
-  border-top: 1px solid #eceef2;
+  border-top: 1px solid var(--subtle-border-color);
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 dt {
   font-size: 14px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 dd {
   margin: 6px 0 0;
@@ -234,19 +232,19 @@ dd {
 }
 .quote-note {
   font-size: 12px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   margin-top: 12px;
 }
 .message {
   padding: 32px 0;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   font-size: 14px;
   line-height: 1.6;
 }
 .message button {
   margin-top: 12px;
-  background: var(--color-track);
-  color: var(--color-ink);
+  background: var(--muted-background-color);
+  color: var(--text-color);
 }
 .mobile-chart-toggle {
   display: none;
@@ -317,7 +315,7 @@ dd {
     padding: 0;
     margin-top: 8px;
     font-size: 12px;
-    color: var(--color-muted);
+    color: var(--secondary-text-color);
   }
   .readout {
     margin-top: 10px;
@@ -339,10 +337,10 @@ dd {
 }
 
 .symbol-button:hover {
-  color: var(--color-accent);
+  color: var(--primary-color);
 }
 .ranges button:not([aria-pressed='true']):hover {
-  background: #e9ebf0;
+  background: var(--control-background-color);
 }
 @media (pointer: coarse) {
   .symbol-button,
@@ -368,10 +366,10 @@ dd {
   min-width: 240px;
 }
 .pending strong {
-  color: var(--color-track);
+  color: var(--muted-background-color);
 }
 .pending .change {
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 @media (max-width: 767.98px) {
   .quote {

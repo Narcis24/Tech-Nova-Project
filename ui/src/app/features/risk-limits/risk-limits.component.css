@@ -9,18 +9,18 @@ h1 {
   margin: 0 0 20px;
   font-size: 14px;
   line-height: 1.6;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 
 .account {
   margin: 0 0 12px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 
 .empty {
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 
 .load-error {
@@ -32,7 +32,7 @@ h1 {
 
 .load-error p {
   margin: 0;
-  color: var(--color-loss);
+  color: var(--loss-color);
 }
 
 .cards {
@@ -51,7 +51,7 @@ h1 {
   gap: 12px;
   padding: 18px;
   border-radius: 16px;
-  background: var(--color-card);
+  background: var(--card-background-color);
 }
 
 .card-head {
@@ -69,15 +69,15 @@ h1 {
 .badge {
   padding: 3px 8px;
   border-radius: 999px;
-  background: var(--color-track);
+  background: var(--muted-background-color);
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 
 .badge.custom {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--primary-background-color);
+  color: var(--primary-color);
 }
 
 /* On/off switch: a pill with a sliding knob */
@@ -90,7 +90,7 @@ h1 {
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: #c9ccd6;
+  background: var(--switch-background-color);
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -103,13 +103,13 @@ h1 {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--color-surface);
-  box-shadow: 0 1px 3px #14182b33;
+  background: var(--text-on-primary-color);
+  box-shadow: var(--switch-knob-shadow);
   transition: transform 0.15s;
 }
 
 .switch[aria-checked='true'] {
-  background: var(--color-accent);
+  background: var(--primary-color);
 }
 
 .switch[aria-checked='true']::after {
@@ -125,7 +125,7 @@ h1 {
 .reset:focus-visible,
 button:focus-visible,
 input:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--primary-color);
   outline-offset: 2px;
 }
 
@@ -137,7 +137,7 @@ input:focus-visible {
 
 .threshold label {
   font-size: 14px;
-  color: var(--color-ink);
+  color: var(--text-color);
 }
 
 .threshold-row {
@@ -155,9 +155,9 @@ input:focus-visible {
   padding: 0 14px;
   box-sizing: border-box;
   border-radius: 12px;
-  background: var(--color-surface);
+  background: var(--elevated-background-color);
   font-size: 17px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 
 .input input {
@@ -166,7 +166,7 @@ input:focus-visible {
   border: 0;
   background: none;
   font: inherit;
-  color: var(--color-ink);
+  color: var(--text-color);
   font-variant-numeric: tabular-nums;
 }
 
@@ -175,12 +175,12 @@ input:focus-visible {
 }
 
 .input:focus-within {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--primary-color);
   outline-offset: 2px;
 }
 
 .input:has(input[aria-invalid='true']) {
-  outline: 2px solid var(--color-loss);
+  outline: 2px solid var(--loss-color);
 }
 
 .primary,
@@ -195,8 +195,8 @@ input:focus-visible {
 }
 
 .primary {
-  background: var(--color-ink);
-  color: var(--color-surface);
+  background: var(--text-color);
+  color: var(--background-color);
 }
 
 .primary:disabled {
@@ -205,20 +205,20 @@ input:focus-visible {
 }
 
 .secondary {
-  background: var(--color-track);
-  color: var(--color-ink);
+  background: var(--muted-background-color);
+  color: var(--text-color);
 }
 
 .off-note {
   margin: 0;
   font-size: 14px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 
 .field-error {
   margin: 0;
   font-size: 14px;
-  color: var(--color-loss);
+  color: var(--loss-color);
 }
 
 .reset {
@@ -229,7 +229,7 @@ input:focus-visible {
   font: inherit;
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-accent);
+  color: var(--primary-color);
   cursor: pointer;
 }
 

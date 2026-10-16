@@ -1,12 +1,14 @@
 /* Shared by the sign-in, forgot password and reset password pages. Colours taken from the design PDF. */
 :host {
-  --ink: #13182b;
-  --muted: #6b7083;
-  --field: #f3f4f8;
-  --link: #2d44e0;
-  --tagline: #b9bed1;
-  --danger: #b42318;
-  --danger-bg: #fdecea;
+  --auth-text-color: #13182b;
+  --auth-brand-background-color: #13182b;
+  --auth-button-background-color: #13182b;
+  --auth-secondary-text-color: #6b7083;
+  --auth-input-background-color: #f3f4f8;
+  --auth-link-color: #2d44e0;
+  --auth-tagline-color: #b9bed1;
+  --auth-error-color: #b42318;
+  --auth-error-background-color: #fdecea;
 }
 
 .page {
@@ -24,7 +26,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--ink);
+  background: var(--auth-brand-background-color);
   border-radius: 24px;
   color: #fff;
   text-align: center;
@@ -43,7 +45,7 @@
 .tagline {
   margin: 16px 0 0;
   font-size: 22px;
-  color: var(--tagline);
+  color: var(--auth-tagline-color);
 }
 
 /* Right: the form, centred */
@@ -65,20 +67,20 @@ h1 {
   margin: 0;
   font-size: 32px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--auth-text-color);
 }
 
 .subtitle {
   margin: 4px 0 24px;
   font-size: 16px;
-  color: var(--muted);
+  color: var(--auth-secondary-text-color);
 }
 
 label {
   margin: 16px 0 8px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--auth-text-color);
 }
 
 input {
@@ -88,14 +90,14 @@ input {
   box-sizing: border-box;
   border: 2px solid transparent;
   border-radius: 10px;
-  background: var(--field);
+  background: var(--auth-input-background-color);
   font: inherit;
-  color: var(--ink);
+  color: var(--auth-text-color);
 }
 
 input:focus {
   outline: none;
-  border-color: var(--link);
+  border-color: var(--auth-link-color);
 }
 
 /* Edge adds its own reveal button; we already have Show/Hide */
@@ -123,14 +125,14 @@ input::-ms-clear {
   font: inherit;
   font-size: 14px;
   font-weight: 600;
-  color: var(--link);
+  color: var(--auth-link-color);
   cursor: pointer;
 }
 
 .field-error {
   margin: 6px 0 0;
   font-size: 14px;
-  color: var(--danger);
+  color: var(--auth-error-color);
 }
 
 .alert {
@@ -140,8 +142,8 @@ input::-ms-clear {
   gap: 12px;
   padding: 12px 8px 12px 16px;
   border-radius: 10px;
-  background: var(--danger-bg);
-  color: var(--danger);
+  background: var(--auth-error-background-color);
+  color: var(--auth-error-color);
   font-size: 14px;
   font-weight: 600;
 }
@@ -150,8 +152,8 @@ input::-ms-clear {
 .notice {
   padding: 16px;
   border-radius: 10px;
-  background: var(--field);
-  color: var(--ink);
+  background: var(--auth-input-background-color);
+  color: var(--auth-text-color);
   font-size: 15px;
   line-height: 1.5;
 }
@@ -171,7 +173,7 @@ input::-ms-clear {
   height: 48px;
   border: 0;
   border-radius: 12px;
-  background: var(--ink);
+  background: var(--auth-button-background-color);
   color: #fff;
   font: inherit;
   font-weight: 600;
@@ -189,7 +191,7 @@ input::-ms-clear {
 
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid var(--link);
+  outline: 2px solid var(--auth-link-color);
   outline-offset: 2px;
 }
 
@@ -224,7 +226,7 @@ a:focus-visible {
 }
 
 .back a {
-  color: var(--link);
+  color: var(--auth-link-color);
   font-weight: 600;
 }
 

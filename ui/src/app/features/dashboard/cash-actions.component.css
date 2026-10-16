@@ -11,16 +11,16 @@ button {
   padding: 0 22px;
   border: 0;
   border-radius: 12px;
-  background: var(--color-track);
-  color: var(--color-ink);
+  background: var(--muted-background-color);
+  color: var(--text-color);
   font: inherit;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
 }
 .primary {
-  background: var(--color-ink);
-  color: white;
+  background: var(--text-color);
+  color: var(--background-color);
 }
 button:hover {
   filter: brightness(0.94);
@@ -46,7 +46,7 @@ h2 {
 }
 .available,
 #cash-amount-help {
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   font-size: 14px;
 }
 label {
@@ -58,12 +58,12 @@ input {
   width: 100%;
   min-height: 44px;
   padding: 10px 12px;
-  border: 1px solid #d3d7e0;
+  border: 1px solid var(--strong-border-color);
   border-radius: 8px;
   font: inherit;
 }
 .error {
-  color: var(--color-loss);
+  color: var(--loss-color);
   font-size: 14px;
 }
 dialog {
@@ -73,14 +73,14 @@ dialog {
   overflow: auto;
   overscroll-behavior: contain;
   padding: 28px;
-  border: 1px solid #e4e7ec;
+  border: 1px solid var(--border-color);
   border-radius: 20px;
-  background: var(--color-surface);
-  color: var(--color-ink);
-  box-shadow: 0 24px 80px #14182b33;
+  background: var(--elevated-background-color);
+  color: var(--text-color);
+  box-shadow: var(--dialog-shadow);
 }
 dialog::backdrop {
-  background: #14182b66;
+  background: var(--overlay-color);
 }
 .success {
   position: fixed;
@@ -90,11 +90,11 @@ dialog::backdrop {
   max-width: calc(100vw - 48px);
   box-sizing: border-box;
   padding: 14px 20px;
-  border: 1px solid #d6dfed;
+  border: 1px solid var(--toast-border-color);
   border-radius: 14px;
-  background: var(--color-surface);
-  color: var(--color-gain);
-  box-shadow: 0 8px 32px #14182b14;
+  background: var(--elevated-background-color);
+  color: var(--gain-color);
+  box-shadow: var(--floating-shadow);
 }
 @media (max-width: 479.98px) {
   dialog {
