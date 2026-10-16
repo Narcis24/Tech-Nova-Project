@@ -16,6 +16,7 @@ import java.util.List;
 public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Order> findByAccountIdOrderByCreatedOnDesc(String accountId);
     List<Order> findByStatusAndOrderType(OrderStatus status, OrderType orderType);
+    List<Order> findByStatus(OrderStatus status);
     boolean existsByIdempotencyKey(String idempotencyKey);
 
     /**

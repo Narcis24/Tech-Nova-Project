@@ -18,6 +18,7 @@ import com.neueda.app.services.OrderValidator.ValidatedOrder;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 
@@ -73,29 +74,7 @@ public class OrderService {
         );
 
         orderRepository.save(order);
-        
-        // Publish ORDER_PLACED event to Kafka (asynchronous execution will happen in ExecutionEngine)
-        OrderPlacedEvent event = new OrderPlacedEvent(
-            order.getId(),
-            order.getAccountId(),
-            order.getSymbol(),
-            order.getSide().toString(),
-            order.getOrderType().toString(),
-            order.getQuantity(),
-            order.getPrice(),  // reference price for MARKET, limit price for LIMIT
-            order.getIdempotencyKey()
-        );
-
-        log.info("Publishing ORDER_PLACED event: orderId={}, orderType={}, symbol={}", 
-            order.getId(), order.getOrderType(), order.getSymbol());
-
-        eventProducerService.publishEvent(
-            Topics.ORDER_REQUEST,
-            order.getId().toString(),
-            EventTypes.ORDER_PLACED,
-            "OrderService",
-            event
-        );
+        publishPlaced(order);
 
         return new OrderResponse(order);
     }
@@ -126,5 +105,42 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND + orderId));
         return new OrderResponse(order);
+    }
+
+    /**
+     * Sends every PENDING order to the execution engine again. Called when the engine restarts,
+     * because it keeps waiting orders only in memory. Safe to repeat: an order leaves PENDING once.
+     */
+    public void republishPending() {
+        List<Order> pending = orderRepository.findByStatus(OrderStatus.PENDING);
+        log.info("Execution engine started, sending {} pending orders again", pending.size());
+        for (Order order : pending) {
+            publishPlaced(order);
+        }
+    }
+
+    private void publishPlaced(Order order) {
+        // Publish ORDER_PLACED event to Kafka (asynchronous execution will happen in ExecutionEngine)
+        OrderPlacedEvent event = new OrderPlacedEvent(
+            order.getId(),
+            order.getAccountId(),
+            order.getSymbol(),
+            order.getSide().toString(),
+            order.getOrderType().toString(),
+            order.getQuantity(),
+            order.getPrice(),  // reference price for MARKET, limit price for LIMIT
+            order.getIdempotencyKey()
+        );
+
+        log.info("Publishing ORDER_PLACED event: orderId={}, orderType={}, symbol={}",
+            order.getId(), order.getOrderType(), order.getSymbol());
+
+        eventProducerService.publishEvent(
+            Topics.ORDER_REQUEST,
+            order.getId().toString(),
+            EventTypes.ORDER_PLACED,
+            "OrderService",
+            event
+        );
     }
 }

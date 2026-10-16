@@ -3,6 +3,7 @@ package com.neueda.app.services;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.enums.AssetClass;
+import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.enums.OrderType;
 import com.neueda.app.dtos.OrderResponse;
@@ -22,6 +23,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -145,6 +148,24 @@ class OrderServiceTest {
         verify(eventProducerService).publishEvent(
             eq("order-request"), anyString(), eq("ORDER_PLACED"), anyString(), any());
         verifyNoInteractions(positionRepository);
+    }
+
+    @Test
+    void republishPendingSendsEveryPendingOrderToTheEngineAgain() {
+        LocalDateTime placed = LocalDateTime.of(2026, 10, 16, 7, 0);
+        Order limit = new Order(UUID.randomUUID(), activeAccount(), aapl(), OrderSide.BUY, OrderType.LIMIT, 10,
+            new BigDecimal("150.00"), "key-a", placed);
+        Order market = new Order(UUID.randomUUID(), activeAccount(), aapl(), OrderSide.BUY, OrderType.MARKET, 5,
+            new BigDecimal("151.00"), "key-b", placed);
+        when(orderRepository.findByStatus(OrderStatus.PENDING)).thenReturn(List.of(limit, market));
+
+        orderService.republishPending();
+
+        verify(eventProducerService).publishEvent(
+            eq("order-request"), eq(limit.getId().toString()), eq("ORDER_PLACED"), anyString(), any());
+        verify(eventProducerService).publishEvent(
+            eq("order-request"), eq(market.getId().toString()), eq("ORDER_PLACED"), anyString(), any());
+        verify(orderRepository, never()).save(any());
     }
 
     @Test

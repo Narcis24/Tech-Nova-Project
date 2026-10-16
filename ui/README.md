@@ -74,6 +74,7 @@ From `ui/`, with the UI and backends already running:
 ```bash
 npx playwright install chromium
 UI_BASE_URL=http://localhost:8091 npm run test:smoke
+npx playwright show-report          # HTML report of the last run on http://localhost:9323
 ```
 
 This creates temporary users and funded test accounts in that environment.

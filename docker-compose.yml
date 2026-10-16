@@ -108,7 +108,8 @@ services:
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
       MAIL_FROM: TechNova <no-reply@technova.local>
-      RESET_URL: ${RESET_URL:-http://localhost:4200/reset-password}
+      # The page the reset email links to: the ui container by default; set RESET_URL in .env when using ng serve
+      RESET_URL: ${RESET_URL:-http://localhost:${UI_PORT:-8091}/reset-password}
 
     ports:
       - "${AUTH_PORT:-8082}:8082"
