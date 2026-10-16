@@ -15,11 +15,12 @@
     "generate:auth-client": "openapi-generator-cli generate -i ../contracts/auth-api.json -g typescript-angular -o src/app/generated/auth-api-client --additional-properties=ngVersion=19.2.0,providedInRoot=true,serviceSuffix=Api",
     "generate:clients": "npm run generate:trading-client && npm run generate:auth-client",
     "lint": "eslint src e2e --max-warnings=0",
+    "lint:css": "stylelint \"src/**/*.css\"",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:ci": "ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage",
     "test:smoke": "playwright test --config=e2e/playwright.config.ts",
-    "check": "npm run lint && npm run typecheck:e2e && npm run format:check && npm run test:ci && npm run build",
+    "check": "npm run lint && npm run lint:css && npm run typecheck:e2e && npm run format:check && npm run test:ci && npm run build",
     "typecheck:e2e": "tsc --project e2e/tsconfig.json"
   },
   "private": true,
@@ -53,6 +54,7 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "prettier": "3.9.10",
+    "stylelint": "17.16.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.33.1"
   }
