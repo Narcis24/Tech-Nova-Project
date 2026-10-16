@@ -26,7 +26,7 @@ h1 {
 .order {
   padding: 32px;
   border-radius: 24px;
-  background: var(--color-card);
+  background: var(--card-background-color);
 }
 .summary {
   display: flex;
@@ -37,7 +37,7 @@ h1 {
 }
 .eyebrow {
   font-size: 13px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   margin-bottom: 8px;
 }
 h2 {
@@ -47,18 +47,18 @@ h2 {
 .status {
   padding: 8px 12px;
   border-radius: 999px;
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--primary-background-color);
+  color: var(--primary-color);
   font-size: 13px;
   font-weight: 600;
 }
 .status.rejected {
   background: #fcefe6;
-  color: var(--color-loss);
+  color: var(--loss-color);
 }
 .status.filled {
   background: #e2f1e9;
-  color: var(--color-gain);
+  color: var(--gain-color);
 }
 .explanation {
   margin: 24px 0;
@@ -75,7 +75,7 @@ dl {
 }
 dt {
   font-size: 13px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 dd {
   margin: 7px 0 0;
@@ -91,7 +91,7 @@ dd {
 .note {
   font-size: 12px;
   line-height: 1.6;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   margin-bottom: 24px;
 }
 .actions {
@@ -106,7 +106,7 @@ button,
   padding: 12px 18px;
   border: 0;
   border-radius: 12px;
-  background: var(--color-accent);
+  background: var(--primary-color);
   color: white;
   font: inherit;
   font-size: 14px;
@@ -121,13 +121,13 @@ button:disabled {
 .heading button,
 .secondary {
   background: white !important;
-  color: var(--color-ink) !important;
+  color: var(--text-color) !important;
   box-shadow: 0 0 0 1px #dfe3eb;
 }
 .notice {
   padding: 24px;
   margin: 20px 0;
-  background: var(--color-card);
+  background: var(--card-background-color);
   border-radius: 16px;
   line-height: 1.6;
 }

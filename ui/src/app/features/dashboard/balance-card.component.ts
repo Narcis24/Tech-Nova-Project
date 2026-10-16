@@ -33,7 +33,7 @@ import { PortfolioMetricsResponse } from '../../generated/trading-api-client';
     .label,
     .cash span,
     .change span {
-      color: var(--color-muted);
+      color: var(--secondary-text-color);
     }
     .label {
       font-size: 14px;
@@ -56,7 +56,7 @@ import { PortfolioMetricsResponse } from '../../generated/trading-api-client';
     .previous {
       margin-top: 4px;
       font-size: 14px;
-      color: var(--color-muted);
+      color: var(--secondary-text-color);
     }
     .cash {
       display: flex;
@@ -70,10 +70,10 @@ import { PortfolioMetricsResponse } from '../../generated/trading-api-client';
       font-weight: 500;
     }
     .gain {
-      color: var(--color-gain);
+      color: var(--gain-color);
     }
     .loss {
-      color: var(--color-loss);
+      color: var(--loss-color);
     }
   `,
 })

@@ -16,19 +16,19 @@ button {
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
-  background: var(--color-surface);
-  color: var(--color-accent);
+  background: var(--background-color);
+  color: var(--primary-color);
   cursor: pointer;
 }
 button {
-  color: var(--color-loss);
+  color: var(--loss-color);
 }
 a:hover,
 button:not(:disabled):hover {
-  background: var(--color-accent-soft);
+  background: var(--primary-background-color);
 }
 button:disabled {
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   cursor: default;
 }
 @media (pointer: coarse) {

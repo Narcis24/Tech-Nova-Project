@@ -14,7 +14,7 @@
   font-weight: 700;
   font-stretch: 125%;
   letter-spacing: -0.02em;
-  color: var(--color-ink);
+  color: var(--text-color);
   text-decoration: none;
 }
 
@@ -23,7 +23,7 @@
   gap: 2px;
   padding: 4px;
   border-radius: 12px;
-  background: var(--color-track);
+  background: var(--muted-background-color);
 }
 
 .tab {
@@ -32,22 +32,22 @@
   min-height: 40px;
   padding: 0 18px;
   border-radius: 9px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   text-decoration: none;
   font-size: 15px;
   font-weight: 500;
 }
 
 .tab:hover {
-  color: var(--color-ink);
+  color: var(--text-color);
 }
 
 .tab.active {
-  background: var(--color-surface);
+  background: var(--background-color);
   box-shadow:
     0 1px 2px rgba(20, 24, 43, 0.08),
     0 0 0 1px rgba(20, 24, 43, 0.04);
-  color: var(--color-ink);
+  color: var(--text-color);
   font-weight: 600;
 }
 
@@ -66,8 +66,8 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: var(--color-ink);
-  color: var(--color-surface);
+  background: var(--text-color);
+  color: var(--background-color);
   font-size: 14px;
   font-weight: 600;
 }
@@ -91,11 +91,11 @@
   padding: 0 14px;
   border: 0;
   border-radius: 12px;
-  background: var(--color-track);
+  background: var(--muted-background-color);
   font: inherit;
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-ink);
+  color: var(--text-color);
   cursor: pointer;
 }
 
@@ -125,7 +125,7 @@
   z-index: 20;
   padding: 6px;
   border-radius: 12px;
-  background: var(--color-surface);
+  background: var(--background-color);
   box-shadow:
     0 8px 24px rgba(20, 24, 43, 0.12),
     0 0 0 1px rgba(20, 24, 43, 0.06);
@@ -143,18 +143,18 @@
   background: none;
   font: inherit;
   font-size: 15px;
-  color: var(--color-ink);
+  color: var(--text-color);
   cursor: pointer;
 }
 
 .account-option:hover {
-  background: var(--color-track);
+  background: var(--muted-background-color);
 }
 
 /* The selected account: a soft blue chip, distinct from the grey hover */
 .account-option[aria-current='true'] {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--primary-background-color);
+  color: var(--primary-color);
   font-weight: 600;
 }
 
@@ -165,13 +165,13 @@
   background: none;
   font: inherit;
   font-size: 15px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   text-decoration: underline;
   cursor: pointer;
 }
 
 .sign-out:hover {
-  color: var(--color-ink);
+  color: var(--text-color);
 }
 
 /* The avatar and name are one button that opens the user menu, on every screen size */
@@ -184,13 +184,13 @@
   border-radius: 999px;
   background: none;
   font: inherit;
-  color: var(--color-ink);
+  color: var(--text-color);
   cursor: pointer;
 }
 
 .menu-button:hover,
 .menu-button[aria-expanded='true'] {
-  background: var(--color-track);
+  background: var(--muted-background-color);
 }
 
 .menu {
@@ -204,7 +204,7 @@
   min-width: 180px;
   padding: 12px;
   border-radius: 12px;
-  background: var(--color-surface);
+  background: var(--background-color);
   box-shadow:
     0 8px 24px rgba(20, 24, 43, 0.12),
     0 0 0 1px rgba(20, 24, 43, 0.06);
@@ -221,7 +221,7 @@
 }
 
 .menu-account {
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 
 .menu-change-account {
@@ -231,14 +231,14 @@
   margin-top: 8px;
   min-height: 44px;
   border-radius: 10px;
-  color: var(--color-ink);
+  color: var(--text-color);
   font-weight: 600;
   text-decoration: none;
 }
 
 .menu-change-account:hover {
-  background: var(--color-track);
-  color: var(--color-ink);
+  background: var(--muted-background-color);
+  color: var(--text-color);
 }
 
 .menu-sign-out {
@@ -246,10 +246,10 @@
   min-height: 44px;
   border: 0;
   border-radius: 10px;
-  background: var(--color-track);
+  background: var(--muted-background-color);
   font: inherit;
   font-weight: 600;
-  color: var(--color-ink);
+  color: var(--text-color);
   cursor: pointer;
 }
 

@@ -15,7 +15,7 @@ h1 {
   margin: 0;
   font-size: 17px;
   font-weight: 500;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 h2 {
   margin: 0;
@@ -33,24 +33,24 @@ p {
 }
 .refresh span {
   font-size: 12px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 .summary {
   align-items: flex-end;
 }
 .description {
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   font-size: 15px;
   line-height: 1.5;
 }
 .gain {
-  color: var(--color-gain);
+  color: var(--gain-color);
 }
 .loss {
-  color: var(--color-loss);
+  color: var(--loss-color);
 }
 .muted {
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 .allocation {
   display: flex;
@@ -81,7 +81,7 @@ app-position-card {
 }
 .cash-card span {
   font-size: 14px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 .cash-card a {
   font-size: 14px;
@@ -100,7 +100,7 @@ app-market-overview {
   flex: 1 1 240px;
   min-width: 0;
   box-sizing: border-box;
-  background: var(--color-card);
+  background: var(--card-background-color);
   border-radius: 20px;
   padding: 24px;
   display: flex;
@@ -130,20 +130,20 @@ li {
 }
 .order-status {
   font-size: 13px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 .order-status.loss {
-  color: var(--color-loss);
+  color: var(--loss-color);
 }
 .order-message {
   display: block;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   font-size: 14px;
 }
 .notice {
   padding: 24px;
   border-radius: 14px;
-  background: var(--color-card);
+  background: var(--card-background-color);
   line-height: 1.6;
 }
 .notice p {
@@ -156,8 +156,8 @@ button {
   padding: 0 16px;
   font: inherit;
   font-size: 14px;
-  background: var(--color-track);
-  color: var(--color-ink);
+  background: var(--muted-background-color);
+  color: var(--text-color);
   cursor: pointer;
 }
 button:disabled {
@@ -167,7 +167,7 @@ button:disabled {
 .text-button {
   min-height: 0;
   padding: 0;
-  color: var(--color-accent);
+  color: var(--primary-color);
   background: none;
   text-decoration: underline;
 }

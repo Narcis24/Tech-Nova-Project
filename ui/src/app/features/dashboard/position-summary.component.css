@@ -25,7 +25,7 @@ td {
 }
 thead th {
   font-size: 13px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   white-space: nowrap;
 }
 th:first-child {
@@ -35,7 +35,7 @@ th:first-child {
 tbody th a {
   font-weight: 600;
   text-decoration: none;
-  color: var(--color-ink);
+  color: var(--text-color);
 }
 th:last-child,
 td:last-child {
@@ -45,16 +45,16 @@ td:last-child {
   display: block;
   font-size: 13px;
   margin-top: 4px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 td.gain .name {
   color: inherit;
 }
 .gain {
-  color: var(--color-gain);
+  color: var(--gain-color);
 }
 .loss {
-  color: var(--color-loss);
+  color: var(--loss-color);
 }
 app-action-buttons {
   min-width: 110px;
@@ -75,7 +75,7 @@ tbody tr:hover {
     justify-content: space-between;
     gap: 12px;
     margin: 0 0 10px;
-    color: var(--color-muted);
+    color: var(--secondary-text-color);
     font-size: 12px;
   }
 }

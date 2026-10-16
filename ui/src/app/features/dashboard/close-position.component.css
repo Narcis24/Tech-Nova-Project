@@ -4,7 +4,7 @@ dialog {
   border: 0;
   border-radius: 18px;
   padding: 28px;
-  color: var(--color-ink);
+  color: var(--text-color);
   font: inherit;
   box-shadow: 0 20px 80px #14182b33;
 }
@@ -29,19 +29,19 @@ button {
   padding: 0 16px;
   border: 0;
   border-radius: 10px;
-  background: var(--color-track);
-  color: var(--color-ink);
+  background: var(--muted-background-color);
+  color: var(--text-color);
   font: inherit;
   font-size: 14px;
   cursor: pointer;
 }
 button:first-child {
-  background: var(--color-loss);
+  background: var(--loss-color);
   color: white;
 }
 button:disabled {
   opacity: 0.6;
 }
 .error {
-  color: var(--color-loss);
+  color: var(--loss-color);
 }

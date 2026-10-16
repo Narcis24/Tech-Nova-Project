@@ -10,17 +10,17 @@
   position: relative;
 }
 .order-ticket {
-  --trade-side: var(--color-accent);
+  --trade-side: var(--primary-color);
   flex: 1 1 380px;
   max-width: 460px;
   min-width: 0;
   box-sizing: border-box;
-  background: var(--color-card);
+  background: var(--card-background-color);
   border-radius: 24px;
   padding: 32px;
 }
 .order-ticket.sell {
-  --trade-side: var(--color-sell);
+  --trade-side: var(--sell-color);
 }
 fieldset {
   display: flex;
@@ -49,12 +49,12 @@ p {
 }
 .ticket-heading span {
   font-size: 12px;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 button,
 input {
   font: inherit;
-  color: var(--color-ink);
+  color: var(--text-color);
 }
 button {
   border: 0;
@@ -78,7 +78,7 @@ button:disabled {
   background: transparent;
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 .side-control button[aria-pressed='true'] {
   background: var(--trade-side);
@@ -98,7 +98,7 @@ button:disabled {
   box-shadow: 0 0 0 1px #e1e4ea;
 }
 .order-types button[aria-pressed='true'] {
-  box-shadow: 0 0 0 2px var(--color-ink);
+  box-shadow: 0 0 0 2px var(--text-color);
 }
 .order-types strong {
   display: block;
@@ -110,7 +110,7 @@ button:disabled {
   margin-top: 4px;
   font-size: 14px;
   line-height: 1.35;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 .inputs {
   display: flex;
@@ -152,7 +152,7 @@ input {
   box-shadow: 0 0 0 1px #e1e4ea;
 }
 .presets button[aria-pressed='true'] {
-  background: var(--color-ink);
+  background: var(--text-color);
   color: white;
   box-shadow: none;
 }
@@ -169,7 +169,7 @@ input {
   flex: 0 0 44px;
   height: 44px;
   border-radius: 9px;
-  background: var(--color-track);
+  background: var(--muted-background-color);
   font-size: 20px;
 }
 .limit-control input {
@@ -213,7 +213,7 @@ input {
   top: 38px;
   width: 2px;
   height: 18px;
-  background: var(--color-ink);
+  background: var(--text-color);
 }
 .reference-label {
   position: absolute;
@@ -259,7 +259,7 @@ input {
   gap: 12px;
 }
 .order-totals dt {
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
 }
 dd {
   margin: 0;
@@ -270,7 +270,7 @@ dd {
   font-weight: 600;
 }
 .total-row dt {
-  color: var(--color-ink);
+  color: var(--text-color);
 }
 .submit-order {
   min-height: 54px;
@@ -283,7 +283,7 @@ dd {
 }
 .submit-order:disabled {
   background: #e4e7ec;
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   opacity: 1;
 }
 .field-error {
@@ -295,14 +295,14 @@ dd {
   line-height: 1.5;
 }
 .data-note {
-  color: var(--color-muted);
+  color: var(--secondary-text-color);
   font-size: 12px;
   line-height: 1.5;
 }
 .text-button {
   padding: 0;
   background: none;
-  color: var(--color-accent);
+  color: var(--primary-color);
   text-decoration: underline;
   font-size: inherit;
 }
@@ -322,14 +322,14 @@ dd {
 .instrument-picker input {
   max-width: 360px;
   min-height: 44px;
-  background: var(--color-track);
+  background: var(--muted-background-color);
   font-size: 15px;
   box-shadow: none;
 }
 .instrument-picker button {
   padding: 0 16px;
   border-radius: 10px;
-  background: var(--color-track);
+  background: var(--muted-background-color);
 }
 .no-account {
   display: flex;
@@ -360,7 +360,7 @@ dd {
     top: -10px;
     width: 36px;
     height: 44px;
-    color: var(--color-ink);
+    color: var(--text-color);
     z-index: 1;
   }
   .order-ticket {
@@ -378,14 +378,14 @@ dd {
     display: none;
   }
   .side-control {
-    background: var(--color-track);
+    background: var(--muted-background-color);
   }
   .order-types {
     display: flex;
     gap: 4px;
     padding: 4px;
     border-radius: 14px;
-    background: var(--color-track);
+    background: var(--muted-background-color);
   }
   .order-types button {
     flex: 1;
@@ -417,7 +417,7 @@ dd {
     min-height: 50px;
     padding: 0 14px;
     font-size: 19px;
-    background: var(--color-track);
+    background: var(--muted-background-color);
     box-shadow: none;
   }
   .desktop-only {
@@ -425,7 +425,7 @@ dd {
   }
   .limit-control {
     padding: 0;
-    background: var(--color-track);
+    background: var(--muted-background-color);
     box-shadow: none;
   }
   .limit-control button {
@@ -435,11 +435,11 @@ dd {
     padding: 0 14px;
     min-height: 50px;
     text-align: left;
-    background: var(--color-track);
+    background: var(--muted-background-color);
   }
   .execution-card {
     padding: 16px 16px 12px;
-    background: var(--color-card);
+    background: var(--card-background-color);
   }
   .order-totals {
     gap: 8px;
@@ -474,7 +474,7 @@ dd {
 }
 .presets button:not([aria-pressed='true']):hover,
 .limit-control button:hover {
-  background: var(--color-accent-soft);
+  background: var(--primary-background-color);
 }
 .submit-order:not(:disabled):hover {
   filter: brightness(0.94);
@@ -527,8 +527,8 @@ dd {
   margin: 0;
   font-size: 12px;
   line-height: 14px;
-  color: var(--color-loss);
+  color: var(--loss-color);
 }
 input[aria-invalid='true'] {
-  box-shadow: 0 0 0 1px var(--color-loss);
+  box-shadow: 0 0 0 1px var(--loss-color);
 }
