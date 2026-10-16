@@ -34,7 +34,7 @@ export class MarketOverviewComponent {
           .map((a) => a.assetClass)
           .filter((value): value is string => !!value),
       ),
-    ].sort(),
+    ].sort((a, b) => a.localeCompare(b)),
   );
   readonly currencies = computed(() =>
     [
@@ -43,7 +43,7 @@ export class MarketOverviewComponent {
           .map((a) => a.currency)
           .filter((value): value is string => !!value),
       ),
-    ].sort(),
+    ].sort((a, b) => a.localeCompare(b)),
   );
   readonly hasFilters = computed(() => !!(this.query().trim() || this.assetClass() || this.currency()));
   readonly visible = computed(() => {

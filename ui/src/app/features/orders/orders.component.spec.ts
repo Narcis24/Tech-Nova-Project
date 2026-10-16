@@ -17,8 +17,26 @@ const NOW = new Date().toISOString();
 const LAST_WEEK = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
 const ORDERS: OrderResponse[] = [
-  { orderId: 'o1', symbol: 'AAPL', side: 'BUY', orderType: 'MARKET', quantity: 10, price: 180.5, status: 'FILLED', createdOn: NOW },
-  { orderId: 'o2', symbol: 'MSFT', side: 'BUY', orderType: 'LIMIT', quantity: 5, price: 400, status: 'PENDING', createdOn: NOW },
+  {
+    orderId: 'o1',
+    symbol: 'AAPL',
+    side: 'BUY',
+    orderType: 'MARKET',
+    quantity: 10,
+    price: 180.5,
+    status: 'FILLED',
+    createdOn: NOW,
+  },
+  {
+    orderId: 'o2',
+    symbol: 'MSFT',
+    side: 'BUY',
+    orderType: 'LIMIT',
+    quantity: 5,
+    price: 400,
+    status: 'PENDING',
+    createdOn: NOW,
+  },
   {
     orderId: 'o3',
     symbol: 'TSLA',
@@ -30,7 +48,16 @@ const ORDERS: OrderResponse[] = [
     message: 'Only 1 share held',
     createdOn: LAST_WEEK,
   },
-  { orderId: 'o4', symbol: 'AAPL', side: 'SELL', orderType: 'MARKET', quantity: 2, price: 190, status: 'FILLED', createdOn: LAST_WEEK },
+  {
+    orderId: 'o4',
+    symbol: 'AAPL',
+    side: 'SELL',
+    orderType: 'MARKET',
+    quantity: 2,
+    price: 190,
+    status: 'FILLED',
+    createdOn: LAST_WEEK,
+  },
 ];
 
 describe('OrdersComponent', () => {

@@ -117,7 +117,9 @@ describe('RiskLimitsComponent', () => {
 
   it('shows a save error on that rule only and keeps what the user typed', () => {
     api.updateLimit.and.returnValue(
-      throwError(() => new HttpErrorResponse({ status: 400, error: { message: 'Threshold must be between 0 and 100' } })),
+      throwError(
+        () => new HttpErrorResponse({ status: 400, error: { message: 'Threshold must be between 0 and 100' } }),
+      ),
     );
     type(0, '30');
     saveButton(0).click();

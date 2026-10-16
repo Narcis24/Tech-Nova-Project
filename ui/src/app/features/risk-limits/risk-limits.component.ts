@@ -88,18 +88,24 @@ export class RiskLimitsComponent {
 
   saveThreshold(card: LimitCard): void {
     if (!this.canSave(card)) return;
-    this.save(card, this.api.updateLimit(this.accountId()!, card.limit.rule!, {
-      thresholdPct: Number(card.draft.trim()),
-      enabled: card.limit.enabled,
-    }));
+    this.save(
+      card,
+      this.api.updateLimit(this.accountId()!, card.limit.rule!, {
+        thresholdPct: Number(card.draft.trim()),
+        enabled: card.limit.enabled,
+      }),
+    );
   }
 
   toggle(card: LimitCard): void {
     if (card.saving) return;
-    this.save(card, this.api.updateLimit(this.accountId()!, card.limit.rule!, {
-      thresholdPct: Number(card.limit.thresholdPct),
-      enabled: !card.limit.enabled,
-    }));
+    this.save(
+      card,
+      this.api.updateLimit(this.accountId()!, card.limit.rule!, {
+        thresholdPct: Number(card.limit.thresholdPct),
+        enabled: !card.limit.enabled,
+      }),
+    );
   }
 
   reset(card: LimitCard): void {
@@ -127,7 +133,12 @@ export class RiskLimitsComponent {
 }
 
 function toCard(limit: RiskLimitResponse): LimitCard {
-  return { limit, draft: limit.thresholdPct == null ? '' : String(Number(limit.thresholdPct)), saving: false, error: null };
+  return {
+    limit,
+    draft: limit.thresholdPct == null ? '' : String(Number(limit.thresholdPct)),
+    saving: false,
+    error: null,
+  };
 }
 
 function saveError(error: unknown): string {

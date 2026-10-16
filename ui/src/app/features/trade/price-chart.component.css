@@ -119,9 +119,24 @@ button {
   visibility: hidden;
 }
 .plot {
+  position: relative;
   display: flex;
   gap: 12px;
   color: var(--color-accent);
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+/* The range input is hidden, so show its keyboard focus on the chart */
+.plot:has(input:focus-visible) svg {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+  border-radius: 4px;
 }
 svg {
   display: block;

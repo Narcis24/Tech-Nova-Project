@@ -55,7 +55,7 @@
 @if (view() === 'watchlist') {
   <label class="add"
     >Add an asset
-    <select #symbol aria-label="Asset to watch">
+    <select #symbol aria-label="Add an asset">
       <option value="">Choose an instrument</option>
       @for (asset of assets(); track asset.symbol) {
         <option [value]="asset.symbol">{{ asset.symbol }} — {{ asset.name }}</option>

@@ -2,7 +2,15 @@
   <div class="heading">
     <div class="instrument">
       <h1>
-        <button type="button" class="symbol-button" (click)="changeInstrument.emit()" aria-label="Change instrument">
+        <button
+          type="button"
+          class="symbol-button"
+          (click)="changeInstrument.emit()"
+          [attr.aria-label]="
+            'Change instrument: ' +
+            (normalizedSymbol() || (pendingSymbol() ? 'Pending instrument' : 'Select instrument'))
+          "
+        >
           {{ normalizedSymbol() || (pendingSymbol() ? '—' : 'Select instrument')
           }}<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4 3 3 3-3" /></svg>
         </button>
@@ -92,17 +100,27 @@
         >
       </div>
       <div class="plot">
+        <!-- Native range input gives keyboard, touch and screen reader support; the chart follows its value -->
+        <input
+          #session
+          class="visually-hidden"
+          type="range"
+          min="0"
+          [max]="visible().length - 1"
+          [value]="selectedIndex()"
+          [attr.aria-label]="normalizedSymbol() + ' session to inspect'"
+          [attr.aria-valuetext]="
+            (sessionDate(selected()?.date) | date: 'mediumDate' : 'UTC') + ', ' + (selected()?.close | currency: 'USD')
+          "
+          (input)="hovered.set(session.valueAsNumber)"
+        />
         <svg
           viewBox="0 0 640 220"
           preserveAspectRatio="none"
           role="img"
-          tabindex="0"
-          [attr.aria-label]="
-            normalizedSymbol() + ' daily closing prices. Use left and right arrows to inspect sessions.'
-          "
+          [attr.aria-label]="normalizedSymbol() + ' daily closing prices'"
           (pointermove)="pointAt($event)"
           (pointerleave)="hovered.set(null)"
-          (keydown)="move($event)"
         >
           <path class="grid" d="M0 16H640 M0 75H640 M0 133H640 M0 192H640" />
           <polyline class="line" [attr.points]="line()" />

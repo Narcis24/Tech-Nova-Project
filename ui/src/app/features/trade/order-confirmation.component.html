@@ -60,7 +60,9 @@
             <p>{{ warning.message }}</p>
             @if (warning.resultingPct != null && warning.limitPct != null) {
               <p class="figures">
-                {{ warning.resultingPct | number: '1.0-1' }}% after this order · {{ warning.limitSource === 'CUSTOM' ? 'your limit' : 'limit' }} {{ warning.limitPct | number: '1.0-1' }}%
+                {{ warning.resultingPct | number: '1.0-1' }}% after this order ·
+                {{ warning.limitSource === 'CUSTOM' ? 'your limit' : 'limit' }}
+                {{ warning.limitPct | number: '1.0-1' }}%
               </p>
             }
           </li>
