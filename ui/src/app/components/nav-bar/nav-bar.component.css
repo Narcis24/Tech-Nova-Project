@@ -43,10 +43,8 @@
 }
 
 .tab.active {
-  background: var(--background-color);
-  box-shadow:
-    0 1px 2px rgba(20, 24, 43, 0.08),
-    0 0 0 1px rgba(20, 24, 43, 0.04);
+  background: var(--elevated-background-color);
+  box-shadow: var(--card-shadow);
   color: var(--text-color);
   font-weight: 600;
 }
@@ -125,10 +123,8 @@
   z-index: 20;
   padding: 6px;
   border-radius: 12px;
-  background: var(--background-color);
-  box-shadow:
-    0 8px 24px rgba(20, 24, 43, 0.12),
-    0 0 0 1px rgba(20, 24, 43, 0.06);
+  background: var(--elevated-background-color);
+  box-shadow: var(--dropdown-shadow);
 }
 
 .account-option {
@@ -204,10 +200,8 @@
   min-width: 180px;
   padding: 12px;
   border-radius: 12px;
-  background: var(--background-color);
-  box-shadow:
-    0 8px 24px rgba(20, 24, 43, 0.12),
-    0 0 0 1px rgba(20, 24, 43, 0.06);
+  background: var(--elevated-background-color);
+  box-shadow: var(--dropdown-shadow);
 }
 
 .menu-name,
@@ -305,8 +299,6 @@
 
 @media (max-width: 767.98px) {
   .tabs {
-    box-shadow:
-      0 6px 24px #14182b14,
-      0 0 0 1px #14182b06;
+    box-shadow: var(--floating-shadow);
   }
 }
