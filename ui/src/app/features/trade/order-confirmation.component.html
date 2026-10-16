@@ -69,6 +69,11 @@
       <p class="hint">You can still place it. <a routerLink="/risk-limits">Change your limits</a></p>
     </section>
   }
+  @if (!result() && !marketOpen) {
+    <p class="market-closed" role="status">
+      The market is closed. Your order will stay open until the market opens at 09:30 ET, Monday to Friday.
+    </p>
+  }
   <p id="order-dialog-note" class="note">
     {{ result()?.message || 'Placement does not guarantee a fill. Market prices can change before execution.' }}
   </p>

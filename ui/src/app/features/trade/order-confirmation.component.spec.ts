@@ -62,6 +62,22 @@ describe('OrderConfirmationComponent', () => {
     expect(root.querySelector('.warnings a')?.getAttribute('href')).toBe('/risk-limits');
   });
 
+  it('says the market is closed when it is', () => {
+    jasmine.clock().install();
+    jasmine.clock().mockDate(new Date('2026-10-16T07:24:00Z')); // Fri 03:24 in New York
+    const root = setup();
+    jasmine.clock().uninstall();
+    expect(root.querySelector('.market-closed')?.textContent).toContain('The market is closed');
+  });
+
+  it('says nothing about hours while the market is open', () => {
+    jasmine.clock().install();
+    jasmine.clock().mockDate(new Date('2026-10-14T15:00:00Z')); // Wed 11:00 in New York
+    const root = setup();
+    jasmine.clock().uninstall();
+    expect(root.querySelector('.market-closed')).toBeNull();
+  });
+
   it('hides the warnings once the order is submitted', () => {
     TestBed.configureTestingModule({ imports: [OrderConfirmationComponent], providers: [provideRouter([])] });
     const fixture = TestBed.createComponent(OrderConfirmationComponent);

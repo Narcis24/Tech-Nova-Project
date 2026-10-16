@@ -109,6 +109,14 @@ dd {
   color: inherit;
   font-weight: 600;
 }
+.market-closed {
+  margin-top: 24px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--color-track);
+  font-size: 13px;
+  line-height: 1.5;
+}
 .note {
   margin-top: 24px;
   font-size: 13px;

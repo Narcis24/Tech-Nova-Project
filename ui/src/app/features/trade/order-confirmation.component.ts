@@ -1,6 +1,7 @@
 import { CurrencyPipe, DecimalPipe, TitleCasePipe } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, input, OnDestroy, output, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { isMarketOpen } from '../../core/market-hours';
 import { OrderResponse, PlaceOrderRequest, RiskWarning } from '../../generated/trading-api-client';
 
 @Component({
@@ -20,6 +21,8 @@ export class OrderConfirmationComponent implements AfterViewInit, OnDestroy {
   readonly warnings = input<RiskWarning[]>([]);
   readonly confirmOrder = output<void>();
   readonly dismiss = output<void>();
+  // Checked when the dialog opens
+  readonly marketOpen = isMarketOpen();
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
   ngAfterViewInit(): void {
