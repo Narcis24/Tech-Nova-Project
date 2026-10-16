@@ -1,5 +1,4 @@
-import { DOCUMENT } from '@angular/common';
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal, DOCUMENT } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { catchError, exhaustMap, filter, forkJoin, map, merge, of, startWith, switchMap, timer } from 'rxjs';
 import {
