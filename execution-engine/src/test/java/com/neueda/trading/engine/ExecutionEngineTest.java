@@ -246,6 +246,33 @@ class ExecutionEngineTest {
         verify(producer).publishEvent(eq("order-execution"), any(), eq("ENGINE_STARTED"), any(), any());
     }
 
+    @Test
+    void quoteFreshnessIsJudgedByTheEngineClock() throws Exception {
+        // 600 s is the maximum quote age in setUp
+        cache.put(new Quote("AAPL", new BigDecimal("99.50"), new BigDecimal("100.50"),
+            MARKET_OPEN.minusSeconds(601)));
+
+        place("MARKET", null);
+
+        verify(producer).publishEvent(any(), any(), eq("ORDER_REJECTED"), any(), any());
+    }
+
+    @Test
+    void theSameOrderQuoteAndTimeAlwaysGiveTheSameDecision() throws Exception {
+        Quote quote = new Quote("AAPL", new BigDecimal("99.50"), new BigDecimal("100.50"),
+            MARKET_OPEN.minusSeconds(599));
+        for (int run = 0; run < 2; run++) {
+            setUp();
+            cache.put(quote);
+
+            place("MARKET", null);
+
+            ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
+            verify(producer).publishEvent(any(), any(), eq("ORDER_EXECUTED"), any(), payload.capture());
+            assertEquals(new BigDecimal("100.50"), ((OrderExecutedEvent) payload.getValue()).executionPrice());
+        }
+    }
+
     private String quoteMessage(String bid, String ask) throws Exception {
         return mapper.writeValueAsString(new EventEnvelope<>("q", "MARKET_DATA", Instant.now(), "p", 1,
             new Quote("AAPL", new BigDecimal(bid), new BigDecimal(ask), Instant.now())));
