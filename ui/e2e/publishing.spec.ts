@@ -22,7 +22,7 @@ test('publishes a pie, finds it on Discover, then unpublishes it', async ({ page
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await page.getByRole('link', { name: 'New pie' }).click();
   await page.getByLabel('Name', { exact: true }).fill(pieName);
-  await page.getByLabel('Stock 1', { exact: true }).selectOption('AAPL');
+  await page.getByLabel('Stock 1', { exact: true }).fill('AAPL');
   await page.getByLabel('Weight 1', { exact: true }).fill('60');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
 
