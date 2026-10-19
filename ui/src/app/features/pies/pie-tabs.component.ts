@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
-/** Switches between the account holder's own pies and the public leaderboard. */
+/** Switches between the account holder's own pies and the public templates. */
 @Component({
   selector: 'app-pie-tabs',
   imports: [RouterLink, RouterLinkActive],
