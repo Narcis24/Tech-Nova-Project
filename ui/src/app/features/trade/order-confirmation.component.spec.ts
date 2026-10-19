@@ -48,13 +48,17 @@ describe('OrderConfirmationComponent', () => {
     expect(confirmButton(root).textContent).toContain('Confirm order');
   });
 
-  it('lists every warning with its figures and offers Place anyway', () => {
+  it('lists every warning and offers Place anyway', () => {
     const root = setup(warnings);
     const items = root.querySelectorAll('.warnings li');
     expect(items.length).toBe(2);
+    expect(root.querySelector('.warnings h3')?.textContent).toContain('Review your risk limits');
+    expect(root.querySelector('.warnings-intro')?.textContent).toContain(
+      'This order would exceed the following limits:',
+    );
     expect(items[0].textContent).toContain('AAPL would be 35% of your portfolio.');
-    expect(items[0].textContent).toContain('35% after this order · limit 20%');
-    expect(items[1].textContent).toContain('12.5% after this order · your limit 20%');
+    expect(items[1].textContent).toContain('Cash would fall to 12.5% of your portfolio.');
+    expect(root.querySelector('.limits-link')?.textContent).toContain('Adjust risk limits');
     expect(confirmButton(root).textContent).toContain('Place anyway');
   });
 
