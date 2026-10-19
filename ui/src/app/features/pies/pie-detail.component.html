@@ -18,6 +18,7 @@
       <h2 id="publishing-heading">{{ published() ? 'Public' : 'Private' }}</h2>
       @if (published()) {
         <p>On Discover since {{ pie.publishedAt | date: 'mediumDate' }}.</p>
+        <p>Unpublishing clears this performance history. Publishing again starts from 100.</p>
         <a [routerLink]="['/discover', pie.pieId]">View public page</a>
       } @else {
         <p>

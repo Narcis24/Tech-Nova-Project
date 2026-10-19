@@ -1,6 +1,7 @@
 package com.neueda.app.services;
 
 import com.neueda.app.dtos.PieResponse;
+import com.neueda.app.enums.PieLinkMode;
 import com.neueda.app.enums.PieVisibility;
 import com.neueda.app.events.PieVersionSaved;
 import com.neueda.app.exceptions.PieEditTooSoonException;
@@ -231,6 +232,21 @@ class PieServiceTest {
         Pie pie = existingPie(version, symbolWeight);
         pie.publish(publishedAt);
         return pie;
+    }
+
+    @Test
+    void followedPie_cannotBypassCooldownByUnpublishingOrRepublishing() {
+        Pie pie = publicPie(2, NOW.minusDays(2), "AAPL", "50");
+        when(accountPieRepository.existsByPieIdAndMode(pie.getPieId(), PieLinkMode.COPY))
+            .thenReturn(true);
+        when(pieVersionRepository.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(pie.getPieId(), 1, NOW.minusHours(24)))
+            .thenReturn(true);
+        pieService.unpublish(pie.getPieId(), OWNER);
+        assertThrows(PieEditTooSoonException.class,
+            () -> pieService.update(pie.getPieId(), OWNER, request("New", "AAPL", "60")));
+        pieService.publish(pie.getPieId(), OWNER);
+        assertThrows(PieEditTooSoonException.class,
+            () -> pieService.update(pie.getPieId(), OWNER, request("New", "AAPL", "60")));
     }
 
     @Test
