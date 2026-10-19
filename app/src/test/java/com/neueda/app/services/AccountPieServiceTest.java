@@ -3,6 +3,7 @@ package com.neueda.app.services;
 import com.neueda.app.dtos.AccountPieResponse;
 import com.neueda.app.dtos.PortfolioSnapshotResponse;
 import com.neueda.app.dtos.PositionResponse;
+import com.neueda.app.dtos.PreviewLeg;
 import com.neueda.app.dtos.RebalancePreviewResponse;
 import com.neueda.app.dtos.RiskWarning;
 import com.neueda.app.exceptions.PieNotFoundException;
@@ -157,6 +158,19 @@ class AccountPieServiceTest {
     }
 
     @Test
+    void get_unpricedSymbol_returnsTheLinkWithNoDrift() {
+        linked();
+        portfolio("1000");
+        when(priceService.getCurrentPrice(any())).thenThrow(new PriceNotFoundException("none"));
+
+        AccountPieResponse response = service.get(ACCOUNT);
+
+        assertEquals(PIE_ID, response.getPieId());
+        assertTrue(response.getDrift().isEmpty());
+        assertNull(response.getMaxDriftPct());
+    }
+
+    @Test
     void preview_combinesPlanAndWarnings() {
         linked();
         portfolio("1000");
@@ -171,8 +185,11 @@ class AccountPieServiceTest {
         assertEquals(0, new BigDecimal("10").compareTo(preview.getCashTargetPct()));
         assertEquals(0, new BigDecimal("100").compareTo(preview.getCashAfter()));
         assertEquals(List.of(warning), preview.getWarnings());
-        assertEquals(0, new BigDecimal("600").compareTo(preview.getLegs().stream()
-            .filter(l -> l.getSymbol().equals("AAPL")).findFirst().orElseThrow().getEstimatedValue()));
+        PreviewLeg apple = preview.getLegs().stream().filter(l -> l.getSymbol().equals("AAPL")).findFirst().orElseThrow();
+        assertEquals(0, new BigDecimal("600").compareTo(apple.getEstimatedValue()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(apple.getCurrentValue()));
+        assertEquals(0, new BigDecimal("600").compareTo(apple.getTargetValue()));
+        assertEquals(0, new BigDecimal("600").compareTo(apple.getDifference()));
 
         ArgumentCaptor<Map<String, BigDecimal>> values = ArgumentCaptor.forClass(Map.class);
         verify(riskService).checkHoldings(eq(ACCOUNT), values.capture(), eq(preview.getCashAfter()));

@@ -15,7 +15,18 @@ const PREVIEW: RebalancePreviewResponse = {
   cashAfter: 2000,
   cashTargetPct: 20,
   legs: [
-    { symbol: 'AAPL', inPie: true, currentPct: 0, targetPct: 50, action: 'BUY', quantity: 50, estimatedValue: 5000 },
+    {
+      symbol: 'AAPL',
+      inPie: true,
+      currentPct: 0,
+      targetPct: 50,
+      currentValue: 0,
+      targetValue: 5000,
+      difference: 5000,
+      action: 'BUY',
+      quantity: 50,
+      estimatedValue: 5000,
+    },
     { symbol: 'TSLA', inPie: false, currentPct: 10, targetPct: 0, action: 'SELL', quantity: 5, estimatedValue: 1000 },
     { symbol: 'MSFT', inPie: true, currentPct: 30, targetPct: 30, action: 'NONE', quantity: 0, estimatedValue: 0 },
   ],
@@ -56,6 +67,23 @@ describe('RebalancePreviewComponent', () => {
     expect(root.querySelector('.buy')?.textContent).toBe('BUY 50');
     expect(root.querySelector('.sell')?.textContent).toBe('SELL 5');
     expect(root.querySelectorAll('.action')[2].textContent).toBe('—');
+  });
+
+  it("shows each symbol's value now, its target value and the difference", () => {
+    const row = render().querySelector('tbody tr')!;
+    expect(row.textContent).toContain('$0.00 → $5,000.00');
+    expect(row.querySelector('.difference')?.textContent).toBe('+$5,000.00');
+  });
+
+  it('says when no trades are needed', () => {
+    api.previewRebalance.and.returnValue(
+      of({ ...PREVIEW, legs: PREVIEW.legs!.map((leg) => ({ ...leg, action: 'NONE', quantity: 0 })) }),
+    );
+    expect(render().textContent).toContain('No trades needed');
+  });
+
+  it('does not say no trades are needed when some are', () => {
+    expect(render().textContent).not.toContain('No trades needed');
   });
 
   it('tags holdings outside the pie', () => {

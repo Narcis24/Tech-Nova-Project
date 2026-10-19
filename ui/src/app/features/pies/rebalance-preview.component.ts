@@ -1,6 +1,6 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
@@ -20,6 +20,7 @@ export class RebalancePreviewComponent {
   private readonly router = inject(Router);
   readonly accountId = inject(ActivatedRoute).snapshot.paramMap.get('accountId')!;
   readonly preview = signal<RebalancePreviewResponse | null>(null);
+  readonly hasTrades = computed(() => !!this.preview()?.legs?.some((leg) => leg.action !== 'NONE'));
   readonly error = signal<string | null>(null);
   readonly starting = signal(false);
   readonly startError = signal<string | null>(null);

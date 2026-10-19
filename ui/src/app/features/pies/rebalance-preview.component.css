@@ -66,7 +66,8 @@ td:last-child {
   text-align: right;
 }
 
-.outside {
+.outside,
+.difference {
   display: block;
   margin-top: 4px;
   color: var(--secondary-text-color);

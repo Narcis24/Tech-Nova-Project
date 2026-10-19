@@ -18,6 +18,7 @@ export interface PreviewLeg {
     currentPct?: number;
     targetPct?: number;
     targetValue?: number;
+    difference?: number;
     action?: string;
     quantity?: number;
     estimatedValue?: number;
