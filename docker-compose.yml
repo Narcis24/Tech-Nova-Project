@@ -16,6 +16,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-technova}
       POSTGRES_USER: ${POSTGRES_USER:-technova}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      # Read once, when the volume is first created (V014); empty means no test admin
+      TEST_ADMIN_PASSWORD: ${TEST_ADMIN_PASSWORD:-}
 
     volumes:
       - db_data:/var/lib/postgresql/data

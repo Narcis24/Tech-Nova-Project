@@ -1,5 +1,5 @@
 -- Roles carried in the access token's roles claim. A user can hold several (an admin who also trades).
--- The first admin is granted by hand (db/scripts/make-admin.sh), never through public registration.
+-- Admins are never made through public registration; V014 seeds a test admin for local dev.
 CREATE TABLE user_roles (
     username VARCHAR(50) NOT NULL REFERENCES users(username) ON DELETE CASCADE,
     role     VARCHAR(20) NOT NULL CONSTRAINT chk_user_roles_role CHECK (role IN ('TRADER', 'ADMIN')),
