@@ -8,39 +8,60 @@
   </div>
 } @else if (users(); as users) {
   @if (users.length) {
-    <div class="table-wrap">
-      <table class="users">
-        <thead>
-          <tr>
-            <th scope="col">Username</th>
-            <th scope="col">Email</th>
-            <th scope="col">Roles</th>
-            <th scope="col">Created</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (user of users; track user.username) {
-            <tr>
-              <td class="username">{{ user.username }}</td>
-              <td class="email">{{ user.email ?? '—' }}</td>
-              <td>
-                <div class="roles">
-                  @for (role of user.roles; track role) {
-                    <span class="role" [class.role-admin]="role === 'ADMIN'">{{ role }}</span>
-                  }
-                </div>
-              </td>
-              <td class="created">
-                {{ user.createdAt | date: 'd MMM y' }}
-                @if (user.createdBy) {
-                  <span class="created-by">by {{ user.createdBy }}</span>
-                }
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+    <div class="search">
+      <label for="user-search">Search users</label>
+      <input
+        id="user-search"
+        type="search"
+        placeholder="Username or email"
+        autocomplete="off"
+        [value]="query()"
+        (input)="search($event)"
+      />
     </div>
+
+    @if (query().trim()) {
+      <!-- aria-live: screen readers announce the new count as the admin types -->
+      <p class="result-count" aria-live="polite">Showing {{ visibleUsers().length }} of {{ users.length }} users</p>
+    }
+
+    @if (visibleUsers().length) {
+      <div class="table-wrap">
+        <table class="users">
+          <thead>
+            <tr>
+              <th scope="col">Username</th>
+              <th scope="col">Email</th>
+              <th scope="col">Roles</th>
+              <th scope="col">Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of visibleUsers(); track user.username) {
+              <tr>
+                <td class="username">{{ user.username }}</td>
+                <td class="email">{{ user.email ?? '—' }}</td>
+                <td>
+                  <div class="roles">
+                    @for (role of user.roles; track role) {
+                      <span class="role" [class.role-admin]="role === 'ADMIN'">{{ role }}</span>
+                    }
+                  </div>
+                </td>
+                <td class="created">
+                  {{ user.createdAt | date: 'd MMM y' }}
+                  @if (user.createdBy) {
+                    <span class="created-by">by {{ user.createdBy }}</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="empty">No users match "{{ query().trim() }}".</p>
+    }
   } @else {
     <p class="empty">No users yet.</p>
   }

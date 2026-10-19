@@ -1,5 +1,46 @@
 /* Users-page-only styles; headings, role badges and errors are in shared/admin-page.css */
 
+/* Label above a full-width box, so it fits phones too */
+.search {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 420px;
+  margin-bottom: 16px;
+}
+
+.search label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.search input {
+  min-height: 44px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--background-color);
+  font: inherit;
+  color: var(--text-color);
+}
+
+.search input:hover {
+  border-color: var(--hover-border-color);
+}
+
+.search input:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 1px;
+  border-color: var(--primary-color);
+}
+
+.result-count {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--secondary-text-color);
+}
+
 /* Lets the table scroll sideways on a phone instead of squashing */
 .table-wrap {
   overflow-x: auto;
