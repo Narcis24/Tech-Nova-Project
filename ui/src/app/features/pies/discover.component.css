@@ -1,0 +1,206 @@
+h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.top {
+  margin-bottom: 16px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.intro {
+  margin: 0;
+  color: var(--secondary-text-color);
+  font-size: 14px;
+}
+
+.windows {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--muted-background-color);
+}
+
+button.window {
+  min-height: 40px;
+  min-width: 52px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--secondary-text-color);
+  font-weight: 500;
+}
+
+button.window[aria-pressed='true'] {
+  background: var(--elevated-background-color);
+  box-shadow: var(--card-shadow);
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+button.window[aria-pressed='false']:not(:disabled):hover {
+  background: var(--control-background-color);
+  color: var(--text-color);
+}
+
+.empty {
+  margin: 1em 0;
+  color: var(--secondary-text-color);
+}
+
+.load-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.load-error p {
+  margin: 0;
+  color: var(--loss-color);
+}
+
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  position: relative;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--subtle-border-color);
+  border-radius: 16px;
+  background: var(--card-background-color);
+}
+
+.entry:hover {
+  border-color: var(--border-color);
+  background: var(--elevated-background-color);
+}
+
+.rank {
+  color: var(--secondary-text-color);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+/* The whole card is the link, without wrapping it, so the name stays the accessible link text */
+.entry h2 a {
+  display: inline;
+  min-height: 0;
+  color: var(--text-color);
+}
+
+.entry h2 a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+}
+
+.entry h2 a:focus-visible {
+  outline: none;
+}
+
+.entry h2 a:focus-visible::after {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.tag {
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--primary-background-color);
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.author {
+  margin: 4px 0 0;
+  color: var(--secondary-text-color);
+  font-size: 13px;
+}
+
+.metrics {
+  display: flex;
+  gap: 28px;
+  margin: 0;
+}
+
+.metric {
+  min-width: 64px;
+  text-align: right;
+}
+
+dt {
+  color: var(--secondary-text-color);
+  font-size: 12px;
+}
+
+dd {
+  margin: 4px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.main dd {
+  font-size: 20px;
+}
+
+dd.gain {
+  color: var(--gain-color);
+}
+
+dd.loss {
+  color: var(--loss-color);
+}
+
+@media (max-width: 767.98px) {
+  .entry {
+    grid-template-columns: 24px minmax(0, 1fr);
+    padding: 16px;
+  }
+
+  .metrics {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--subtle-border-color);
+  }
+
+  .metric {
+    min-width: 0;
+    text-align: left;
+  }
+}

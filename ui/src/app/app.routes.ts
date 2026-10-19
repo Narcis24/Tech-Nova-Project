@@ -58,8 +58,20 @@ export const routes: Routes = [
         loadComponent: () => import('./features/pies/pie-editor.component').then((m) => m.PieEditorComponent),
       },
       {
+        path: 'pies/:pieId',
+        loadComponent: () => import('./features/pies/pie-detail.component').then((m) => m.PieDetailComponent),
+      },
+      {
         path: 'pies',
         loadComponent: () => import('./features/pies/pies.component').then((m) => m.PiesComponent),
+      },
+      {
+        path: 'discover/:pieId',
+        loadComponent: () => import('./features/pies/public-pie.component').then((m) => m.PublicPieComponent),
+      },
+      {
+        path: 'discover',
+        loadComponent: () => import('./features/pies/discover.component').then((m) => m.DiscoverComponent),
       },
       {
         path: 'risk-limits',

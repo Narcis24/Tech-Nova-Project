@@ -1,0 +1,79 @@
+<a class="back" routerLink="/discover">Back to Discover</a>
+
+@switch (state().status) {
+  @case ('ready') {
+    @if (current(); as pie) {
+      <header class="head">
+        <h1>{{ pie.name }}</h1>
+        @if (pie.demo) {
+          <span class="tag">Demo pie</span>
+        }
+      </header>
+      <p class="byline">by {{ pie.authorUsername }} · public since {{ pie.publishedAt | date: 'mediumDate' }}</p>
+      @if (pie.description) {
+        <p class="description">{{ pie.description }}</p>
+      }
+
+      <dl class="stats">
+        @for (option of windows; track option) {
+          <div>
+            <dt>{{ option }} return</dt>
+            <dd
+              [class.gain]="returnTone(pie.returns?.[option]) === 'gain'"
+              [class.loss]="returnTone(pie.returns?.[option]) === 'loss'"
+            >
+              {{ formatReturn(pie.returns?.[option]) }}
+            </dd>
+          </div>
+        }
+        <div>
+          <dt>Followers</dt>
+          <dd>{{ pie.followers | number }}</dd>
+        </div>
+      </dl>
+      @if (pending()) {
+        <p class="note pending">A dash means the pie hasn't been public for that long yet.</p>
+      }
+
+      <section class="panel" aria-label="Pie index">
+        <app-index-chart [points]="pie.points ?? []" />
+        <p class="note">Index of the pie's daily value, starting at 100 on the day it was published.</p>
+      </section>
+
+      <section class="panel holdings" aria-labelledby="holdings-heading">
+        <app-donut-chart [segments]="segments()" [size]="140" />
+        <div class="list">
+          <h2 id="holdings-heading">{{ pie.sliceCount }} slices</h2>
+          <ul>
+            @for (slice of pie.slices; track slice.symbol) {
+              <li>
+                <span class="symbol">{{ slice.symbol }}</span>
+                <span class="name">{{ slice.name }}</span>
+                <span class="weight">{{ slice.weightPct | number: '1.0-2' }}%</span>
+              </li>
+            }
+            @if (pie.cashPct) {
+              <li>
+                <span class="symbol">Cash</span>
+                <span class="name"></span>
+                <span class="weight">{{ pie.cashPct | number: '1.0-2' }}%</span>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+  }
+  @case ('missing') {
+    <p class="empty">This pie isn't public. Its owner may have unpublished it.</p>
+  }
+  @case ('error') {
+    <div class="load-error" role="alert">
+      <p>Couldn't load this pie.</p>
+      <button type="button" class="secondary" (click)="retry()">Try again</button>
+    </div>
+  }
+  @default {
+    <output class="empty">Loading pie…</output>
+  }
+}

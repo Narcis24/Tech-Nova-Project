@@ -12,6 +12,7 @@ import {
   PieResponse,
 } from '../../generated/trading-api-client';
 import { AccountService } from '../../services/account.service';
+import { PieTabsComponent } from './pie-tabs.component';
 
 type Header = { state: 'loading' | 'none' | 'error' } | { state: 'linked'; pie: AccountPieResponse };
 
@@ -20,7 +21,7 @@ const TOP_SLICES = 3;
 /** The account holder's pies, and which one the current account follows. */
 @Component({
   selector: 'app-pies',
-  imports: [DonutChartComponent, RouterLink],
+  imports: [DonutChartComponent, PieTabsComponent, RouterLink],
   templateUrl: './pies.component.html',
   styleUrls: ['./pies-shared.css', './pies.component.css'],
 })

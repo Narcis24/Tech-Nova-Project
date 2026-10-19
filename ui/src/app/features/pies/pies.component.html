@@ -2,6 +2,7 @@
   <h1>Pies</h1>
   <a class="new" routerLink="/pies/new">New pie</a>
 </div>
+<app-pie-tabs />
 
 @if (accountId()) {
   <div class="header">
@@ -45,7 +46,12 @@
     @for (pie of pies(); track pie.pieId) {
       <li class="pie-card">
         <app-donut-chart [segments]="segments(pie)" [size]="120" />
-        <h2>{{ pie.name }}</h2>
+        <h2>
+          <a [routerLink]="['/pies', pie.pieId]">{{ pie.name }}</a>
+        </h2>
+        @if (pie.publishedAt) {
+          <span class="public">Public</span>
+        }
         <ul class="slices">
           @for (slice of topSlices(pie); track slice.symbol) {
             <li>{{ slice.symbol }} {{ slice.weightPct }}%</li>

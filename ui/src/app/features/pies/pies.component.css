@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 h1 {
@@ -101,4 +101,22 @@ h1 {
 
 .actions > button:first-child {
   grid-column: 1 / -1;
+}
+
+.pie-card h2 a {
+  min-height: 0;
+  color: var(--text-color);
+}
+
+.pie-card h2 a:hover {
+  color: var(--primary-color);
+}
+
+.public {
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--primary-background-color);
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 600;
 }
