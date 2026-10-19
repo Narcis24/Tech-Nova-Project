@@ -11,6 +11,9 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     List<User> findAllByOrderByUsernameAsc();
 
+    /** Ignores case, like the unique index on LOWER(email). */
+    boolean existsByEmailIgnoreCase(String email);
+
     /**
      * The usernames that hold ADMIN, locking those rows until the transaction ends. A concurrent role
      * change waits here and then sees the result, so two admins removing each other cannot both pass

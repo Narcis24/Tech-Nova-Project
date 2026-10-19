@@ -2,10 +2,13 @@ package com.neueda.app.controllers;
 
 import com.neueda.app.configs.SecurityConfig;
 import com.neueda.app.dtos.AdminUserResponse;
+import com.neueda.app.dtos.CreateUserRequest;
 import com.neueda.app.enums.Role;
 import com.neueda.app.exceptions.RoleChangeNotAllowedException;
+import com.neueda.app.exceptions.UserAlreadyExistsException;
 import com.neueda.app.exceptions.UserNotFoundException;
 import com.neueda.app.services.AdminUserService;
+import com.neueda.app.services.AuthClient;
 import com.neueda.app.utils.JwtUtil;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -21,10 +24,13 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,6 +48,9 @@ class AdminUserControllerTest {
 
     @MockitoBean
     private JwtUtil jwtUtil;
+
+    @MockitoBean
+    private AuthClient authClient;
 
     @BeforeEach
     void tokens() {
@@ -162,4 +171,75 @@ class AdminUserControllerTest {
             .andExpect(jsonPath("$.errorCode").value("ROLE_CHANGE_NOT_ALLOWED"))
             .andExpect(jsonPath("$.message").value("You cannot remove your own admin role"));
     }
+
+    private static final String NEW_USER_JSON =
+        "{\"username\":\"new_user1\",\"email\":\"new.user@example.com\",\"roles\":[\"TRADER\"]}";
+
+    private org.springframework.test.web.servlet.ResultActions postUser(String token, String body) throws Exception {
+        return mockMvc.perform(post("/v1/admin/users")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body));
+    }
+
+    private static AdminUserResponse newUser() {
+        return new AdminUserResponse("new_user1", "new.user@example.com", List.of(Role.TRADER),
+            Instant.parse("2026-10-19T11:00:00Z"), "test_admin");
+    }
+
+    @Test
+    void createUser_Admin_Returns201AndSendsTheInvite() throws Exception {
+        when(adminUserService.createUser(eq("test_admin"), any(CreateUserRequest.class))).thenReturn(newUser());
+        when(authClient.sendInvite("new.user@example.com")).thenReturn(true);
+
+        postUser("admin-token", NEW_USER_JSON)
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.user.username").value("new_user1"))
+            .andExpect(jsonPath("$.user.createdBy").value("test_admin"))
+            .andExpect(jsonPath("$.inviteSent").value(true));
+
+        verify(authClient).sendInvite("new.user@example.com");
+    }
+
+    @Test
+    void createUser_InviteFails_StillReturns201() throws Exception {
+        when(adminUserService.createUser(eq("test_admin"), any(CreateUserRequest.class))).thenReturn(newUser());
+        when(authClient.sendInvite("new.user@example.com")).thenReturn(false);
+
+        postUser("admin-token", NEW_USER_JSON)
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.inviteSent").value(false));
+    }
+
+    @Test
+    void createUser_Trader_Returns403() throws Exception {
+        postUser("trader-token", NEW_USER_JSON).andExpect(status().isForbidden());
+
+        verifyNoInteractions(adminUserService, authClient);
+    }
+
+    @Test
+    void createUser_InvalidUsername_Returns400() throws Exception {
+        postUser("admin-token",
+                "{\"username\":\"bob\",\"email\":\"bob@example.com\",\"roles\":[\"TRADER\"]}")
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"))
+            .andExpect(jsonPath("$.message").value("username: Username must be 8-16 characters"));
+
+        verifyNoInteractions(adminUserService, authClient);
+    }
+
+    @Test
+    void createUser_TakenUsername_Returns409AndSendsNoInvite() throws Exception {
+        when(adminUserService.createUser(eq("test_admin"), any(CreateUserRequest.class)))
+            .thenThrow(new UserAlreadyExistsException("Username already taken: new_user1"));
+
+        postUser("admin-token", NEW_USER_JSON)
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.errorCode").value("USER_ALREADY_EXISTS"))
+            .andExpect(jsonPath("$.message").value("Username already taken: new_user1"));
+
+        verifyNoInteractions(authClient);
+    }
 }
+

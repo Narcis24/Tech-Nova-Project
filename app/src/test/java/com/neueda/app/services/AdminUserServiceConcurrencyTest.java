@@ -1,13 +1,18 @@
 package com.neueda.app.services;
 
+import com.neueda.app.dtos.CreateUserRequest;
 import com.neueda.app.enums.Role;
 import com.neueda.app.exceptions.RoleChangeNotAllowedException;
+import com.neueda.app.exceptions.UserAlreadyExistsException;
+import com.neueda.app.models.User;
+import com.neueda.app.repositories.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Propagation;
@@ -15,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -23,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -40,6 +47,9 @@ class AdminUserServiceConcurrencyTest {
 
     @Autowired
     private JdbcTemplate jdbc;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @BeforeEach
     void setUp() {
@@ -111,4 +121,74 @@ class AdminUserServiceConcurrencyTest {
             pool.shutdownNow();
         }
     }
+
+    @Test
+    void createdUserIsSavedWithRolesAndCreator() {
+        adminUserService.createUser("admin_one",
+            new CreateUserRequest("new_user1", "new.user@example.com", Set.of(Role.TRADER, Role.ADMIN)));
+
+        Map<String, Object> row = jdbc.queryForMap(
+            "SELECT email, created_by, created_at FROM users WHERE username = 'new_user1'");
+        assertEquals("new.user@example.com", row.get("EMAIL"));
+        assertEquals("admin_one", row.get("CREATED_BY"));
+        assertNotNull(row.get("CREATED_AT"));
+        assertEquals(List.of("ADMIN", "TRADER"), jdbc.queryForList(
+            "SELECT role FROM user_roles WHERE username = 'new_user1' ORDER BY role", String.class));
+    }
+
+    @Test
+    void creatingAnExistingUsernameLeavesTheExistingUserUntouched() {
+        assertThrows(UserAlreadyExistsException.class, () -> adminUserService.createUser("admin_one",
+            new CreateUserRequest("admin_two", "someone.else@example.com", Set.of(Role.TRADER))));
+
+        assertEquals("admin_two@example.com",
+            jdbc.queryForObject("SELECT email FROM users WHERE username = 'admin_two'", String.class));
+    }
+
+    @Test
+    void savingAnInvitedUserNeverOverwritesAnExistingOne() {
+        // What a create that passed existsById just before another admin's create committed would do.
+        // Without User.isNew(), save() would MERGE: silently replace admin_two's email and roles.
+        assertThrows(DataIntegrityViolationException.class, () -> userRepository.save(
+            User.invited("admin_two", "intruder@example.com", Set.of(Role.TRADER), "admin_one")));
+
+        assertEquals("admin_two@example.com",
+            jdbc.queryForObject("SELECT email FROM users WHERE username = 'admin_two'", String.class));
+        assertEquals(List.of("ADMIN"),
+            jdbc.queryForList("SELECT role FROM user_roles WHERE username = 'admin_two'", String.class));
+    }
+
+    @Test
+    void twoAdminsCreatingTheSameUsernameAtOnceCreateItOnce() throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        CountDownLatch start = new CountDownLatch(1);
+        List<Future<?>> results = new ArrayList<>();
+        try {
+            for (String email : List.of("first@example.com", "second@example.com")) {
+                results.add(pool.submit(() -> {
+                    start.await();
+                    return adminUserService.createUser("admin_one",
+                        new CreateUserRequest("race_user", email, Set.of(Role.TRADER)));
+                }));
+            }
+            start.countDown();
+
+            int succeeded = 0;
+            for (Future<?> result : results) {
+                try {
+                    result.get();
+                    succeeded++;
+                } catch (ExecutionException e) {
+                    // The loser fails on the primary key (or on the existsById check, if it ran second)
+                }
+            }
+
+            assertEquals(1, succeeded);
+            assertEquals(1, jdbc.queryForObject(
+                "SELECT COUNT(*) FROM users WHERE username = 'race_user'", Integer.class));
+        } finally {
+            pool.shutdownNow();
+        }
+    }
 }
+

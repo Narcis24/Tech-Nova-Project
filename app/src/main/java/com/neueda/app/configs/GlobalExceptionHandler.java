@@ -30,6 +30,7 @@ import com.neueda.app.exceptions.PositionNotFoundException;
 import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.exceptions.RoleChangeNotAllowedException;
 import com.neueda.app.exceptions.TradingException;
+import com.neueda.app.exceptions.UserAlreadyExistsException;
 import com.neueda.app.exceptions.UserNotFoundException;
 
 /**
@@ -65,6 +66,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex) {
         ErrorResponse error = new ErrorResponse("USER_NOT_FOUND", ex.getMessage(), 404);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Handles UserAlreadyExistsException when an admin creates a user whose username or email is taken.
+     *
+     * @param ex the UserAlreadyExistsException thrown by AdminUserService
+     * @return ResponseEntity containing ErrorResponse with 409 status
+     */
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleUserAlreadyExists(UserAlreadyExistsException ex) {
+        ErrorResponse error = new ErrorResponse("USER_ALREADY_EXISTS", ex.getMessage(), 409);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     /**

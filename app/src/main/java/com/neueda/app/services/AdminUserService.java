@@ -1,8 +1,10 @@
 package com.neueda.app.services;
 
 import com.neueda.app.dtos.AdminUserResponse;
+import com.neueda.app.dtos.CreateUserRequest;
 import com.neueda.app.enums.Role;
 import com.neueda.app.exceptions.RoleChangeNotAllowedException;
+import com.neueda.app.exceptions.UserAlreadyExistsException;
 import com.neueda.app.exceptions.UserNotFoundException;
 import com.neueda.app.models.User;
 import com.neueda.app.repositories.UserRepository;
@@ -54,6 +56,28 @@ public class AdminUserService {
         Set<Role> before = Set.copyOf(user.getRoles());
         user.replaceRoles(roles);
         log.info("Admin {} changed roles of {} from {} to {}", actingAdmin, username, before, roles);
+        return toResponse(user);
+    }
+
+    /**
+     * Creates an account with no password and the given roles. The caller sends the set-password
+     * email after this returns, so the email never goes out for a user that was not saved.
+     */
+    @Transactional
+    public AdminUserResponse createUser(String actingAdmin, CreateUserRequest request) {
+        // Clear messages for the usual case; a concurrent create of the same user still fails on the
+        // primary key or the email index (409 CONFLICT), since User.isNew() makes save() insert
+        if (userRepository.existsById(request.getUsername())) {
+            throw new UserAlreadyExistsException("Username already taken: " + request.getUsername());
+        }
+        if (userRepository.existsByEmailIgnoreCase(request.getEmail())) {
+            throw new UserAlreadyExistsException("Email already in use: " + request.getEmail());
+        }
+
+        User user = userRepository.save(
+            User.invited(request.getUsername(), request.getEmail(), request.getRoles(), actingAdmin));
+        // No email address in the log
+        log.info("Admin {} created user {} with roles {}", actingAdmin, user.getUsername(), user.getRoles());
         return toResponse(user);
     }
 

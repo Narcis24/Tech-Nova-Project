@@ -1,8 +1,10 @@
 package com.neueda.app.services;
 
 import com.neueda.app.dtos.AdminUserResponse;
+import com.neueda.app.dtos.CreateUserRequest;
 import com.neueda.app.enums.Role;
 import com.neueda.app.exceptions.RoleChangeNotAllowedException;
+import com.neueda.app.exceptions.UserAlreadyExistsException;
 import com.neueda.app.exceptions.UserNotFoundException;
 import com.neueda.app.models.User;
 import com.neueda.app.repositories.UserRepository;
@@ -17,9 +19,13 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AdminUserServiceTest {
@@ -129,4 +135,43 @@ class AdminUserServiceTest {
         assertThrows(UserNotFoundException.class,
             () -> adminUserService.updateRoles("test_admin", "nobody_00", Set.of(Role.TRADER)));
     }
+
+    private static final CreateUserRequest NEW_USER =
+        new CreateUserRequest("new_user1", "New.User@example.com", Set.of(Role.TRADER));
+
+    @Test
+    void createUser_SavesAnInvitedUserCreatedByTheActingAdmin() {
+        when(userRepository.save(any(User.class))).thenAnswer(call -> call.getArgument(0));
+
+        AdminUserResponse result = adminUserService.createUser("test_admin", NEW_USER);
+
+        assertEquals("new_user1", result.getUsername());
+        assertEquals("New.User@example.com", result.getEmail());
+        assertEquals(List.of(Role.TRADER), result.getRoles());
+        assertEquals("test_admin", result.getCreatedBy());
+        assertNotNull(result.getCreatedAt());
+    }
+
+    @Test
+    void createUser_TakenUsername_Throws() {
+        when(userRepository.existsById("new_user1")).thenReturn(true);
+
+        UserAlreadyExistsException ex = assertThrows(UserAlreadyExistsException.class,
+            () -> adminUserService.createUser("test_admin", NEW_USER));
+
+        assertEquals("Username already taken: new_user1", ex.getMessage());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void createUser_TakenEmail_Throws() {
+        when(userRepository.existsByEmailIgnoreCase("New.User@example.com")).thenReturn(true);
+
+        UserAlreadyExistsException ex = assertThrows(UserAlreadyExistsException.class,
+            () -> adminUserService.createUser("test_admin", NEW_USER));
+
+        assertEquals("Email already in use: New.User@example.com", ex.getMessage());
+        verify(userRepository, never()).save(any());
+    }
 }
+
