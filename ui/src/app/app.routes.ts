@@ -50,6 +50,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/orders/orders.component').then((m) => m.OrdersComponent),
       },
       {
+        path: 'pies',
+        loadComponent: () => import('./features/pies/pies.component').then((m) => m.PiesComponent),
+      },
+      {
         path: 'risk-limits',
         loadComponent: () => import('./features/risk-limits/risk-limits.component').then((m) => m.RiskLimitsComponent),
       },

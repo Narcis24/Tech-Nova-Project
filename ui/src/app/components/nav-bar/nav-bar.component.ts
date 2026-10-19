@@ -29,6 +29,7 @@ export class NavBarComponent {
   readonly tabs: readonly NavTab[] = [
     { label: 'Portfolio', path: '/dashboard' },
     { label: 'Trade', path: '/trade' },
+    { label: 'Pies', path: '/pies' },
     { label: 'Orders', path: '/orders' },
   ];
 

@@ -1,0 +1,92 @@
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: var(--card-background-color);
+}
+
+.header p {
+  margin: 0;
+}
+
+.empty {
+  margin: 1em 0;
+  color: var(--secondary-text-color);
+}
+
+.error,
+.load-error p {
+  margin: 0;
+  color: var(--loss-color);
+}
+
+.load-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pie-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--card-background-color);
+}
+
+.pie-card h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.slices {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  text-align: center;
+}
+
+.cash {
+  margin: 0;
+  font-size: 13px;
+  color: var(--secondary-text-color);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
