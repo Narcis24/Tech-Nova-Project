@@ -35,13 +35,13 @@ test('creates, edits, links and previews a pie without placing orders', async ({
   await expect(page.getByRole('heading', { name: 'Pies', exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'New pie' }).click();
   await page.getByLabel('Name', { exact: true }).fill('My test pie');
-  await page.getByLabel('Stock 1', { exact: true }).selectOption('AAPL');
+  await page.getByLabel('Stock 1', { exact: true }).fill('AAPL');
   await page.getByLabel('Weight 1', { exact: true }).fill('50');
   await page.getByRole('button', { name: 'Add stock' }).click();
-  await page.getByLabel('Stock 2', { exact: true }).selectOption('AAPL');
+  await page.getByLabel('Stock 2', { exact: true }).fill('AAPL');
   await page.getByLabel('Weight 2', { exact: true }).fill('30');
   await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
-  await page.getByLabel('Stock 2', { exact: true }).selectOption('MSFT');
+  await page.getByLabel('Stock 2', { exact: true }).fill('MSFT');
   await page.getByLabel('Weight 2', { exact: true }).fill('60');
   await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
   await page.getByLabel('Weight 2', { exact: true }).fill('30');

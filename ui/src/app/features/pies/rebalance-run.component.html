@@ -11,12 +11,14 @@
   <section class="progress" aria-live="polite" aria-atomic="true">
     <p class="account">{{ current.accountId }} · Pie version {{ current.targetVersion }}</p>
     <h2>{{ heading() }}</h2>
-    @if (active()) {
+    @if (active() || current.status === 'COMPLETED') {
       <ol class="steps" aria-label="Rebalance progress">
         <li [class.current]="current.status === 'SELLING'">Selling</li>
         <li [class.current]="current.status === 'BUYING'">Buying</li>
-        <li>Done</li>
+        <li [class.current]="current.status === 'COMPLETED'">Done</li>
       </ol>
+    }
+    @if (active()) {
       @if (current.waitingForMarketOpen) {
         <p>Waiting for market open. Orders will continue when trading resumes.</p>
       } @else {

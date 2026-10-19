@@ -24,10 +24,6 @@ public class RebalanceLeg {
     @Column(name = "run_id")
     private UUID runId;
 
-    @Column(name = "phase")
-    @Enumerated(EnumType.STRING)
-    private OrderSide phase;
-
     @Column(name = "symbol")
     private String symbol;
 
@@ -38,11 +34,9 @@ public class RebalanceLeg {
     @Column(name = "quantity")
     private int quantity;
 
-    /** Sells run in the SELL phase and buys in the BUY phase, so the phase is the side. */
     public RebalanceLeg(UUID runId, UUID orderId, OrderSide side, String symbol, int quantity) {
         this.runId = runId;
         this.orderId = orderId;
-        this.phase = side;
         this.side = side;
         this.symbol = symbol;
         this.quantity = quantity;

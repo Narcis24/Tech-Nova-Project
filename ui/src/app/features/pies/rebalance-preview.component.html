@@ -27,7 +27,8 @@
       <thead>
         <tr>
           <th scope="col">Symbol</th>
-          <th scope="col">Current → target</th>
+          <th scope="col">Weight now → target</th>
+          <th scope="col">Value now → target</th>
           <th scope="col">Action</th>
           <th scope="col">Estimated value</th>
         </tr>
@@ -43,20 +44,23 @@
             </th>
             <td>{{ leg.currentPct | number: '1.0-2' }}% → {{ leg.targetPct | number: '1.0-2' }}%</td>
             <td>
+              {{ leg.currentValue | currency }} → {{ leg.targetValue | currency }}
+              <span class="difference">{{ (leg.difference ?? 0) > 0 ? '+' : '' }}{{ leg.difference | currency }}</span>
+            </td>
+            <td>
               <span class="action" [class.sell]="leg.action === 'SELL'" [class.buy]="leg.action === 'BUY'">{{
                 leg.action === 'NONE' ? '—' : leg.action + ' ' + leg.quantity
               }}</span>
             </td>
             <td>{{ leg.estimatedValue | currency }}</td>
           </tr>
-        } @empty {
-          <tr>
-            <td colspan="4">No trades needed.</td>
-          </tr>
         }
       </tbody>
     </table>
   </div>
+  @if (!hasTrades()) {
+    <p class="note">No trades needed: the account is already within the thresholds of this pie.</p>
+  }
 
   @if (plan.warnings?.length) {
     <section class="warnings" aria-labelledby="warnings-heading">

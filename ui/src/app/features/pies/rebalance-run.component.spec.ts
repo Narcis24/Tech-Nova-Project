@@ -45,6 +45,7 @@ describe('RebalanceRunComponent', () => {
     tick(2000);
     fixture.detectChanges();
     expect(root.querySelector('h2')?.textContent).toBe('Rebalance complete');
+    expect(root.querySelector('.steps .current')?.textContent).toBe('Done');
     tick(6000);
     expect(get).toHaveBeenCalledTimes(2);
   }));

@@ -36,20 +36,17 @@
       <div class="rows">
         @for (row of rows(); track $index) {
           <div class="row">
-            <select
+            <input
+              type="text"
+              class="symbol"
+              list="instrument-options"
+              autocomplete="off"
+              placeholder="Search by symbol or name"
               [attr.aria-label]="'Stock ' + ($index + 1)"
-              (change)="setRow($index, { symbol: $any($event.target).value })"
-            >
-              <option value="" [selected]="!row.symbol">Choose a stock</option>
-              @if (row.symbol && !isTradable(row.symbol)) {
-                <option [value]="row.symbol" selected>{{ row.symbol }} · Unavailable</option>
-              }
-              @for (instrument of instruments(); track instrument.symbol) {
-                <option [value]="instrument.symbol" [selected]="instrument.symbol === row.symbol">
-                  {{ instrument.symbol }} · {{ instrument.name }}
-                </option>
-              }
-            </select>
+              [attr.aria-invalid]="!!symbols()[$index] && !isTradable(symbols()[$index])"
+              [value]="row.symbol"
+              (input)="setRow($index, { symbol: $any($event.target).value })"
+            />
             <span class="weight">
               <input
                 type="text"
@@ -65,6 +62,11 @@
           </div>
         }
         <button type="button" class="secondary add" (click)="addRow()">Add stock</button>
+        <datalist id="instrument-options">
+          @for (instrument of instruments(); track instrument.symbol) {
+            <option [value]="instrument.symbol">{{ instrument.name }}</option>
+          }
+        </datalist>
       </div>
 
       <div class="preview">
@@ -75,6 +77,9 @@
 
     @if (overAllocated()) {
       <p class="error">Weights add up to more than 100%.</p>
+    }
+    @if (unavailable().length) {
+      <p class="error">Not available to trade: {{ unavailable().join(', ') }}. Choose another stock.</p>
     }
     @if (duplicate()) {
       <p class="error">Each stock can only appear once.</p>
