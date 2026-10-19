@@ -4,6 +4,10 @@ pipeline {
         // the jenkins user has no JAVA_HOME, so Maven would fall back to Java 17 from /etc/java/maven.conf
         JAVA_HOME = '/usr/lib/jvm/java-21-amazon-corretto.x86_64'
     }
+    parameters {
+        // "Build with Parameters" on any branch; shown once that branch has built with this Jenkinsfile
+        booleanParam(name: 'SHADOW_GATE', defaultValue: false, description: 'Also run the shadow gate on this branch')
+    }
     stages {
         stage('Checkout') {
             steps {
@@ -47,6 +51,33 @@ pipeline {
                 sh 'mvn -B install'
                 // auth is NestJS; the agent's Node is too old, so it runs in a Node 24 container as the jenkins user
                 sh 'docker run --rm -u $(id -u):$(id -g) -e npm_config_cache=/tmp/.npm -v $WORKSPACE/auth:/app -w /app node:24-alpine sh -c "npm ci && npm run test:cov"'
+            }
+        }
+        stage('Shadow Gate') {
+            // Before a release (or when ticked in "Build with Parameters"): the candidate engine replays recorded
+            // trading days and every decision must come out the same. Feature branches already replay the
+            // golden journals in Unit Tests.
+            when {
+                anyOf {
+                    branch 'develop'
+                    branch 'sprint-*'
+                    expression { params.SHADOW_GATE }
+                }
+            }
+            steps {
+                // No services needed; uses the engine Unit Tests just installed. Real days kept on the Jenkins
+                // machine in /var/lib/jenkins/shadow-journals (not in git) are replayed too, if that folder exists.
+                sh '''
+                    JOURNALS="execution-engine/src/test/resources/journals"
+                    if [ -d /var/lib/jenkins/shadow-journals ]; then JOURNALS="$JOURNALS /var/lib/jenkins/shadow-journals"; fi
+                    mvn -B -q -pl execution-engine exec:java \
+                      -Dexec.args="--report execution-engine/target/shadow-gate/report.json $JOURNALS"
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'execution-engine/target/shadow-gate/report.json', allowEmptyArchive: true
+                }
             }
         }
         stage('Smoke Test') {
