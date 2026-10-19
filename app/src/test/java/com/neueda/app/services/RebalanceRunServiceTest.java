@@ -386,6 +386,23 @@ class RebalanceRunServiceTest {
         assertEquals(1, orderRepository.count());
     }
 
+    @Test
+    void missingPriceAfterSells_endsPartialInsteadOfGettingStuck() throws Exception {
+        account("5000.00");
+        hold("GOOG", 50);
+        RebalanceRunResponse started = runService.start(ACCOUNT);
+        priceRepository.deleteAll();
+
+        fill(started.getLegs().get(0).getOrderId(), "100.00");
+
+        RebalanceRunResponse done = runService.get(started.getRunId());
+        assertEquals(RebalanceStatus.PARTIAL, done.getStatus());
+        assertTrue(done.getFailureSummary().contains("Buys could not be planned"));
+        assertEquals(1, orderRepository.count());
+        assertEquals(1, appliedVersion());
+        assertEquals(0, new BigDecimal("10000.00").compareTo(accountRepository.findById(ACCOUNT).orElseThrow().getCashBalance()));
+    }
+
     // ---------- starting ----------
 
     @Test

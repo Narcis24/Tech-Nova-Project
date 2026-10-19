@@ -76,7 +76,7 @@ public class RebalanceRun {
 
     public void cancel(String reason) {
         status = RebalanceStatus.CANCELLED;
-        failureSummary = reason;
+        addFailure(reason);
         touch();
     }
 

@@ -10,6 +10,7 @@ import com.neueda.app.enums.RebalanceStatus;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.PieNotFoundException;
 import com.neueda.app.exceptions.PieNotLinkedException;
+import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.exceptions.RebalanceConflictException;
 import com.neueda.app.exceptions.RebalanceRunNotFoundException;
 import com.neueda.app.exceptions.TradingException;
@@ -164,8 +165,14 @@ public class RebalanceRunService {
         if (run.getStatus() == RebalanceStatus.SELLING) {
             run.startBuying();
             // Sized from the cash and prices now, without counting sells that did not go through
-            place(run, planner.planBuys(run.getAccountId(),
-                pieService.weightsAt(run.getPieId(), run.getTargetVersion())), PlannedAction.BUY);
+            try {
+                place(run, planner.planBuys(run.getAccountId(),
+                    pieService.weightsAt(run.getPieId(), run.getTargetVersion())), PlannedAction.BUY);
+            } catch (PriceNotFoundException e) {
+                run.addFailure("Buys could not be planned: " + e.getMessage());
+                finish(run, legs, orders);
+                return;
+            }
             step(run);
         } else {
             finish(run, legs, orders);

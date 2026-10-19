@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -38,6 +39,7 @@ public class RebalanceCoordinator {
 
     /** Advances runs whose events were missed, e.g. handled while the app was down. */
     @EventListener(ApplicationReadyEvent.class)
+    @Scheduled(fixedDelayString = "${app.pies.recovery-delay-ms:30000}")
     public void recover() {
         for (RebalanceRun run : runRepository.findByStatusIn(RebalanceStatus.ACTIVE)) {
             try {
