@@ -8,7 +8,7 @@ form {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 720px;
+  max-width: 880px;
 }
 
 .field {
@@ -26,7 +26,7 @@ select {
   min-height: 48px;
   padding: 0 14px;
   box-sizing: border-box;
-  border: 0;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   background: var(--elevated-background-color);
   font: inherit;
@@ -58,7 +58,7 @@ select:focus-visible {
   flex-direction: column;
   align-items: flex-start;
   gap: 10px;
-  min-width: 280px;
+  min-width: 0;
 }
 
 .row {
@@ -71,7 +71,8 @@ select:focus-visible {
 
 .row select {
   flex: 1;
-  min-width: 160px;
+  width: 0;
+  min-width: 0;
 }
 
 .weight {
@@ -116,4 +117,34 @@ select:focus-visible {
   display: flex;
   align-items: center;
   gap: 16px;
+  padding-top: 8px;
+}
+
+@media (max-width: 599.98px) {
+  .layout {
+    display: block;
+    padding: 16px;
+  }
+
+  .rows {
+    width: 100%;
+  }
+
+  .row select {
+    flex-basis: 100%;
+    width: 100%;
+  }
+
+  .row {
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .weight {
+    flex: 1;
+  }
+
+  .preview {
+    margin-top: 24px;
+  }
 }

@@ -55,7 +55,7 @@
         <div class="actions">
           <button type="button" (click)="use(pie)" [disabled]="!accountId()">Use for this account</button>
           <a class="edit" [routerLink]="['/pies', pie.pieId, 'edit']">Edit</a>
-          <button type="button" class="secondary" (click)="remove(pie)">Delete</button>
+          <button type="button" class="secondary danger" (click)="remove(pie)">Delete</button>
         </div>
       </li>
     }

@@ -5,11 +5,11 @@ h1 {
 }
 
 .summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  margin: 24px 0;
-  padding: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  margin: 20px 0 32px;
+  padding: 24px;
   border-radius: 16px;
   background: var(--card-background-color);
 }
@@ -25,7 +25,8 @@ dt {
 }
 
 dd {
-  margin: 6px 0 0;
+  margin: 8px 0 0;
+  font-size: 20px;
   font-weight: 600;
 }
 
@@ -48,10 +49,21 @@ caption {
 
 th,
 td {
-  padding: 14px 12px;
+  padding: 18px 12px;
   border-bottom: 1px solid var(--border-color);
   text-align: left;
   white-space: nowrap;
+}
+
+thead th {
+  color: var(--secondary-text-color);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+th:last-child,
+td:last-child {
+  text-align: right;
 }
 
 .outside {
@@ -63,15 +75,21 @@ td {
 }
 
 .action {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 8px;
   font-weight: 600;
+  font-size: 12px;
 }
 
 .sell {
   color: var(--sell-color);
+  background: var(--sell-background-color);
 }
 
 .buy {
   color: var(--gain-color);
+  background: var(--gain-background-color);
 }
 
 .warnings {
@@ -113,4 +131,41 @@ td {
 output {
   display: block;
   margin-top: 24px;
+}
+
+@media (max-width: 599.98px) {
+  .summary {
+    grid-template-columns: 1fr 1fr;
+    padding: 20px;
+  }
+
+  .summary > div:nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  dd {
+    font-size: 18px;
+  }
+
+  th,
+  td {
+    padding: 14px 4px;
+    font-size: 12px;
+  }
+
+  thead th {
+    font-size: 11px;
+    white-space: normal;
+  }
+
+  .action {
+    padding: 5px 6px;
+    font-size: 11px;
+  }
+
+  .outside {
+    max-width: 70px;
+    white-space: normal;
+  }
 }

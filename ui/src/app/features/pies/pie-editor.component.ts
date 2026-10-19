@@ -21,7 +21,7 @@ const NAME_MAX = 60;
   selector: 'app-pie-editor',
   imports: [DonutChartComponent, RouterLink],
   templateUrl: './pie-editor.component.html',
-  styleUrl: './pie-editor.component.css',
+  styleUrls: ['./pies-shared.css', './pie-editor.component.css'],
 })
 export class PieEditorComponent {
   private readonly api = inject(PieControllerService);

@@ -9,7 +9,7 @@ import { AccountPieControllerService, RebalancePreviewResponse } from '../../gen
   selector: 'app-rebalance-preview',
   imports: [CurrencyPipe, DecimalPipe, RouterLink],
   templateUrl: './rebalance-preview.component.html',
-  styleUrl: './rebalance-preview.component.css',
+  styleUrls: ['./pies-shared.css', './rebalance-preview.component.css'],
 })
 export class RebalancePreviewComponent {
   readonly preview = signal<RebalancePreviewResponse | null>(null);

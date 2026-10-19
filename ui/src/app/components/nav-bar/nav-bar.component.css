@@ -158,7 +158,6 @@
   font: inherit;
   font-size: 15px;
   color: var(--secondary-text-color);
-  text-decoration: underline;
   cursor: pointer;
 }
 

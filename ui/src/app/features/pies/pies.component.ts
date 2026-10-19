@@ -22,7 +22,7 @@ const TOP_SLICES = 3;
   selector: 'app-pies',
   imports: [DonutChartComponent, RouterLink],
   templateUrl: './pies.component.html',
-  styleUrl: './pies.component.css',
+  styleUrls: ['./pies-shared.css', './pies.component.css'],
 })
 export class PiesComponent {
   private readonly pieApi = inject(PieControllerService);
