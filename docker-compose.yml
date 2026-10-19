@@ -85,6 +85,11 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       ALPACA_KEY_ID: ${ALPACA_KEY_ID:-}
       ALPACA_SECRET_KEY: ${ALPACA_SECRET_KEY:-}
+      # Decision journal, one file per day; on a volume so it survives restarts
+      EXECUTION_ENGINE_JOURNAL_DIR: /data/journal
+
+    volumes:
+      - engine_journal:/data/journal
 
     networks:
       - tech-nova-network
@@ -228,6 +233,7 @@ services:
 
 volumes:
   db_data:
+  engine_journal:
   sonar_data:
   sonar_extensions:
 

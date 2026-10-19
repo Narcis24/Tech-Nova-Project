@@ -154,7 +154,8 @@ public final class Stack {
             .withEnv("SPRING_APPLICATION_JSON", """
                 {"market-data": {"base-url": "http://alpaca:8080", "interval-seconds": 1,
                  "daily-quota": 1000000, "key-id": "e2e", "secret-key": "e2e",
-                 "enforce-market-hours": false}}""")
+                 "enforce-market-hours": false},
+                 "execution-engine": {"journal": {"enabled": false}}}""")
             // ready once both consumers own their partitions, so no early order or quote is missed
             .waitingFor(new WaitAllStrategy()
                 .withStrategy(Wait.forLogMessage(".*execution-engine: partitions assigned: \\[order-request.*", 1))
