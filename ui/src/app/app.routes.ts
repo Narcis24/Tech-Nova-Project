@@ -1,11 +1,15 @@
+import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
 
 import { NotFoundComponent } from './features/not-found/not-found.component';
+import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
 import { guestGuard } from './guards/guest.guard';
+import { AuthService } from './services/auth.service';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+  // Admins start on their own page; logged-out visitors still reach /login through /dashboard's guard
+  { path: '', pathMatch: 'full', redirectTo: () => (inject(AuthService).isAdmin() ? 'admin' : 'dashboard') },
   {
     path: 'login',
     canActivate: [guestGuard],
@@ -56,6 +60,12 @@ export const routes: Routes = [
       {
         path: 'accounts',
         loadComponent: () => import('./features/accounts/accounts.component').then((m) => m.AccountsComponent),
+      },
+      {
+        path: 'admin',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/admin/admin-dashboard.component').then((m) => m.AdminDashboardComponent),
       },
     ],
   },

@@ -23,7 +23,18 @@ export class AuthService {
   private readonly accessToken = signal<string | null>(null);
   private refreshInFlight$: Observable<string> | null = null;
   readonly isAuthenticated = computed(() => this.accessToken() !== null);
-  readonly username = computed(() => usernameFrom(this.accessToken()));
+  // Decoded, not verified (the UI has no secret): for what to show only. The APIs check the signature.
+  private readonly claims = computed(() => claimsFrom(this.accessToken()));
+  readonly username = computed(() => {
+    const sub = this.claims()?.['sub'];
+    return typeof sub === 'string' ? sub : null;
+  });
+  /** The roles claim, e.g. ['ADMIN', 'TRADER']; empty when logged out or the claim is missing. */
+  readonly roles = computed(() => {
+    const roles = this.claims()?.['roles'];
+    return Array.isArray(roles) ? roles.filter((role): role is string => typeof role === 'string') : [];
+  });
+  readonly isAdmin = computed(() => this.roles().includes('ADMIN'));
 
   login(credentials: LoginRequest): Observable<void> {
     return this.authApi.login(credentials).pipe(
@@ -114,16 +125,16 @@ export class AuthService {
   }
 }
 
-function usernameFrom(token: string | null): string | null {
+/** The access token's payload, or null if there is no token or it is not a JWT. */
+function claimsFrom(token: string | null): Record<string, unknown> | null {
   const payload = token?.split('.')[1];
   if (!payload) {
     return null;
   }
 
   try {
-    const json = atob(payload.replaceAll('-', '+').replaceAll('_', '/'));
-    const stub: unknown = JSON.parse(json).sub;
-    return typeof stub === 'string' ? stub : null;
+    const claims: unknown = JSON.parse(atob(payload.replaceAll('-', '+').replaceAll('_', '/')));
+    return typeof claims === 'object' && claims !== null ? (claims as Record<string, unknown>) : null;
   } catch {
     return null;
   }

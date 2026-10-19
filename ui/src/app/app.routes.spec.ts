@@ -23,14 +23,16 @@ import { AuthService } from './services/auth.service';
 // Runs the real route table and guards, with only the services faked
 describe('app routes', () => {
   const isAuthenticated = signal(false);
+  const isAdmin = signal(false);
   // The shell loads the accounts and its nav bar shows the username
-  const auth = { isAuthenticated, username: signal(null) };
+  const auth = { isAuthenticated, isAdmin, username: signal(null) };
   const accounts = { accounts: signal([]), currentAccountId: signal(null), loadAccounts: () => of(undefined) };
   let harness: RouterTestingHarness;
   let router: Router;
 
   beforeEach(async () => {
     isAuthenticated.set(false);
+    isAdmin.set(false);
     TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
@@ -158,12 +160,51 @@ describe('app routes', () => {
       expect(harness.routeNativeElement?.textContent).toContain('Risk limits');
     });
 
+    it('sends / to /dashboard for a trader', async () => {
+      await harness.navigateByUrl('/');
+
+      expect(router.url).toBe('/dashboard');
+    });
+
+    it('sends /admin to /dashboard for a trader', async () => {
+      await harness.navigateByUrl('/admin');
+
+      expect(router.url).toBe('/dashboard');
+    });
+
     it('wraps the page in the shell', async () => {
       await harness.navigateByUrl('/dashboard');
 
       const shell = harness.fixture.nativeElement.querySelector('app-shell');
       expect(shell).not.toBeNull();
     });
+  });
+
+  describe('when logged in as an admin', () => {
+    beforeEach(() => {
+      isAuthenticated.set(true);
+      isAdmin.set(true);
+    });
+
+    it('sends / to /admin', async () => {
+      await harness.navigateByUrl('/');
+
+      expect(router.url).toBe('/admin');
+    });
+
+    it('shows the admin page inside the shell', async () => {
+      await harness.navigateByUrl('/admin');
+
+      expect(router.url).toBe('/admin');
+      expect(harness.routeNativeElement?.textContent).toContain('Admin');
+      expect(harness.fixture.nativeElement.querySelector('app-shell')).not.toBeNull();
+    });
+  });
+
+  it('sends /admin to /login when logged out', async () => {
+    await harness.navigateByUrl('/admin');
+
+    expect(router.url).toBe('/login?returnUrl=%2Fadmin');
   });
 
   it('shows the 404 page for unknown URLs', async () => {
