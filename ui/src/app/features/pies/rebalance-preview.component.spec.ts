@@ -137,6 +137,13 @@ describe('RebalancePreviewComponent', () => {
     expect(render().querySelector('[role="alert"]')?.textContent).toBe('No price for AAPL');
   });
 
+  it('does not describe a missing own pie as an unpublished copy', () => {
+    api.previewRebalance.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 404, error: { errorCode: 'PIE_NOT_FOUND' } })),
+    );
+    expect(render().querySelector('[role="alert"]')?.textContent).toContain("Couldn't load");
+  });
+
   it('shows loading while the request is pending', () => {
     api.previewRebalance.and.returnValue(new Subject<RebalancePreviewResponse>());
     expect(render().querySelector('output')?.textContent).toContain('Loading');

@@ -35,7 +35,7 @@ class CopyTradingE2ETest extends E2ETestBase {
 
         copier.request().body(Map.of("pieId", pie)).post(pieOf(account) + "/copy-preview").then().statusCode(200);
         copier.request().get(pieOf(account)).then().statusCode(404); // a preview links nothing
-        JsonPath first = awaitRun(copier, copy(copier, account, pie, true));
+        JsonPath first = awaitRun(copier, copy(copier, account, pie));
 
         assertEquals("COMPLETED", first.getString("status"), first.prettify());
         JsonPath linked = accountPie(copier, account);
@@ -72,8 +72,10 @@ class CopyTradingE2ETest extends E2ETestBase {
 
         Trader copier = Trader.register();
         String account = copier.openAccount("10000.00");
-        assertEquals("COMPLETED", awaitRun(copier, copy(copier, account, pie, false)).getString("status"));
+        assertEquals("COMPLETED", awaitRun(copier, copy(copier, account, pie)).getString("status"));
         copier.request().body(Map.of("pieId", pie)).post(pieOf(account) + "/copy").then().statusCode(409);
+        copier.request().body(Map.of("autoSync", false)).patch(pieOf(account)).then().statusCode(200)
+            .body("autoSync", equalTo(false));
         int apple = copier.sharesHeld(account, "AAPL");
         int orders = orderCount(copier, account);
 
@@ -101,7 +103,7 @@ class CopyTradingE2ETest extends E2ETestBase {
         String pie = publishedPie("Borrowed", Map.of("MSFT", 50));
         Trader copier = Trader.register();
         String account = copier.openAccount("10000.00");
-        assertEquals("COMPLETED", awaitRun(copier, copy(copier, account, pie, true)).getString("status"));
+        assertEquals("COMPLETED", awaitRun(copier, copy(copier, account, pie)).getString("status"));
         int orders = orderCount(copier, account);
 
         JsonPath mine = copier.request().post(pieOf(account) + "/make-mine").then().statusCode(200)
@@ -125,8 +127,8 @@ class CopyTradingE2ETest extends E2ETestBase {
         return pie;
     }
 
-    private static String copy(Trader copier, String account, String pie, boolean autoSync) {
-        return copier.request().body(Map.of("pieId", pie, "autoSync", autoSync)).post(pieOf(account) + "/copy")
+    private static String copy(Trader copier, String account, String pie) {
+        return copier.request().body(Map.of("pieId", pie)).post(pieOf(account) + "/copy")
             .then().statusCode(202).extract().path("runId");
     }
 

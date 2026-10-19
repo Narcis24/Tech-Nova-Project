@@ -13,11 +13,18 @@ import { AccountPieControllerService, AccountPieResponse } from '../../generated
     @if (pie(); as linked) {
       <div class="pie-summary">
         <span
-          ><strong>{{ linked.pieName }}</strong> · Drift {{ linked.maxDriftPct | number: '1.0-2' }}%</span
-        >
-        <a [routerLink]="['/accounts', accountId(), 'rebalance']">{{
-          (linked.maxDriftPct ?? 0) >= 5 ? 'Rebalance' : 'Preview pie'
-        }}</a>
+          ><strong>{{ linked.pieName }}</strong>
+          @if (linked.maxDriftPct != null) {
+            · Drift {{ linked.maxDriftPct | number: '1.0-2' }}%
+          }
+        </span>
+        @if (linked.activeRunId) {
+          <a [routerLink]="['/rebalance-runs', linked.activeRunId]">View rebalance</a>
+        } @else {
+          <a [routerLink]="['/accounts', accountId(), 'rebalance']">{{
+            (linked.maxDriftPct ?? 0) >= 5 ? 'Rebalance' : 'Preview pie'
+          }}</a>
+        }
       </div>
     } @else if (error()) {
       <p class="error">Couldn't load the account's pie. <a routerLink="/pies">View pies</a></p>
@@ -62,7 +69,13 @@ export class AccountPieSummaryComponent {
           this.error.set(false);
           return api.getAccountPie(id).pipe(
             catchError((error: unknown) => {
-              this.error.set(!(error instanceof HttpErrorResponse && error.status === 404));
+              this.error.set(
+                !(
+                  error instanceof HttpErrorResponse &&
+                  error.status === 404 &&
+                  error.error?.errorCode === 'PIE_NOT_LINKED'
+                ),
+              );
               return of(null);
             }),
           );

@@ -41,7 +41,7 @@ export class RebalancePreviewComponent {
             this.error.set('No pie is linked to this account. Choose one to preview a rebalance.');
             return;
           }
-          if (error.error?.errorCode === 'PIE_NOT_FOUND') {
+          if (this.copyPieId && error.error?.errorCode === 'PIE_NOT_FOUND') {
             this.error.set("This pie isn't public any more, so it can't be copied.");
             return;
           }

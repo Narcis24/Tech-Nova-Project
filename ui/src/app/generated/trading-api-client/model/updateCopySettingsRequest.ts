@@ -9,7 +9,6 @@
  */
 
 
-
 export interface UpdateCopySettingsRequest { 
     autoSync: boolean;
 }

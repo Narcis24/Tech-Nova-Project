@@ -39,12 +39,25 @@ describe('AccountPieSummaryComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Old account pie');
   });
   it('hides the summary for an unlinked account', () => {
-    get.and.returnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+    get.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 404, error: { errorCode: 'PIE_NOT_LINKED' } })),
+    );
     const fixture = TestBed.createComponent(AccountPieSummaryComponent);
     fixture.componentRef.setInput('accountId', 'acc1');
     fixture.detectChanges();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.pie-summary')).toBeNull();
     expect(fixture.nativeElement.querySelector('.error')).toBeNull();
+  });
+  it('keeps an unpriced linked pie visible and opens its active run', () => {
+    get.and.returnValue(of({ pieName: 'Growth', maxDriftPct: null, activeRunId: 'run1' }));
+    const fixture = TestBed.createComponent(AccountPieSummaryComponent);
+    fixture.componentRef.setInput('accountId', 'acc1');
+    fixture.detectChanges();
+    fixture.detectChanges();
+    const root: HTMLElement = fixture.nativeElement;
+    expect(root.textContent).toContain('Growth');
+    expect(root.textContent).not.toContain('Drift');
+    expect(root.querySelector('a')?.getAttribute('href')).toBe('/rebalance-runs/run1');
   });
 });

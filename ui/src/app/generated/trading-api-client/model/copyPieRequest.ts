@@ -9,12 +9,7 @@
  */
 
 
-
 export interface CopyPieRequest { 
     pieId: string;
-    /**
-     * Follow the author\'s later versions automatically. On when omitted.
-     */
-    autoSync?: boolean;
 }
 
