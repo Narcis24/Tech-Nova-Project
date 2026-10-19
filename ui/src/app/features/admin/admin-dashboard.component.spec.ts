@@ -76,7 +76,7 @@ describe('AdminDashboardComponent', () => {
     fixture.detectChanges();
 
     expect(page.textContent).not.toContain('Loading users');
-    expect(texts(page, '.stat').length).toBe(4);
+    expect(texts(page, '.stat')).toHaveSize(4);
   });
 
   it('says when there are no users', () => {
@@ -95,6 +95,6 @@ describe('AdminDashboardComponent', () => {
     fixture.detectChanges();
 
     expect(page.querySelector('[role=alert]')).toBeNull();
-    expect(texts(page, '.user-name').length).toBe(3);
+    expect(texts(page, '.user-name')).toHaveSize(3);
   });
 });
