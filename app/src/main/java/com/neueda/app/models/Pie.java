@@ -53,6 +53,17 @@ public class Pie {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    /** Goes public with a fresh publish time, which is also when its index starts. */
+    public void publish(LocalDateTime now) {
+        visibility = PieVisibility.PUBLIC;
+        publishedAt = now;
+    }
+
+    public void unpublish() {
+        visibility = PieVisibility.PRIVATE;
+        publishedAt = null;
+    }
+
     public static Pie create(String owner, String name, String description) {
         Pie pie = new Pie();
         pie.pieId = UUID.randomUUID();

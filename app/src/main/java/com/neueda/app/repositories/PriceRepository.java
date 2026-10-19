@@ -34,4 +34,12 @@ public interface PriceRepository extends JpaRepository<Price, PriceKey> {
           and p.tradeDate = (select max(p2.tradeDate) from Price p2 where p2.symbol = p.symbol)
         """)
     List<Price> findLatestBySymbols(@Param("symbols") Collection<String> symbols);
+
+    /** Close each symbol had on that day: its latest bar on or before it. Symbols with no bar by then are absent. */
+    @Query("""
+        select p from Price p
+        where p.symbol in :symbols
+          and p.tradeDate = (select max(p2.tradeDate) from Price p2 where p2.symbol = p.symbol and p2.tradeDate <= :day)
+        """)
+    List<Price> findClosesOnOrBefore(@Param("symbols") Collection<String> symbols, @Param("day") LocalDate day);
 }

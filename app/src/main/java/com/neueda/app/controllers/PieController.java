@@ -50,6 +50,16 @@ public class PieController {
         return ResponseEntity.ok(pieService.update(pieId, accountAccess.currentUser(), request));
     }
 
+    @PostMapping("/{pieId}/publish")
+    public ResponseEntity<PieResponse> publishPie(@PathVariable UUID pieId) {
+        return ResponseEntity.ok(pieService.publish(pieId, accountAccess.currentUser()));
+    }
+
+    @PostMapping("/{pieId}/unpublish")
+    public ResponseEntity<PieResponse> unpublishPie(@PathVariable UUID pieId) {
+        return ResponseEntity.ok(pieService.unpublish(pieId, accountAccess.currentUser()));
+    }
+
     @DeleteMapping("/{pieId}")
     public ResponseEntity<Void> deletePie(@PathVariable UUID pieId) {
         pieService.delete(pieId, accountAccess.currentUser());

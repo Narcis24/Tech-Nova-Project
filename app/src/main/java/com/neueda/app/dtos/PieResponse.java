@@ -8,7 +8,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/** A pie at its latest version. cashPct is the part of the pie not allocated to any slice. */
+/**
+ * A pie at its latest version. cashPct is the part of the pie not allocated to any slice.
+ * linkedAccountIds are the owner's own accounts that follow it; publishedAt is set while it is public.
+ */
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,4 +25,11 @@ public class PieResponse {
     private BigDecimal cashPct;
     private List<String> linkedAccountIds;
     private LocalDateTime createdAt;
+    private LocalDateTime publishedAt;
+
+    public PieResponse(UUID pieId, String name, String description, String visibility, int version,
+                       List<PieSliceResponse> slices, BigDecimal cashPct, List<String> linkedAccountIds,
+                       LocalDateTime createdAt) {
+        this(pieId, name, description, visibility, version, slices, cashPct, linkedAccountIds, createdAt, null);
+    }
 }

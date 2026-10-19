@@ -5,6 +5,7 @@ import com.neueda.app.dtos.PieSliceRequest;
 import com.neueda.app.dtos.PieSliceResponse;
 import com.neueda.app.dtos.SavePieRequest;
 import com.neueda.app.exceptions.InvalidPieException;
+import com.neueda.app.exceptions.PieEditTooSoonException;
 import com.neueda.app.exceptions.PieInUseException;
 import com.neueda.app.exceptions.PieNotFoundException;
 import com.neueda.app.services.AccountAccess;
@@ -127,5 +128,46 @@ class PieControllerTest {
             .andExpect(status().isNoContent());
 
         verify(pieService).delete(PIE_ID, "jay");
+    }
+
+    @Test
+    void publish_returnsPieWithPublishTime() throws Exception {
+        PieResponse published = new PieResponse(PIE_ID, "Tech", "desc", "PUBLIC", 1, List.of(), new BigDecimal("100"),
+            List.of(), LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2026, 1, 2, 3, 4));
+        when(pieService.publish(PIE_ID, "jay")).thenReturn(published);
+
+        mockMvc.perform(post("/v1/pies/" + PIE_ID + "/publish"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.visibility").value("PUBLIC"))
+            .andExpect(jsonPath("$.publishedAt").exists());
+    }
+
+    @Test
+    void publish_unknown_404() throws Exception {
+        when(pieService.publish(PIE_ID, "jay")).thenThrow(new PieNotFoundException("Pie not found: " + PIE_ID));
+
+        mockMvc.perform(post("/v1/pies/" + PIE_ID + "/publish"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.errorCode").value("PIE_NOT_FOUND"));
+    }
+
+    @Test
+    void unpublish_returnsPrivatePie() throws Exception {
+        when(pieService.unpublish(PIE_ID, "jay")).thenReturn(response());
+
+        mockMvc.perform(post("/v1/pies/" + PIE_ID + "/unpublish"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.visibility").value("PRIVATE"))
+            .andExpect(jsonPath("$.publishedAt").doesNotExist());
+    }
+
+    @Test
+    void update_publicPieEditedTooSoon_409() throws Exception {
+        when(pieService.update(eq(PIE_ID), eq("jay"), any(SavePieRequest.class)))
+            .thenThrow(new PieEditTooSoonException("once every 24 hours"));
+
+        mockMvc.perform(put("/v1/pies/" + PIE_ID).contentType(MediaType.APPLICATION_JSON).content(body("Tech")))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.errorCode").value("PIE_EDIT_TOO_SOON"));
     }
 }
