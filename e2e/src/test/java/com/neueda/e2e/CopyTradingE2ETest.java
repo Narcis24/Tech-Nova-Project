@@ -20,7 +20,7 @@ import com.neueda.e2e.support.Trader;
 import io.restassured.path.json.JsonPath;
 
 /**
- * Copy trading against the real stack: the author is {@code me}, and each test registers a copier
+ * Manual pie copying against the real stack: the author is {@code me}, and each test registers a copier
  * with their own account. Runs are waited on rather than raced.
  */
 class CopyTradingE2ETest extends E2ETestBase {
@@ -28,7 +28,7 @@ class CopyTradingE2ETest extends E2ETestBase {
     private static final Set<String> RUN_ENDED = Set.of("COMPLETED", "PARTIAL", "CANCELLED");
 
     @Test
-    void copierFollowsTheAuthorsNewVersion() {
+    void authorUpdatesWaitForTheCopierToReviewAndConfirm() {
         String pie = publishedPie("Followed", Map.of("AAPL", 50, "MSFT", 30));
         Trader copier = Trader.register();
         String account = copier.openAccount("10000.00");
@@ -41,19 +41,35 @@ class CopyTradingE2ETest extends E2ETestBase {
         JsonPath linked = accountPie(copier, account);
         assertEquals("COPY", linked.getString("mode"));
         assertEquals(1, linked.getInt("appliedVersion"));
-        assertTrue(linked.getBoolean("autoSync"));
+        assertFalse(linked.getMap("$").containsKey("autoSync"));
+        assertFalse(linked.getMap("$").containsKey("syncPending"));
         assertWithinOneShare(copier, account, "AAPL", 50);
         me.request().get("/v1/pies/public/" + pie).then().statusCode(200).body("followers", equalTo(1));
 
+        int ordersBefore = orderCount(copier, account);
+        int appleBefore = copier.sharesHeld(account, "AAPL");
         me.request().body(body("Followed", Map.of("AAPL", 30, "MSFT", 50))).put("/v1/pies/" + pie)
             .then().statusCode(200).body("version", equalTo(2));
 
-        JsonPath synced = await("copier to reach version 2").atMost(Duration.ofSeconds(90))
-            .pollInterval(Duration.ofMillis(500))
-            .until(() -> accountPie(copier, account),
-                p -> p.getInt("appliedVersion") == 2 && p.getString("activeRunId") == null);
-        assertFalse(synced.getBoolean("updateAvailable"));
-        assertFalse(synced.getBoolean("syncPending"));
+        JsonPath behind = accountPie(copier, account);
+        assertEquals(1, behind.getInt("appliedVersion"));
+        assertEquals(2, behind.getInt("latestVersion"));
+        assertTrue(behind.getBoolean("updateAvailable"));
+        assertNull(behind.getString("activeRunId"));
+        assertEquals(ordersBefore, orderCount(copier, account));
+        assertEquals(appleBefore, copier.sharesHeld(account, "AAPL"));
+        copier.request().post(pieOf(account) + "/preview").then().statusCode(200)
+            .body("version", equalTo(2));
+        assertEquals(ordersBefore, orderCount(copier, account));
+
+        String runId = copier.request().post("/v1/accounts/" + account + "/rebalance")
+            .then().statusCode(202).extract().path("runId");
+        JsonPath confirmed = awaitRun(copier, runId);
+        assertEquals("COMPLETED", confirmed.getString("status"), confirmed.prettify());
+        assertEquals(2, confirmed.getInt("targetVersion"));
+        JsonPath applied = accountPie(copier, account);
+        assertEquals(2, applied.getInt("appliedVersion"));
+        assertFalse(applied.getBoolean("updateAvailable"));
         assertWithinOneShare(copier, account, "AAPL", 30);
         assertWithinOneShare(copier, account, "MSFT", 50);
         assertTrue(copier.balance(account).signum() >= 0);
@@ -65,7 +81,7 @@ class CopyTradingE2ETest extends E2ETestBase {
     }
 
     @Test
-    void withAutoSyncOffTheCopierIsOfferedTheUpdateAndKeepsHoldingsAfterUnpublish() {
+    void copiedPieOffersUpdatesAndKeepsHoldingsAfterUnpublish() {
         String pie = publishedPie("Manual", Map.of("AAPL", 40));
         String ownAccount = me.openAccount("1000.00");
         me.request().body(Map.of("pieId", pie)).post(pieOf(ownAccount) + "/copy").then().statusCode(409);
@@ -74,8 +90,6 @@ class CopyTradingE2ETest extends E2ETestBase {
         String account = copier.openAccount("10000.00");
         assertEquals("COMPLETED", awaitRun(copier, copy(copier, account, pie)).getString("status"));
         copier.request().body(Map.of("pieId", pie)).post(pieOf(account) + "/copy").then().statusCode(409);
-        copier.request().body(Map.of("autoSync", false)).patch(pieOf(account)).then().statusCode(200)
-            .body("autoSync", equalTo(false));
         int apple = copier.sharesHeld(account, "AAPL");
         int orders = orderCount(copier, account);
 

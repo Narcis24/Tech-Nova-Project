@@ -22,7 +22,6 @@ model/accountResponse.ts
 model/balanceResponse.ts
 model/cashAmountRequest.ts
 model/copyPieRequest.ts
-model/indexPoint.ts
 model/instrumentResponse.ts
 model/linkPieRequest.ts
 model/marketAssetResponse.ts
@@ -49,7 +48,6 @@ model/riskLimitResponse.ts
 model/riskWarning.ts
 model/savePieRequest.ts
 model/sliceDrift.ts
-model/updateCopySettingsRequest.ts
 model/updateRiskLimitRequest.ts
 param.ts
 provide-api.ts

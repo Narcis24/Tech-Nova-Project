@@ -8,7 +8,6 @@
  * Do not edit the class manually.
  */
 import { PieSliceResponse } from './pieSliceResponse';
-import { IndexPoint } from './indexPoint';
 
 
 export interface PublicPieResponse { 
@@ -17,13 +16,10 @@ export interface PublicPieResponse {
     description?: string;
     authorUsername?: string;
     sliceCount?: number;
-    returnPct?: number;
     followers?: number;
     publishedAt?: string;
     demo?: boolean;
     slices?: Array<PieSliceResponse>;
     cashPct?: number;
-    points?: Array<IndexPoint>;
-    returns?: { [key: string]: number; };
 }
 

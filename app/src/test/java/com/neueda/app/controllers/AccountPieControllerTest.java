@@ -7,7 +7,6 @@ import com.neueda.app.dtos.PreviewLeg;
 import com.neueda.app.dtos.RebalancePreviewResponse;
 import com.neueda.app.dtos.RebalanceRunResponse;
 import com.neueda.app.dtos.SliceDrift;
-import com.neueda.app.dtos.UpdateCopySettingsRequest;
 import com.neueda.app.enums.RebalanceStatus;
 import com.neueda.app.exceptions.AccountAccessDeniedException;
 import com.neueda.app.exceptions.PieNotFoundException;
@@ -40,7 +39,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -71,7 +69,7 @@ class AccountPieControllerTest {
     private AccountPieResponse response() {
         return new AccountPieResponse("ACC-1", PIE_ID, "Tech", "OWN", null, 1,
             List.of(new SliceDrift("AAPL", new BigDecimal("60"), new BigDecimal("50"), new BigDecimal("10"))),
-            new BigDecimal("10"), true, false, false, false, null);
+            new BigDecimal("10"), true, false, null);
     }
 
     @Test
@@ -156,7 +154,7 @@ class AccountPieControllerTest {
     }
 
     @Test
-    void copy_202WithTheRun_autoSyncOnWhenOmitted() throws Exception {
+    void copy_202WithTheRun_afterConfirmation() throws Exception {
         when(accountAccess.currentUser()).thenReturn("jay");
         when(accountPieService.copy("ACC-1", "jay", PIE_ID)).thenReturn(run());
 
@@ -198,30 +196,8 @@ class AccountPieControllerTest {
         mockMvc.perform(post(URL + "/copy-preview").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new CopyPieRequest(PIE_ID))))
             .andExpect(status().isForbidden());
-        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new UpdateCopySettingsRequest(true))))
-            .andExpect(status().isForbidden());
         mockMvc.perform(post(URL + "/make-mine")).andExpect(status().isForbidden());
         verifyNoInteractions(accountPieService);
-    }
-
-    @Test
-    void updateCopySettings_returnsTheAccountPie() throws Exception {
-        when(accountPieService.updateCopySettings("ACC-1", false)).thenReturn(response());
-
-        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new UpdateCopySettingsRequest(false))))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.pieName").value("Tech"))
-            .andExpect(jsonPath("$.published").value(true))
-            .andExpect(jsonPath("$.updateAvailable").value(false))
-            .andExpect(jsonPath("$.syncPending").value(false));
-    }
-
-    @Test
-    void updateCopySettings_noAutoSync_400() throws Exception {
-        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON).content("{}"))
-            .andExpect(status().isBadRequest());
     }
 
     @Test

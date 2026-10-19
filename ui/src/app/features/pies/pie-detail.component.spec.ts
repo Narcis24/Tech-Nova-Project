@@ -70,6 +70,7 @@ describe('PieDetailComponent', () => {
     create();
     expect(root.querySelector('.publishing h2')!.textContent).toBe('Private');
     expect(button('Publish')).toBeDefined();
+    expect(root.querySelector('.publishing')!.textContent).toContain('stocks and weights on Discover');
     expect(button('Unpublish')).toBeUndefined();
     expect(root.querySelector('.publishing a')).toBeNull();
   });

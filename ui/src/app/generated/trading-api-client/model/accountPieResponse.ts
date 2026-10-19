@@ -21,8 +21,6 @@ export interface AccountPieResponse {
     maxDriftPct?: number;
     published?: boolean;
     updateAvailable?: boolean;
-    autoSync?: boolean;
-    syncPending?: boolean;
     activeRunId?: string;
 }
 

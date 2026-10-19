@@ -27,7 +27,6 @@ import com.neueda.app.repositories.AccountPieRepository;
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.InstrumentRepository;
 import com.neueda.app.repositories.OrderRepository;
-import com.neueda.app.repositories.PieIndexPointRepository;
 import com.neueda.app.repositories.PieRepository;
 import com.neueda.app.repositories.PieSliceRepository;
 import com.neueda.app.repositories.PieVersionRepository;
@@ -37,7 +36,6 @@ import com.neueda.app.repositories.RebalanceLegRepository;
 import com.neueda.app.repositories.RebalanceRunRepository;
 import com.neueda.events.EventEnvelope;
 import com.neueda.events.OrderExecutedEvent;
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,7 +55,6 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -73,17 +70,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
-/**
- * Copying a public pie end to end against a real (H2) database: the services, the run, and the after-commit
- * events that sync copies when the author saves a new version or a run ends. Runs without a test transaction,
- * as events only fire when a transaction commits. The author's public pie may change once per 24 hours, so
- * the clock is moved forward between edits.
- */
+/** Copy previews and explicitly confirmed runs against a real database, including settlement. */
 @DataJpaTest
-@Import({AccountPieService.class, CopySyncService.class, CopySyncCoordinator.class, RebalanceRunService.class,
+@Import({AccountPieService.class, RebalanceRunService.class,
     RebalanceCoordinator.class, RebalancePlanner.class, RebalanceCalculator.class, PortfolioService.class,
     PositionValuator.class, PriceService.class, OrderService.class, OrderValidator.class, OrderSettlementService.class,
-    PieService.class, PieIndexService.class, PieCopyIntegrationTest.JsonConfig.class})
+    PieService.class, PieCopyIntegrationTest.JsonConfig.class})
 @ActiveProfiles("test")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class PieCopyIntegrationTest {
@@ -91,7 +83,6 @@ class PieCopyIntegrationTest {
     private static final String AUTHOR = "author";
     private static final String BUYER = "buyer";
     private static final String ACC1 = "COPY001";
-    private static final String ACC2 = "COPY002";
     private static final Instant START = Instant.parse("2026-10-14T15:00:00Z");
 
     @TestConfiguration
@@ -116,13 +107,11 @@ class PieCopyIntegrationTest {
     @Autowired private PieRepository pieRepository;
     @Autowired private PieVersionRepository pieVersionRepository;
     @Autowired private PieSliceRepository pieSliceRepository;
-    @Autowired private PieIndexPointRepository pieIndexPointRepository;
     @Autowired private AccountPieRepository accountPieRepository;
     @Autowired private RebalanceRunRepository runRepository;
     @Autowired private RebalanceLegRepository legRepository;
 
     @Autowired private PlatformTransactionManager transactions;
-    @Autowired private EntityManager entityManager;
 
     @MockitoBean private EventProducerService eventProducerService;
     @MockitoBean private RiskService riskService;
@@ -132,7 +121,7 @@ class PieCopyIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        at(Duration.ZERO);
+        when(clock.instant()).thenReturn(START);
         when(clock.getZone()).thenReturn(ZoneOffset.UTC);
         for (String symbol : List.of("AAPL", "MSFT", "GOOG")) {
             instrumentRepository.save(new Instrument(symbol, symbol + " Inc.", AssetClass.EQUITY, "USD", true));
@@ -149,7 +138,6 @@ class PieCopyIntegrationTest {
         orderRepository.deleteAll();
         positionRepository.deleteAll();
         accountPieRepository.deleteAll();
-        pieIndexPointRepository.deleteAll();
         pieSliceRepository.deleteAll();
         pieVersionRepository.deleteAll();
         pieRepository.deleteAll();
@@ -161,7 +149,7 @@ class PieCopyIntegrationTest {
     // ---------- copying ----------
 
     @Test
-    void copy_linksTheAccountAsACopyWithAutoSyncOn_andStartsTheRun() {
+    void copy_linksTheAccountAndStartsTheConfirmedRun() {
         account(ACC1, "10000.00");
 
         RebalanceRunResponse run = accountPieService.copy(ACC1, BUYER, pieId);
@@ -169,8 +157,6 @@ class PieCopyIntegrationTest {
         AccountPie link = link(ACC1);
         assertEquals(PieLinkMode.COPY, link.getMode());
         assertEquals(pieId, link.getPieId());
-        assertTrue(link.isAutoSync());
-        assertFalse(accountPieService.get(ACC1).isSyncPending());
         assertEquals(1, run.getTargetVersion());
         assertEquals(RebalanceStatus.BUYING, run.getStatus());
         assertEquals(2, orderRepository.count());
@@ -276,143 +262,62 @@ class PieCopyIntegrationTest {
         assertEquals(List.of(), pieService.get(pieId, AUTHOR).getLinkedAccountIds());
     }
 
-    // ---------- syncing ----------
+    // ---------- explicit updates ----------
 
     @Test
-    void autoSyncOn_aNewVersion_startsARunToIt() throws Exception {
+    void authorEditsOnlyOfferAnUpdateUntilTheCopierConfirms() throws Exception {
         account(ACC1, "10000.00");
         complete(accountPieService.copy(ACC1, BUYER, pieId));
-        assertEquals(1, link(ACC1).getAppliedVersion());
+        long orders = orderRepository.count();
 
         edit("30", "30");
+        edit("20", "20");
 
-        assertEquals(List.of(1, 2), targetVersions());
-        assertTrue(runOf(2).isActive());
-        assertFalse(accountPieService.get(ACC1).isSyncPending());
-        assertEquals(runOf(2).getRunId(), accountPieService.get(ACC1).getActiveRunId());
-    }
-
-    @Test
-    void autoSyncOff_aNewVersion_startsNothing_andOffersTheUpdate() throws Exception {
-        account(ACC1, "10000.00");
-        complete(accountPieService.copy(ACC1, BUYER, pieId));
-        accountPieService.updateCopySettings(ACC1, false);
-
-        edit("30", "30");
-
-        assertEquals(List.of(1), targetVersions());
         AccountPieResponse response = accountPieService.get(ACC1);
         assertTrue(response.isUpdateAvailable());
-        assertFalse(response.isAutoSync());
         assertEquals(1, response.getAppliedVersion());
-        assertEquals(2, response.getLatestVersion());
-        assertEquals(2, accountPieService.preview(ACC1).getVersion());
-    }
-
-    @Test
-    void turningAutoSyncOn_startsNothingByItself_butTheNextVersionIsFollowed() throws Exception {
-        account(ACC1, "10000.00");
-        complete(accountPieService.copy(ACC1, BUYER, pieId));
-        accountPieService.updateCopySettings(ACC1, false);
-        edit("30", "30");
-
-        AccountPieResponse response = accountPieService.updateCopySettings(ACC1, true);
-
-        assertTrue(response.isAutoSync());
-        assertTrue(response.isUpdateAvailable());
+        assertEquals(3, response.getLatestVersion());
         assertEquals(List.of(1), targetVersions());
+        assertEquals(orders, orderRepository.count());
+        assertEquals(3, accountPieService.preview(ACC1).getVersion());
+        assertEquals(orders, orderRepository.count());
 
-        at(Duration.ofHours(52));
-        edit("20", "20");
+        complete(runService.start(ACC1));
 
         assertEquals(List.of(1, 3), targetVersions());
+        assertEquals(3, link(ACC1).getAppliedVersion());
+        assertFalse(accountPieService.get(ACC1).isUpdateAvailable());
     }
 
     @Test
-    void aRunActive_showsTheWaitingVersion_andSyncsWhenItEnds() throws Exception {
+    void editsDuringARunDoNotStartAnotherRunWhenItFinishes() throws Exception {
         account(ACC1, "10000.00");
         RebalanceRunResponse first = accountPieService.copy(ACC1, BUYER, pieId);
-
         edit("30", "30");
+        edit("20", "20");
+        assertThrows(RebalanceConflictException.class, () -> runService.start(ACC1));
+
+        complete(first);
 
         assertEquals(List.of(1), targetVersions());
-        assertTrue(accountPieService.get(ACC1).isSyncPending());
-
-        fillAll(first);
-
-        assertEquals(RebalanceStatus.COMPLETED, runService.get(first.getRunId()).getStatus());
-        assertEquals(List.of(1, 2), targetVersions());
-        assertFalse(accountPieService.get(ACC1).isSyncPending());
+        assertEquals(1, link(ACC1).getAppliedVersion());
+        assertTrue(accountPieService.get(ACC1).isUpdateAvailable());
+        assertEquals(3, accountPieService.preview(ACC1).getVersion());
     }
 
     @Test
-    void severalEditsWhileBusy_collapseIntoOneRunToTheLatest() throws Exception {
-        account(ACC1, "10000.00");
-        RebalanceRunResponse first = accountPieService.copy(ACC1, BUYER, pieId);
-
-        edit("30", "30");
-        at(Duration.ofHours(52));
-        edit("20", "20");
-        fillAll(first);
-
-        assertEquals(List.of(1, 3), targetVersions());
-        assertFalse(accountPieService.get(ACC1).isSyncPending());
-    }
-
-    @Test
-    void cancellingTheRun_dropsTheWaitingSync_andNothingRestartsIt() throws Exception {
+    void cancelAfterAnAuthorEditDoesNotRestartTrading() {
         account(ACC1, "10000.00");
         RebalanceRunResponse first = accountPieService.copy(ACC1, BUYER, pieId);
         edit("30", "30");
-        assertTrue(accountPieService.get(ACC1).isSyncPending());
 
         runService.cancel(first.getRunId());
+        runService.advance(first.getRunId());
 
-        assertFalse(accountPieService.get(ACC1).isSyncPending());
-        assertEquals(List.of(1), targetVersions());
         assertEquals(List.of(1), targetVersions());
         assertEquals(RebalanceStatus.CANCELLED, runOf(1).getStatus());
-    }
-
-    @Test
-    void aFailedSync_offersManualRebalance_andDoesNotStopOtherAccounts() throws Exception {
-        account(ACC1, "10000.00");
-        account(ACC2, "10000.00");
-        complete(accountPieService.copy(ACC1, BUYER, pieId));
-        complete(accountPieService.copy(ACC2, BUYER, pieId));
-        // Pending orders of its own keep ACC1 from starting a run
-        UUID manual = orderService.placeOrder(
-            new PlaceOrderRequest(ACC1, "GOOG", "BUY", "MARKET", 1, null, "manual-1")).getOrderId();
-
-        edit("30", "30");
-
-        assertFalse(accountPieService.get(ACC1).isSyncPending());
         assertTrue(accountPieService.get(ACC1).isUpdateAvailable());
-        assertFalse(accountPieService.get(ACC2).isSyncPending());
-        assertEquals(1, runsOf(ACC1));
-        assertEquals(2, runsOf(ACC2));
-
-        orderService.cancelOrder(manual);
-        runService.start(ACC1);
-
-        assertFalse(accountPieService.get(ACC1).isSyncPending());
-        assertEquals(2, runsOf(ACC1));
-        assertEquals(2, runsOf(ACC2));
-    }
-
-    @Test
-    void anAuthorsEditIsNotUndone_whenSyncingFails() throws Exception {
-        account(ACC1, "10000.00");
-        complete(accountPieService.copy(ACC1, BUYER, pieId));
-        priceRepository.deleteAll();  // the sync can't plan a run without prices
-
-        PieResponse saved = pieService.update(pieId, AUTHOR, request("30", "30"));
-
-        assertEquals(2, saved.getVersion());
-        assertEquals(2, pieRepository.findById(pieId).orElseThrow().getLatestVersion());
-        assertFalse(accountPieService.get(ACC1).isSyncPending());
-        assertTrue(accountPieService.get(ACC1).isUpdateAvailable());
-        assertEquals(List.of(1), targetVersions());
+        assertTrue(orderRepository.findAll().stream().allMatch(order -> order.getStatus() == OrderStatus.CANCELLED));
     }
 
     // ---------- the author unpublishes or deletes ----------
@@ -435,7 +340,7 @@ class PieCopyIntegrationTest {
     }
 
     @Test
-    void republished_theCopyIsSyncedToTheLatest() throws Exception {
+    void republished_theCopyOffersTheLatestForManualReview() throws Exception {
         account(ACC1, "10000.00");
         complete(accountPieService.copy(ACC1, BUYER, pieId));
         pieService.unpublish(pieId, AUTHOR);
@@ -443,7 +348,8 @@ class PieCopyIntegrationTest {
 
         pieService.publish(pieId, AUTHOR);
 
-        assertEquals(List.of(1, 2), targetVersions());
+        assertEquals(List.of(1), targetVersions());
+        assertTrue(accountPieService.get(ACC1).isUpdateAvailable());
         assertTrue(accountPieService.get(ACC1).isPublished());
     }
 
@@ -493,7 +399,6 @@ class PieCopyIntegrationTest {
         assertEquals(PieLinkMode.OWN, link.getMode());
         assertEquals(response.getPieId(), link.getPieId());
         assertEquals(1, link.getAppliedVersion());
-        assertFalse(link.isAutoSync());
         Pie mine = pieRepository.findById(link.getPieId()).orElseThrow();
         assertEquals(BUYER, mine.getOwnerUsername());
         assertEquals(PieVisibility.PRIVATE, mine.getVisibility());
@@ -536,57 +441,24 @@ class PieCopyIntegrationTest {
     }
 
     @Test
-    void makeMine_andCopySettings_needACopy() {
+    void makeMine_needsACopy() {
         account(ACC1, "10000.00");
         accountPieRepository.save(AccountPie.own(ACC1, ownPie(BUYER)));
 
         assertThrows(RebalanceConflictException.class, () -> accountPieService.makeMine(ACC1, BUYER));
-        assertThrows(RebalanceConflictException.class, () -> accountPieService.updateCopySettings(ACC1, false));
     }
 
     @Test
-    void turningAutoSyncOff_dropsAWaitingSync_andTheRunEndsWithoutAnother() throws Exception {
+    void completedVersionCannotOverwriteALinkToAnotherPie() {
         account(ACC1, "10000.00");
-        RebalanceRunResponse first = accountPieService.copy(ACC1, BUYER, pieId);
-        edit("30", "30");
-        assertTrue(accountPieService.get(ACC1).isSyncPending());
+        UUID mine = ownPie(BUYER);
+        accountPieRepository.save(AccountPie.own(ACC1, mine));
 
-        AccountPieResponse response = accountPieService.updateCopySettings(ACC1, false);
-        fillAll(first);
+        new TransactionTemplate(transactions).executeWithoutResult(status ->
+            assertEquals(0, accountPieRepository.applyVersion(ACC1, pieId, 1)));
 
-        assertFalse(response.isSyncPending());
-        assertEquals(List.of(1), targetVersions());
-    }
-
-    @Test
-    void applyingTheRunVersion_preservesSettingsChangedAfterTheLinkWasLoaded() {
-        account(ACC1, "10000.00");
-        accountPieRepository.save(AccountPie.copy(ACC1, pieId, true));
-        new TransactionTemplate(transactions).executeWithoutResult(status -> {
-            AccountPie stale = accountPieRepository.findById(ACC1).orElseThrow();
-            assertTrue(stale.isAutoSync());
-            entityManager.createNativeQuery("update account_pies set auto_sync = false where account_id = :accountId")
-                .setParameter("accountId", ACC1).executeUpdate();
-            assertEquals(1, accountPieRepository.applyVersion(ACC1, pieId, 1));
-        });
-        assertFalse(link(ACC1).isAutoSync());
-        assertEquals(1, link(ACC1).getAppliedVersion());
-    }
-
-    @Test
-    void changingSettings_preservesTheVersionAppliedAfterTheLinkWasLoaded() {
-        account(ACC1, "10000.00");
-        accountPieRepository.save(AccountPie.copy(ACC1, pieId, true));
-        new TransactionTemplate(transactions).executeWithoutResult(status -> {
-            AccountPie stale = accountPieRepository.findById(ACC1).orElseThrow();
-            entityManager.createNativeQuery("update account_pies set applied_version = 1 where account_id = :accountId")
-                .setParameter("accountId", ACC1).executeUpdate();
-            stale.setAutoSync(false);
-            entityManager.flush();
-            entityManager.clear();
-        });
-        assertFalse(link(ACC1).isAutoSync());
-        assertEquals(1, link(ACC1).getAppliedVersion());
+        assertEquals(mine, link(ACC1).getPieId());
+        assertEquals(null, link(ACC1).getAppliedVersion());
     }
 
     // ---------- helpers ----------
@@ -617,20 +489,12 @@ class PieCopyIntegrationTest {
         pieService.update(pieId, AUTHOR, request(aapl, msft));
     }
 
-    private void at(Duration sinceStart) {
-        when(clock.instant()).thenReturn(START.plus(sinceStart));
-    }
-
     private List<Integer> targetVersions() {
         return runRepository.findAll().stream().map(RebalanceRun::getTargetVersion).sorted().toList();
     }
 
     private RebalanceRun runOf(int targetVersion) {
         return runRepository.findAll().stream().filter(r -> r.getTargetVersion() == targetVersion).findFirst().orElseThrow();
-    }
-
-    private long runsOf(String accountId) {
-        return runRepository.findAll().stream().filter(r -> r.getAccountId().equals(accountId)).count();
     }
 
     private Map<String, BigDecimal> weights(UUID id) {

@@ -14,7 +14,6 @@ import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.exceptions.RebalanceConflictException;
 import com.neueda.app.exceptions.RebalanceRunNotFoundException;
 import com.neueda.app.exceptions.TradingException;
-import com.neueda.app.events.RebalanceRunFinished;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.AccountPie;
 import com.neueda.app.models.Order;
@@ -39,7 +38,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,8 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
  * run already moved on and does nothing.
  *
  * A run is started under the account's row lock, which keeps runs, links and unlinks of an account in
- * turn. After that a run is changed under its own row lock, which settlement never takes. A run that ends
- * publishes RebalanceRunFinished; what follows from it happens after the commit, never under these locks.
+ * turn. After that a run is changed under its own row lock, which settlement never takes.
  */
 @Service
 @Transactional
@@ -69,14 +66,13 @@ public class RebalanceRunService {
     private final RebalancePlanner planner;
     private final OrderValidator orderValidator;
     private final OrderService orderService;
-    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public RebalanceRunService(RebalanceRunRepository runRepository, RebalanceLegRepository legRepository,
                                AccountRepository accountRepository, AccountPieRepository accountPieRepository,
                                OrderRepository orderRepository, PieRepository pieRepository,
                                PieService pieService, RebalancePlanner planner, OrderValidator orderValidator,
-                               OrderService orderService, ApplicationEventPublisher events, Clock clock) {
+                               OrderService orderService, Clock clock) {
         this.runRepository = runRepository;
         this.legRepository = legRepository;
         this.accountRepository = accountRepository;
@@ -87,7 +83,6 @@ public class RebalanceRunService {
         this.planner = planner;
         this.orderValidator = orderValidator;
         this.orderService = orderService;
-        this.events = events;
         this.clock = clock;
     }
 
@@ -146,7 +141,6 @@ public class RebalanceRunService {
         // changeStatus cleared the persistence context, so load the run again to change it
         run = runRepository.findById(runId).orElseThrow(() -> notFound(runId));
         run.cancel("Cancelled by user, " + cancelled + " pending order(s) cancelled");
-        events.publishEvent(new RebalanceRunFinished(runId, run.getAccountId(), run.getPieId(), run.getStatus()));
         log.info("Rebalance run cancelled: runId={}, cancelledOrders={}", runId, cancelled);
         return toResponse(run);
     }
@@ -220,7 +214,6 @@ public class RebalanceRunService {
         }
         run.finish();
         accountPieRepository.applyVersion(run.getAccountId(), run.getPieId(), run.getTargetVersion());
-        events.publishEvent(new RebalanceRunFinished(run.getRunId(), run.getAccountId(), run.getPieId(), run.getStatus()));
         log.info("Rebalance run ended: runId={}, status={}", run.getRunId(), run.getStatus());
     }
 

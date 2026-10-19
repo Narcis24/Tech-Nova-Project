@@ -236,7 +236,7 @@ class AccountPieServiceTest {
     // ---------- copying ----------
 
     private void copyOf(Integer applied) {
-        AccountPie link = AccountPie.copy(ACCOUNT, PIE_ID, true);
+        AccountPie link = AccountPie.copy(ACCOUNT, PIE_ID);
         if (applied != null) {
             link.applyVersion(applied);
         }
@@ -310,7 +310,6 @@ class AccountPieServiceTest {
         order.verify(runService).start(ACCOUNT);
         assertEquals(PieLinkMode.COPY, saved.getValue().getMode());
         assertEquals(PIE_ID, saved.getValue().getPieId());
-        assertTrue(saved.getValue().isAutoSync());
         assertNull(saved.getValue().getAppliedVersion());
     }
 
@@ -324,34 +323,11 @@ class AccountPieServiceTest {
     }
 
     @Test
-    void updateCopySettings_turningItOffDropsTheWaitingSync() {
-        copyOf(1);
-        AccountPie link = accountPieRepository.findById(ACCOUNT).orElseThrow();
-        portfolio("0");
-
-        AccountPieResponse response = service.updateCopySettings(ACCOUNT, false);
-
-        assertFalse(link.isAutoSync());
-        assertFalse(response.isSyncPending());
-        assertFalse(response.isAutoSync());
-        verifyNoInteractions(runService);
-    }
-
-    @Test
-    void updateCopySettings_ownLink_conflict() {
-        linked();
-
-        assertThrows(RebalanceConflictException.class, () -> service.updateCopySettings(ACCOUNT, true));
-    }
-
-    @Test
     void get_copyBehindAPublicPie_offersTheUpdate() {
         copyOf(1);
         UUID runId = UUID.randomUUID();
         RebalanceRun run = mock(RebalanceRun.class);
         when(run.getRunId()).thenReturn(runId);
-        when(run.getPieId()).thenReturn(PIE_ID);
-        when(run.getTargetVersion()).thenReturn(2);
         when(rebalanceRunRepository.findFirstByAccountIdAndStatusIn(ACCOUNT, RebalanceStatus.ACTIVE))
             .thenReturn(Optional.of(run));
         portfolio("1000");
@@ -360,14 +336,9 @@ class AccountPieServiceTest {
 
         assertTrue(response.isPublished());
         assertTrue(response.isUpdateAvailable());
-        assertTrue(response.isAutoSync());
         assertEquals(1, response.getAppliedVersion());
         assertEquals(2, response.getLatestVersion());
         assertEquals(runId, response.getActiveRunId());
-        assertFalse(response.isSyncPending());
-
-        when(run.getTargetVersion()).thenReturn(1);
-        assertTrue(service.get(ACCOUNT).isSyncPending());
     }
 
     @Test
@@ -426,7 +397,6 @@ class AccountPieServiceTest {
         assertEquals(PieLinkMode.OWN, link.getMode());
         assertEquals(mineId, link.getPieId());
         assertEquals(1, link.getAppliedVersion());
-        assertFalse(link.isAutoSync());
         assertEquals("OWN", response.getMode());
         assertFalse(response.isUpdateAvailable());
         verifyNoInteractions(runService);

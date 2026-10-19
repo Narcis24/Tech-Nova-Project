@@ -18,8 +18,8 @@
         <div class="copy">
           <button type="button" (click)="copy()">Copy into account</button>
           <p class="note">
-            Into account {{ account.accountId }}. You'll see the trades before anything is placed, and the account
-            follows the author's changes.
+            Into account {{ account.accountId }}. Review and confirm the trades first. Later author updates also need
+            your review and confirmation.
           </p>
         </div>
       } @else if (!ownPie()) {
@@ -27,31 +27,11 @@
       }
 
       <dl class="stats">
-        @for (option of windows; track option) {
-          <div>
-            <dt>{{ option }} return</dt>
-            <dd
-              [class.gain]="returnTone(pie.returns?.[option]) === 'gain'"
-              [class.loss]="returnTone(pie.returns?.[option]) === 'loss'"
-            >
-              {{ formatReturn(pie.returns?.[option]) }}
-            </dd>
-          </div>
-        }
         <div>
           <dt>Followers</dt>
           <dd>{{ pie.followers | number }}</dd>
         </div>
       </dl>
-      @if (pending()) {
-        <p class="note pending">A dash means the pie hasn't been public for that long yet.</p>
-      }
-
-      <section class="panel" aria-label="Pie index">
-        <app-index-chart [points]="pie.points ?? []" />
-        <p class="note">Index of the pie's daily value, starting at 100 on the day it was published.</p>
-      </section>
-
       <section class="panel holdings" aria-labelledby="holdings-heading">
         <app-donut-chart [segments]="segments()" [size]="140" />
         <div class="list">

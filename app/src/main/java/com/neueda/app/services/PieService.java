@@ -5,10 +5,7 @@ import com.neueda.app.dtos.PieSliceRequest;
 import com.neueda.app.dtos.PieSliceResponse;
 import com.neueda.app.dtos.SavePieRequest;
 import com.neueda.app.enums.PieVisibility;
-import com.neueda.app.enums.PieLinkMode;
-import com.neueda.app.events.PieVersionSaved;
 import com.neueda.app.exceptions.InvalidPieException;
-import com.neueda.app.exceptions.PieEditTooSoonException;
 import com.neueda.app.exceptions.PieInUseException;
 import com.neueda.app.exceptions.PieNotFoundException;
 import com.neueda.app.models.Account;
@@ -25,7 +22,6 @@ import com.neueda.app.repositories.PieSliceRepository;
 import com.neueda.app.repositories.PieVersionRepository;
 import java.math.BigDecimal;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -35,19 +31,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Pies and their versioned target weights. A new version is made only when the weights change, and a
- * public pie can get at most one new version per 24 hours. Changes lock the pie row, so they happen one at a time.
+ * Pies and their versioned target weights. A new version is made only when the weights change, and
+ * changes lock the pie row, so they happen one at a time.
  */
 @Service
 public class PieService {
 
     private static final BigDecimal HUNDRED = new BigDecimal("100");
-    private static final Duration PUBLIC_EDIT_GAP = Duration.ofHours(24);
 
     private final PieRepository pieRepository;
     private final PieVersionRepository pieVersionRepository;
@@ -55,22 +49,18 @@ public class PieService {
     private final AccountPieRepository accountPieRepository;
     private final AccountRepository accountRepository;
     private final InstrumentRepository instrumentRepository;
-    private final PieIndexService pieIndexService;
-    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public PieService(PieRepository pieRepository, PieVersionRepository pieVersionRepository,
                       PieSliceRepository pieSliceRepository, AccountPieRepository accountPieRepository,
                       AccountRepository accountRepository, InstrumentRepository instrumentRepository,
-                      PieIndexService pieIndexService, ApplicationEventPublisher events, Clock clock) {
+                      Clock clock) {
         this.pieRepository = pieRepository;
         this.pieVersionRepository = pieVersionRepository;
         this.pieSliceRepository = pieSliceRepository;
         this.accountPieRepository = accountPieRepository;
         this.accountRepository = accountRepository;
         this.instrumentRepository = instrumentRepository;
-        this.pieIndexService = pieIndexService;
-        this.events = events;
         this.clock = clock;
     }
 
@@ -88,7 +78,7 @@ public class PieService {
         return toResponse(pie, latestSlices(pie));
     }
 
-    /** Makes the pie public and starts its index at 100 today. Publishing a public pie changes nothing. */
+    /** Makes the pie public. Publishing a public pie changes nothing. */
     @Transactional
     public PieResponse publish(UUID pieId, String owner) {
         Pie pie = requireOwnedForUpdate(pieId, owner);
@@ -96,13 +86,11 @@ public class PieService {
             LocalDateTime now = now();
             pie.publish(now);
             pieRepository.save(pie);
-            pieIndexService.restart(pieId, now.toLocalDate());
-            events.publishEvent(new PieVersionSaved(pieId, pie.getLatestVersion()));
         }
         return toResponse(pie, latestSlices(pie));
     }
 
-    /** Makes the pie private again and drops its index, so publishing later starts over. */
+    /** Makes the pie private again. */
     @Transactional
     public PieResponse unpublish(UUID pieId, String owner) {
         Pie pie = requireOwnedForUpdate(pieId, owner);
@@ -133,16 +121,8 @@ public class PieService {
 
         List<PieSlice> slices = latestSlices(pie);
         if (!normalised(weights).equals(normalised(toWeights(slices)))) {
-            boolean isPublic = pie.getVisibility() == PieVisibility.PUBLIC;
-            boolean followed = accountPieRepository.existsByPieIdAndMode(pieId, PieLinkMode.COPY);
-            if ((isPublic || followed) && editedWithinDay(pie)) {
-                throw new PieEditTooSoonException("A public or copied pie can change its slices once every 24 hours");
-            }
             pie.setLatestVersion(pie.getLatestVersion() + 1);
             slices = saveVersion(pieId, pie.getLatestVersion(), weights);
-            if (isPublic) {
-                events.publishEvent(new PieVersionSaved(pieId, pie.getLatestVersion()));
-            }
         }
         pie.setName(req.getName());
         pie.setDescription(req.getDescription());
@@ -183,14 +163,7 @@ public class PieService {
         if (pie.getVisibility() == PieVisibility.PUBLIC) {
             pie.unpublish();
             pieRepository.save(pie);
-            pieIndexService.clear(pie.getPieId());
         }
-    }
-
-    private boolean editedWithinDay(Pie pie) {
-        // Version 1 creates the pie; only subsequent versions are edits.
-        return pieVersionRepository.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(
-            pie.getPieId(), 1, now().minus(PUBLIC_EDIT_GAP));
     }
 
     private LocalDateTime now() {

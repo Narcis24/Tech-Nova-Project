@@ -31,9 +31,7 @@ const COPY: AccountPieResponse = {
   appliedVersion: 1,
   maxDriftPct: 1,
   published: true,
-  autoSync: true,
   updateAvailable: false,
-  syncPending: false,
 };
 
 const NOT_LINKED = new HttpErrorResponse({ status: 404, error: { errorCode: 'PIE_NOT_LINKED' } });
@@ -48,7 +46,6 @@ describe('PiesComponent', () => {
     getAccountPie: (id: string) => Observable<AccountPieResponse>;
     linkPie: (id: string, body: { pieId: string }) => Observable<AccountPieResponse>;
     unlinkPie: (id: string) => Observable<unknown>;
-    updateCopySettings: (id: string, body: { autoSync: boolean }) => Observable<AccountPieResponse>;
     makePieMine: (id: string) => Observable<AccountPieResponse>;
   }>;
   let fixture: ComponentFixture<PiesComponent>;
@@ -66,13 +63,7 @@ describe('PiesComponent', () => {
   beforeEach(() => {
     currentAccountId.set('ACC001');
     pies = jasmine.createSpyObj('pies', ['listMine', 'deletePie']);
-    accountPies = jasmine.createSpyObj('accountPies', [
-      'getAccountPie',
-      'linkPie',
-      'unlinkPie',
-      'updateCopySettings',
-      'makePieMine',
-    ]);
+    accountPies = jasmine.createSpyObj('accountPies', ['getAccountPie', 'linkPie', 'unlinkPie', 'makePieMine']);
     pies.listMine.and.returnValue(of([PIE]));
     accountPies.getAccountPie.and.returnValue(of(LINKED));
     TestBed.configureTestingModule({
@@ -206,33 +197,30 @@ describe('PiesComponent', () => {
     const header = () => root.querySelector('.header')!;
     const link = (text: string) =>
       Array.from(header().querySelectorAll('a')).find((a) => a.textContent?.trim() === text) as HTMLAnchorElement;
-    const autoSync = () => header().querySelector('input[role="switch"]') as HTMLInputElement;
 
     it('says the account copies it, with copy controls instead of unlink', () => {
       accountPies.getAccountPie.and.returnValue(of(COPY));
       create();
       expect(header().textContent).toContain('This account copies');
-      expect(autoSync().checked).toBeTrue();
+      expect(header().querySelector('input[role="switch"]')).toBeNull();
       expect(button('Make it mine')).toBeTruthy();
       expect(button('Stop copying')).toBeTruthy();
       expect(button('Unlink')).toBeUndefined();
       expect(header().querySelector('.status')).toBeNull();
     });
 
-    it('offers a review when an update is available and auto-sync is off', () => {
-      accountPies.getAccountPie.and.returnValue(of({ ...COPY, autoSync: false, updateAvailable: true }));
+    it('offers a review when an author update is available', () => {
+      accountPies.getAccountPie.and.returnValue(of({ ...COPY, updateAvailable: true }));
       create();
       expect(header().querySelector('.status')?.textContent).toContain('Update available');
       expect(link('Review').getAttribute('href')).toBe('/accounts/ACC001/rebalance');
-      expect(autoSync().checked).toBeFalse();
     });
 
-    it('shows a pending sync and links to the running rebalance', () => {
-      accountPies.getAccountPie.and.returnValue(
-        of({ ...COPY, updateAvailable: true, syncPending: true, activeRunId: 'run7' }),
-      );
+    it('links to the active rebalance without offering another review', () => {
+      accountPies.getAccountPie.and.returnValue(of({ ...COPY, updateAvailable: true, activeRunId: 'run7' }));
       create();
-      expect(header().querySelector('.status')?.textContent).toContain('Sync pending');
+      expect(header().querySelector('.status')).toBeNull();
+      expect(link('Review')).toBeUndefined();
       expect(link('View rebalance').getAttribute('href')).toBe('/rebalance-runs/run7');
       expect(button('Make it mine').disabled).toBeTrue();
     });
@@ -243,21 +231,10 @@ describe('PiesComponent', () => {
       expect(button('Make it mine').disabled).toBeTrue();
     });
 
-    it('says when the author stopped publishing it, without an auto-sync toggle', () => {
+    it('says when the author stopped publishing it', () => {
       accountPies.getAccountPie.and.returnValue(of({ ...COPY, published: false }));
       create();
       expect(header().querySelector('.status')?.textContent).toContain('No longer published');
-      expect(autoSync()).toBeNull();
-    });
-
-    it('turns auto-sync off', () => {
-      accountPies.getAccountPie.and.returnValue(of(COPY));
-      accountPies.updateCopySettings.and.returnValue(of({ ...COPY, autoSync: false }));
-      create();
-      autoSync().click();
-      fixture.detectChanges();
-      expect(accountPies.updateCopySettings).toHaveBeenCalledOnceWith('ACC001', { autoSync: false });
-      expect(autoSync().checked).toBeFalse();
     });
 
     it("makes the pie the user's own and reloads", () => {

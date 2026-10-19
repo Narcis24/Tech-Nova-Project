@@ -78,7 +78,7 @@ import static org.mockito.Mockito.when;
 @DataJpaTest
 @Import({RebalanceRunService.class, RebalanceCoordinator.class, RebalancePlanner.class, RebalanceCalculator.class,
     PortfolioService.class, PositionValuator.class, PriceService.class, OrderService.class, OrderValidator.class,
-    OrderSettlementService.class, PieService.class, PieIndexService.class, RebalanceRunServiceTest.JsonConfig.class})
+    OrderSettlementService.class, PieService.class, RebalanceRunServiceTest.JsonConfig.class})
 @ActiveProfiles("test")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class RebalanceRunServiceTest {
@@ -116,7 +116,6 @@ class RebalanceRunServiceTest {
     @Autowired private RebalanceLegRepository legRepository;
 
     @MockitoBean private EventProducerService eventProducerService;
-    @MockitoBean private PieIndexService pieIndexService;
     @MockitoBean private Clock clock;
 
     private UUID pieId;

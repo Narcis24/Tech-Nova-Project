@@ -36,7 +36,6 @@ export class PiesComponent {
   readonly loading = signal(true);
   readonly loadError = signal(false);
   readonly actionError = signal<string | null>(null);
-  readonly savingSettings = signal(false);
   readonly linked = computed(() => {
     const header = this.header();
     return header.state === 'linked' ? header.pie : null;
@@ -122,25 +121,7 @@ export class PiesComponent {
     this.unlink();
   }
 
-  setAutoSync(autoSync: boolean): void {
-    const id = this.accountId();
-    if (!id) return;
-    this.actionError.set(null);
-    this.savingSettings.set(true);
-    this.accountPieApi.updateCopySettings(id, { autoSync }).subscribe({
-      next: (pie) => {
-        this.savingSettings.set(false);
-        this.header.set({ state: 'linked', pie });
-      },
-      error: (error: unknown) => {
-        this.savingSettings.set(false);
-        this.actionError.set(conflictMessage(error) ?? "Couldn't change auto-sync. Try again.");
-        this.headerRevision.update((v) => v + 1);
-      },
-    });
-  }
-
-  /** Turns the copy into a private pie of the user's own, so the author's changes stop reaching the account. */
+  /** Makes a private pie from the last allocation applied to this account. */
   makeMine(): void {
     const id = this.accountId();
     if (!id) return;

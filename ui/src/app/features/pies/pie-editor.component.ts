@@ -137,11 +137,7 @@ export class PieEditorComponent {
 }
 
 function saveError(error: unknown): string {
-  if (
-    error instanceof HttpErrorResponse &&
-    ((error.status === 422 && error.error?.errorCode === 'INVALID_PIE') ||
-      (error.status === 409 && error.error?.errorCode === 'PIE_EDIT_TOO_SOON'))
-  ) {
+  if (error instanceof HttpErrorResponse && error.status === 422 && error.error?.errorCode === 'INVALID_PIE') {
     const message = error.error.message;
     if (typeof message === 'string' && message.trim()) return message;
   }

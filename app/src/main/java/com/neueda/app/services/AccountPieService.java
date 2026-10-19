@@ -32,7 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Which pie an account follows, how far it has drifted, and the trades that would fix it. An account follows a pie
- * of its owner's (OWN) or copies a public pie of someone else's (COPY), which it follows as the author changes it.
+ * of its owner's (OWN) or copies a public pie of someone else's (COPY), whose updates require explicit review and confirmation.
  */
 @Service
 public class AccountPieService {
@@ -113,17 +113,8 @@ public class AccountPieService {
             .filter(link -> link.getMode() == PieLinkMode.COPY && link.getPieId().equals(pieId)).isPresent()) {
             throw new RebalanceConflictException("This account already copies this pie");
         }
-        accountPieRepository.save(AccountPie.copy(accountId, pieId, true));
+        accountPieRepository.save(AccountPie.copy(accountId, pieId));
         return rebalanceRunService.start(accountId);
-    }
-
-    /** Turns following the author's new versions on or off. Turning it on starts nothing until the next version. */
-    @Transactional
-    public AccountPieResponse updateCopySettings(String accountId, boolean autoSync) {
-        lockAccount(accountId);
-        AccountPie link = requireCopy(accountId);
-        link.setAutoSync(autoSync);
-        return toResponse(link);
     }
 
     /**
@@ -196,11 +187,9 @@ public class AccountPieService {
         RebalanceRun activeRun = rebalanceRunRepository
             .findFirstByAccountIdAndStatusIn(link.getAccountId(), RebalanceStatus.ACTIVE)
             .orElse(null);
-        boolean syncPending = updateAvailable && link.isAutoSync() && activeRun != null
-            && activeRun.getPieId().equals(pie.getPieId()) && activeRun.getTargetVersion() < pie.getLatestVersion();
         return new AccountPieResponse(link.getAccountId(), pie.getPieId(), pie.getName(), link.getMode().name(),
             link.getAppliedVersion(), version == null ? 0 : version, drift, maxDrift, pie.isPublished(),
-            updateAvailable, link.isAutoSync(), syncPending, activeRun == null ? null : activeRun.getRunId());
+            updateAvailable, activeRun == null ? null : activeRun.getRunId());
     }
 
     /** Under the account's row lock, the same one a run starts under, so a run can't start mid-change. */

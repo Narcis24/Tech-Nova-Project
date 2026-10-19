@@ -9,16 +9,14 @@ import { DonutChartComponent } from '../../components/donut-chart/donut-chart.co
 import { PublicPieControllerService, PublicPieResponse } from '../../generated/trading-api-client';
 import { AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
-import { IndexChartComponent } from './index-chart.component';
-import { WINDOWS, formatReturn, returnTone } from './pie-return';
 
 type State =
   { status: 'loading' } | { status: 'missing' } | { status: 'error' } | { status: 'ready'; pie: PublicPieResponse };
 
-/** One public pie: who runs it, how it has performed, and what it holds. */
+/** One public allocation template and its author. */
 @Component({
   selector: 'app-public-pie',
-  imports: [DatePipe, DecimalPipe, DonutChartComponent, IndexChartComponent, RouterLink],
+  imports: [DatePipe, DecimalPipe, DonutChartComponent, RouterLink],
   templateUrl: './public-pie.component.html',
   styleUrls: ['./pies-shared.css', './public-pie.component.css'],
 })
@@ -28,9 +26,6 @@ export class PublicPieComponent {
   private readonly accounts = inject(AccountService);
   private readonly username = inject(AuthService).username;
   private readonly pieId = inject(ActivatedRoute).snapshot.paramMap.get('pieId')!;
-  readonly windows = WINDOWS;
-  readonly formatReturn = formatReturn;
-  readonly returnTone = returnTone;
 
   readonly state = signal<State>({ status: 'loading' });
   readonly current = computed(() => {
@@ -51,7 +46,6 @@ export class PublicPieComponent {
     return this.accounts.accounts().find((a) => a.accountId === id) ?? null;
   });
   readonly ownPie = computed(() => this.current()?.authorUsername === this.username());
-  readonly pending = computed(() => this.windows.some((w) => this.current()?.returns?.[w] == null));
   private readonly revision = signal(0);
 
   constructor() {

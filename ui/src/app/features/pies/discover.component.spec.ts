@@ -11,16 +11,15 @@ const PIES: PublicPieSummary[] = [
     name: 'Steady Compounders',
     authorUsername: 'ada',
     sliceCount: 4,
-    returnPct: 12.5,
     followers: 1200,
     demo: true,
   },
-  { pieId: 'p2', name: 'Chip Bet', authorUsername: 'grace', sliceCount: 2, returnPct: -3.456, followers: 7 },
+  { pieId: 'p2', name: 'Chip Bet', authorUsername: 'grace', sliceCount: 2, followers: 7 },
   { pieId: 'p3', name: 'Fresh', authorUsername: 'linus', sliceCount: 1, followers: 0 },
 ];
 
 describe('DiscoverComponent', () => {
-  let api: jasmine.SpyObj<{ listPublicPies: (window?: string) => Observable<PublicPieSummary[]> }>;
+  let api: jasmine.SpyObj<{ listPublicPies: () => Observable<PublicPieSummary[]> }>;
   let fixture: ComponentFixture<DiscoverComponent>;
   let root: HTMLElement;
 
@@ -42,26 +41,23 @@ describe('DiscoverComponent', () => {
     });
   });
 
-  it('ranks the pies for ALL by default', () => {
+  it('loads public allocation templates without a performance window', () => {
     create();
-    expect(api.listPublicPies).toHaveBeenCalledOnceWith('ALL');
+    expect(api.listPublicPies).toHaveBeenCalledOnceWith();
     const rows = Array.from(root.querySelectorAll('.entry'));
     expect(rows.map((r) => r.querySelector('h2 a')!.textContent)).toEqual(['Steady Compounders', 'Chip Bet', 'Fresh']);
-    expect(rows.map((r) => r.querySelector('.rank')!.textContent)).toEqual(['1', '2', '3']);
   });
 
-  it('shows author, return, followers, slices and the demo label', () => {
+  it('shows author, followers, slice count and demo label', () => {
     create();
-    const [first, second, third] = Array.from(root.querySelectorAll('.entry')) as HTMLElement[];
+    const [first, second] = Array.from(root.querySelectorAll('.entry'));
     expect(first.textContent).toContain('by ada');
     expect(first.querySelector('.tag')!.textContent).toBe('Demo');
-    expect(first.querySelector('.main dd')!.textContent!.trim()).toBe('+12.50%');
-    expect(first.querySelector('.main dd')!.classList).toContain('gain');
     expect(first.textContent).toContain('1,200');
+    expect(first.textContent).toContain('Slices');
     expect(second.querySelector('.tag')).toBeNull();
-    expect(second.querySelector('.main dd')!.textContent!.trim()).toBe('-3.46%');
-    expect(second.querySelector('.main dd')!.classList).toContain('loss');
-    expect(third.querySelector('.main dd')!.textContent!.trim()).toBe('—');
+    expect(root.querySelector('[aria-label="Return window"]')).toBeNull();
+    expect(root.querySelector('.rank')).toBeNull();
   });
 
   it('links each pie to its public page', () => {
@@ -75,16 +71,6 @@ describe('DiscoverComponent', () => {
     expect(links.map((a) => a.getAttribute('href'))).toEqual(['/pies', '/discover']);
   });
 
-  it('reloads for the chosen window', () => {
-    create();
-    button('30D').click();
-    fixture.detectChanges();
-    expect(api.listPublicPies).toHaveBeenCalledWith('30D');
-    expect(button('30D').getAttribute('aria-pressed')).toBe('true');
-    expect(button('ALL').getAttribute('aria-pressed')).toBe('false');
-    expect(root.querySelector('.metric.main dt')!.textContent).toBe('30D return');
-  });
-
   it('shows a loading state', () => {
     api.listPublicPies.and.returnValue(new Subject<PublicPieSummary[]>());
     create();
@@ -92,15 +78,7 @@ describe('DiscoverComponent', () => {
     expect(root.querySelector('.entry')).toBeNull();
   });
 
-  it('explains an empty window', () => {
-    api.listPublicPies.and.returnValue(of([]));
-    create();
-    button('90D').click();
-    fixture.detectChanges();
-    expect(root.textContent).toContain('No pie has been public for 90D yet');
-  });
-
-  it('explains an empty leaderboard', () => {
+  it('explains an empty Discover page', () => {
     api.listPublicPies.and.returnValue(of([]));
     create();
     expect(root.textContent).toContain('No public pies yet.');
@@ -115,14 +93,5 @@ describe('DiscoverComponent', () => {
     fixture.detectChanges();
     expect(root.querySelector('[role="alert"]')).toBeNull();
     expect(root.querySelectorAll('.entry').length).toBe(3);
-  });
-
-  it('keeps the chosen window while its request is in flight', () => {
-    create();
-    api.listPublicPies.and.returnValue(new Subject<PublicPieSummary[]>());
-    button('7D').click();
-    fixture.detectChanges();
-    expect(button('7D').getAttribute('aria-pressed')).toBe('true');
-    expect(root.querySelector('.entry')).toBeNull();
   });
 });

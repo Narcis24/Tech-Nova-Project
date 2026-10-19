@@ -17,8 +17,6 @@
             @if (link.mode === 'COPY') {
               @if (!link.published) {
                 <span class="status muted">No longer published</span>
-              } @else if (link.syncPending) {
-                <span class="status">Sync pending</span>
               } @else if (link.updateAvailable && !link.activeRunId) {
                 <span class="status">Update available</span>
               }
@@ -33,18 +31,6 @@
               }}</a>
             }
             @if (link.mode === 'COPY') {
-              @if (link.published) {
-                <label class="toggle">
-                  <input
-                    type="checkbox"
-                    role="switch"
-                    [checked]="link.autoSync"
-                    [disabled]="savingSettings()"
-                    (change)="setAutoSync($any($event.target).checked)"
-                  />
-                  Auto-sync
-                </label>
-              }
               <button
                 type="button"
                 class="secondary"

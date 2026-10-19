@@ -14,7 +14,7 @@ async function signUp(request: APIRequestContext, prefix: string) {
   return { username, password, headers: { Authorization: `Bearer ${accessToken}` } };
 }
 
-test("copies someone else's public pie, then is offered the author's update", async ({ page, request }) => {
+test('copies a public pie and trades an author update only after confirmation', async ({ page, request }) => {
   const pieName = `Copied pie ${randomBytes(4).toString('hex')}`;
   const author = await signUp(request, 'auth');
   const created = await request.post('/api/v1/pies', {
@@ -49,7 +49,9 @@ test("copies someone else's public pie, then is offered the author's update", as
   await page.getByRole('button', { name: 'Copy into account' }).click();
 
   await expect(page.getByRole('heading', { name: 'Rebalance preview' })).toBeVisible();
-  await expect(page.getByText('auto-sync on')).toBeVisible();
+  await expect(
+    page.getByText('Later author updates need your review and confirmation', { exact: false }),
+  ).toBeVisible();
   await expect(page.locator('.summary')).toContainText('$10,000.00');
   const started = page.waitForResponse(
     (response) => response.request().method() === 'POST' && response.url().endsWith(`/accounts/${accountId}/pie/copy`),
@@ -60,21 +62,37 @@ test("copies someone else's public pie, then is offered the author's update", as
   const { runId } = await response.json();
   await expect(page).toHaveURL(new RegExp(`/rebalance-runs/${runId}$`));
 
-  // Fills depend on the local market feed, so end the run rather than wait on it
-  const runStatus = async () =>
-    (await (await request.get(`/api/v1/rebalance-runs/${runId}`, { headers: copier.headers })).json()).status;
-  if (['SELLING', 'BUYING'].includes(await runStatus())) {
-    await request.post(`/api/v1/rebalance-runs/${runId}/cancel`, { headers: copier.headers });
-  }
-  await expect.poll(runStatus, { timeout: 30_000 }).toMatch(/COMPLETED|PARTIAL|CANCELLED/);
+  // Fills depend on the local market feed, so cancel active runs before continuing.
+  const endRun = async (id: string) => {
+    const runStatus = async () => {
+      const run = await request.get(`/api/v1/rebalance-runs/${id}`, { headers: copier.headers });
+      expect(run.ok()).toBeTruthy();
+      return (await run.json()).status;
+    };
+    if (['SELLING', 'BUYING'].includes(await runStatus())) {
+      const cancelled = await request.post(`/api/v1/rebalance-runs/${id}/cancel`, { headers: copier.headers });
+      expect(cancelled.ok()).toBeTruthy();
+    }
+    await expect.poll(runStatus, { timeout: 30_000 }).toMatch(/COMPLETED|PARTIAL|CANCELLED/);
+  };
+  const orders = async () => {
+    const response = await request.get(`/api/v1/accounts/${accountId}/orders`, { headers: copier.headers });
+    expect(response.ok()).toBeTruthy();
+    const rows: { orderId: string }[] = await response.json();
+    return rows.map((order) => order.orderId).sort();
+  };
+  const linkedPie = async () => {
+    const response = await request.get(`/api/v1/accounts/${accountId}/pie`, { headers: copier.headers });
+    expect(response.ok()).toBeTruthy();
+    return response.json();
+  };
+  await endRun(runId);
 
   await page.goto('/pies');
   const header = page.locator('.header');
   await expect(header).toContainText(`This account copies ${pieName}`);
-  const autoSync = page.getByRole('switch', { name: 'Auto-sync' });
-  await expect(autoSync).toBeChecked();
-  await autoSync.click();
-  await expect(autoSync).not.toBeChecked();
+  await expect(page.getByRole('switch')).toHaveCount(0);
+  const ordersBeforeEdit = await orders();
 
   const edited = await request.put(`/api/v1/pies/${pieId}`, {
     headers: author.headers,
@@ -87,6 +105,26 @@ test("copies someone else's public pie, then is offered the author's update", as
     'href',
     `/accounts/${accountId}/rebalance`,
   );
+
+  expect((await linkedPie()).activeRunId).toBeFalsy();
+  expect(await orders()).toEqual(ordersBeforeEdit);
+  await header.getByRole('link', { name: 'Review', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Rebalance preview' })).toBeVisible();
+  expect(await orders()).toEqual(ordersBeforeEdit);
+  expect((await linkedPie()).activeRunId).toBeFalsy();
+
+  const updateStarted = page.waitForResponse(
+    (response) => response.request().method() === 'POST' && response.url().endsWith(`/accounts/${accountId}/rebalance`),
+  );
+  await page.getByRole('button', { name: 'Confirm rebalance', exact: true }).click();
+  const updateResponse = await updateStarted;
+  expect(updateResponse.status()).toBe(202);
+  const { runId: updateRunId } = await updateResponse.json();
+  expect(updateRunId).not.toBe(runId);
+  await expect(page).toHaveURL(new RegExp(`/rebalance-runs/${updateRunId}$`));
+  await endRun(updateRunId);
+  await page.goto('/pies');
+  await expect(header).toContainText(`This account copies ${pieName}`);
 
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Stop copying' }).click();

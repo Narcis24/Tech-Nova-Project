@@ -184,7 +184,7 @@ describe('RebalancePreviewComponent', () => {
       const root = render();
       expect(api.previewCopy).toHaveBeenCalledOnceWith('acc1', { pieId: 'p9' });
       expect(api.previewRebalance).not.toHaveBeenCalled();
-      expect(root.textContent).toContain('auto-sync on');
+      expect(root.textContent).toContain('Later author updates need your review and confirmation');
       expect(root.querySelector('a')?.textContent).toContain('Back to pie');
     });
 

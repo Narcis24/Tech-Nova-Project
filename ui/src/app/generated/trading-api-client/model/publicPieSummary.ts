@@ -15,7 +15,6 @@ export interface PublicPieSummary {
     description?: string;
     authorUsername?: string;
     sliceCount?: number;
-    returnPct?: number;
     followers?: number;
     publishedAt?: string;
     demo?: boolean;

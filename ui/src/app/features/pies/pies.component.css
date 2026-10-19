@@ -64,23 +64,6 @@ h1 {
   gap: 8px 12px;
 }
 
-.toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.toggle input {
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  accent-color: var(--primary-color);
-}
-
 .empty {
   margin: 1em 0;
   color: var(--secondary-text-color);

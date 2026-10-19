@@ -5,14 +5,12 @@ import com.neueda.app.dtos.CopyPieRequest;
 import com.neueda.app.dtos.LinkPieRequest;
 import com.neueda.app.dtos.RebalancePreviewResponse;
 import com.neueda.app.dtos.RebalanceRunResponse;
-import com.neueda.app.dtos.UpdateCopySettingsRequest;
 import com.neueda.app.services.AccountAccess;
 import com.neueda.app.services.AccountPieService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -73,13 +71,6 @@ public class AccountPieController {
         accountAccess.requireOwned(accountId);
         return ResponseEntity.accepted()
             .body(accountPieService.copy(accountId, accountAccess.currentUser(), request.getPieId()));
-    }
-
-    @PatchMapping
-    public ResponseEntity<AccountPieResponse> updateCopySettings(@PathVariable String accountId,
-                                                                 @Valid @RequestBody UpdateCopySettingsRequest request) {
-        accountAccess.requireOwned(accountId);
-        return ResponseEntity.ok(accountPieService.updateCopySettings(accountId, request.getAutoSync()));
     }
 
     @PostMapping("/make-mine")
