@@ -75,6 +75,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/admin-dashboard.component').then((m) => m.AdminDashboardComponent),
       },
+      {
+        path: 'admin/users',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./features/admin/users/admin-users.component').then((m) => m.AdminUsersComponent),
+      },
     ],
   },
   { path: '**', component: NotFoundComponent },

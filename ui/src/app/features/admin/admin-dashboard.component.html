@@ -3,6 +3,8 @@
   <p class="subtitle">Signed in as {{ name }}</p>
 }
 
+<a class="manage-link" routerLink="/admin/users">Manage users →</a>
+
 @if (error()) {
   <div class="load-error" role="alert">
     <p>Couldn't load the users.</p>

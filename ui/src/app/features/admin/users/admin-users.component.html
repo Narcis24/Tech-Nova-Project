@@ -1,0 +1,49 @@
+<h1>Users</h1>
+<p class="subtitle">See every user, change their roles and create new accounts.</p>
+
+@if (error()) {
+  <div class="load-error" role="alert">
+    <p>Couldn't load the users.</p>
+    <button type="button" class="retry" (click)="load()">Try again</button>
+  </div>
+} @else if (users(); as users) {
+  @if (users.length) {
+    <div class="table-wrap">
+      <table class="users">
+        <thead>
+          <tr>
+            <th scope="col">Username</th>
+            <th scope="col">Email</th>
+            <th scope="col">Roles</th>
+            <th scope="col">Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of users; track user.username) {
+            <tr>
+              <td class="username">{{ user.username }}</td>
+              <td class="email">{{ user.email ?? '—' }}</td>
+              <td>
+                <div class="roles">
+                  @for (role of user.roles; track role) {
+                    <span class="role" [class.role-admin]="role === 'ADMIN'">{{ role }}</span>
+                  }
+                </div>
+              </td>
+              <td class="created">
+                {{ user.createdAt | date: 'd MMM y' }}
+                @if (user.createdBy) {
+                  <span class="created-by">by {{ user.createdBy }}</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <p class="empty">No users yet.</p>
+  }
+} @else {
+  <p class="loading">Loading users…</p>
+}
