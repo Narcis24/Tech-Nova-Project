@@ -81,9 +81,9 @@
   overflow-wrap: anywhere;
 }
 
-.created-by {
-  display: block;
-  font-size: 13px;
+/* A date never needs to wrap onto two lines */
+.created {
+  white-space: nowrap;
 }
 
 .roles {

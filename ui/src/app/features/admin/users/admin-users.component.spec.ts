@@ -57,7 +57,6 @@ describe('AdminUsersComponent', () => {
       expect(usernames()).toEqual(['invited_01', 'old_user1', 'test_admin', 'trader_one']);
       const rows = page.querySelectorAll('tbody tr');
       expect(rows[0].textContent).toContain('invited.01@example.com');
-      expect(rows[0].textContent).toContain('by test_admin');
       expect(rows[1].querySelector('.email')?.textContent?.trim()).toBe('—');
       expect(Array.from(rows[3].querySelectorAll('.role')).map((r) => r.textContent?.trim())).toEqual([
         'ADMIN',
@@ -96,6 +95,16 @@ describe('AdminUsersComponent', () => {
 
       expect(page.querySelector('[role=alert]')).toBeNull();
       expect(usernames()).toHaveSize(4);
+    });
+
+    it('shows who created each user in its own column, or a dash if they registered themselves', () => {
+      create(of(USERS));
+
+      const headers = Array.from(page.querySelectorAll('th')).map((th) => th.textContent?.trim());
+      expect(headers).toEqual(['Username', 'Email', 'Roles', 'Created', 'Created by']);
+      const createdBy = Array.from(page.querySelectorAll('.created-by')).map((cell) => cell.textContent?.trim());
+      expect(createdBy).toEqual(['test_admin', '—', '—', '—']);
+      expect(page.querySelector('.created')?.textContent?.trim()).toBe('19 Oct 2026');
     });
   });
 

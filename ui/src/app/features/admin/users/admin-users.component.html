@@ -34,6 +34,7 @@
               <th scope="col">Email</th>
               <th scope="col">Roles</th>
               <th scope="col">Created</th>
+              <th scope="col">Created by</th>
             </tr>
           </thead>
           <tbody>
@@ -48,12 +49,9 @@
                     }
                   </div>
                 </td>
-                <td class="created">
-                  {{ user.createdAt | date: 'd MMM y' }}
-                  @if (user.createdBy) {
-                    <span class="created-by">by {{ user.createdBy }}</span>
-                  }
-                </td>
+                <td class="created">{{ user.createdAt | date: 'd MMM y' }}</td>
+                <!-- Empty for users who registered themselves -->
+                <td class="created-by">{{ user.createdBy ?? '—' }}</td>
               </tr>
             }
           </tbody>
