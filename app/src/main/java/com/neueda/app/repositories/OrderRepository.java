@@ -18,6 +18,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Order> findByStatusAndOrderType(OrderStatus status, OrderType orderType);
     List<Order> findByStatus(OrderStatus status);
     boolean existsByIdempotencyKey(String idempotencyKey);
+    boolean existsByAccountIdAndStatus(String accountId, OrderStatus status);
 
     /**
      * Guarded status transition. Returns the rows changed: 0 means the order was not in

@@ -112,6 +112,12 @@ public class PieService {
         return toWeights(latestSlices(pie));
     }
 
+    /** Symbol to target weight (%) at one version, which never changes once saved. */
+    @Transactional(readOnly = true)
+    public Map<String, BigDecimal> weightsAt(UUID pieId, int version) {
+        return toWeights(pieSliceRepository.findByPieIdAndVersionOrderByWeightPctDescSymbolAsc(pieId, version));
+    }
+
     public Pie requireOwned(UUID pieId, String owner) {
         return pieRepository.findByPieIdAndOwnerUsernameAndDeletedAtIsNull(pieId, owner)
             .orElseThrow(() -> new PieNotFoundException("Pie not found: " + pieId));

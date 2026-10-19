@@ -8,7 +8,9 @@ import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.enums.OrderType;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.exceptions.PriceNotFoundException;
+import com.neueda.app.events.OrderResolved;
 import com.neueda.app.exceptions.DuplicateOrderException;
+import com.neueda.app.exceptions.InvalidOrderStateException;
 import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.exceptions.InsufficientHoldingsException;
 import com.neueda.app.models.Account;
@@ -20,6 +22,7 @@ import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -39,6 +42,7 @@ class OrderServiceTest {
     private InstrumentRepository instrumentRepository;
     private PriceService priceService;
     private EventProducerService eventProducerService;
+    private ApplicationEventPublisher events;
 
     private OrderService orderService;
 
@@ -51,12 +55,14 @@ class OrderServiceTest {
         instrumentRepository = mock(InstrumentRepository.class);
         priceService = mock(PriceService.class);
         eventProducerService = mock(EventProducerService.class);
+        events = mock(ApplicationEventPublisher.class);
 
         // Real validator over the mocked repositories, so these tests still cover every placement check
         orderService = new OrderService(
             orderRepository,
             new OrderValidator(accountRepository, positionRepository, instrumentRepository, priceService),
-            eventProducerService
+            eventProducerService,
+            events
         );
     }
 
@@ -148,6 +154,29 @@ class OrderServiceTest {
         verify(eventProducerService).publishEvent(
             eq("order-request"), anyString(), eq("ORDER_PLACED"), anyString(), any());
         verifyNoInteractions(positionRepository);
+    }
+
+    @Test
+    void cancellingAPendingOrderAnnouncesItResolved() {
+        Order order = new Order(UUID.randomUUID(), activeAccount(), aapl(), OrderSide.BUY, OrderType.LIMIT, 10,
+            new BigDecimal("150.00"), "key-a", LocalDateTime.now());
+        when(orderRepository.changeStatus(order.getId(), OrderStatus.PENDING, OrderStatus.CANCELLED)).thenReturn(1);
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        orderService.cancelOrder(order.getId());
+
+        verify(events).publishEvent(new OrderResolved(order.getId(), OrderStatus.CANCELLED));
+    }
+
+    @Test
+    void cancellingAnOrderThatIsNotPendingAnnouncesNothing() {
+        Order order = new Order(UUID.randomUUID(), activeAccount(), aapl(), OrderSide.BUY, OrderType.LIMIT, 10,
+            new BigDecimal("150.00"), "key-a", LocalDateTime.now());
+        when(orderRepository.changeStatus(order.getId(), OrderStatus.PENDING, OrderStatus.CANCELLED)).thenReturn(0);
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        assertThrows(InvalidOrderStateException.class, () -> orderService.cancelOrder(order.getId()));
+        verifyNoInteractions(events);
     }
 
     @Test

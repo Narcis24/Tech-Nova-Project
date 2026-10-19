@@ -21,22 +21,27 @@ import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.exceptions.AccountAccessDeniedException;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.OrderNotFoundException;
+import com.neueda.app.exceptions.RebalanceRunNotFoundException;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Order;
+import com.neueda.app.models.RebalanceRun;
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.OrderRepository;
+import com.neueda.app.repositories.RebalanceRunRepository;
 
 class AccountAccessTest {
 
     private AccountRepository accountRepository;
     private OrderRepository orderRepository;
+    private RebalanceRunRepository rebalanceRunRepository;
     private AccountAccess accountAccess;
 
     @BeforeEach
     void setUp() {
         accountRepository = mock(AccountRepository.class);
         orderRepository = mock(OrderRepository.class);
-        accountAccess = new AccountAccess(accountRepository, orderRepository);
+        rebalanceRunRepository = mock(RebalanceRunRepository.class);
+        accountAccess = new AccountAccess(accountRepository, orderRepository, rebalanceRunRepository);
         loginAs("alice_user");
     }
 
@@ -96,6 +101,28 @@ class AccountAccessTest {
         when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
 
         assertThrows(OrderNotFoundException.class, () -> accountAccess.requireOwnedOrder(orderId));
+    }
+
+    @Test
+    void runIsCheckedThroughItsAccount() {
+        UUID runId = UUID.randomUUID();
+        RebalanceRun run = mock(RebalanceRun.class);
+        when(run.getAccountId()).thenReturn("ACC-1");
+        when(rebalanceRunRepository.findById(runId)).thenReturn(Optional.of(run));
+        when(accountRepository.findById("ACC-1")).thenReturn(Optional.of(Account.open("ACC-1", "Alice", "alice_user")));
+
+        assertDoesNotThrow(() -> accountAccess.requireOwnedRun(runId));
+
+        when(accountRepository.findById("ACC-1")).thenReturn(Optional.of(Account.open("ACC-1", "Bob", "bob_user")));
+        assertThrows(AccountAccessDeniedException.class, () -> accountAccess.requireOwnedRun(runId));
+    }
+
+    @Test
+    void missingRunIsNotFound() {
+        UUID runId = UUID.randomUUID();
+        when(rebalanceRunRepository.findById(runId)).thenReturn(Optional.empty());
+
+        assertThrows(RebalanceRunNotFoundException.class, () -> accountAccess.requireOwnedRun(runId));
     }
 
     @Test
