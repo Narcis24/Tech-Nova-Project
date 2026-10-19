@@ -8,12 +8,57 @@
   <div class="header">
     @switch (header().state) {
       @case ('linked') {
-        <p>
-          This account follows <strong>{{ linked()?.pieName }}</strong
-          >, max drift {{ linked()?.maxDriftPct }}%
-        </p>
-        <a [routerLink]="['/accounts', accountId(), 'rebalance']">Preview rebalance</a>
-        <button type="button" class="secondary" (click)="unlink()">Unlink</button>
+        @if (linked(); as link) {
+          <div class="summary">
+            <p>
+              This account {{ link.mode === 'COPY' ? 'copies' : 'follows' }} <strong>{{ link.pieName }}</strong
+              >, max drift {{ link.maxDriftPct }}%
+            </p>
+            @if (link.mode === 'COPY') {
+              @if (!link.published) {
+                <span class="status muted">No longer published</span>
+              } @else if (link.syncPending) {
+                <span class="status">Sync pending</span>
+              } @else if (link.updateAvailable && !link.activeRunId) {
+                <span class="status">Update available</span>
+              }
+            }
+          </div>
+          <div class="header-actions">
+            @if (link.activeRunId) {
+              <a [routerLink]="['/rebalance-runs', link.activeRunId]">View rebalance</a>
+            } @else {
+              <a [routerLink]="['/accounts', accountId(), 'rebalance']">{{
+                link.mode === 'COPY' && link.updateAvailable ? 'Review' : 'Preview rebalance'
+              }}</a>
+            }
+            @if (link.mode === 'COPY') {
+              @if (link.published) {
+                <label class="toggle">
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    [checked]="link.autoSync"
+                    [disabled]="savingSettings()"
+                    (change)="setAutoSync($any($event.target).checked)"
+                  />
+                  Auto-sync
+                </label>
+              }
+              <button
+                type="button"
+                class="secondary"
+                [disabled]="!!link.activeRunId || link.appliedVersion == null"
+                (click)="makeMine()"
+              >
+                Make it mine
+              </button>
+              <button type="button" class="secondary" (click)="stopCopying(link)">Stop copying</button>
+            } @else {
+              <button type="button" class="secondary" (click)="unlink()">Unlink</button>
+            }
+          </div>
+        }
       }
       @case ('none') {
         <p>No pie on this account yet</p>

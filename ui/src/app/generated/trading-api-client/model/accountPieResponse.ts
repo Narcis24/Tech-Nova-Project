@@ -19,5 +19,22 @@ export interface AccountPieResponse {
     latestVersion?: number;
     drift?: Array<SliceDrift>;
     maxDriftPct?: number;
+    /**
+     * The pie is public and not deleted.
+     */
+    published?: boolean;
+    /**
+     * A copy of a published pie whose latest version has not been applied.
+     */
+    updateAvailable?: boolean;
+    autoSync?: boolean;
+    /**
+     * A new version is waiting for the account\'s active run to end.
+     */
+    syncPending?: boolean;
+    /**
+     * The account\'s active rebalance run, if any.
+     */
+    activeRunId?: string;
 }
 

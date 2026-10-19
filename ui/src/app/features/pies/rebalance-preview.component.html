@@ -1,5 +1,9 @@
 <h1>Rebalance preview</h1>
-<a routerLink="/pies">Back to pies</a>
+@if (copyPieId) {
+  <a [routerLink]="['/discover', copyPieId]">Back to pie</a>
+} @else {
+  <a routerLink="/pies">Back to pies</a>
+}
 
 @if (error()) {
   <p class="error" role="alert">{{ error() }}</p>
@@ -72,11 +76,16 @@
     Whole shares only, so the result is close to the target, not exact. Prices may move before the orders fill.
   </p>
   <p class="note">Confirming places market orders for this account. Sells finish before buys are calculated.</p>
+  @if (copyPieId) {
+    <p class="note">
+      Confirming also copies the pie with auto-sync on: when the author changes it, this account rebalances to match.
+    </p>
+  }
   @if (startError()) {
     <p class="error" role="alert">{{ startError() }}</p>
   }
   <button type="button" [disabled]="starting()" (click)="start()">
-    {{ starting() ? 'Starting…' : 'Confirm rebalance' }}
+    {{ starting() ? 'Starting…' : copyPieId ? 'Confirm copy' : 'Confirm rebalance' }}
   </button>
 } @else {
   <output>Loading rebalance preview…</output>

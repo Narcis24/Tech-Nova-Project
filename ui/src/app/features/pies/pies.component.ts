@@ -36,6 +36,7 @@ export class PiesComponent {
   readonly loading = signal(true);
   readonly loadError = signal(false);
   readonly actionError = signal<string | null>(null);
+  readonly savingSettings = signal(false);
   readonly linked = computed(() => {
     const header = this.header();
     return header.state === 'linked' ? header.pie : null;
@@ -113,6 +114,41 @@ export class PiesComponent {
     });
   }
 
+  stopCopying(link: AccountPieResponse): void {
+    if (!window.confirm(`Stop copying ${link.pieName}? Your holdings stay as they are.`)) return;
+    this.unlink();
+  }
+
+  setAutoSync(autoSync: boolean): void {
+    const id = this.accountId();
+    if (!id) return;
+    this.actionError.set(null);
+    this.savingSettings.set(true);
+    this.accountPieApi.updateCopySettings(id, { autoSync }).subscribe({
+      next: (pie) => {
+        this.savingSettings.set(false);
+        this.header.set({ state: 'linked', pie });
+      },
+      error: (error: unknown) => {
+        this.savingSettings.set(false);
+        this.actionError.set(conflictMessage(error) ?? "Couldn't change auto-sync. Try again.");
+        this.headerRevision.update((v) => v + 1);
+      },
+    });
+  }
+
+  /** Turns the copy into a private pie of the user's own, so the author's changes stop reaching the account. */
+  makeMine(): void {
+    const id = this.accountId();
+    if (!id) return;
+    this.actionError.set(null);
+    this.accountPieApi.makePieMine(id).subscribe({
+      next: () => this.retry(),
+      error: (error: unknown) =>
+        this.actionError.set(conflictMessage(error) ?? "Couldn't make the pie yours. Try again."),
+    });
+  }
+
   remove(pie: PieResponse): void {
     if (!window.confirm(`Delete ${pie.name}?`)) return;
     this.actionError.set(null);
@@ -126,4 +162,10 @@ export class PiesComponent {
         ),
     });
   }
+}
+
+function conflictMessage(error: unknown): string | null {
+  if (!(error instanceof HttpErrorResponse) || error.status !== 409) return null;
+  const message = error.error?.message;
+  return typeof message === 'string' && message.trim() ? message : null;
 }

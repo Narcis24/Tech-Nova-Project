@@ -23,6 +23,18 @@ const PIE: PieResponse = {
   ],
 };
 const LINKED: AccountPieResponse = { accountId: 'ACC001', pieId: 'p1', pieName: 'Tech Growth', maxDriftPct: 3.5 };
+const COPY: AccountPieResponse = {
+  accountId: 'ACC001',
+  pieId: 'p9',
+  pieName: 'Steady Compounders',
+  mode: 'COPY',
+  appliedVersion: 1,
+  maxDriftPct: 1,
+  published: true,
+  autoSync: true,
+  updateAvailable: false,
+  syncPending: false,
+};
 
 describe('PiesComponent', () => {
   const currentAccountId = signal<string | null>('ACC001');
@@ -34,6 +46,8 @@ describe('PiesComponent', () => {
     getAccountPie: (id: string) => Observable<AccountPieResponse>;
     linkPie: (id: string, body: { pieId: string }) => Observable<AccountPieResponse>;
     unlinkPie: (id: string) => Observable<unknown>;
+    updateCopySettings: (id: string, body: { autoSync: boolean }) => Observable<AccountPieResponse>;
+    makePieMine: (id: string) => Observable<AccountPieResponse>;
   }>;
   let fixture: ComponentFixture<PiesComponent>;
   let root: HTMLElement;
@@ -50,7 +64,13 @@ describe('PiesComponent', () => {
   beforeEach(() => {
     currentAccountId.set('ACC001');
     pies = jasmine.createSpyObj('pies', ['listMine', 'deletePie']);
-    accountPies = jasmine.createSpyObj('accountPies', ['getAccountPie', 'linkPie', 'unlinkPie']);
+    accountPies = jasmine.createSpyObj('accountPies', [
+      'getAccountPie',
+      'linkPie',
+      'unlinkPie',
+      'updateCopySettings',
+      'makePieMine',
+    ]);
     pies.listMine.and.returnValue(of([PIE]));
     accountPies.getAccountPie.and.returnValue(of(LINKED));
     TestBed.configureTestingModule({
@@ -161,5 +181,103 @@ describe('PiesComponent', () => {
     pies.listMine.and.returnValue(of([] as PieResponse[]));
     create();
     expect(root.textContent).toContain("Build your first pie: pick stocks and weights, and we'll work out the trades.");
+  });
+
+  describe('a copied pie', () => {
+    const header = () => root.querySelector('.header')!;
+    const link = (text: string) =>
+      Array.from(header().querySelectorAll('a')).find((a) => a.textContent?.trim() === text) as HTMLAnchorElement;
+    const autoSync = () => header().querySelector('input[role="switch"]') as HTMLInputElement;
+
+    it('says the account copies it, with copy controls instead of unlink', () => {
+      accountPies.getAccountPie.and.returnValue(of(COPY));
+      create();
+      expect(header().textContent).toContain('This account copies');
+      expect(autoSync().checked).toBeTrue();
+      expect(button('Make it mine')).toBeTruthy();
+      expect(button('Stop copying')).toBeTruthy();
+      expect(button('Unlink')).toBeUndefined();
+      expect(header().querySelector('.status')).toBeNull();
+    });
+
+    it('offers a review when an update is available and auto-sync is off', () => {
+      accountPies.getAccountPie.and.returnValue(of({ ...COPY, autoSync: false, updateAvailable: true }));
+      create();
+      expect(header().querySelector('.status')?.textContent).toContain('Update available');
+      expect(link('Review').getAttribute('href')).toBe('/accounts/ACC001/rebalance');
+      expect(autoSync().checked).toBeFalse();
+    });
+
+    it('shows a pending sync and links to the running rebalance', () => {
+      accountPies.getAccountPie.and.returnValue(
+        of({ ...COPY, updateAvailable: true, syncPending: true, activeRunId: 'run7' }),
+      );
+      create();
+      expect(header().querySelector('.status')?.textContent).toContain('Sync pending');
+      expect(link('View rebalance').getAttribute('href')).toBe('/rebalance-runs/run7');
+      expect(button('Make it mine').disabled).toBeTrue();
+    });
+
+    it("can't be made the user's own before anything is applied", () => {
+      accountPies.getAccountPie.and.returnValue(of({ ...COPY, appliedVersion: undefined, updateAvailable: true }));
+      create();
+      expect(button('Make it mine').disabled).toBeTrue();
+    });
+
+    it('says when the author stopped publishing it, without an auto-sync toggle', () => {
+      accountPies.getAccountPie.and.returnValue(of({ ...COPY, published: false }));
+      create();
+      expect(header().querySelector('.status')?.textContent).toContain('No longer published');
+      expect(autoSync()).toBeNull();
+    });
+
+    it('turns auto-sync off', () => {
+      accountPies.getAccountPie.and.returnValue(of(COPY));
+      accountPies.updateCopySettings.and.returnValue(of({ ...COPY, autoSync: false }));
+      create();
+      autoSync().click();
+      fixture.detectChanges();
+      expect(accountPies.updateCopySettings).toHaveBeenCalledOnceWith('ACC001', { autoSync: false });
+      expect(autoSync().checked).toBeFalse();
+    });
+
+    it("makes the pie the user's own and reloads", () => {
+      accountPies.getAccountPie.and.returnValue(of(COPY));
+      accountPies.makePieMine.and.returnValue(of({ ...COPY, mode: 'OWN' }));
+      create();
+      accountPies.getAccountPie.and.returnValue(of({ ...LINKED, pieName: 'Steady Compounders' }));
+      button('Make it mine').click();
+      fixture.detectChanges();
+      expect(accountPies.makePieMine).toHaveBeenCalledOnceWith('ACC001');
+      expect(pies.listMine).toHaveBeenCalledTimes(2);
+      expect(header().textContent).toContain('This account follows');
+    });
+
+    it("shows why the pie could not be made the user's own", () => {
+      accountPies.getAccountPie.and.returnValue(of(COPY));
+      accountPies.makePieMine.and.returnValue(
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 409,
+              error: { message: 'Nothing from the copied pie has been applied to this account yet' },
+            }),
+        ),
+      );
+      create();
+      button('Make it mine').click();
+      fixture.detectChanges();
+      expect(root.querySelector('[role="alert"]')?.textContent).toContain('Nothing from the copied pie');
+    });
+
+    it('stops copying after confirming, keeping holdings', () => {
+      accountPies.getAccountPie.and.returnValue(of(COPY));
+      accountPies.unlinkPie.and.returnValue(of(null));
+      const confirm = spyOn(window, 'confirm').and.returnValue(true);
+      create();
+      button('Stop copying').click();
+      expect(confirm.calls.mostRecent().args[0]).toContain('Your holdings stay as they are');
+      expect(accountPies.unlinkPie).toHaveBeenCalledOnceWith('ACC001');
+    });
   });
 });

@@ -110,7 +110,7 @@ public class AccountPieService {
         requireCopyable(pieId, owner);
         if (accountPieRepository.findById(accountId)
             .filter(link -> link.getMode() == PieLinkMode.COPY && link.getPieId().equals(pieId)).isPresent()) {
-            throw new RebalanceConflictException("Account " + accountId + " already copies this pie");
+            throw new RebalanceConflictException("This account already copies this pie");
         }
         accountPieRepository.save(AccountPie.copy(accountId, pieId, autoSync));
         return rebalanceRunService.start(accountId);
@@ -137,8 +137,7 @@ public class AccountPieService {
         requireNoActiveRun(accountId);
         AccountPie link = requireCopy(accountId);
         if (link.getAppliedVersion() == null) {
-            throw new RebalanceConflictException("Nothing from the copied pie has been applied to account "
-                + accountId + " yet");
+            throw new RebalanceConflictException("Nothing from the copied pie has been applied to this account yet");
         }
         Pie mine = pieService.duplicate(owner, requirePie(link.getPieId()), link.getAppliedVersion());
         link.makeOwn(mine.getPieId(), 1);
@@ -193,8 +192,8 @@ public class AccountPieService {
     private void requireNoActiveRun(String accountId) {
         lockAccount(accountId);
         if (rebalanceRunRepository.existsByAccountIdAndStatusIn(accountId, RebalanceStatus.ACTIVE)) {
-            throw new RebalanceConflictException("A rebalance is running for account " + accountId
-                + ", so its pie can't be changed");
+            throw new RebalanceConflictException(
+                "A rebalance is running on this account, so its pie can't change until it ends");
         }
     }
 
@@ -219,7 +218,7 @@ public class AccountPieService {
     private AccountPie requireCopy(String accountId) {
         AccountPie link = requireLink(accountId);
         if (link.getMode() != PieLinkMode.COPY) {
-            throw new RebalanceConflictException("Account " + accountId + " is not copying a pie");
+            throw new RebalanceConflictException("This account isn't copying a pie");
         }
         return link;
     }
