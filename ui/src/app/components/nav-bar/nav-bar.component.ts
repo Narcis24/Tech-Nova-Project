@@ -26,14 +26,17 @@ interface NavTab {
 })
 export class NavBarComponent {
   readonly compactTrade = input(false);
-  readonly tabs: readonly NavTab[] = [
+  private readonly auth = inject(AuthService);
+
+  /** Admins also get an Admin tab; adminGuard and the API still decide what they may open */
+  readonly tabs = computed<readonly NavTab[]>(() => [
     { label: 'Portfolio', path: '/dashboard' },
     { label: 'Trade', path: '/trade' },
     { label: 'Pies', path: '/pies' },
     { label: 'Orders', path: '/orders' },
-  ];
+    ...(this.auth.isAdmin() ? [{ label: 'Admin', path: '/admin' }] : []),
+  ]);
 
-  private readonly auth = inject(AuthService);
   private readonly accountService = inject(AccountService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 

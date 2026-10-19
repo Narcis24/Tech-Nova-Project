@@ -2,6 +2,7 @@ api.base.service.ts
 api.module.ts
 api/accountController.service.ts
 api/accountPieController.service.ts
+api/adminUserController.service.ts
 api/api.ts
 api/dashboardController.service.ts
 api/instrumentController.service.ts
@@ -17,8 +18,11 @@ encoder.ts
 index.ts
 model/accountPieResponse.ts
 model/accountResponse.ts
+model/adminUserResponse.ts
 model/balanceResponse.ts
 model/cashAmountRequest.ts
+model/createUserRequest.ts
+model/createUserResponse.ts
 model/instrumentResponse.ts
 model/linkPieRequest.ts
 model/marketAssetResponse.ts
@@ -42,6 +46,7 @@ model/riskWarning.ts
 model/savePieRequest.ts
 model/sliceDrift.ts
 model/updateRiskLimitRequest.ts
+model/updateRolesRequest.ts
 param.ts
 provide-api.ts
 query.params.ts

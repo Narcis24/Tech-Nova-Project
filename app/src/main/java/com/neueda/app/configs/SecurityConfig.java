@@ -1,5 +1,6 @@
 package com.neueda.app.configs;
 
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -9,7 +10,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 
+import com.neueda.app.dtos.ErrorResponse;
 import com.neueda.app.filter.JwtFilter;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.MediaType;
+import tools.jackson.databind.ObjectMapper;
 /**
  * Security Configuration for the Trading Application
  * 
@@ -24,9 +29,23 @@ import com.neueda.app.filter.JwtFilter;
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;  // Use JwtFilter, not JwtAuthenticationFilter
+    private final ObjectMapper objectMapper;
 
-    public SecurityConfig(JwtFilter jwtFilter) {
+    public SecurityConfig(JwtFilter jwtFilter, ObjectMapper objectMapper) {
         this.jwtFilter = jwtFilter;
+        this.objectMapper = objectMapper;
+    }
+
+    /**
+     * JwtFilter is a @Component, so Spring Boot would also run it as a plain servlet filter outside the
+     * security chain. Run that way first, it marks the request as filtered and the chain then resets the
+     * security context, so the user looks anonymous. It must run only inside the chain.
+     */
+    @Bean
+    public FilterRegistrationBean<JwtFilter> jwtFilterRegistration(JwtFilter filter) {
+        FilterRegistrationBean<JwtFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean
@@ -36,9 +55,18 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**").permitAll()        // Allow Swagger UI
                 .requestMatchers("/v3/api-docs/**").permitAll()       // Allow OpenAPI docs
                 .requestMatchers("/swagger-ui.html").permitAll()      // Allow Swagger HTML
+                // Paths are inside the /api context path, so this is /api/v1/admin/**
+                .requestMatchers("/v1/admin/**").hasRole("ADMIN")     // User management: ADMIN role in the JWT
                 .requestMatchers("/api/**").authenticated()           // Protect all trading endpoints
                 .anyRequest().authenticated()                         // Everything else needs auth
             )
+            // A valid token without the role gets 403 in the same JSON shape as the filter's 401
+            .exceptionHandling(ex -> ex.accessDeniedHandler((request, response, denied) -> {
+                response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                objectMapper.writeValue(response.getOutputStream(),
+                    new ErrorResponse("FORBIDDEN", "Admin role required", 403));
+            }))
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())

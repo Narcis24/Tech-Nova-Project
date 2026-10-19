@@ -19,8 +19,8 @@ export class JwtService {
   }
 
   /** Claims are exactly sub, roles, iat and exp; the header is {"alg":"HS256","typ":"JWT"}. */
-  generateAccessToken(username: string): string {
-    return jwt.sign({ sub: username, roles: ['TRADER'] }, this.secret, {
+  generateAccessToken(username: string, roles: string[]): string {
+    return jwt.sign({ sub: username, roles }, this.secret, {
       algorithm: 'HS256',
       expiresIn: ACCESS_TOKEN_SECONDS,
     });

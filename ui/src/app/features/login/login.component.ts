@@ -61,7 +61,8 @@ export class LoginComponent {
     this.auth.login(this.form.getRawValue()).subscribe({
       next: () => {
         const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-        void this.router.navigateByUrl(safeReturnUrl(returnUrl));
+        // Read after login: homeUrl depends on the roles in the new token
+        void this.router.navigateByUrl(safeReturnUrl(returnUrl, this.auth.homeUrl()));
       },
       error: (err: HttpErrorResponse) => {
         this.submitting.set(false);

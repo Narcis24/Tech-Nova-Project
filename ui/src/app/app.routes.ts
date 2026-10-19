@@ -1,11 +1,23 @@
+import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
 
 import { NotFoundComponent } from './features/not-found/not-found.component';
+import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
 import { guestGuard } from './guards/guest.guard';
+import { AuthService } from './services/auth.service';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+  // Each user starts on their home page. Logged out: straight to /login with no returnUrl, so after
+  // logging in an admin lands on /admin rather than the /dashboard a returnUrl would have pinned.
+  {
+    path: '',
+    pathMatch: 'full',
+    redirectTo: () => {
+      const auth = inject(AuthService);
+      return auth.isAuthenticated() ? auth.homeUrl() : '/login';
+    },
+  },
   {
     path: 'login',
     canActivate: [guestGuard],
@@ -73,6 +85,12 @@ export const routes: Routes = [
       {
         path: 'accounts',
         loadComponent: () => import('./features/accounts/accounts.component').then((m) => m.AccountsComponent),
+      },
+      {
+        path: 'admin',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/admin/admin-dashboard.component').then((m) => m.AdminDashboardComponent),
       },
     ],
   },
