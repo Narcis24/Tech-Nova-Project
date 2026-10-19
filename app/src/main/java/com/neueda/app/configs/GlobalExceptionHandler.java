@@ -29,6 +29,7 @@ import com.neueda.app.exceptions.OrderNotFoundException;
 import com.neueda.app.exceptions.OrderNotTriggeredException;
 import com.neueda.app.exceptions.PieInUseException;
 import com.neueda.app.exceptions.PieNotFoundException;
+import com.neueda.app.exceptions.PieNotLinkedException;
 import com.neueda.app.exceptions.PositionNotFoundException;
 import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.exceptions.TradingException;
@@ -59,6 +60,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PieNotFoundException.class)
     public ResponseEntity<ErrorResponse> handlePieNotFound(PieNotFoundException ex) {
         ErrorResponse error = new ErrorResponse("PIE_NOT_FOUND", ex.getMessage(), 404);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(PieNotLinkedException.class)
+    public ResponseEntity<ErrorResponse> handlePieNotLinked(PieNotLinkedException ex) {
+        ErrorResponse error = new ErrorResponse("PIE_NOT_LINKED", ex.getMessage(), 404);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
