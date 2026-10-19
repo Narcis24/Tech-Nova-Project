@@ -31,6 +31,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ExecutionEngine {
 
+    private static final String SOURCE = "ExecutionEngine";
+
     private final ObjectMapper objectMapper;
     private final EventProducerService eventProducerService;
     private final QuoteCache quoteCache;
@@ -80,7 +82,7 @@ public class ExecutionEngine {
             Topics.ORDER_EXECUTION,
             "execution-engine",
             EventTypes.ENGINE_STARTED,
-            "ExecutionEngine",
+            SOURCE,
             Map.of()
         );
     }
@@ -252,7 +254,7 @@ public class ExecutionEngine {
             Topics.ORDER_EXECUTION,
             event.orderId().toString(),
             EventTypes.ORDER_REJECTED,
-            "ExecutionEngine",
+            SOURCE,
             new OrderRejectedEvent(event.orderId(), event.accountId(), event.symbol(), reason)
         );
     }
@@ -264,7 +266,7 @@ public class ExecutionEngine {
             Topics.ORDER_EXECUTION,
             event.orderId().toString(),
             EventTypes.ORDER_EXECUTED,
-            "ExecutionEngine",
+            SOURCE,
             new OrderExecutedEvent(
                 event.orderId(),
                 event.accountId(),

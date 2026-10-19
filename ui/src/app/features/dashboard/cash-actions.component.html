@@ -20,7 +20,7 @@
   </button>
 </div>
 @if (success()) {
-  <p class="success" role="status">{{ success() }}</p>
+  <output class="success">{{ success() }}</output>
 }
 <dialog #cashDialog aria-labelledby="cash-dialog-title" (cancel)="cancel($event)">
   @if (mode(); as action) {

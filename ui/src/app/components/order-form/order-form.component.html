@@ -39,10 +39,10 @@
       </div>
     }
     @if (instrumentError()) {
-      <p class="data-note" role="status">
+      <output class="data-note">
         Couldn't load the instrument list.
         <button type="button" class="text-button" (click)="loadInstruments()">Retry</button>
-      </p>
+      </output>
     }
     <app-price-chart
       [pendingSymbol]="instrumentsLoading() && !chartSymbol()"
@@ -199,13 +199,13 @@
         </div>
       </dl>
       @if (context().loading) {
-        <p class="loading-context" role="status">Loading account balance and holdings…</p>
+        <output class="loading-context">Loading account balance and holdings…</output>
       }
       @if (context().error) {
-        <p class="data-note" role="status">
+        <output class="data-note">
           Account estimates unavailable.
           <button type="button" class="text-button" (click)="refreshContext()">Retry</button>
-        </p>
+        </output>
       }
       @if (validationIssue()) {
         <p class="field-error" role="alert">{{ validationIssue() }}</p>

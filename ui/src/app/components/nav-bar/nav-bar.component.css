@@ -100,31 +100,27 @@
 /* The account list shows at most 4 options; longer lists scroll */
 .account-menu {
   --option-height: 40px;
-  max-height: calc(4 * var(--option-height));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  /* Still scrolls with wheel, touch and keyboard, just without a visible bar */
-  scrollbar-width: none;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.account-menu::-webkit-scrollbar {
-  display: none;
-}
-
-.account-menu {
   position: absolute;
   top: calc(100% + 8px);
   /* Pinned to both edges of the pill, so the list is exactly as wide as it */
   left: 0;
   right: 0;
   z-index: 20;
+  max-height: calc(4 * var(--option-height));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Still scrolls with wheel, touch and keyboard, just without a visible bar */
+  scrollbar-width: none;
+  margin: 0;
   padding: 6px;
+  list-style: none;
   border-radius: 12px;
   background: var(--elevated-background-color);
   box-shadow: var(--dropdown-shadow);
+}
+
+.account-menu::-webkit-scrollbar {
+  display: none;
 }
 
 .account-option {

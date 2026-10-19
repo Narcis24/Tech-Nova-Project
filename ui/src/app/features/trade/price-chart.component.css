@@ -49,10 +49,12 @@ h1 {
   stroke-width: 1.5;
 }
 .instrument-name {
+  min-height: 20px;
   font-size: 17px;
   color: var(--secondary-text-color);
 }
 .quote {
+  min-width: 240px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -359,12 +361,6 @@ dd {
   }
 }
 
-.instrument-name {
-  min-height: 20px;
-}
-.quote {
-  min-width: 240px;
-}
 .pending strong {
   color: var(--muted-background-color);
 }

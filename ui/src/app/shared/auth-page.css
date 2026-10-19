@@ -150,6 +150,8 @@ input::-ms-clear {
 
 /* Success messages, e.g. "we've sent a reset link" */
 .notice {
+  /* The default margins of the <p> it replaced */
+  margin: 1em 0;
   padding: 16px;
   border-radius: 10px;
   background: var(--auth-input-background-color);

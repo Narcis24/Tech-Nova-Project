@@ -83,9 +83,7 @@ describe('ForgotPasswordComponent', () => {
     result.next();
     harness.detectChanges();
 
-    expect(page.querySelector('[role=status]')?.textContent).toContain(
-      "If an account uses that email, we've sent it a link",
-    );
+    expect(page.querySelector('output')?.textContent).toContain("If an account uses that email, we've sent it a link");
     expect(page.querySelector('form')).toBeNull();
   });
 

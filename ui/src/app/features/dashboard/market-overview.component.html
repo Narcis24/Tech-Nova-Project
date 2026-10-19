@@ -8,9 +8,9 @@
   </button>
 </div>
 @if (error()) {
-  <p role="status" class="error">
+  <output class="error">
     Couldn't update market data. <button type="button" (click)="refresh.emit()">Retry</button>
-  </p>
+  </output>
 }
 <div class="tabs" role="group" aria-label="Market view">
   @for (tab of tabs; track tab.value) {
@@ -48,23 +48,22 @@
   }
 </div>
 @if (assets().length) {
-  <p class="result-count" role="status">
-    {{ visible().length }} {{ visible().length === 1 ? 'asset' : 'assets' }} shown
-  </p>
+  <output class="result-count"> {{ visible().length }} {{ visible().length === 1 ? 'asset' : 'assets' }} shown </output>
 }
 @if (view() === 'watchlist') {
-  <label class="add"
-    >Add an asset
-    <select #symbol aria-label="Add an asset">
+  <div class="add">
+    <label for="add-asset">Add an asset</label>
+    <select id="add-asset" #symbol>
       <option value="">Choose an instrument</option>
       @for (asset of assets(); track asset.symbol) {
         <option [value]="asset.symbol">{{ asset.symbol }} — {{ asset.name }}</option>
-      }</select
-    ><button type="button" (click)="add(symbol.value)">Add</button></label
-  >
+      }
+    </select>
+    <button type="button" (click)="add(symbol.value)">Add</button>
+  </div>
 }
 @if (loading() && !assets().length) {
-  <p role="status">Loading market data…</p>
+  <output>Loading market data…</output>
 } @else if (visible().length) {
   <div class="assets">
     @for (asset of visible(); track asset.symbol) {
@@ -73,11 +72,13 @@
           <a routerLink="/trade" [queryParams]="{ symbol: asset.symbol, side: 'BUY' }">{{ asset.symbol }}</a
           ><button
             type="button"
-            [attr.aria-label]="(watchlist().includes(asset.symbol ?? '') ? 'Unwatch ' : 'Watch ') + asset.symbol"
             [attr.aria-pressed]="watchlist().includes(asset.symbol ?? '')"
             (click)="toggle(asset.symbol ?? '')"
           >
-            {{ watchlist().includes(asset.symbol ?? '') ? '★' : '☆' }}
+            <span aria-hidden="true">{{ watchlist().includes(asset.symbol ?? '') ? '★' : '☆' }}</span>
+            <span class="visually-hidden"
+              >{{ watchlist().includes(asset.symbol ?? '') ? 'Unwatch' : 'Watch' }} {{ asset.symbol }}</span
+            >
           </button>
         </div>
         <p class="name">{{ asset.name }}</p>

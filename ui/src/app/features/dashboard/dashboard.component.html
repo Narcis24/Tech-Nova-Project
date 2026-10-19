@@ -24,10 +24,10 @@
     </div>
   }
   @if (store.state().loading && !store.state().portfolio) {
-    <p class="notice" role="status">Loading portfolio…</p>
+    <output class="notice">Loading portfolio…</output>
   }
   @if (feedback()) {
-    <p class="notice" role="status">{{ feedback() }}</p>
+    <output class="notice">{{ feedback() }}</output>
   }
   @if (store.state().portfolio; as portfolio) {
     <section class="summary" aria-label="Portfolio summary">
@@ -86,10 +86,10 @@
           <a routerLink="/orders">All orders</a>
         </div>
         @if (store.state().ordersError) {
-          <p role="status">
+          <output>
             Couldn't update orders.
             <button class="text-button" type="button" (click)="store.refresh()">Try again</button>
-          </p>
+          </output>
         }
         @if (store.state().orders.length) {
           <ul>

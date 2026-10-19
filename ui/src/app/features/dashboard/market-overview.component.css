@@ -159,3 +159,11 @@ button:focus-visible {
   color: var(--secondary-text-color);
   padding: 20px 0;
 }
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
