@@ -25,6 +25,7 @@ import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -121,7 +122,7 @@ public class PieService {
         Map<String, BigDecimal> weights = new LinkedHashMap<>();
         BigDecimal total = BigDecimal.ZERO;
         for (PieSliceRequest slice : req.getSlices()) {
-            String symbol = slice.getSymbol().trim().toUpperCase();
+            String symbol = slice.getSymbol().trim().toUpperCase(Locale.ROOT);
             BigDecimal weight = slice.getWeightPct();
             if (weights.put(symbol, weight) != null) {
                 throw new InvalidPieException("Duplicate symbol: " + symbol);
