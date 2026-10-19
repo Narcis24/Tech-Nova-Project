@@ -16,6 +16,8 @@ COPY . .
 RUN npm run build
 
 FROM nginx:stable-alpine AS production
+# pick up Alpine security fixes released after the base image, e.g. libexpat CVE-2026-77214, libx11 CVE-2026-88806
+RUN apk upgrade --no-cache
 # The official Nginx image expands this template using the runtime variables below.
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 # Keep Node, npm, and source files out of the production image.
