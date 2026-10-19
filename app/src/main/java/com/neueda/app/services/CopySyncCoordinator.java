@@ -7,8 +7,6 @@ import com.neueda.app.models.AccountPie;
 import java.util.List;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -16,7 +14,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 /**
  * Moves accounts that copy a pie on when the author saves a new version or an account's run ends. Both happen
  * after the commit that caused them, so a failure here never undoes it. Each account is synced on its own: a
- * failure is logged, the account is flagged for a later try and the others carry on.
+ * failure is logged and the others carry on. The account can still be rebalanced manually.
  */
 @Component
 @Slf4j
@@ -37,43 +35,22 @@ public class CopySyncCoordinator {
             log.error("Could not list the copies of pie {} to sync", event.pieId(), e);
             return;
         }
-        copies.forEach(copy -> sync(copy.getAccountId(), event.pieId(), false));
+        copies.forEach(copy -> sync(copy.getAccountId(), event.pieId()));
     }
 
-    /** Syncs an account flagged while its run was active. A cancelled run is never followed by a sync. */
+    /** Checks for a newer version after a run. Cancellation never starts another run. */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onRunFinished(RebalanceRunFinished event) {
         if (event.status() != RebalanceStatus.CANCELLED) {
-            sync(event.accountId(), event.pieId(), true);
-            return;
-        }
-        try {
-            syncService.clearPending(event.accountId(), event.pieId());
-        } catch (RuntimeException e) {
-            log.error("Could not clear the sync of account {} after its run was cancelled", event.accountId(), e);
+            sync(event.accountId(), event.pieId());
         }
     }
 
-    /** Syncs accounts flagged before the app stopped or whose sync failed. */
-    @EventListener(ApplicationReadyEvent.class)
-    public void recover() {
+    private void sync(String accountId, UUID pieId) {
         try {
-            syncService.pending().forEach(link -> sync(link.getAccountId(), link.getPieId(), true));
+            syncService.sync(accountId, pieId);
         } catch (RuntimeException e) {
-            log.error("Could not list the accounts waiting for a sync", e);
-        }
-    }
-
-    private void sync(String accountId, UUID pieId, boolean onlyIfPending) {
-        try {
-            syncService.sync(accountId, pieId, onlyIfPending);
-        } catch (RuntimeException e) {
-            log.error("Could not sync account {} to pie {}, flagging it for a retry", accountId, pieId, e);
-            try {
-                syncService.markPending(accountId, pieId);
-            } catch (RuntimeException flagFailure) {
-                log.error("Could not flag account {} for a retry", accountId, flagFailure);
-            }
+            log.error("Could not sync account {} to pie {}", accountId, pieId, e);
         }
     }
 }

@@ -2,11 +2,11 @@ package com.neueda.app.repositories;
 
 import com.neueda.app.enums.PieLinkMode;
 import com.neueda.app.models.AccountPie;
-import com.neueda.app.enums.PieLinkMode;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -18,7 +18,10 @@ public interface AccountPieRepository extends JpaRepository<AccountPie, String> 
     /** Accounts copying the pie that follow its new versions on their own. */
     List<AccountPie> findByPieIdAndModeAndAutoSyncTrue(UUID pieId, PieLinkMode mode);
 
-    List<AccountPie> findBySyncPendingTrue();
+    /** Apply only the completed version, preserving settings changed while the run was active. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update AccountPie a set a.appliedVersion = :version where a.accountId = :accountId and a.pieId = :pieId")
+    int applyVersion(@Param("accountId") String accountId, @Param("pieId") UUID pieId, @Param("version") int version);
 
     boolean existsByPieIdAndAccountIdIn(UUID pieId, Collection<String> accountIds);
     boolean existsByPieIdAndMode(UUID pieId, PieLinkMode mode);

@@ -146,8 +146,6 @@ public class RebalanceRunService {
         // changeStatus cleared the persistence context, so load the run again to change it
         run = runRepository.findById(runId).orElseThrow(() -> notFound(runId));
         run.cancel("Cancelled by user, " + cancelled + " pending order(s) cancelled");
-        // A user who cancels does not want the sync that was waiting for this run
-        accountPieRepository.findById(run.getAccountId()).ifPresent(link -> link.setSyncPending(false));
         events.publishEvent(new RebalanceRunFinished(runId, run.getAccountId(), run.getPieId(), run.getStatus()));
         log.info("Rebalance run cancelled: runId={}, cancelledOrders={}", runId, cancelled);
         return toResponse(run);
@@ -221,9 +219,7 @@ public class RebalanceRunService {
             }
         }
         run.finish();
-        accountPieRepository.findById(run.getAccountId())
-            .filter(link -> link.getPieId().equals(run.getPieId()))
-            .ifPresent(link -> link.applyVersion(run.getTargetVersion()));
+        accountPieRepository.applyVersion(run.getAccountId(), run.getPieId(), run.getTargetVersion());
         events.publishEvent(new RebalanceRunFinished(run.getRunId(), run.getAccountId(), run.getPieId(), run.getStatus()));
         log.info("Rebalance run ended: runId={}, status={}", run.getRunId(), run.getStatus());
     }

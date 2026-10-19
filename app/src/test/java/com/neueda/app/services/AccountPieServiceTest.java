@@ -263,7 +263,7 @@ class AccountPieServiceTest {
         when(pie.isPublished()).thenReturn(false);
 
         assertThrows(RebalanceConflictException.class, () -> service.previewCopy(ACCOUNT, "jay", PIE_ID));
-        assertThrows(RebalanceConflictException.class, () -> service.copy(ACCOUNT, "jay", PIE_ID, true));
+        assertThrows(RebalanceConflictException.class, () -> service.copy(ACCOUNT, "jay", PIE_ID));
         verify(accountPieRepository, never()).save(any());
         verifyNoInteractions(runService);
     }
@@ -273,7 +273,7 @@ class AccountPieServiceTest {
         when(pie.isPublished()).thenReturn(false);
 
         assertThrows(PieNotFoundException.class, () -> service.previewCopy(ACCOUNT, "jay", PIE_ID));
-        assertThrows(PieNotFoundException.class, () -> service.copy(ACCOUNT, "jay", PIE_ID, true));
+        assertThrows(PieNotFoundException.class, () -> service.copy(ACCOUNT, "jay", PIE_ID));
         verify(accountPieRepository, never()).save(any());
         verifyNoInteractions(runService);
     }
@@ -283,7 +283,7 @@ class AccountPieServiceTest {
         when(pie.getDeletedAt()).thenReturn(java.time.LocalDateTime.now());
 
         assertThrows(PieNotFoundException.class, () -> service.previewCopy(ACCOUNT, "jay", PIE_ID));
-        assertThrows(PieNotFoundException.class, () -> service.copy(ACCOUNT, "jay", UUID.randomUUID(), true));
+        assertThrows(PieNotFoundException.class, () -> service.copy(ACCOUNT, "jay", UUID.randomUUID()));
         verify(accountPieRepository, never()).save(any());
     }
 
@@ -292,7 +292,7 @@ class AccountPieServiceTest {
         doThrow(new AccountNotActiveException("SUSPENDED")).when(account).validateStatus();
 
         assertThrows(AccountNotActiveException.class, () -> service.previewCopy(ACCOUNT, "jay", PIE_ID));
-        assertThrows(AccountNotActiveException.class, () -> service.copy(ACCOUNT, "jay", PIE_ID, true));
+        assertThrows(AccountNotActiveException.class, () -> service.copy(ACCOUNT, "jay", PIE_ID));
         verify(accountPieRepository, never()).save(any());
         verifyNoInteractions(runService);
     }
@@ -302,7 +302,7 @@ class AccountPieServiceTest {
         RebalanceRunResponse run = mock(RebalanceRunResponse.class);
         when(runService.start(ACCOUNT)).thenReturn(run);
 
-        assertSame(run, service.copy(ACCOUNT, "jay", PIE_ID, false));
+        assertSame(run, service.copy(ACCOUNT, "jay", PIE_ID));
 
         ArgumentCaptor<AccountPie> saved = ArgumentCaptor.forClass(AccountPie.class);
         InOrder order = inOrder(accountPieRepository, runService);
@@ -310,7 +310,7 @@ class AccountPieServiceTest {
         order.verify(runService).start(ACCOUNT);
         assertEquals(PieLinkMode.COPY, saved.getValue().getMode());
         assertEquals(PIE_ID, saved.getValue().getPieId());
-        assertFalse(saved.getValue().isAutoSync());
+        assertTrue(saved.getValue().isAutoSync());
         assertNull(saved.getValue().getAppliedVersion());
     }
 
@@ -318,7 +318,7 @@ class AccountPieServiceTest {
     void copy_alreadyCopyingThePie_conflict() {
         copyOf(1);
 
-        assertThrows(RebalanceConflictException.class, () -> service.copy(ACCOUNT, "jay", PIE_ID, true));
+        assertThrows(RebalanceConflictException.class, () -> service.copy(ACCOUNT, "jay", PIE_ID));
         verify(accountPieRepository, never()).save(any());
         verifyNoInteractions(runService);
     }
@@ -327,13 +327,12 @@ class AccountPieServiceTest {
     void updateCopySettings_turningItOffDropsTheWaitingSync() {
         copyOf(1);
         AccountPie link = accountPieRepository.findById(ACCOUNT).orElseThrow();
-        link.setSyncPending(true);
         portfolio("0");
 
         AccountPieResponse response = service.updateCopySettings(ACCOUNT, false);
 
         assertFalse(link.isAutoSync());
-        assertFalse(link.isSyncPending());
+        assertFalse(response.isSyncPending());
         assertFalse(response.isAutoSync());
         verifyNoInteractions(runService);
     }
@@ -351,6 +350,8 @@ class AccountPieServiceTest {
         UUID runId = UUID.randomUUID();
         RebalanceRun run = mock(RebalanceRun.class);
         when(run.getRunId()).thenReturn(runId);
+        when(run.getPieId()).thenReturn(PIE_ID);
+        when(run.getTargetVersion()).thenReturn(2);
         when(rebalanceRunRepository.findFirstByAccountIdAndStatusIn(ACCOUNT, RebalanceStatus.ACTIVE))
             .thenReturn(Optional.of(run));
         portfolio("1000");
@@ -363,6 +364,10 @@ class AccountPieServiceTest {
         assertEquals(1, response.getAppliedVersion());
         assertEquals(2, response.getLatestVersion());
         assertEquals(runId, response.getActiveRunId());
+        assertFalse(response.isSyncPending());
+
+        when(run.getTargetVersion()).thenReturn(1);
+        assertTrue(service.get(ACCOUNT).isSyncPending());
     }
 
     @Test

@@ -71,9 +71,8 @@ public class AccountPieController {
     public ResponseEntity<RebalanceRunResponse> copyPie(@PathVariable String accountId,
                                                         @Valid @RequestBody CopyPieRequest request) {
         accountAccess.requireOwned(accountId);
-        boolean autoSync = !Boolean.FALSE.equals(request.getAutoSync());
         return ResponseEntity.accepted()
-            .body(accountPieService.copy(accountId, accountAccess.currentUser(), request.getPieId(), autoSync));
+            .body(accountPieService.copy(accountId, accountAccess.currentUser(), request.getPieId()));
     }
 
     @PatchMapping

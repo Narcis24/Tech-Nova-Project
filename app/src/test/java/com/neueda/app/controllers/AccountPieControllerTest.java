@@ -149,7 +149,7 @@ class AccountPieControllerTest {
             new BigDecimal("40"), List.of(), List.of()));
 
         mockMvc.perform(post(URL + "/copy-preview").contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new CopyPieRequest(PIE_ID, null))))
+                .content(objectMapper.writeValueAsString(new CopyPieRequest(PIE_ID))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.version").value(3));
         verify(accountAccess).requireOwned("ACC-1");
@@ -158,7 +158,7 @@ class AccountPieControllerTest {
     @Test
     void copy_202WithTheRun_autoSyncOnWhenOmitted() throws Exception {
         when(accountAccess.currentUser()).thenReturn("jay");
-        when(accountPieService.copy("ACC-1", "jay", PIE_ID, true)).thenReturn(run());
+        when(accountPieService.copy("ACC-1", "jay", PIE_ID)).thenReturn(run());
 
         mockMvc.perform(post(URL + "/copy").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"pieId\":\"" + PIE_ID + "\"}"))
@@ -168,28 +168,18 @@ class AccountPieControllerTest {
     }
 
     @Test
-    void copy_autoSyncOff_isPassedOn() throws Exception {
-        when(accountAccess.currentUser()).thenReturn("jay");
-        when(accountPieService.copy("ACC-1", "jay", PIE_ID, false)).thenReturn(run());
-
-        mockMvc.perform(post(URL + "/copy").contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new CopyPieRequest(PIE_ID, false))))
-            .andExpect(status().isAccepted());
-    }
-
-    @Test
     void copy_noPieId_400() throws Exception {
         mockMvc.perform(post(URL + "/copy").contentType(MediaType.APPLICATION_JSON).content("{}"))
             .andExpect(status().isBadRequest());
-        verify(accountPieService, never()).copy(any(), any(), any(), org.mockito.ArgumentMatchers.anyBoolean());
+        verify(accountPieService, never()).copy(any(), any(), any());
     }
 
     @Test
     void copy_ownPie409_privatePie404() throws Exception {
         when(accountAccess.currentUser()).thenReturn("jay");
-        when(accountPieService.copy("ACC-1", "jay", PIE_ID, true))
+        when(accountPieService.copy("ACC-1", "jay", PIE_ID))
             .thenThrow(new RebalanceConflictException("own")).thenThrow(new PieNotFoundException("private"));
-        String body = objectMapper.writeValueAsString(new CopyPieRequest(PIE_ID, true));
+        String body = objectMapper.writeValueAsString(new CopyPieRequest(PIE_ID));
 
         mockMvc.perform(post(URL + "/copy").contentType(MediaType.APPLICATION_JSON).content(body))
             .andExpect(status().isConflict());
@@ -203,10 +193,10 @@ class AccountPieControllerTest {
         doThrow(new AccountAccessDeniedException("ACC-1")).when(accountAccess).requireOwned("ACC-1");
 
         mockMvc.perform(post(URL + "/copy").contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new CopyPieRequest(PIE_ID, true))))
+                .content(objectMapper.writeValueAsString(new CopyPieRequest(PIE_ID))))
             .andExpect(status().isForbidden());
         mockMvc.perform(post(URL + "/copy-preview").contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new CopyPieRequest(PIE_ID, true))))
+                .content(objectMapper.writeValueAsString(new CopyPieRequest(PIE_ID))))
             .andExpect(status().isForbidden());
         mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new UpdateCopySettingsRequest(true))))

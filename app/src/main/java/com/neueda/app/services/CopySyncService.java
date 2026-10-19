@@ -10,8 +10,8 @@ import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.PieRepository;
 import com.neueda.app.repositories.RebalanceRunRepository;
 import java.util.List;
-import java.util.UUID;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,47 +46,19 @@ public class CopySyncService {
         return accountPieRepository.findByPieIdAndModeAndAutoSyncTrue(pieId, PieLinkMode.COPY);
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
-    public List<AccountPie> pending() {
-        return accountPieRepository.findBySyncPendingTrue();
-    }
-
-    /**
-     * Starts a run to the pie's latest version if the account copies it with auto-sync on, the pie is still public
-     * and the account is behind. An active run makes it wait: the account is flagged and synced when that run ends.
-     * With {@code onlyIfPending} it acts on flagged accounts only. A failure leaves nothing changed.
-     */
+    /** Starts the latest version when eligible. An active run is checked again when it finishes. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void sync(String accountId, UUID pieId, boolean onlyIfPending) {
+    public void sync(String accountId, UUID pieId) {
         Optional<AccountPie> locked = lockedCopy(accountId, pieId);
-        if (locked.isEmpty() || onlyIfPending && !locked.get().isSyncPending()) {
+        if (locked.isEmpty()) {
             return;
         }
         AccountPie link = locked.get();
         Pie pie = pieRepository.findById(pieId).orElseThrow(() -> new PieNotFoundException("Pie not found: " + pieId));
-        if (!link.isAutoSync() || !pie.isPublished() || !link.isBehind(pie)) {
-            link.setSyncPending(false);
-        } else if (runRepository.existsByAccountIdAndStatusIn(accountId, RebalanceStatus.ACTIVE)) {
-            link.setSyncPending(true);
-        } else {
+        if (link.isAutoSync() && pie.isPublished() && link.isBehind(pie)
+            && !runRepository.existsByAccountIdAndStatusIn(accountId, RebalanceStatus.ACTIVE)) {
             runService.start(accountId);
-            // Loaded again: the run's orders may have cleared the persistence context
-            accountPieRepository.findById(accountId).ifPresent(started -> started.setSyncPending(false));
         }
-    }
-
-    /** Flags the account after a failed sync, so it is tried again by the next event or at startup. */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void markPending(String accountId, UUID pieId) {
-        lockedCopy(accountId, pieId).filter(AccountPie::isAutoSync).ifPresent(link -> link.setSyncPending(true));
-    }
-
-    /** Drops the flag of a cancelled run's account, unless a newer run is active and the flag may be for it. */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void clearPending(String accountId, UUID pieId) {
-        lockedCopy(accountId, pieId)
-            .filter(link -> !runRepository.existsByAccountIdAndStatusIn(accountId, RebalanceStatus.ACTIVE))
-            .ifPresent(link -> link.setSyncPending(false));
     }
 
     private Optional<AccountPie> lockedCopy(String accountId, UUID pieId) {

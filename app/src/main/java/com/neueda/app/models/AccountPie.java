@@ -13,9 +13,11 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.DynamicUpdate;
 
 /** The pie an account follows. An account follows at most one. */
 @Entity
+@DynamicUpdate
 @Table(name = "account_pies")
 @NoArgsConstructor
 @Getter
@@ -38,9 +40,6 @@ public class AccountPie {
     @Column(name = "auto_sync")
     private boolean autoSync;
 
-    @Setter
-    @Column(name = "sync_pending")
-    private boolean syncPending;
     @Column(name = "linked_at")
     private LocalDateTime linkedAt;
 
@@ -66,7 +65,6 @@ public class AccountPie {
         this.mode = PieLinkMode.OWN;
         this.appliedVersion = appliedVersion;
         this.autoSync = false;
-        this.syncPending = false;
         this.linkedAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 

@@ -12,7 +12,4 @@ import lombok.NoArgsConstructor;
 public class CopyPieRequest {
     @NotNull
     private UUID pieId;
-
-    /** Follow the author's later versions automatically. On when omitted. */
-    private Boolean autoSync;
 }
