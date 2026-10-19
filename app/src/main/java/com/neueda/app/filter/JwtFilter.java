@@ -14,7 +14,7 @@ import org.springframework.http.MediaType;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import java.util.ArrayList;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.util.List;
 
 import java.io.IOException;
@@ -58,8 +58,12 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
         String username = jwtUtil.extractUsername(token);
-        UsernamePasswordAuthenticationToken auth = 
-            new UsernamePasswordAuthenticationToken(username, null, new ArrayList<>());
+        // "ADMIN" becomes ROLE_ADMIN, which SecurityConfig's hasRole("ADMIN") checks
+        List<SimpleGrantedAuthority> authorities = jwtUtil.extractRoles(token).stream()
+            .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+            .toList();
+        UsernamePasswordAuthenticationToken auth =
+            new UsernamePasswordAuthenticationToken(username, null, authorities);
         SecurityContextHolder.getContext().setAuthentication(auth);
 
         chain.doFilter(request, response);

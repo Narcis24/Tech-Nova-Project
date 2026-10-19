@@ -7,11 +7,13 @@ import { guestGuard } from './guest.guard';
 
 describe('guestGuard', () => {
   const isAuthenticated = signal(false);
+  const homeUrl = signal('/dashboard');
 
   beforeEach(() => {
     isAuthenticated.set(false);
+    homeUrl.set('/dashboard');
     TestBed.configureTestingModule({
-      providers: [provideRouter([]), { provide: AuthService, useValue: { isAuthenticated } }],
+      providers: [provideRouter([]), { provide: AuthService, useValue: { isAuthenticated, homeUrl } }],
     });
   });
 
@@ -30,5 +32,14 @@ describe('guestGuard', () => {
 
     expect(result).toBeInstanceOf(UrlTree);
     expect(TestBed.inject(Router).serializeUrl(result as UrlTree)).toBe('/dashboard');
+  });
+
+  it('redirects an authenticated admin to /admin', () => {
+    isAuthenticated.set(true);
+    homeUrl.set('/admin');
+
+    const result = runGuard();
+
+    expect(TestBed.inject(Router).serializeUrl(result as UrlTree)).toBe('/admin');
   });
 });

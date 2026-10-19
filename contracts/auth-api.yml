@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: TechNova Auth Service API
-  version: 3.0.0
+  version: 3.1.0
   description: |
     Identity provider for TechNova. Registers users, checks credentials and issues the JWTs
     that the Trade REST API (app) accepts. Replaces the Spring Boot auth service; paths, port
@@ -15,11 +15,13 @@ info:
       | Claim   | Type            | Value                                              |
       |---------|-----------------|----------------------------------------------------|
       | `sub`   | string          | the username; the Trade REST API uses it as the account owner |
-      | `roles` | array of string | `["TRADER"]` for every registered user            |
+      | `roles` | array of string | the user's roles from `user_roles`, alphabetical: `TRADER`, `ADMIN` or both. Registration gives `TRADER`; admins change roles through the Trade REST API |
       | `iat`   | number          | issue time, seconds since the epoch               |
       | `exp`   | number          | `iat` + 900 (15 minutes)                           |
 
     - Sent to the Trade REST API as `Authorization: Bearer <accessToken>`.
+    - Roles are read afresh at every login and refresh, so a role change reaches the user's
+      access token within 15 minutes. A user with no role is refused a token (401).
 
     ## Refresh token
     An opaque random string (not a JWT), valid for 7 days. The service stores only a hash
@@ -317,10 +319,12 @@ components:
           example: john_doe1
         roles:
           type: array
+          minItems: 1
+          uniqueItems: true
           items:
             type: string
-            enum: [TRADER]
-          example: [TRADER]
+            enum: [ADMIN, TRADER]
+          example: [ADMIN, TRADER]
         iat:
           type: integer
           example: 1791288000
