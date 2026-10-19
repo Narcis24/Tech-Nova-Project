@@ -133,10 +133,11 @@ class PieRepositoryTest {
         LocalDateTime t1 = LocalDateTime.of(2026, 3, 1, 9, 0);
         LocalDateTime t2 = LocalDateTime.of(2026, 3, 5, 9, 0);
         versions.save(new PieVersion(pie.getPieId(), 1, t1));
+        assertFalse(versions.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(pie.getPieId(), 1, t1.minusSeconds(1)));
         versions.save(new PieVersion(pie.getPieId(), 2, t2));
 
-        assertTrue(versions.existsByPieIdAndCreatedAtAfter(pie.getPieId(), t2.minusSeconds(1)));
-        assertFalse(versions.existsByPieIdAndCreatedAtAfter(pie.getPieId(), t2));
+        assertTrue(versions.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(pie.getPieId(), 1, t2.minusSeconds(1)));
+        assertFalse(versions.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(pie.getPieId(), 1, t2));
         assertEquals(2, versions.findFirstByPieIdAndCreatedAtBeforeOrderByVersionDesc(pie.getPieId(), t2.plusSeconds(1))
             .orElseThrow().getVersion());
         // created exactly at the instant is not yet live

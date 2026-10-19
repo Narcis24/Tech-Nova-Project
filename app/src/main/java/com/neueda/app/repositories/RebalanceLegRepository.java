@@ -10,5 +10,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface RebalanceLegRepository extends JpaRepository<RebalanceLeg, UUID> {
     /** Sells first (SELL sorts after BUY), then by symbol. */
-    List<RebalanceLeg> findByRunIdOrderByPhaseDescSymbolAsc(UUID runId);
+    List<RebalanceLeg> findByRunIdOrderBySideDescSymbolAsc(UUID runId);
 }

@@ -54,7 +54,7 @@ class RebalanceControllerTest {
     private RebalanceRunResponse run(RebalanceStatus status) {
         return new RebalanceRunResponse(RUN_ID, "ACC-1", UUID.randomUUID(), 2, status, true, "SELL GOOG: No quote",
             Instant.parse("2026-10-19T10:00:00Z"), Instant.parse("2026-10-19T10:01:00Z"),
-            List.of(new RebalanceLegResponse(ORDER_ID, "SELL", "GOOG", "SELL", 50, OrderStatus.REJECTED, "No quote")));
+            List.of(new RebalanceLegResponse(ORDER_ID, "GOOG", "SELL", 50, OrderStatus.REJECTED, "No quote")));
     }
 
     @Test
@@ -70,7 +70,6 @@ class RebalanceControllerTest {
             .andExpect(jsonPath("$.waitingForMarketOpen").value(true))
             .andExpect(jsonPath("$.failureSummary").value("SELL GOOG: No quote"))
             .andExpect(jsonPath("$.legs[0].orderId").value(ORDER_ID.toString()))
-            .andExpect(jsonPath("$.legs[0].phase").value("SELL"))
             .andExpect(jsonPath("$.legs[0].symbol").value("GOOG"))
             .andExpect(jsonPath("$.legs[0].side").value("SELL"))
             .andExpect(jsonPath("$.legs[0].quantity").value(50))

@@ -50,6 +50,9 @@ export class PieEditorComponent {
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);
 
+  /** Each row's symbol as typed, trimmed and upper-cased; the search box accepts either case. */
+  readonly symbols = computed(() => this.rows().map((r) => r.symbol.trim().toUpperCase()));
+  readonly unavailable = computed(() => this.symbols().filter((s) => s && !this.isTradable(s)));
   readonly weights = computed(() =>
     this.rows().map((r) => (WEIGHT_PATTERN.test(r.weight.trim()) ? Number(r.weight) : NaN)),
   );
@@ -58,15 +61,13 @@ export class PieEditorComponent {
   readonly overAllocated = computed(() => this.cash() < 0);
   readonly segments = computed(() => {
     if (this.overAllocated()) return [];
-    const slices = this.rows()
-      .map((r, i) => ({ label: r.symbol, pct: this.weights()[i] }))
+    const slices = this.symbols()
+      .map((symbol, i) => ({ label: symbol, pct: this.weights()[i] }))
       .filter((s) => s.label && s.pct > 0);
     return this.cash() > 0 ? [...slices, { label: 'Cash', pct: this.cash() }] : slices;
   });
   readonly duplicate = computed(() => {
-    const symbols = this.rows()
-      .map((r) => r.symbol)
-      .filter(Boolean);
+    const symbols = this.symbols().filter(Boolean);
     return new Set(symbols).size !== symbols.length;
   });
   readonly valid = computed(() => {
@@ -76,7 +77,7 @@ export class PieEditorComponent {
       name.length <= NAME_MAX &&
       !this.instrumentError() &&
       this.rows().length > 0 &&
-      this.rows().every((r) => this.isTradable(r.symbol)) &&
+      this.symbols().every((symbol) => this.isTradable(symbol)) &&
       this.weights().every((w) => w > 0) &&
       !this.overAllocated() &&
       !this.duplicate()
@@ -121,7 +122,7 @@ export class PieEditorComponent {
     const body = {
       name: this.name().trim(),
       description: this.description().trim() || undefined,
-      slices: this.rows().map((r) => ({ symbol: r.symbol, weightPct: Number(r.weight) })),
+      slices: this.rows().map((r, i) => ({ symbol: this.symbols()[i], weightPct: Number(r.weight) })),
     };
     this.saving.set(true);
     this.saveError.set(null);

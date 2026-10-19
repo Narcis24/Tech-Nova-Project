@@ -36,6 +36,8 @@ const COPY: AccountPieResponse = {
   syncPending: false,
 };
 
+const NOT_LINKED = new HttpErrorResponse({ status: 404, error: { errorCode: 'PIE_NOT_LINKED' } });
+
 describe('PiesComponent', () => {
   const currentAccountId = signal<string | null>('ACC001');
   let pies: jasmine.SpyObj<{
@@ -103,15 +105,32 @@ describe('PiesComponent', () => {
   });
 
   it('shows the no-pie header on 404', () => {
-    accountPies.getAccountPie.and.returnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+    accountPies.getAccountPie.and.returnValue(throwError(() => NOT_LINKED));
     create();
     expect(root.querySelector('.header')!.textContent).toContain('No pie on this account yet');
+  });
+
+  it('keeps a linked pie whose prices are missing, with no drift', () => {
+    accountPies.getAccountPie.and.returnValue(of({ ...LINKED, maxDriftPct: undefined, drift: [] }));
+    create();
+    const header = root.querySelector('.header')!;
+    expect(header.textContent).toContain('This account follows');
+    expect(header.textContent).not.toContain('max drift');
+    expect(button('Unlink')).toBeTruthy();
+  });
+
+  it('shows an error, not the no-pie header, for other 404s', () => {
+    accountPies.getAccountPie.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 404, error: { errorCode: 'ACCOUNT_NOT_FOUND' } })),
+    );
+    create();
+    expect(root.querySelector('.header')!.textContent).toContain("Couldn't load this account's pie.");
   });
 
   it('unlinks the pie and shows the no-pie header', () => {
     accountPies.unlinkPie.and.returnValue(of(null));
     create();
-    accountPies.getAccountPie.and.returnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+    accountPies.getAccountPie.and.returnValue(throwError(() => NOT_LINKED));
     button('Unlink').click();
     fixture.detectChanges();
     expect(accountPies.unlinkPie).toHaveBeenCalledWith('ACC001');

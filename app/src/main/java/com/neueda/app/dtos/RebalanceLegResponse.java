@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RebalanceLegResponse {
     private UUID orderId;
-    private String phase;
     private String symbol;
     private String side;
     private int quantity;

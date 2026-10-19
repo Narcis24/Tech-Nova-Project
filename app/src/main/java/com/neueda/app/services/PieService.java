@@ -135,7 +135,7 @@ public class PieService {
         if (!normalised(weights).equals(normalised(toWeights(slices)))) {
             boolean isPublic = pie.getVisibility() == PieVisibility.PUBLIC;
             boolean followed = accountPieRepository.existsByPieIdAndMode(pieId, PieLinkMode.COPY);
-            if ((isPublic || followed) && editedWithinDay(pie, followed)) {
+            if ((isPublic || followed) && editedWithinDay(pie)) {
                 throw new PieEditTooSoonException("A public or copied pie can change its slices once every 24 hours");
             }
             pie.setLatestVersion(pie.getLatestVersion() + 1);
@@ -187,16 +187,10 @@ public class PieService {
         }
     }
 
-    /** True if the pie got a new version in the last 24 hours, counting only versions made since it was published. */
-    private boolean editedWithinDay(Pie pie, boolean followed) {
-        LocalDateTime since = now().minus(PUBLIC_EDIT_GAP);
-        if (followed) {
-            return pieVersionRepository.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(pie.getPieId(), 1, since);
-        }
-        if (pie.getPublishedAt().isAfter(since)) {
-            since = pie.getPublishedAt();
-        }
-        return pieVersionRepository.existsByPieIdAndCreatedAtAfter(pie.getPieId(), since);
+    private boolean editedWithinDay(Pie pie) {
+        // Version 1 creates the pie; only subsequent versions are edits.
+        return pieVersionRepository.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(
+            pie.getPieId(), 1, now().minus(PUBLIC_EDIT_GAP));
     }
 
     private LocalDateTime now() {

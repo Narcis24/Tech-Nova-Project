@@ -43,7 +43,6 @@ class RebalanceE2ETest extends E2ETestBase {
         assertEquals("COMPLETED", run.getString("status"));
         assertEquals(1, run.getInt("targetVersion"));
         assertEquals(account, run.getString("accountId"));
-        assertEquals(List.of("BUY", "BUY"), run.getList("legs.phase"));
         assertEquals(List.of("BUY", "BUY"), run.getList("legs.side"));
         assertTrue(run.getList("legs.status").stream().allMatch("FILLED"::equals), run.prettify());
         assertTrue(run.getList("legs.failureReason").stream().allMatch(r -> r == null), run.prettify());
@@ -73,10 +72,9 @@ class RebalanceE2ETest extends E2ETestBase {
         JsonPath run = rebalance(account);
 
         assertEquals("COMPLETED", run.getString("status"), run.prettify());
-        assertEquals(List.of("AAPL"), run.getList("legs.findAll { it.phase == 'SELL' }.symbol"));
-        assertEquals(List.of("SELL"), run.getList("legs.findAll { it.phase == 'SELL' }.side"));
-        assertEquals(List.of(49), run.getList("legs.findAll { it.phase == 'SELL' }.quantity"));
-        assertEquals(List.of("MSFT"), run.getList("legs.findAll { it.phase == 'BUY' }.symbol"));
+        assertEquals(List.of("AAPL"), run.getList("legs.findAll { it.side == 'SELL' }.symbol"));
+        assertEquals(List.of(49), run.getList("legs.findAll { it.side == 'SELL' }.quantity"));
+        assertEquals(List.of("MSFT"), run.getList("legs.findAll { it.side == 'BUY' }.symbol"));
         assertTrue(run.getList("legs.status").stream().allMatch("FILLED"::equals), run.prettify());
         assertLegsMatchOrders(run);
         assertEquals(0, me.sharesHeld(account, "AAPL"));

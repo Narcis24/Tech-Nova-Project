@@ -10,6 +10,7 @@ import com.neueda.app.enums.RebalanceStatus;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.PieNotFoundException;
 import com.neueda.app.exceptions.PieNotLinkedException;
+import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.exceptions.RebalanceConflictException;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.AccountPie;
@@ -66,7 +67,7 @@ public class AccountPieService {
         requireNoActiveRun(accountId);
         pieService.requireOwned(pieId, owner);
         AccountPie link = AccountPie.own(accountId, pieId);
-        AccountPieResponse response = toResponse(link);
+        AccountPieResponse response = toResponse(link, false);
         accountPieRepository.save(link);
         return response;
     }
@@ -78,7 +79,7 @@ public class AccountPieService {
     }
 
     public AccountPieResponse get(String accountId) {
-        return toResponse(requireLink(accountId));
+        return toResponse(requireLink(accountId), true);
     }
 
     public RebalancePreviewResponse preview(String accountId) {
@@ -157,7 +158,8 @@ public class AccountPieService {
             };
             valuesAfter.put(leg.symbol(), leg.price().multiply(BigDecimal.valueOf(leg.currentQuantity() + delta)));
             return new PreviewLeg(leg.symbol(), leg.inPie(), leg.currentQuantity(), leg.price(),
-                leg.currentValue(), leg.currentPct(), leg.targetPct(), leg.targetValue(), leg.action().name(),
+                leg.currentValue(), leg.currentPct(), leg.targetPct(), leg.targetValue(),
+                leg.targetValue().subtract(leg.currentValue()), leg.action().name(),
                 leg.quantity(), leg.price().multiply(BigDecimal.valueOf(leg.quantity())));
         }).toList();
 
@@ -168,17 +170,31 @@ public class AccountPieService {
     }
 
     private AccountPieResponse toResponse(AccountPie link) {
+        return toResponse(link, true);
+    }
+
+    /**
+     * With tolerateMissingPrices, a missing price leaves the drift empty, with no maximum, instead of failing: an
+     * existing link should still show, so it can be unlinked.
+     */
+    private AccountPieResponse toResponse(AccountPie link, boolean tolerateMissingPrices) {
         Pie pie = requirePie(link.getPieId());
         Integer version = link.targetVersion(pie);
         List<SliceDrift> drift = List.of();
-        if (version != null) {
-            drift = planner.plan(link.getAccountId(), pieService.weightsAt(pie.getPieId(), version)).legs().stream()
-                .filter(PlannedLeg::inPie)
-                .map(leg -> new SliceDrift(leg.symbol(), leg.targetPct(), leg.currentPct(), leg.driftPct()))
-                .toList();
+        BigDecimal maxDrift = null;
+        try {
+            if (version != null) {
+                drift = planner.plan(link.getAccountId(), pieService.weightsAt(pie.getPieId(), version)).legs().stream()
+                    .filter(PlannedLeg::inPie)
+                    .map(leg -> new SliceDrift(leg.symbol(), leg.targetPct(), leg.currentPct(), leg.driftPct()))
+                    .toList();
+                maxDrift = drift.stream().map(SliceDrift::getDriftPct).max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+            }
+        } catch (PriceNotFoundException e) {
+            if (!tolerateMissingPrices) {
+                throw e;
+            }
         }
-        BigDecimal maxDrift = drift.stream().map(SliceDrift::getDriftPct)
-            .max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
         boolean updateAvailable = link.getMode() == PieLinkMode.COPY && pie.isPublished() && link.isBehind(pie);
         UUID activeRunId = rebalanceRunRepository
             .findFirstByAccountIdAndStatusIn(link.getAccountId(), RebalanceStatus.ACTIVE)

@@ -17,6 +17,8 @@ public class PreviewLeg {
     private BigDecimal currentPct;
     private BigDecimal targetPct;
     private BigDecimal targetValue;
+    /** The target value less the current value: what the account would buy (positive) or sell to reach it. */
+    private BigDecimal difference;
     private String action;
     private int quantity;
     private BigDecimal estimatedValue;

@@ -183,7 +183,7 @@ class RebalanceRunServiceTest {
         assertEquals(List.of("SELL GOOG 50", "BUY AAPL 52", "BUY MSFT 42"), summary(buying));
         for (RebalanceLegResponse leg : buying.getLegs()) {
             String key = orderRepository.findById(leg.getOrderId()).orElseThrow().getIdempotencyKey();
-            assertEquals("rebalance:" + started.getRunId() + ":" + leg.getPhase() + ":" + leg.getSymbol(), key);
+            assertEquals("rebalance:" + started.getRunId() + ":" + leg.getSide() + ":" + leg.getSymbol(), key);
         }
 
         fillAll(buying, "100.00");

@@ -11,7 +11,6 @@
 
 export interface RebalanceLegResponse { 
     orderId?: string;
-    phase?: string;
     symbol?: string;
     side?: string;
     quantity?: number;

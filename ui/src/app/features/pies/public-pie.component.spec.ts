@@ -1,4 +1,5 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { ActivatedRoute, Router, provideRouter } from '@angular/router';
@@ -61,6 +62,8 @@ describe('PublicPieComponent', () => {
       imports: [PublicPieComponent],
       providers: [
         provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: PublicPieControllerService, useValue: api },
         { provide: AuthService, useValue: { username } },
         { provide: AccountService, useValue: { accounts, currentAccountId } },

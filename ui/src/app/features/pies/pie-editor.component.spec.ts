@@ -47,15 +47,15 @@ describe('PieEditorComponent', () => {
     root = fixture.nativeElement;
   }
 
-  function type(el: HTMLInputElement | HTMLSelectElement, value: string): void {
+  function type(el: HTMLInputElement, value: string): void {
     el.value = value;
-    el.dispatchEvent(new Event(el instanceof HTMLSelectElement ? 'change' : 'input'));
+    el.dispatchEvent(new Event('input'));
     fixture.detectChanges();
   }
 
   const name = () => root.querySelector<HTMLInputElement>('#name')!;
-  const symbols = () => Array.from(root.querySelectorAll<HTMLSelectElement>('.row select'));
-  const weights = () => Array.from(root.querySelectorAll<HTMLInputElement>('.row input'));
+  const symbols = () => Array.from(root.querySelectorAll<HTMLInputElement>('.row .symbol'));
+  const weights = () => Array.from(root.querySelectorAll<HTMLInputElement>('.row .weight input'));
   const button = (text: string) =>
     Array.from(root.querySelectorAll('button')).find((b) => b.textContent?.trim() === text) as HTMLButtonElement;
 
@@ -167,13 +167,27 @@ describe('PieEditorComponent', () => {
   it('keeps an unavailable saved symbol visible and blocks saving until it is replaced', () => {
     pies.get.and.returnValue(of({ ...PIE, slices: [{ symbol: 'OLD', weightPct: 50 }] }));
     create('p1');
-    expect(symbols()[0].selectedOptions[0].textContent).toContain('OLD · Unavailable');
+    expect(symbols()[0].value).toBe('OLD');
+    expect(symbols()[0].getAttribute('aria-invalid')).toBe('true');
+    expect(root.textContent).toContain('Not available to trade: OLD');
     expect(button('Save').disabled).toBeTrue();
     fixture.componentInstance.save();
     expect(pies.update).not.toHaveBeenCalled();
 
     type(symbols()[0], 'AAPL');
     expect(button('Save').disabled).toBeFalse();
+  });
+
+  it('suggests stocks by symbol and name, and accepts a lower-case symbol', () => {
+    create();
+    const options = Array.from(root.querySelectorAll<HTMLOptionElement>('#instrument-options option'));
+    expect(options.map((o) => [o.value, o.textContent?.trim()])).toContain(['AAPL', 'Apple']);
+    expect(symbols()[0].getAttribute('list')).toBe('instrument-options');
+    type(name(), 'Lower case');
+    fillRow(0, ' aapl ', '50');
+    expect(button('Save').disabled).toBeFalse();
+    button('Save').click();
+    expect(pies.create).toHaveBeenCalledWith(jasmine.objectContaining({ slices: [{ symbol: 'AAPL', weightPct: 50 }] }));
   });
 
   it('shows an instrument load failure and blocks saving', () => {

@@ -74,7 +74,7 @@ class PieControllerTest {
     private PieResponse response() {
         return new PieResponse(PIE_ID, "Tech", "desc", "PRIVATE", 1,
             List.of(new PieSliceResponse("AAPL", "Apple Inc.", new BigDecimal("60"))),
-            new BigDecimal("40"), List.of(), LocalDateTime.now());
+            new BigDecimal("40"), List.of(), LocalDateTime.now(), null);
     }
 
     @Test

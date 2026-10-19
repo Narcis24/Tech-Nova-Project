@@ -12,7 +12,7 @@
           <div class="summary">
             <p>
               This account {{ link.mode === 'COPY' ? 'copies' : 'follows' }} <strong>{{ link.pieName }}</strong
-              >, max drift {{ link.maxDriftPct }}%
+              >{{ link.maxDriftPct == null ? '' : ', max drift ' + link.maxDriftPct + '%' }}
             </p>
             @if (link.mode === 'COPY') {
               @if (!link.published) {

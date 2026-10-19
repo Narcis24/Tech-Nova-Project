@@ -5,8 +5,6 @@ import com.neueda.app.events.OrderResolved;
 import com.neueda.app.models.RebalanceRun;
 import com.neueda.app.repositories.RebalanceRunRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.event.TransactionPhase;
@@ -14,7 +12,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * Moves runs on when orders resolve. Events are only a nudge: the run reads the orders' real status,
- * so a failure here is logged and the run is picked up by the next event or by recovery at startup.
+ * so a failure here is logged and the run is picked up by the next event or by scheduled recovery.
  */
 @Component
 @Slf4j
@@ -38,7 +36,6 @@ public class RebalanceCoordinator {
     }
 
     /** Advances runs whose events were missed, e.g. handled while the app was down. */
-    @EventListener(ApplicationReadyEvent.class)
     @Scheduled(fixedDelayString = "${app.pies.recovery-delay-ms:30000}")
     public void recover() {
         for (RebalanceRun run : runRepository.findByStatusIn(RebalanceStatus.ACTIVE)) {

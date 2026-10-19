@@ -36,7 +36,6 @@ CREATE TABLE account_pies (
     mode             VARCHAR(5)  NOT NULL CHECK (mode IN ('OWN', 'COPY')),
     applied_version  INT,
     auto_sync        BOOLEAN     NOT NULL DEFAULT FALSE,
-    sync_pending     BOOLEAN     NOT NULL DEFAULT FALSE,
     linked_at        TIMESTAMP   NOT NULL
 );
 CREATE INDEX idx_account_pies_pie ON account_pies(pie_id);
@@ -57,9 +56,8 @@ CREATE UNIQUE INDEX uq_rebalance_runs_active ON rebalance_runs(account_id) WHERE
 CREATE TABLE rebalance_legs (
     run_id    UUID        NOT NULL REFERENCES rebalance_runs(run_id) ON DELETE CASCADE,
     order_id  UUID        NOT NULL UNIQUE REFERENCES orders(id),
-    phase     VARCHAR(5)  NOT NULL CHECK (phase IN ('SELL', 'BUY')),
     symbol    VARCHAR(20) NOT NULL,
-    side      VARCHAR(4)  NOT NULL,
+    side      VARCHAR(4)  NOT NULL CHECK (side IN ('SELL', 'BUY')),
     quantity  INT         NOT NULL CHECK (quantity > 0),
     PRIMARY KEY (run_id, order_id)
 );

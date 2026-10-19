@@ -139,7 +139,7 @@ public class RebalanceRunService {
             throw new RebalanceConflictException("Rebalance run " + runId + " is already " + run.getStatus());
         }
         int cancelled = 0;
-        for (RebalanceLeg leg : legRepository.findByRunIdOrderByPhaseDescSymbolAsc(runId)) {
+        for (RebalanceLeg leg : legRepository.findByRunIdOrderBySideDescSymbolAsc(runId)) {
             // Guarded like OrderService.cancelOrder: a fill that got there first stays filled
             cancelled += orderRepository.changeStatus(leg.getOrderId(), OrderStatus.PENDING, OrderStatus.CANCELLED);
         }
@@ -171,7 +171,7 @@ public class RebalanceRunService {
 
     /** SELLING with every sell resolved becomes BUYING, and BUYING with every buy resolved ends the run. */
     private void step(RebalanceRun run) {
-        List<RebalanceLeg> legs = legRepository.findByRunIdOrderByPhaseDescSymbolAsc(run.getRunId());
+        List<RebalanceLeg> legs = legRepository.findByRunIdOrderBySideDescSymbolAsc(run.getRunId());
         Map<UUID, Order> orders = ordersOf(legs);
         if (isWaiting(run, legs, orders)) {
             return;
@@ -231,7 +231,7 @@ public class RebalanceRunService {
     private boolean isWaiting(RebalanceRun run, List<RebalanceLeg> legs, Map<UUID, Order> orders) {
         OrderSide phase = run.getStatus() == RebalanceStatus.SELLING ? OrderSide.SELL : OrderSide.BUY;
         return legs.stream()
-            .filter(leg -> leg.getPhase() == phase)
+            .filter(leg -> leg.getSide() == phase)
             .anyMatch(leg -> !isResolved(orders.get(leg.getOrderId())));
     }
 
@@ -258,14 +258,14 @@ public class RebalanceRunService {
     }
 
     private RebalanceRunResponse toResponse(RebalanceRun run) {
-        List<RebalanceLeg> legs = legRepository.findByRunIdOrderByPhaseDescSymbolAsc(run.getRunId());
+        List<RebalanceLeg> legs = legRepository.findByRunIdOrderBySideDescSymbolAsc(run.getRunId());
         Map<UUID, Order> orders = ordersOf(legs);
         boolean waitingForMarketOpen = run.isActive() && isWaiting(run, legs, orders)
             && !MarketHours.isOpen(clock.instant());
         List<RebalanceLegResponse> legResponses = legs.stream()
             .map(leg -> {
                 Order order = orders.get(leg.getOrderId());
-                return new RebalanceLegResponse(leg.getOrderId(), leg.getPhase().name(), leg.getSymbol(),
+                return new RebalanceLegResponse(leg.getOrderId(), leg.getSymbol(),
                     leg.getSide().name(), leg.getQuantity(), order.getStatus(), failureReason(order));
             })
             .toList();
