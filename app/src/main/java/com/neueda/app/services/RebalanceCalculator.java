@@ -59,11 +59,11 @@ public class RebalanceCalculator {
                 if (!inPie && held > 0) {
                     action = PlannedAction.SELL;
                     quantity = held;
-                } else if (inPie && currentPct.subtract(targetPct).abs().compareTo(minDriftPct) >= 0
-                           && difference.abs().compareTo(minTradeValue) >= 0) {
-                    quantity = difference.abs().divide(price, 0, RoundingMode.FLOOR).intValueExact();
-                    if (quantity > 0) {
+                } else if (inPie && currentPct.subtract(targetPct).abs().compareTo(minDriftPct) >= 0) {
+                    int shares = difference.abs().divide(price, 0, RoundingMode.FLOOR).intValueExact();
+                    if (worthTrading(price, shares)) {
                         action = difference.signum() > 0 ? PlannedAction.BUY : PlannedAction.SELL;
+                        quantity = shares;
                     }
                 }
             }
@@ -86,7 +86,8 @@ public class RebalanceCalculator {
         BigDecimal buyCost = BigDecimal.ZERO;
         for (PlannedLeg leg : buys) {
             int affordable = budgetLeft.divide(leg.price(), 0, RoundingMode.FLOOR).intValueExact();
-            int quantity = Math.min(leg.quantity(), affordable);
+            int capped = Math.min(leg.quantity(), affordable);
+            int quantity = worthTrading(leg.price(), capped) ? capped : 0;
             BigDecimal cost = leg.price().multiply(BigDecimal.valueOf(quantity));
             budgetLeft = budgetLeft.subtract(cost);
             buyCost = buyCost.add(cost);
@@ -104,6 +105,11 @@ public class RebalanceCalculator {
         return new RebalancePlan(total, cash, cash.add(sellProceeds).subtract(buyCost), ordered);
     }
 
+
+    /** Whole-share trades under the minimum value are skipped, like those that need no shares at all. */
+    private boolean worthTrading(BigDecimal price, int shares) {
+        return shares > 0 && price.multiply(BigDecimal.valueOf(shares)).compareTo(minTradeValue) >= 0;
+    }
     public record RebalancePlan(BigDecimal totalValue, BigDecimal cashBefore, BigDecimal cashAfter,
                                 List<PlannedLeg> legs) {
     }

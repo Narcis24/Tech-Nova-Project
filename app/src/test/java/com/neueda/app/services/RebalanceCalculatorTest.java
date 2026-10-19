@@ -48,6 +48,26 @@ class RebalanceCalculatorTest {
     }
 
     @Test
+    void underTenDollarsOnceRoundedToWholeShares_none() {
+        // a $15 gap at $9 a share is one share, a $9 trade
+        RebalancePlan result = plan(Map.of("AAPL", 10), Map.of("AAPL", decimal("9")), "15",
+            Map.of("AAPL", decimal("100")));
+
+        assertLeg(result, "AAPL", PlannedAction.NONE, 0);
+        assertAmount("15", result.cashAfter());
+    }
+
+    @Test
+    void buyCappedUnderTenDollarsByTheBudget_none() {
+        // the gap is worth 2 shares, but 1% buffer leaves cash for only one $9 share
+        RebalancePlan result = plan(Map.of(), Map.of("AAPL", decimal("9")), "18",
+            Map.of("AAPL", decimal("100")));
+
+        assertLeg(result, "AAPL", PlannedAction.NONE, 0);
+        assertAmount("18", result.cashAfter());
+    }
+
+    @Test
     void outsidePie_soldInFull() {
         RebalancePlan result = plan(Map.of("TSLA", 3),
             Map.of("TSLA", decimal("2"), "AAPL", decimal("1")), "0",

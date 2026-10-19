@@ -109,7 +109,7 @@ class AccountPieControllerTest {
     @Test
     void preview_returnsLegs() throws Exception {
         PreviewLeg leg = new PreviewLeg("AAPL", true, 0, new BigDecimal("100"), BigDecimal.ZERO, BigDecimal.ZERO,
-            new BigDecimal("60"), new BigDecimal("600"), "BUY", 6, new BigDecimal("600"));
+            new BigDecimal("60"), new BigDecimal("600"), new BigDecimal("600"), "BUY", 6, new BigDecimal("600"));
         when(accountPieService.preview("ACC-1")).thenReturn(new RebalancePreviewResponse("ACC-1", PIE_ID, 1,
             new BigDecimal("1000"), new BigDecimal("1000"), new BigDecimal("400"), new BigDecimal("40"),
             List.of(leg), List.of()));
@@ -117,6 +117,7 @@ class AccountPieControllerTest {
         mockMvc.perform(post(URL + "/preview"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.legs[0].action").value("BUY"))
+            .andExpect(jsonPath("$.legs[0].difference").value(600))
             .andExpect(jsonPath("$.legs[0].estimatedValue").value(600))
             .andExpect(jsonPath("$.cashTargetPct").value(40));
         verify(accountAccess).requireOwned("ACC-1");

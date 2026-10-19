@@ -51,7 +51,10 @@ export class PiesComponent {
           return this.accountPieApi.getAccountPie(id).pipe(
             map((pie): Header => ({ state: 'linked', pie })),
             catchError((error: unknown) =>
-              of<Header>({ state: error instanceof HttpErrorResponse && error.status === 404 ? 'none' : 'error' }),
+              of<Header>({
+                state:
+                  error instanceof HttpErrorResponse && error.error?.errorCode === 'PIE_NOT_LINKED' ? 'none' : 'error',
+              }),
             ),
             startWith<Header>({ state: 'loading' }),
           );

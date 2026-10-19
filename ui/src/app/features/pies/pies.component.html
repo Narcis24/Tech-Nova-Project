@@ -9,7 +9,7 @@
       @case ('linked') {
         <p>
           This account follows <strong>{{ linked()?.pieName }}</strong
-          >, max drift {{ linked()?.maxDriftPct }}%
+          >{{ linked()?.maxDriftPct == null ? '' : ', max drift ' + linked()?.maxDriftPct + '%' }}
         </p>
         <a [routerLink]="['/accounts', accountId(), 'rebalance']">Preview rebalance</a>
         <button type="button" class="secondary" (click)="unlink()">Unlink</button>

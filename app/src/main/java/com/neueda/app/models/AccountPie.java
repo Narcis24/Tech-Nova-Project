@@ -36,9 +36,6 @@ public class AccountPie {
     @Column(name = "auto_sync")
     private boolean autoSync;
 
-    @Column(name = "sync_pending")
-    private boolean syncPending;
-
     @Column(name = "linked_at")
     private LocalDateTime linkedAt;
 
