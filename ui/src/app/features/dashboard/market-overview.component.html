@@ -73,11 +73,13 @@
           <a routerLink="/trade" [queryParams]="{ symbol: asset.symbol, side: 'BUY' }">{{ asset.symbol }}</a
           ><button
             type="button"
-            [attr.aria-label]="(watchlist().includes(asset.symbol ?? '') ? 'Unwatch ' : 'Watch ') + asset.symbol"
             [attr.aria-pressed]="watchlist().includes(asset.symbol ?? '')"
             (click)="toggle(asset.symbol ?? '')"
           >
-            {{ watchlist().includes(asset.symbol ?? '') ? '★' : '☆' }}
+            <span aria-hidden="true">{{ watchlist().includes(asset.symbol ?? '') ? '★' : '☆' }}</span>
+            <span class="visually-hidden"
+              >{{ watchlist().includes(asset.symbol ?? '') ? 'Unwatch' : 'Watch' }} {{ asset.symbol }}</span
+            >
           </button>
         </div>
         <p class="name">{{ asset.name }}</p>
