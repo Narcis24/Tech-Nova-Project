@@ -12,7 +12,7 @@
 export interface CreateUserRequest { 
     username: string;
     email: string;
-    roles: Set<CreateUserRequest.RolesEnum>;
+    roles: Array<CreateUserRequest.RolesEnum>;
 }
 export namespace CreateUserRequest {
     export const RolesEnum = {

@@ -1,6 +1,80 @@
 <h1>Users</h1>
 <p class="subtitle">See every user, change their roles and create new accounts.</p>
 
+<!-- Outside the list states below, so an admin can be created even when the list is empty or failed to load -->
+@if (creating()) {
+  <form class="create-form" [formGroup]="createForm" (ngSubmit)="create()" novalidate>
+    <h2>Create admin</h2>
+    <p class="hint">They'll get an email with a link to set their password.</p>
+
+    @if (createError()) {
+      <div class="create-error" role="alert">{{ createError() }}</div>
+    }
+
+    <div class="field">
+      <label for="new-username">Username</label>
+      <input id="new-username" type="text" formControlName="username" autocomplete="off" required />
+      @if (showFieldErrors('username') && f.username.errors) {
+        <p class="field-error">
+          @if (f.username.errors['required']) {
+            Username is required
+          } @else if (f.username.errors['minlength'] || f.username.errors['maxlength']) {
+            Username must be 8-16 characters
+          } @else if (f.username.errors['pattern']) {
+            Username may contain only letters, numbers and underscores
+          }
+        </p>
+      }
+    </div>
+
+    <div class="field">
+      <label for="new-email">Email</label>
+      <input id="new-email" type="email" formControlName="email" autocomplete="off" required />
+      @if (showFieldErrors('email') && f.email.errors) {
+        <p class="field-error">
+          @if (f.email.errors['required']) {
+            Email is required
+          } @else {
+            Enter a valid email address
+          }
+        </p>
+      }
+    </div>
+
+    <fieldset class="role-options">
+      <legend>Roles</legend>
+      @for (role of allRoles; track role) {
+        <label class="role-option">
+          <input type="checkbox" [checked]="hasRole(role)" (change)="toggleRole(role, $any($event.target).checked)" />
+          {{ role }}
+        </label>
+      }
+      @if (showFieldErrors('roles') && f.roles.errors) {
+        <p class="field-error">Pick at least one role</p>
+      }
+    </fieldset>
+
+    <div class="form-actions">
+      <button type="submit" class="primary" [disabled]="saving()">{{ saving() ? 'Creating…' : 'Create' }}</button>
+      <button type="button" class="retry" (click)="cancelCreate()" [disabled]="saving()">Cancel</button>
+    </div>
+  </form>
+} @else {
+  <button type="button" class="primary create-open" (click)="openCreate()">Create admin</button>
+}
+
+@if (created(); as created) {
+  @if (created.inviteSent) {
+    <output class="create-result">Created {{ created.user.username }}. A set-password email is on its way.</output>
+  } @else {
+    <!-- The account exists either way; only the email failed -->
+    <output class="create-result create-warning">
+      Created {{ created.user.username }}, but the set-password email couldn't be sent. They can use "Forgot password"
+      to get one.
+    </output>
+  }
+}
+
 @if (error()) {
   <div class="load-error" role="alert">
     <p>Couldn't load the users.</p>
