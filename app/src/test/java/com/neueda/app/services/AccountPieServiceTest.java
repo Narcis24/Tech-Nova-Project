@@ -81,6 +81,8 @@ class AccountPieServiceTest {
 
     @Test
     void link_ownPie_replacesExistingLink() {
+        UUID oldPie = UUID.randomUUID();
+        when(accountPieRepository.findById(ACCOUNT)).thenReturn(Optional.of(AccountPie.own(ACCOUNT, oldPie)));
         portfolio("1000");
         when(priceService.getCurrentPrice(any())).thenReturn(new BigDecimal("100"));
 
@@ -91,9 +93,19 @@ class AccountPieServiceTest {
         verify(accountPieRepository).save(saved.capture());
         assertEquals(ACCOUNT, saved.getValue().getAccountId());
         assertEquals(PIE_ID, saved.getValue().getPieId());
+        assertNotEquals(oldPie, saved.getValue().getPieId());
         assertEquals("OWN", response.getMode());
         assertEquals("Tech", response.getPieName());
         assertEquals(2, response.getLatestVersion());
+    }
+
+    @Test
+    void link_unpricedSymbol_priceNotFoundAndNothingSaved() {
+        portfolio("1000");
+        when(priceService.getCurrentPrice(any())).thenThrow(new PriceNotFoundException("none"));
+
+        assertThrows(PriceNotFoundException.class, () -> service.link(ACCOUNT, "jay", PIE_ID));
+        verify(accountPieRepository, never()).save(any());
     }
 
     @Test

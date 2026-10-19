@@ -51,7 +51,10 @@ public class AccountPieService {
 
     public AccountPieResponse link(String accountId, String owner, UUID pieId) {
         pieService.requireOwned(pieId, owner);
-        return toResponse(accountPieRepository.save(AccountPie.own(accountId, pieId)));
+        AccountPie link = AccountPie.own(accountId, pieId);
+        AccountPieResponse response = toResponse(link);
+        accountPieRepository.save(link);
+        return response;
     }
 
     public void unlink(String accountId) {
