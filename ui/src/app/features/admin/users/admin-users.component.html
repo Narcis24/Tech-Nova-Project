@@ -1,0 +1,68 @@
+<h1>Users</h1>
+<p class="subtitle">See every user, change their roles and create new accounts.</p>
+
+@if (error()) {
+  <div class="load-error" role="alert">
+    <p>Couldn't load the users.</p>
+    <button type="button" class="retry" (click)="load()">Try again</button>
+  </div>
+} @else if (users(); as users) {
+  @if (users.length) {
+    <div class="search">
+      <label for="user-search">Search users</label>
+      <input
+        id="user-search"
+        type="search"
+        placeholder="Username or email"
+        autocomplete="off"
+        [value]="query()"
+        (input)="search($event)"
+      />
+    </div>
+
+    @if (query().trim()) {
+      <!-- aria-live: screen readers announce the new count as the admin types -->
+      <p class="result-count" aria-live="polite">Showing {{ visibleUsers().length }} of {{ users.length }} users</p>
+    }
+
+    @if (visibleUsers().length) {
+      <div class="table-wrap">
+        <table class="users">
+          <thead>
+            <tr>
+              <th scope="col">Username</th>
+              <th scope="col">Email</th>
+              <th scope="col">Roles</th>
+              <th scope="col">Created</th>
+              <th scope="col">Created by</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of visibleUsers(); track user.username) {
+              <tr>
+                <td class="username">{{ user.username }}</td>
+                <td class="email">{{ user.email ?? '—' }}</td>
+                <td>
+                  <div class="roles">
+                    @for (role of user.roles; track role) {
+                      <span class="role" [class.role-admin]="role === 'ADMIN'">{{ role }}</span>
+                    }
+                  </div>
+                </td>
+                <td class="created">{{ user.createdAt | date: 'd MMM y' }}</td>
+                <!-- Empty for users who registered themselves -->
+                <td class="created-by">{{ user.createdBy ?? '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="empty">No users match "{{ query().trim() }}".</p>
+    }
+  } @else {
+    <p class="empty">No users yet.</p>
+  }
+} @else {
+  <p class="loading">Loading users…</p>
+}

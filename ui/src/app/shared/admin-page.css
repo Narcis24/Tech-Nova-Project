@@ -1,0 +1,55 @@
+/* Shared by the admin pages (dashboard and users), so headings, role badges and errors look the same on both */
+h1 {
+  margin: 0 0 4px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.subtitle,
+.loading,
+.empty {
+  margin: 0 0 20px;
+  color: var(--secondary-text-color);
+}
+
+.role {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--control-background-color);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.role-admin {
+  background: var(--primary-background-color);
+  color: var(--primary-color);
+}
+
+.load-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--warning-border-color);
+  border-radius: 14px;
+  background: var(--warning-background-color);
+  color: var(--warning-color);
+}
+
+.load-error p {
+  margin: 0;
+}
+
+.retry {
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--control-background-color);
+  font: inherit;
+  color: var(--text-color);
+  cursor: pointer;
+}
+
+.retry:hover {
+  background: var(--control-hover-background-color);
+}

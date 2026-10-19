@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { Observable, Subject, of, throwError } from 'rxjs';
 
 import { AdminUserControllerService, AdminUserResponse } from '../../generated/trading-api-client';
@@ -32,6 +33,8 @@ describe('AdminDashboardComponent', () => {
     TestBed.configureTestingModule({
       imports: [AdminDashboardComponent],
       providers: [
+        // The "Manage users" routerLink needs a router to build its href
+        provideRouter([]),
         { provide: AdminUserControllerService, useValue: { listUsers } },
         { provide: AuthService, useValue: { username: signal('test_admin') } },
       ],
@@ -49,6 +52,14 @@ describe('AdminDashboardComponent', () => {
     const page = create(of(USERS));
 
     expect(page.textContent).toContain('Signed in as test_admin');
+  });
+
+  it('links to the users page', () => {
+    const page = create(of(USERS));
+
+    const link = page.querySelector<HTMLAnchorElement>('.manage-link')!;
+    expect(link.textContent).toContain('Manage users');
+    expect(link.getAttribute('href')).toBe('/admin/users');
   });
 
   it('counts users, admins, traders and admin-created accounts', () => {
