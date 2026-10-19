@@ -82,7 +82,10 @@ public class ExecutionEngine {
     @EventListener(ApplicationReadyEvent.class)
     public void announceStarted() {
         log.info("Execution engine started, asking for pending orders");
-        journal(JournalTypes.ENGINE_STARTED, Map.of());
+        // The settings that change decisions, so a replay of this run uses the same ones
+        journal(JournalTypes.ENGINE_STARTED, Map.of(
+            "maxQuoteAgeSeconds", props.maxQuoteAgeSeconds(),
+            "enforceMarketHours", enforceMarketHours));
         eventProducerService.publishEvent(
             Topics.ORDER_EXECUTION,
             "execution-engine",
