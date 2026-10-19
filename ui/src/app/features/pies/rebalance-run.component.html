@@ -1,0 +1,66 @@
+<h1>Rebalance</h1>
+<a routerLink="/pies">Back to pies</a>
+
+@if (error()) {
+  <div class="feedback" role="alert">
+    <p>{{ error() }}</p>
+    <button type="button" class="secondary" (click)="retry()">Try again</button>
+  </div>
+}
+@if (run(); as current) {
+  <section class="progress" aria-live="polite" aria-atomic="true">
+    <p class="account">{{ current.accountId }} · Pie version {{ current.targetVersion }}</p>
+    <h2>{{ heading() }}</h2>
+    @if (active()) {
+      <ol class="steps" aria-label="Rebalance progress">
+        <li [class.current]="current.status === 'SELLING'">Selling</li>
+        <li [class.current]="current.status === 'BUYING'">Buying</li>
+        <li>Done</li>
+      </ol>
+      @if (current.waitingForMarketOpen) {
+        <p>Waiting for market open. Orders will continue when trading resumes.</p>
+      } @else {
+        <p>Sells settle first. Buys use the available cash and prices after those sells.</p>
+      }
+    }
+    @if (current.status === 'PARTIAL') {
+      <p>Some trades did not fill. Review the reasons below before trying another rebalance.</p>
+    }
+    @if (current.status === 'CANCELLED') {
+      <p>Pending orders were cancelled. Trades already filled stay in your account.</p>
+    }
+    @if (current.failureSummary) {
+      <p class="error">{{ current.failureSummary }}</p>
+    }
+  </section>
+  <ul class="legs" aria-label="Rebalance trades">
+    @for (leg of current.legs; track leg.orderId) {
+      <li>
+        <div class="trade">
+          <strong>{{ leg.side }} {{ leg.quantity }} {{ leg.symbol }}</strong
+          ><span class="status" [class.failed]="leg.status === 'REJECTED' || leg.status === 'CANCELLED'">{{
+            leg.status
+          }}</span>
+        </div>
+        @if (leg.failureReason) {
+          <p class="error">{{ leg.failureReason }}</p>
+        }
+        <a [routerLink]="['/orders', leg.orderId]">Order details</a>
+      </li>
+    } @empty {
+      <li>No trades needed. This account is already close to its targets.</li>
+    }
+  </ul>
+  <div class="actions">
+    @if (active()) {
+      <button type="button" class="secondary danger" [disabled]="cancelling()" (click)="cancel()">
+        {{ cancelling() ? 'Cancelling…' : 'Cancel rebalance' }}
+      </button>
+    } @else {
+      <a [routerLink]="['/accounts', current.accountId, 'rebalance']">Review current allocation</a>
+    }
+    <a routerLink="/dashboard">View portfolio</a>
+  </div>
+} @else if (!error()) {
+  <output>Loading rebalance…</output>
+}

@@ -71,6 +71,13 @@
   <p class="note">
     Whole shares only, so the result is close to the target, not exact. Prices may move before the orders fill.
   </p>
+  <p class="note">Confirming places market orders for this account. Sells finish before buys are calculated.</p>
+  @if (startError()) {
+    <p class="error" role="alert">{{ startError() }}</p>
+  }
+  <button type="button" [disabled]="starting()" (click)="start()">
+    {{ starting() ? 'Starting…' : 'Confirm rebalance' }}
+  </button>
 } @else {
   <output>Loading rebalance preview…</output>
 }

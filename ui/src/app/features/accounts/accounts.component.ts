@@ -3,11 +3,12 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router } from '@angular/router';
 
 import { AccountService } from '../../services/account.service';
+import { AccountPieSummaryComponent } from '../pies/account-pie-summary.component';
 
 /** Lists the user's accounts and lets them pick which one the app shows. Reached from the phone avatar menu. */
 @Component({
   selector: 'app-accounts',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, AccountPieSummaryComponent],
   templateUrl: './accounts.component.html',
   styleUrl: './accounts.component.css',
 })
