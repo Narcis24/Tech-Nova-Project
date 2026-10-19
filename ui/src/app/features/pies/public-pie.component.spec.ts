@@ -1,4 +1,5 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { Observable, Subject, of, throwError } from 'rxjs';
@@ -53,6 +54,8 @@ describe('PublicPieComponent', () => {
       imports: [PublicPieComponent],
       providers: [
         provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: PublicPieControllerService, useValue: api },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'p1' } } } },
       ],

@@ -1,41 +1,48 @@
-<section aria-label="Selected instrument price history" [class.expanded]="expanded()">
-  <div class="heading">
-    <div class="instrument">
-      <h1>
-        <button
-          type="button"
-          class="symbol-button"
-          (click)="changeInstrument.emit()"
-          [attr.aria-label]="
-            'Change instrument: ' +
-            (normalizedSymbol() || (pendingSymbol() ? 'Pending instrument' : 'Select instrument'))
-          "
-        >
-          {{ normalizedSymbol() || (pendingSymbol() ? '—' : 'Select instrument')
-          }}<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4 3 3 3-3" /></svg>
-        </button>
-      </h1>
-      <span class="instrument-name">{{ instrumentName() }}</span>
+<section
+  [attr.aria-label]="indexMode() ? 'Pie index history' : 'Selected instrument price history'"
+  [class.expanded]="expanded() || indexMode()"
+>
+  @if (!indexMode()) {
+    <div class="heading">
+      <div class="instrument">
+        <h1>
+          <button
+            type="button"
+            class="symbol-button"
+            (click)="changeInstrument.emit()"
+            [attr.aria-label]="
+              'Change instrument: ' +
+              (normalizedSymbol() || (pendingSymbol() ? 'Pending instrument' : 'Select instrument'))
+            "
+          >
+            {{ normalizedSymbol() || (pendingSymbol() ? '—' : 'Select instrument')
+            }}<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4 3 3 3-3" /></svg>
+          </button>
+        </h1>
+        <span class="instrument-name">{{ instrumentName() }}</span>
+      </div>
+      <div class="quote" [class.pending]="!latest()" [attr.aria-busy]="loading()">
+        <strong>{{ (latest()?.close | number: '1.2-2') ?? '—' }}</strong>
+        <p>
+          <span class="change" [class.loss]="(dailyChange() ?? 0) < 0"
+            >{{ (dailyChange() ?? 0) > 0 ? '+' : '' }}{{ (dailyChange() | number: '1.2-2') ?? '—' }} ({{
+              (dailyPercent() | percent: '1.2-2') ?? '—'
+            }})</span
+          ><span class="session-copy"> vs previous session.</span>
+        </p>
+      </div>
+      <div class="ranges" role="group" aria-label="Price chart range">
+        @for (option of ranges; track option.months) {
+          <button type="button" [attr.aria-pressed]="range() === option.months" (click)="chooseRange(option.months)">
+            {{ option.label }}
+          </button>
+        }
+      </div>
     </div>
-    <div class="quote" [class.pending]="!latest()" [attr.aria-busy]="loading()">
-      <strong>{{ (latest()?.close | number: '1.2-2') ?? '—' }}</strong>
-      <p>
-        <span class="change" [class.loss]="(dailyChange() ?? 0) < 0"
-          >{{ (dailyChange() ?? 0) > 0 ? '+' : '' }}{{ (dailyChange() | number: '1.2-2') ?? '—' }} ({{
-            (dailyPercent() | percent: '1.2-2') ?? '—'
-          }})</span
-        ><span class="session-copy"> vs previous session.</span>
-      </p>
-    </div>
-    <div class="ranges" role="group" aria-label="Price chart range">
-      @for (option of ranges; track option.months) {
-        <button type="button" [attr.aria-pressed]="range() === option.months" (click)="chooseRange(option.months)">
-          {{ option.label }}
-        </button>
-      }
-    </div>
-  </div>
-  @if (loading()) {
+  }
+  @if (indexMode() && points().length < 2) {
+    <p class="message">The line appears after the first nightly update. The index starts at 100 on the publish date.</p>
+  } @else if (loading()) {
     <div class="chart-loading">
       <output class="as-of">Loading price history…</output>
       <button type="button" class="mobile-chart-toggle" disabled>
@@ -70,9 +77,9 @@
       </dl>
       <p class="quote-note" aria-hidden="true">Loading daily price feed.</p>
     </div>
-  } @else if (!normalizedSymbol()) {
+  } @else if (!indexMode() && !normalizedSymbol()) {
     <p class="message">Choose an instrument to see its price history.</p>
-  } @else if (state().error) {
+  } @else if (!indexMode() && state().error) {
     <div class="message" role="alert">
       <p>Couldn't load {{ normalizedSymbol() }} price history.</p>
       <button type="button" (click)="refresh()">Try again</button>
@@ -80,23 +87,25 @@
   } @else if (!latest()) {
     <p class="message">No stored price history for {{ normalizedSymbol() }}.</p>
   } @else {
-    <p class="as-of">
-      Daily close · USD · as of {{ sessionDate(latest()!.date) | date: 'mediumDate' : 'UTC' }} · provider-delayed
-    </p>
-    <button
-      type="button"
-      class="mobile-chart-toggle"
-      [attr.aria-expanded]="expanded()"
-      (click)="expanded.set(!expanded())"
-    >
-      {{ expanded() ? 'Hide price chart' : 'Show price chart' }}
-      <span aria-hidden="true">{{ expanded() ? '−' : '+' }}</span>
-    </button>
+    @if (!indexMode()) {
+      <p class="as-of">
+        Daily close · USD · as of {{ sessionDate(latest()!.date) | date: 'mediumDate' : 'UTC' }} · provider-delayed
+      </p>
+      <button
+        type="button"
+        class="mobile-chart-toggle"
+        [attr.aria-expanded]="expanded()"
+        (click)="expanded.set(!expanded())"
+      >
+        {{ expanded() ? 'Hide price chart' : 'Show price chart' }}
+        <span aria-hidden="true">{{ expanded() ? '−' : '+' }}</span>
+      </button>
+    }
     <div class="history">
       <div class="readout" aria-live="polite">
         <span [class.hidden]="hovered() == null"
           >{{ sessionDate(selected()?.date) | date: 'mediumDate' : 'UTC' }} ·
-          {{ selected()?.close | currency: 'USD' }}</span
+          {{ indexMode() ? (selected()?.close | number: '1.2-2') : (selected()?.close | currency: 'USD') }}</span
         >
       </div>
       <div class="plot">
@@ -108,9 +117,11 @@
           min="0"
           [max]="visible().length - 1"
           [value]="selectedIndex()"
-          [attr.aria-label]="normalizedSymbol() + ' session to inspect'"
+          [attr.aria-label]="indexMode() ? 'Day to inspect' : normalizedSymbol() + ' session to inspect'"
           [attr.aria-valuetext]="
-            (sessionDate(selected()?.date) | date: 'mediumDate' : 'UTC') + ', ' + (selected()?.close | currency: 'USD')
+            (sessionDate(selected()?.date) | date: 'mediumDate' : 'UTC') +
+            ', ' +
+            (indexMode() ? (selected()?.close | number: '1.2-2') : (selected()?.close | currency: 'USD'))
           "
           (input)="hovered.set(session.valueAsNumber)"
         />
@@ -118,7 +129,9 @@
           viewBox="0 0 640 220"
           preserveAspectRatio="none"
           role="img"
-          [attr.aria-label]="normalizedSymbol() + ' daily closing prices'"
+          [attr.aria-label]="
+            indexMode() ? 'Daily pie index, starting at 100' : normalizedSymbol() + ' daily closing prices'
+          "
           (pointermove)="pointAt($event)"
           (pointerleave)="hovered.set(null)"
         >
@@ -146,29 +159,33 @@
         ><span>{{ sessionDate(visible().at(Math.floor(visible().length / 2))?.date) | date: 'd MMM' : 'UTC' }}</span
         ><span>{{ sessionDate(latest()!.date) | date: 'd MMM' : 'UTC' }}</span>
       </div>
-      <p class="range-change">
-        {{ (rangeChange() ?? 0) > 0 ? '+' : '' }}{{ (rangeChange() | percent: '1.2-2') ?? '—' }}
-        <span class="muted">over displayed sessions · {{ visible().length }} observations</span>
-      </p>
+      @if (!indexMode()) {
+        <p class="range-change">
+          {{ (rangeChange() ?? 0) > 0 ? '+' : '' }}{{ (rangeChange() | percent: '1.2-2') ?? '—' }}
+          <span class="muted">over displayed sessions · {{ visible().length }} observations</span>
+        </p>
+      }
     </div>
-    <dl class="quote-facts">
-      <div>
-        <dt>Bid</dt>
-        <dd>—</dd>
-      </div>
-      <div>
-        <dt>Ask</dt>
-        <dd>—</dd>
-      </div>
-      <div>
-        <dt>Spread</dt>
-        <dd>—</dd>
-      </div>
-      <div>
-        <dt>Previous close</dt>
-        <dd>{{ (points().at(-2)?.close | number: '1.2-2') ?? '—' }}</dd>
-      </div>
-    </dl>
-    <p class="quote-note">Live bid and ask are unavailable from the daily price feed.</p>
+    @if (!indexMode()) {
+      <dl class="quote-facts">
+        <div>
+          <dt>Bid</dt>
+          <dd>—</dd>
+        </div>
+        <div>
+          <dt>Ask</dt>
+          <dd>—</dd>
+        </div>
+        <div>
+          <dt>Spread</dt>
+          <dd>—</dd>
+        </div>
+        <div>
+          <dt>Previous close</dt>
+          <dd>{{ (points().at(-2)?.close | number: '1.2-2') ?? '—' }}</dd>
+        </div>
+      </dl>
+      <p class="quote-note">Live bid and ask are unavailable from the daily price feed.</p>
+    }
   }
 </section>
