@@ -156,6 +156,24 @@ npm run check                       # lint, format, type check, unit tests with 
 See [ui/README.md](ui/README.md) for running the dev server on your IP, regenerating the API
 clients and the Playwright smoke tests against the UI container.
 
+## Replaying a trading day
+
+The execution engine writes every order, quote and decision it handles to a daily journal,
+`/data/journal/<yyyy-MM-dd>.jsonl` (UTC day) on the `engine_journal` volume. A replay feeds a
+journal's orders and quotes into a fresh engine and checks that it makes the same decisions;
+it exits 0 when all match and 1 otherwise, listing each difference.
+
+```bash
+# today's journal, inside the running engine container
+docker exec tech-nova-project-execution-engine-1 sh -c 'java -Xmx256m -cp app.jar \
+  -Dloader.main=com.neueda.trading.engine.Replay \
+  org.springframework.boot.loader.launch.PropertiesLauncher /data/journal/$(date -u +%F).jsonl'
+
+# a journal file on your machine (after mvn install)
+docker cp tech-nova-project-execution-engine-1:/data/journal/2026-10-19.jsonl .
+mvn -q -pl execution-engine exec:java -Dexec.args=2026-10-19.jsonl
+```
+
 ## End-to-end tests
 
 `e2e/` runs the real services, Postgres and Kafka in containers (Testcontainers) and drives them
