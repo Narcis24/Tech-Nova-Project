@@ -50,6 +50,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/orders/orders.component').then((m) => m.OrdersComponent),
       },
       {
+        path: 'pies/new',
+        loadComponent: () => import('./features/pies/pie-editor.component').then((m) => m.PieEditorComponent),
+      },
+      {
+        path: 'pies/:pieId/edit',
+        loadComponent: () => import('./features/pies/pie-editor.component').then((m) => m.PieEditorComponent),
+      },
+      {
         path: 'pies',
         loadComponent: () => import('./features/pies/pies.component').then((m) => m.PiesComponent),
       },

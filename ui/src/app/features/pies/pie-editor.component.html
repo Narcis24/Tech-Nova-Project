@@ -1,0 +1,85 @@
+<h1>{{ pieId ? 'Edit pie' : 'New pie' }}</h1>
+
+@if (loading()) {
+  <output class="empty">Loading your pie…</output>
+} @else if (loadError()) {
+  <p class="error" role="alert">Couldn't load this pie.</p>
+  <a routerLink="/pies">Back to pies</a>
+} @else {
+  <form (submit)="$event.preventDefault(); save()">
+    <div class="field">
+      <label for="name">Name</label>
+      <input
+        id="name"
+        type="text"
+        autocomplete="off"
+        [value]="name()"
+        [attr.aria-invalid]="name().trim().length > 60"
+        (input)="name.set($any($event.target).value)"
+      />
+    </div>
+    <div class="field">
+      <label for="description">Description (optional)</label>
+      <input
+        id="description"
+        type="text"
+        autocomplete="off"
+        [value]="description()"
+        (input)="description.set($any($event.target).value)"
+      />
+    </div>
+
+    <div class="layout">
+      <div class="rows">
+        @for (row of rows(); track $index) {
+          <div class="row">
+            <select
+              [attr.aria-label]="'Stock ' + ($index + 1)"
+              (change)="setRow($index, { symbol: $any($event.target).value })"
+            >
+              <option value="" [selected]="!row.symbol">Choose a stock</option>
+              @for (instrument of instruments(); track instrument.symbol) {
+                <option [value]="instrument.symbol" [selected]="instrument.symbol === row.symbol">
+                  {{ instrument.symbol }} · {{ instrument.name }}
+                </option>
+              }
+            </select>
+            <span class="weight">
+              <input
+                type="text"
+                inputmode="decimal"
+                autocomplete="off"
+                [attr.aria-label]="'Weight ' + ($index + 1)"
+                [attr.aria-invalid]="row.weight !== '' && !(weights()[$index] > 0)"
+                [value]="row.weight"
+                (input)="setRow($index, { weight: $any($event.target).value })"
+              />%
+            </span>
+            <button type="button" class="secondary" (click)="removeRow($index)">Remove</button>
+          </div>
+        }
+        <button type="button" class="secondary add" (click)="addRow()">Add stock</button>
+      </div>
+
+      <div class="preview">
+        <app-donut-chart [segments]="segments()" [size]="160" />
+        <p class="cash-line" [class.over]="overAllocated()">Cash: {{ cash() }}%</p>
+      </div>
+    </div>
+
+    @if (overAllocated()) {
+      <p class="error">Weights add up to more than 100%.</p>
+    }
+    @if (duplicate()) {
+      <p class="error">Each stock can only appear once.</p>
+    }
+    @if (saveError()) {
+      <p class="error" role="alert">{{ saveError() }}</p>
+    }
+
+    <div class="actions">
+      <button type="submit" [disabled]="!valid() || saving()">Save</button>
+      <a routerLink="/pies">Cancel</a>
+    </div>
+  </form>
+}
