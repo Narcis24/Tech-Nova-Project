@@ -20,6 +20,8 @@ h1 {
 }
 
 .empty {
+  /* Some are <output> status messages; keep the default <p> margins on all of them */
+  margin: 1em 0;
   color: var(--secondary-text-color);
 }
 

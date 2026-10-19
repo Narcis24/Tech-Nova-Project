@@ -157,7 +157,7 @@ describe('RegisterComponent', () => {
 
     registerResult.next({ username: 'testuser' });
     harness.detectChanges();
-    expect(page.querySelector('[role=status]')?.textContent).toContain('Registration successful');
+    expect(page.querySelector('output')?.textContent).toContain('Registration successful');
 
     tick(2000);
     await harness.fixture.whenStable();

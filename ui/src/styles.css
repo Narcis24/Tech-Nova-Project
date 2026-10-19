@@ -100,3 +100,8 @@ select {
     scroll-behavior: auto !important;
   }
 }
+
+/* Status messages use <output>, which is inline by default; lay them out like paragraphs */
+output {
+  display: block;
+}

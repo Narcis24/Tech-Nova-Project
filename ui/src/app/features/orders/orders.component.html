@@ -11,7 +11,7 @@
 @if (!accountId()) {
   <p class="muted">Select an account to see its orders.</p>
 } @else if (loading()) {
-  <p class="muted" role="status">Loading your orders…</p>
+  <output class="muted">Loading your orders…</output>
 } @else if (error() && !orders().length) {
   <div class="notice" role="alert">
     <p>Couldn't load your orders.</p>
@@ -24,10 +24,10 @@
   </div>
 } @else {
   @if (error()) {
-    <p class="notice" role="status">
+    <output class="notice">
       Couldn't update orders.
       <button type="button" class="text-button" (click)="retry()">Try again</button>
-    </p>
+    </output>
   }
 
   <div class="tiles">

@@ -72,9 +72,9 @@
     </section>
   }
   @if (!result() && !marketOpen) {
-    <p class="market-closed" role="status">
+    <output class="market-closed">
       The market is closed. Your order will stay open until the market opens at 09:30 ET, Monday to Friday.
-    </p>
+    </output>
   }
   <p id="order-dialog-note" class="note">
     {{ result()?.message || 'Placement does not guarantee a fill. Market prices can change before execution.' }}

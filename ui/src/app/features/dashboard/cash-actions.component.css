@@ -35,7 +35,8 @@ form {
   gap: 12px;
   padding: 0;
 }
-p {
+p,
+output {
   margin: 0;
   line-height: 1.5;
 }

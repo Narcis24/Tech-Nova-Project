@@ -7,7 +7,7 @@
 @if (!accountId()) {
   <p class="empty">Select an account to see its risk limits.</p>
 } @else if (loading()) {
-  <p class="empty" role="status">Loading your limits…</p>
+  <output class="empty">Loading your limits…</output>
 } @else if (loadError()) {
   <div class="load-error" role="alert">
     <p>Couldn't load your risk limits.</p>
