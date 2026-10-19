@@ -27,9 +27,4 @@ public class PieResponse {
     private LocalDateTime createdAt;
     private LocalDateTime publishedAt;
 
-    public PieResponse(UUID pieId, String name, String description, String visibility, int version,
-                       List<PieSliceResponse> slices, BigDecimal cashPct, List<String> linkedAccountIds,
-                       LocalDateTime createdAt) {
-        this(pieId, name, description, visibility, version, slices, cashPct, linkedAccountIds, createdAt, null);
-    }
 }

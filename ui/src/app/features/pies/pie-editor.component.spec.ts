@@ -202,12 +202,21 @@ describe('PieEditorComponent', () => {
   });
 
   it('explains the public edit cooldown instead of suggesting an immediate retry', () => {
-    pies.update.and.returnValue(throwError(() => new HttpErrorResponse({
-      status: 409,
-      error: { errorCode: 'PIE_EDIT_TOO_SOON', message: 'A public or copied pie can change its slices once every 24 hours' },
-    })));
+    pies.update.and.returnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 409,
+            error: {
+              errorCode: 'PIE_EDIT_TOO_SOON',
+              message: 'A public or copied pie can change its slices once every 24 hours',
+            },
+          }),
+      ),
+    );
     create('p1');
-    button('Save').click(); fixture.detectChanges();
+    button('Save').click();
+    fixture.detectChanges();
     expect(root.querySelector('[role="alert"]')?.textContent).toContain('once every 24 hours');
   });
 });

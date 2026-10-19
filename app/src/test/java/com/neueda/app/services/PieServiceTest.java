@@ -41,6 +41,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class PieServiceTest {
@@ -307,7 +308,7 @@ class PieServiceTest {
     @Test
     void update_publicPie_firstNewVersionAllowed_andAnnounced() {
         Pie pie = publicPie(2, NOW.minusHours(2), "AAPL", "60");
-        when(pieVersionRepository.existsByPieIdAndCreatedAtAfter(pie.getPieId(), NOW.minusHours(2))).thenReturn(false);
+        when(pieVersionRepository.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(pie.getPieId(), 1, NOW.minusHours(24))).thenReturn(false);
 
         PieResponse response = pieService.update(pie.getPieId(), OWNER, request("Same", "AAPL", "50"));
 
@@ -318,7 +319,7 @@ class PieServiceTest {
     @Test
     void update_publicPie_secondVersionWithin24h_conflict() {
         Pie pie = publicPie(2, NOW.minusDays(5), "AAPL", "60");
-        when(pieVersionRepository.existsByPieIdAndCreatedAtAfter(pie.getPieId(), NOW.minusHours(24))).thenReturn(true);
+        when(pieVersionRepository.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(pie.getPieId(), 1, NOW.minusHours(24))).thenReturn(true);
 
         assertThrows(PieEditTooSoonException.class,
             () -> pieService.update(pie.getPieId(), OWNER, request("Same", "AAPL", "50")));
@@ -329,21 +330,20 @@ class PieServiceTest {
     }
 
     @Test
-    void update_publicPie_onlyVersionsSincePublishingCount() {
+    void update_publicPie_republishingDoesNotResetCooldown() {
         Pie pie = publicPie(2, NOW.minusHours(5), "AAPL", "60");
-        // an earlier version (made before publishing) is not "new", so the window starts at publishing
-        when(pieVersionRepository.existsByPieIdAndCreatedAtAfter(pie.getPieId(), NOW.minusHours(5))).thenReturn(false);
-        when(pieVersionRepository.existsByPieIdAndCreatedAtAfter(pie.getPieId(), NOW.minusHours(24))).thenReturn(true);
+        when(pieVersionRepository.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(
+            pie.getPieId(), 1, NOW.minusHours(24))).thenReturn(true);
 
-        pieService.update(pie.getPieId(), OWNER, request("Same", "AAPL", "50"));
-
-        assertEquals(3, pie.getLatestVersion());
+        assertThrows(PieEditTooSoonException.class,
+            () -> pieService.update(pie.getPieId(), OWNER, request("Same", "AAPL", "50")));
+        assertEquals(2, pie.getLatestVersion());
     }
 
     @Test
     void update_publicPie_nameAndDescriptionOnly_alwaysAllowed() {
         Pie pie = publicPie(2, NOW.minusDays(5), "AAPL", "60");
-        when(pieVersionRepository.existsByPieIdAndCreatedAtAfter(any(), any())).thenReturn(true);
+        when(pieVersionRepository.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(any(), eq(1), any())).thenReturn(true);
 
         PieResponse response = pieService.update(pie.getPieId(), OWNER, request("Renamed", "AAPL", "60"));
 
@@ -355,7 +355,7 @@ class PieServiceTest {
     @Test
     void update_privatePie_noLimitAndNoEvent() {
         Pie pie = existingPie(2, "AAPL", "60");
-        when(pieVersionRepository.existsByPieIdAndCreatedAtAfter(any(), any())).thenReturn(true);
+        when(pieVersionRepository.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(any(), eq(1), any())).thenReturn(true);
 
         pieService.update(pie.getPieId(), OWNER, request("New", "AAPL", "50"));
 
