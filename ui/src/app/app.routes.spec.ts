@@ -180,7 +180,7 @@ describe('app routes', () => {
       expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('Tech Growth');
     });
 
-    it('shows the Discover leaderboard', async () => {
+    it('shows public templates in Discover', async () => {
       await harness.navigateByUrl('/discover');
 
       expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('Discover');
