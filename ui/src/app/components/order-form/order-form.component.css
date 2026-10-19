@@ -152,7 +152,7 @@ input {
   box-shadow: 0 0 0 1px var(--border-color);
 }
 .presets button[aria-pressed='true'] {
-  background: var(--text-color);
+  background: var(--trade-side);
   color: var(--text-on-primary-color);
   box-shadow: none;
 }
