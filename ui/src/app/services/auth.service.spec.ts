@@ -230,6 +230,16 @@ describe('AuthService', () => {
       expect(service.isAdmin()).toBeFalse();
     });
 
+    it('gives admins /admin as their home page and everyone else /dashboard', () => {
+      expect(service.homeUrl()).toBe('/dashboard');
+
+      logInWith({ sub: 'test_admin', roles: ['ADMIN', 'TRADER'] });
+      expect(service.homeUrl()).toBe('/admin');
+
+      logInWith({ sub: 'trader01', roles: ['TRADER'] });
+      expect(service.homeUrl()).toBe('/dashboard');
+    });
+
     it('follows the token: logging out drops the admin role', () => {
       logInWith({ sub: 'test_admin', roles: ['ADMIN'] });
       service.logout();

@@ -84,8 +84,9 @@ class AdminUserServiceConcurrencyTest {
         adminUserService.updateRoles("admin_one", "admin_two", Set.of(Role.TRADER));
 
         // admin_two's token still says ADMIN for up to 15 minutes
+        Set<Role> traderOnly = Set.of(Role.TRADER);
         assertThrows(RoleChangeNotAllowedException.class,
-            () -> adminUserService.updateRoles("admin_two", "admin_one", Set.of(Role.TRADER)));
+            () -> adminUserService.updateRoles("admin_two", "admin_one", traderOnly));
         assertEquals(List.of("admin_one"), admins());
     }
 
@@ -138,8 +139,9 @@ class AdminUserServiceConcurrencyTest {
 
     @Test
     void creatingAnExistingUsernameLeavesTheExistingUserUntouched() {
-        assertThrows(UserAlreadyExistsException.class, () -> adminUserService.createUser("admin_one",
-            new CreateUserRequest("admin_two", "someone.else@example.com", Set.of(Role.TRADER))));
+        CreateUserRequest takenUsername =
+            new CreateUserRequest("admin_two", "someone.else@example.com", Set.of(Role.TRADER));
+        assertThrows(UserAlreadyExistsException.class, () -> adminUserService.createUser("admin_one", takenUsername));
 
         assertEquals("admin_two@example.com",
             jdbc.queryForObject("SELECT email FROM users WHERE username = 'admin_two'", String.class));
@@ -149,8 +151,8 @@ class AdminUserServiceConcurrencyTest {
     void savingAnInvitedUserNeverOverwritesAnExistingOne() {
         // What a create that passed existsById just before another admin's create committed would do.
         // Without User.isNew(), save() would MERGE: silently replace admin_two's email and roles.
-        assertThrows(DataIntegrityViolationException.class, () -> userRepository.save(
-            User.invited("admin_two", "intruder@example.com", Set.of(Role.TRADER), "admin_one")));
+        User sameUsername = User.invited("admin_two", "intruder@example.com", Set.of(Role.TRADER), "admin_one");
+        assertThrows(DataIntegrityViolationException.class, () -> userRepository.save(sameUsername));
 
         assertEquals("admin_two@example.com",
             jdbc.queryForObject("SELECT email FROM users WHERE username = 'admin_two'", String.class));

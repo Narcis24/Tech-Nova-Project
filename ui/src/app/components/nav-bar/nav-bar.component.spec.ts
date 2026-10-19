@@ -16,7 +16,8 @@ describe('NavBarComponent', () => {
   const username = signal<string | null>('trader01');
   const accounts = signal<Account[]>(ACCOUNTS);
   const currentAccountId = signal<string | null>('ACC001');
-  let auth: { username: typeof username; logout: jasmine.Spy };
+  const isAdmin = signal(false);
+  let auth: { username: typeof username; isAdmin: typeof isAdmin; logout: jasmine.Spy };
   let accountService: {
     accounts: typeof accounts;
     currentAccountId: typeof currentAccountId;
@@ -29,7 +30,8 @@ describe('NavBarComponent', () => {
     username.set('trader01');
     accounts.set(ACCOUNTS);
     currentAccountId.set('ACC001');
-    auth = { username, logout: jasmine.createSpy('logout') };
+    isAdmin.set(false);
+    auth = { username, isAdmin, logout: jasmine.createSpy('logout') };
     accountService = { accounts, currentAccountId, selectAccount: jasmine.createSpy('selectAccount') };
 
     await TestBed.configureTestingModule({
@@ -60,6 +62,18 @@ describe('NavBarComponent', () => {
 
     const current: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('[aria-current="page"]'));
     expect(current.map((tab) => tab.textContent?.trim())).toEqual(['Trade']);
+  });
+
+  it('shows the Admin tab only to admins', () => {
+    const tabs = (): (string | undefined)[] =>
+      Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('.tab')).map((tab) => tab.textContent?.trim());
+
+    expect(tabs()).toEqual(['Portfolio', 'Trade', 'Orders']);
+
+    isAdmin.set(true);
+    fixture.detectChanges();
+
+    expect(tabs()).toEqual(['Portfolio', 'Trade', 'Orders', 'Admin']);
   });
 
   it("shows the user's initial and name", () => {

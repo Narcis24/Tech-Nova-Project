@@ -35,6 +35,8 @@ export class AuthService {
     return Array.isArray(roles) ? roles.filter((role): role is string => typeof role === 'string') : [];
   });
   readonly isAdmin = computed(() => this.roles().includes('ADMIN'));
+  /** Where a signed-in user starts: admins on their own page, everyone else on the dashboard. */
+  readonly homeUrl = computed(() => (this.isAdmin() ? '/admin' : '/dashboard'));
 
   login(credentials: LoginRequest): Observable<void> {
     return this.authApi.login(credentials).pipe(

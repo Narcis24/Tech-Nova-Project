@@ -8,8 +8,16 @@ import { guestGuard } from './guards/guest.guard';
 import { AuthService } from './services/auth.service';
 
 export const routes: Routes = [
-  // Admins start on their own page; logged-out visitors still reach /login through /dashboard's guard
-  { path: '', pathMatch: 'full', redirectTo: () => (inject(AuthService).isAdmin() ? 'admin' : 'dashboard') },
+  // Each user starts on their home page. Logged out: straight to /login with no returnUrl, so after
+  // logging in an admin lands on /admin rather than the /dashboard a returnUrl would have pinned.
+  {
+    path: '',
+    pathMatch: 'full',
+    redirectTo: () => {
+      const auth = inject(AuthService);
+      return auth.isAuthenticated() ? auth.homeUrl() : '/login';
+    },
+  },
   {
     path: 'login',
     canActivate: [guestGuard],

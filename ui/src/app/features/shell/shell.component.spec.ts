@@ -17,7 +17,8 @@ describe('ShellComponent', () => {
       // The shell loads the accounts and its nav bar reads the username; fakes avoid needing HttpClient
       providers: [
         provideRouter([]),
-        { provide: AuthService, useValue: { username: signal(null) } },
+        // The nav bar shows the username, and an Admin tab when isAdmin
+        { provide: AuthService, useValue: { username: signal(null), isAdmin: signal(false) } },
         {
           provide: AccountService,
           useValue: { accounts: signal([]), currentAccountId: signal(null), loadAccounts: () => of(undefined) },

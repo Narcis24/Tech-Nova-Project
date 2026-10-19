@@ -107,8 +107,9 @@ class AdminUserServiceTest {
         User self = user("test_admin", Role.ADMIN);
         given(List.of("test_admin", "other_admin"), self);
 
+        Set<Role> traderOnly = Set.of(Role.TRADER);
         RoleChangeNotAllowedException ex = assertThrows(RoleChangeNotAllowedException.class,
-            () -> adminUserService.updateRoles("test_admin", "test_admin", Set.of(Role.TRADER)));
+            () -> adminUserService.updateRoles("test_admin", "test_admin", traderOnly));
 
         assertEquals("You cannot remove your own admin role", ex.getMessage());
         assertEquals(Set.of(Role.ADMIN), self.getRoles());
@@ -120,8 +121,9 @@ class AdminUserServiceTest {
         User last = user("only_admin", Role.ADMIN);
         given(List.of("only_admin"), last);
 
+        Set<Role> traderOnly = Set.of(Role.TRADER);
         RoleChangeNotAllowedException ex = assertThrows(RoleChangeNotAllowedException.class,
-            () -> adminUserService.updateRoles("former_admin", "only_admin", Set.of(Role.TRADER)));
+            () -> adminUserService.updateRoles("former_admin", "only_admin", traderOnly));
 
         assertEquals("At least one admin must remain", ex.getMessage());
         assertEquals(Set.of(Role.ADMIN), last.getRoles());
@@ -132,8 +134,9 @@ class AdminUserServiceTest {
         when(userRepository.lockAdminUsernames()).thenReturn(List.of("test_admin"));
         when(userRepository.findById("nobody_00")).thenReturn(Optional.empty());
 
+        Set<Role> traderOnly = Set.of(Role.TRADER);
         assertThrows(UserNotFoundException.class,
-            () -> adminUserService.updateRoles("test_admin", "nobody_00", Set.of(Role.TRADER)));
+            () -> adminUserService.updateRoles("test_admin", "nobody_00", traderOnly));
     }
 
     private static final CreateUserRequest NEW_USER =

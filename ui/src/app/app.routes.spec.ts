@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { computed, signal } from '@angular/core';
 import { Location } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
@@ -7,6 +7,7 @@ import { of } from 'rxjs';
 
 import {
   AccountControllerService,
+  AdminUserControllerService,
   DashboardControllerService,
   OrderControllerService,
   PriceControllerService,
@@ -25,7 +26,12 @@ describe('app routes', () => {
   const isAuthenticated = signal(false);
   const isAdmin = signal(false);
   // The shell loads the accounts and its nav bar shows the username
-  const auth = { isAuthenticated, isAdmin, username: signal(null) };
+  const auth = {
+    isAuthenticated,
+    isAdmin,
+    homeUrl: computed(() => (isAdmin() ? '/admin' : '/dashboard')),
+    username: signal(null),
+  };
   const accounts = { accounts: signal([]), currentAccountId: signal(null), loadAccounts: () => of(undefined) };
   let harness: RouterTestingHarness;
   let router: Router;
@@ -47,6 +53,7 @@ describe('app routes', () => {
         },
         { provide: AccountControllerService, useValue: { getAccountOrders: () => of([]) } },
         { provide: InstrumentControllerService, useValue: { getInstruments: () => of([]) } },
+        { provide: AdminUserControllerService, useValue: { listUsers: () => of([]) } },
         { provide: AuthService, useValue: auth },
         { provide: AccountService, useValue: accounts },
       ],
@@ -68,11 +75,10 @@ describe('app routes', () => {
       expect(router.url).toBe('/login?returnUrl=%2Fdashboard%3Ftab%3Dorders');
     });
 
-    it('sends / to /login through the dashboard redirect', async () => {
+    it('sends / straight to /login, so each user lands on their own home page after logging in', async () => {
       await harness.navigateByUrl('/');
 
-      // The guard keeps the URL that was typed (/); after login, / redirects to /dashboard again
-      expect(router.url).toBe('/login?returnUrl=%2Fdashboard');
+      expect(router.url).toBe('/login');
     });
 
     it('shows the login page', async () => {
@@ -188,6 +194,12 @@ describe('app routes', () => {
 
     it('sends / to /admin', async () => {
       await harness.navigateByUrl('/');
+
+      expect(router.url).toBe('/admin');
+    });
+
+    it('sends /login to /admin', async () => {
+      await harness.navigateByUrl('/login');
 
       expect(router.url).toBe('/admin');
     });
