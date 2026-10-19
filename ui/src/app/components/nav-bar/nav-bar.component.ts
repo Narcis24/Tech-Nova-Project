@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
 import { AccountService } from '../../services/account.service';
+import { ThemeService } from '../../services/theme.service';
 
 interface NavTab {
   label: string;
@@ -34,6 +35,7 @@ export class NavBarComponent {
 
   private readonly auth = inject(AuthService);
   private readonly accountService = inject(AccountService);
+  readonly theme = inject(ThemeService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly username = this.auth.username;
@@ -78,5 +80,9 @@ export class NavBarComponent {
   signOut(): void {
     this.closeMenus();
     this.auth.logout();
+  }
+
+  toggleTheme(): void {
+    this.theme.toggle();
   }
 }
