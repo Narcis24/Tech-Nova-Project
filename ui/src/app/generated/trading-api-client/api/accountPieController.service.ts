@@ -46,12 +46,12 @@ export class AccountPieControllerService extends BaseService {
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public get1(accountId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AccountPieResponse>;
-    public get1(accountId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AccountPieResponse>>;
-    public get1(accountId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AccountPieResponse>>;
-    public get1(accountId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public getAccountPie(accountId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AccountPieResponse>;
+    public getAccountPie(accountId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AccountPieResponse>>;
+    public getAccountPie(accountId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AccountPieResponse>>;
+    public getAccountPie(accountId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (accountId === null || accountId === undefined) {
-            throw new Error('Required parameter accountId was null or undefined when calling get1.');
+            throw new Error('Required parameter accountId was null or undefined when calling getAccountPie.');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -105,15 +105,15 @@ export class AccountPieControllerService extends BaseService {
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public link(accountId: string, linkPieRequest: LinkPieRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AccountPieResponse>;
-    public link(accountId: string, linkPieRequest: LinkPieRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AccountPieResponse>>;
-    public link(accountId: string, linkPieRequest: LinkPieRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AccountPieResponse>>;
-    public link(accountId: string, linkPieRequest: LinkPieRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public linkPie(accountId: string, linkPieRequest: LinkPieRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AccountPieResponse>;
+    public linkPie(accountId: string, linkPieRequest: LinkPieRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AccountPieResponse>>;
+    public linkPie(accountId: string, linkPieRequest: LinkPieRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AccountPieResponse>>;
+    public linkPie(accountId: string, linkPieRequest: LinkPieRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (accountId === null || accountId === undefined) {
-            throw new Error('Required parameter accountId was null or undefined when calling link.');
+            throw new Error('Required parameter accountId was null or undefined when calling linkPie.');
         }
         if (linkPieRequest === null || linkPieRequest === undefined) {
-            throw new Error('Required parameter linkPieRequest was null or undefined when calling link.');
+            throw new Error('Required parameter linkPieRequest was null or undefined when calling linkPie.');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -176,12 +176,12 @@ export class AccountPieControllerService extends BaseService {
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public preview(accountId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<RebalancePreviewResponse>;
-    public preview(accountId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<RebalancePreviewResponse>>;
-    public preview(accountId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<RebalancePreviewResponse>>;
-    public preview(accountId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public previewRebalance(accountId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<RebalancePreviewResponse>;
+    public previewRebalance(accountId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<RebalancePreviewResponse>>;
+    public previewRebalance(accountId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<RebalancePreviewResponse>>;
+    public previewRebalance(accountId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (accountId === null || accountId === undefined) {
-            throw new Error('Required parameter accountId was null or undefined when calling preview.');
+            throw new Error('Required parameter accountId was null or undefined when calling previewRebalance.');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -234,12 +234,12 @@ export class AccountPieControllerService extends BaseService {
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public unlink(accountId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any>;
-    public unlink(accountId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<any>>;
-    public unlink(accountId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<any>>;
-    public unlink(accountId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public unlinkPie(accountId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any>;
+    public unlinkPie(accountId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<any>>;
+    public unlinkPie(accountId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<any>>;
+    public unlinkPie(accountId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: undefined, context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (accountId === null || accountId === undefined) {
-            throw new Error('Required parameter accountId was null or undefined when calling unlink.');
+            throw new Error('Required parameter accountId was null or undefined when calling unlinkPie.');
         }
 
         let localVarHeaders = this.defaultHeaders;
