@@ -51,7 +51,7 @@ public class PieController {
     }
 
     @DeleteMapping("/{pieId}")
-    public ResponseEntity<Void> delete(@PathVariable UUID pieId) {
+    public ResponseEntity<Void> deletePie(@PathVariable UUID pieId) {
         pieService.delete(pieId, accountAccess.currentUser());
         return ResponseEntity.noContent().build();
     }

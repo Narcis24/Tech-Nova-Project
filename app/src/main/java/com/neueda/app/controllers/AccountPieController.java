@@ -29,27 +29,27 @@ public class AccountPieController {
     }
 
     @PutMapping
-    public ResponseEntity<AccountPieResponse> link(@PathVariable String accountId,
+    public ResponseEntity<AccountPieResponse> linkPie(@PathVariable String accountId,
                                                    @Valid @RequestBody LinkPieRequest request) {
         accountAccess.requireOwned(accountId);
         return ResponseEntity.ok(accountPieService.link(accountId, accountAccess.currentUser(), request.getPieId()));
     }
 
     @DeleteMapping
-    public ResponseEntity<Void> unlink(@PathVariable String accountId) {
+    public ResponseEntity<Void> unlinkPie(@PathVariable String accountId) {
         accountAccess.requireOwned(accountId);
         accountPieService.unlink(accountId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping
-    public ResponseEntity<AccountPieResponse> get(@PathVariable String accountId) {
+    public ResponseEntity<AccountPieResponse> getAccountPie(@PathVariable String accountId) {
         accountAccess.requireOwned(accountId);
         return ResponseEntity.ok(accountPieService.get(accountId));
     }
 
     @PostMapping("/preview")
-    public ResponseEntity<RebalancePreviewResponse> preview(@PathVariable String accountId) {
+    public ResponseEntity<RebalancePreviewResponse> previewRebalance(@PathVariable String accountId) {
         accountAccess.requireOwned(accountId);
         return ResponseEntity.ok(accountPieService.preview(accountId));
     }
