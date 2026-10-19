@@ -1,0 +1,116 @@
+h1 {
+  margin: 0 0 8px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin: 24px 0;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--card-background-color);
+}
+
+dt,
+.note,
+output {
+  color: var(--secondary-text-color);
+}
+
+dt {
+  font-size: 13px;
+}
+
+dd {
+  margin: 6px 0 0;
+  font-weight: 600;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+caption {
+  text-align: left;
+  margin-bottom: 12px;
+  color: var(--secondary-text-color);
+}
+
+th,
+td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.outside {
+  display: block;
+  margin-top: 4px;
+  color: var(--secondary-text-color);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.action {
+  font-weight: 600;
+}
+
+.sell {
+  color: var(--sell-color);
+}
+
+.buy {
+  color: var(--gain-color);
+}
+
+.warnings {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid var(--warning-border-color);
+  border-radius: 14px;
+  background: var(--warning-background-color);
+  color: var(--warning-color);
+}
+
+.warnings h2 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.warnings ul {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.note {
+  margin-top: 24px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.error {
+  color: var(--loss-color);
+}
+
+output {
+  display: block;
+  margin-top: 24px;
+}

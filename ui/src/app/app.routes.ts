@@ -66,6 +66,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/risk-limits/risk-limits.component').then((m) => m.RiskLimitsComponent),
       },
       {
+        path: 'accounts/:accountId/rebalance',
+        loadComponent: () =>
+          import('./features/pies/rebalance-preview.component').then((m) => m.RebalancePreviewComponent),
+      },
+      {
         path: 'accounts',
         loadComponent: () => import('./features/accounts/accounts.component').then((m) => m.AccountsComponent),
       },

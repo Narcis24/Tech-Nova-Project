@@ -1,0 +1,76 @@
+<h1>Rebalance preview</h1>
+<a routerLink="/pies">Back to pies</a>
+
+@if (error()) {
+  <p class="error" role="alert">{{ error() }}</p>
+} @else if (preview(); as plan) {
+  <dl class="summary">
+    <div>
+      <dt>Total value</dt>
+      <dd>{{ plan.totalValue | currency }}</dd>
+    </div>
+    <div>
+      <dt>Cash before → after</dt>
+      <dd>{{ plan.cashBefore | currency }} → {{ plan.cashAfter | currency }}</dd>
+    </div>
+    <div>
+      <dt>Cash target</dt>
+      <dd>{{ plan.cashTargetPct | number: '1.0-2' }}%</dd>
+    </div>
+  </dl>
+
+  <div class="table-scroll">
+    <table>
+      <caption>
+        Estimated trades to reach your pie targets
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Symbol</th>
+          <th scope="col">Current → target</th>
+          <th scope="col">Action</th>
+          <th scope="col">Estimated value</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (leg of plan.legs; track leg.symbol) {
+          <tr>
+            <th scope="row">
+              {{ leg.symbol }}
+              @if (leg.inPie === false) {
+                <span class="outside">Not in pie: sold</span>
+              }
+            </th>
+            <td>{{ leg.currentPct | number: '1.0-2' }}% → {{ leg.targetPct | number: '1.0-2' }}%</td>
+            <td>
+              <span class="action" [class.sell]="leg.action === 'SELL'" [class.buy]="leg.action === 'BUY'">{{
+                leg.action === 'NONE' ? '—' : leg.action + ' ' + leg.quantity
+              }}</span>
+            </td>
+            <td>{{ leg.estimatedValue | currency }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4">No trades needed.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (plan.warnings?.length) {
+    <section class="warnings" aria-labelledby="warnings-heading">
+      <h2 id="warnings-heading">Risk warnings</h2>
+      <ul>
+        @for (warning of plan.warnings; track $index) {
+          <li>{{ warning.message }}</li>
+        }
+      </ul>
+    </section>
+  }
+  <p class="note">
+    Whole shares only, so the result is close to the target, not exact. Prices may move before the orders fill.
+  </p>
+} @else {
+  <output>Loading rebalance preview…</output>
+}
