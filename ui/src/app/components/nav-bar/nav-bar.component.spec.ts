@@ -4,6 +4,7 @@ import { Router, provideRouter } from '@angular/router';
 
 import { Account, AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 import { NavBarComponent } from './nav-bar.component';
 
 // An empty page for the tab links to point at
@@ -22,6 +23,7 @@ describe('NavBarComponent', () => {
     currentAccountId: typeof currentAccountId;
     selectAccount: jasmine.Spy;
   };
+  let theme: jasmine.SpyObj<ThemeService>;
   let component: NavBarComponent;
   let fixture: ComponentFixture<NavBarComponent>;
 
@@ -31,6 +33,9 @@ describe('NavBarComponent', () => {
     currentAccountId.set('ACC001');
     auth = { username, logout: jasmine.createSpy('logout') };
     accountService = { accounts, currentAccountId, selectAccount: jasmine.createSpy('selectAccount') };
+    theme = jasmine.createSpyObj<ThemeService>('ThemeService', ['toggle'], {
+      isDark: signal(false),
+    });
 
     await TestBed.configureTestingModule({
       imports: [NavBarComponent],
@@ -42,6 +47,7 @@ describe('NavBarComponent', () => {
         ]),
         { provide: AuthService, useValue: auth },
         { provide: AccountService, useValue: accountService },
+        { provide: ThemeService, useValue: theme },
       ],
     }).compileComponents();
 
@@ -87,6 +93,17 @@ describe('NavBarComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.account')).toBeNull();
+  });
+
+  it('toggles the theme from the accessible theme button', () => {
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('.theme-toggle');
+
+    expect(button.getAttribute('aria-label')).toBe('Switch to dark theme');
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+
+    button.click();
+
+    expect(theme.toggle).toHaveBeenCalled();
   });
 
   describe('account switcher', () => {
@@ -141,10 +158,11 @@ describe('NavBarComponent', () => {
       fixture.detectChanges();
     }
 
-    it('shows the current account and a link to change it', () => {
+    it('hides identity details and shows a link to change the account', () => {
       openMenu();
 
-      expect(fixture.nativeElement.querySelector('.menu-account').textContent).toContain('ACC001');
+      expect(fixture.nativeElement.querySelector('.menu-name')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.menu-account')).toBeNull();
       const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.menu-change-account');
       expect(link.getAttribute('href')).toBe('/accounts');
     });
@@ -163,12 +181,6 @@ describe('NavBarComponent', () => {
 
       expect(fixture.nativeElement.querySelector('.menu')).toBeNull();
     });
-  });
-
-  it('signs out from the link beside the avatar', () => {
-    fixture.nativeElement.querySelector('.sign-out').click();
-
-    expect(auth.logout).toHaveBeenCalled();
   });
 
   // The menu's Sign out is only shown on phones (by CSS); the click still works whatever the screen size
