@@ -1,0 +1,40 @@
+{"seq": 1, "time": "2026-10-14T13:29:00Z", "type": "ENGINE_STARTED", "maxQuoteAgeSeconds": 600, "enforceMarketHours": true}
+{"seq": 2, "time": "2026-10-14T13:29:00Z", "type": "QUOTE_RECEIVED", "quote": {"symbol": "AAPL", "bid": 100.0, "ask": 101.0, "asOf": "2026-10-14T13:29:00Z"}}
+{"seq": 3, "time": "2026-10-14T13:29:30Z", "type": "ORDER_RECEIVED", "order": {"orderId": "00000000-0000-0000-0000-000000000001", "accountId": "ACC1", "symbol": "AAPL", "side": "BUY", "orderType": "MARKET", "quantity": 10, "price": null, "idempotencyKey": "o1"}}
+{"seq": 4, "time": "2026-10-14T13:29:30Z", "type": "DECISION", "orderId": "00000000-0000-0000-0000-000000000001", "decision": "QUEUED_MARKET_CLOSED"}
+{"seq": 5, "time": "2026-10-14T13:30:05Z", "type": "QUOTE_RECEIVED", "quote": {"symbol": "AAPL", "bid": 100.2, "ask": 101.2, "asOf": "2026-10-14T13:30:05Z"}}
+{"seq": 6, "time": "2026-10-14T13:30:05Z", "type": "DECISION", "orderId": "00000000-0000-0000-0000-000000000001", "decision": "FILL", "price": 101.2}
+{"seq": 7, "time": "2026-10-14T13:31:00Z", "type": "ORDER_RECEIVED", "order": {"orderId": "00000000-0000-0000-0000-000000000002", "accountId": "ACC1", "symbol": "MSFT", "side": "SELL", "orderType": "LIMIT", "quantity": 5, "price": 400.0, "idempotencyKey": "o2"}}
+{"seq": 8, "time": "2026-10-14T13:31:00Z", "type": "DECISION", "orderId": "00000000-0000-0000-0000-000000000002", "decision": "WAIT"}
+{"seq": 9, "time": "2026-10-14T13:32:00Z", "type": "QUOTE_RECEIVED", "quote": {"symbol": "MSFT", "bid": 399.99, "ask": 400.5, "asOf": "2026-10-14T13:32:00Z"}}
+{"seq": 10, "time": "2026-10-14T13:34:00Z", "type": "QUOTE_RECEIVED", "quote": {"symbol": "MSFT", "bid": 400.0, "ask": 400.4, "asOf": "2026-10-14T13:34:00Z"}}
+{"seq": 11, "time": "2026-10-14T13:34:00Z", "type": "DECISION", "orderId": "00000000-0000-0000-0000-000000000002", "decision": "FILL", "price": 400.0}
+{"seq": 12, "time": "2026-10-14T13:35:00Z", "type": "ORDER_RECEIVED", "order": {"orderId": "00000000-0000-0000-0000-000000000003", "accountId": "ACC1", "symbol": "TSLA", "side": "BUY", "orderType": "MARKET", "quantity": 1, "price": null, "idempotencyKey": "o3"}}
+{"seq": 13, "time": "2026-10-14T13:35:00Z", "type": "DECISION", "orderId": "00000000-0000-0000-0000-000000000003", "decision": "REJECT", "reason": "No fresh quote for TSLA"}
+{"seq": 14, "time": "2026-10-14T13:50:00Z", "type": "QUOTE_RECEIVED", "quote": {"symbol": "TSLA", "bid": 250.0, "ask": 250.1, "asOf": "2026-10-14T13:30:00Z"}}
+{"seq": 15, "time": "2026-10-14T13:50:10Z", "type": "ORDER_RECEIVED", "order": {"orderId": "00000000-0000-0000-0000-000000000004", "accountId": "ACC1", "symbol": "TSLA", "side": "BUY", "orderType": "MARKET", "quantity": 1, "price": null, "idempotencyKey": "o4"}}
+{"seq": 16, "time": "2026-10-14T13:50:10Z", "type": "DECISION", "orderId": "00000000-0000-0000-0000-000000000004", "decision": "REJECT", "reason": "No fresh quote for TSLA"}
+{"seq": 17, "time": "2026-10-14T14:00:00Z", "type": "QUOTE_RECEIVED", "quote": {"symbol": "GLD", "bid": 0, "ask": 0, "asOf": "2026-10-14T14:00:00Z"}}
+{"seq": 18, "time": "2026-10-14T14:00:10Z", "type": "ORDER_RECEIVED", "order": {"orderId": "00000000-0000-0000-0000-000000000005", "accountId": "ACC1", "symbol": "GLD", "side": "BUY", "orderType": "MARKET", "quantity": 3, "price": null, "idempotencyKey": "o5"}}
+{"seq": 19, "time": "2026-10-14T14:00:10Z", "type": "DECISION", "orderId": "00000000-0000-0000-0000-000000000005", "decision": "REJECT", "reason": "No usable ask for GLD"}
+{"seq": 20, "time": "2026-10-14T14:00:20Z", "type": "ORDER_RECEIVED", "order": {"orderId": "00000000-0000-0000-0000-000000000006", "accountId": "ACC1", "symbol": "GLD", "side": "BUY", "orderType": "LIMIT", "quantity": 3, "price": 200.0, "idempotencyKey": "o6"}}
+{"seq": 21, "time": "2026-10-14T14:00:20Z", "type": "DECISION", "orderId": "00000000-0000-0000-0000-000000000006", "decision": "WAIT"}
+{"seq": 22, "time": "2026-10-14T14:01:00Z", "type": "ORDER_RECEIVED", "order": {"orderId": "00000000-0000-0000-0000-000000000007", "accountId": "ACC1", "symbol": "AAPL", "side": "HOLD", "orderType": "MARKET", "quantity": 1, "price": null, "idempotencyKey": "o7"}}
+{"seq": 23, "time": "2026-10-14T14:01:00Z", "type": "DECISION", "orderId": "00000000-0000-0000-0000-000000000007", "decision": "REJECT", "reason": "No fresh quote for AAPL"}
+{"seq": 1, "time": "2026-10-14T14:05:00Z", "type": "ENGINE_STARTED"}
+{"seq": 2, "time": "2026-10-14T14:06:00Z", "type": "QUOTE_RECEIVED", "quote": {"symbol": "GLD", "bid": 199.0, "ask": 199.5, "asOf": "2026-10-14T14:06:00Z"}}
+{"seq": 3, "time": "2026-10-14T14:06:30Z", "type": "ORDER_RECEIVED", "order": {"orderId": "00000000-0000-0000-0000-000000000006", "accountId": "ACC1", "symbol": "GLD", "side": "BUY", "orderType": "LIMIT", "quantity": 3, "price": 200.0, "idempotencyKey": "o6"}}
+{"seq": 4, "time": "2026-10-14T14:06:30Z", "type": "DECISION", "orderId": "00000000-0000-0000-0000-000000000006", "decision": "FILL", "price": 199.5}
+{"seq": 1, "time": "2026-10-14T14:10:00Z", "type": "ENGINE_STARTED", "maxQuoteAgeSeconds": 30, "enforceMarketHours": true}
+{"seq": 2, "time": "2026-10-14T14:10:00Z", "type": "QUOTE_RECEIVED", "quote": {"symbol": "SPY", "bid": 500.0, "ask": 500.1, "asOf": "2026-10-14T14:10:00Z"}}
+{"seq": 3, "time": "2026-10-14T14:10:45Z", "type": "ORDER_RECEIVED", "order": {"orderId": "00000000-0000-0000-0000-000000000009", "accountId": "ACC1", "symbol": "SPY", "side": "BUY", "orderType": "MARKET", "quantity": 1, "price": null, "idempotencyKey": "o9"}}
+{"seq": 4, "time": "2026-10-14T14:10:45Z", "type": "DECISION", "orderId": "00000000-0000-0000-0000-000000000009", "decision": "REJECT", "reason": "No fresh quote for SPY"}
+{"seq": 1, "time": "2026-10-14T20:30:00Z", "type": "ENGINE_STARTED", "maxQuoteAgeSeconds": 600, "enforceMarketHours": false}
+{"seq": 2, "time": "2026-10-14T20:30:00Z", "type": "QUOTE_RECEIVED", "quote": {"symbol": "QQQ", "bid": 450.0, "ask": 450.2, "asOf": "2026-10-14T20:30:00Z"}}
+{"seq": 3, "time": "2026-10-14T20:30:10Z", "type": "ORDER_RECEIVED", "order": {"orderId": "00000000-0000-0000-0000-000000000010", "accountId": "ACC1", "symbol": "QQQ", "side": "SELL", "orderType": "MARKET", "quantity": 2, "price": null, "idempotencyKey": "o10"}}
+{"seq": 4, "time": "2026-10-14T20:30:10Z", "type": "DECISION", "orderId": "00000000-0000-0000-0000-000000000010", "decision": "FILL", "price": 450.00}
+
+{"seq": 5, "time": "2026-10-14T20:59:59Z", "type": "ORDER_RECEIVED", "order": {"orderId": "00000000-0000-0000-0000-000000000011", "accountId": "ACC1", "symbol": "QQQ", "side": "BUY", "orderType": "LIMIT", "quantity": 2, "price": 449.0, "idempotencyKey": "o11"}}
+{"seq": 6, "time": "2026-10-14T20:59:59Z", "type": "DECISION", "orderId": "00000000-0000-0000-0000-000000000011", "decision": "WAIT"}
+{"seq": 7, "time": "2026-10-14T21:00:00Z", "type": "QUOTE_RECEIVED", "quote": {"symbol": "QQQ", "bid": 448.5, "ask": 448.99, "asOf": "2026-10-14T21:00:00Z"}}
+{"seq": 8, "time": "2026-10-14T21:00:00Z", "type": "DECISION", "orderId": "00000000-0000-0000-0000-000000000011", "decision": "FILL", "price": 448.99}

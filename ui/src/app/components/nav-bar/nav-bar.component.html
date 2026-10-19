@@ -2,7 +2,7 @@
   <a class="brand" routerLink="/dashboard">TechNova</a>
 
   <nav class="tabs" aria-label="Main">
-    @for (tab of tabs; track tab.path) {
+    @for (tab of tabs(); track tab.path) {
       <a class="tab" [routerLink]="tab.path" routerLinkActive="active" ariaCurrentWhenActive="page">{{ tab.label }}</a>
     }
   </nav>

@@ -1,8 +1,11 @@
 export * from './accountPieResponse';
 export * from './accountResponse';
+export * from './adminUserResponse';
 export * from './balanceResponse';
 export * from './cashAmountRequest';
 export * from './copyPieRequest';
+export * from './createUserRequest';
+export * from './createUserResponse';
 export * from './instrumentResponse';
 export * from './linkPieRequest';
 export * from './marketAssetResponse';
@@ -29,3 +32,4 @@ export * from './riskWarning';
 export * from './savePieRequest';
 export * from './sliceDrift';
 export * from './updateRiskLimitRequest';
+export * from './updateRolesRequest';
