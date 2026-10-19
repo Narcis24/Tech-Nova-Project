@@ -41,14 +41,14 @@ export class AdminUsersComponent {
   /** The account just created, kept after the form clears so the confirmation stays on screen */
   readonly created = signal<CreateUserResponse | null>(null);
 
-  // Same rules as CreateUserRequest.java; new accounts start as admins, other roles are opt-in
+  // Same rules as CreateUserRequest.java; new accounts start as admins
   readonly createForm = this.formBuilder.group({
     username: [
       '',
       [Validators.required, Validators.minLength(8), Validators.maxLength(16), Validators.pattern(/^\w+$/)],
     ],
     email: ['', [Validators.required, Validators.pattern(EMAIL_PATTERN), Validators.maxLength(254)]],
-    // required fails on an empty array, so at least one role must stay ticked
+    // One role per account for now; the API takes a list, so it is sent as a list of one
     roles: [[CreateUserRequest.RolesEnum.Admin] as Role[], Validators.required],
   });
 
@@ -86,7 +86,7 @@ export class AdminUsersComponent {
     return this.createForm.controls;
   }
 
-  showFieldErrors(field: 'username' | 'email' | 'roles'): boolean {
+  showFieldErrors(field: 'username' | 'email'): boolean {
     return this.f[field].dirty || this.f[field].touched;
   }
 
@@ -94,10 +94,8 @@ export class AdminUsersComponent {
     return this.f.roles.value.includes(role);
   }
 
-  toggleRole(role: Role, checked: boolean): void {
-    const roles = this.f.roles.value.filter((r) => r !== role);
-    // Keep roles in the order the API lists them, so the request looks the same however they were ticked
-    this.f.roles.setValue(checked ? this.allRoles.filter((r) => roles.includes(r) || r === role) : roles);
+  selectRole(role: Role): void {
+    this.f.roles.setValue([role]);
     this.f.roles.markAsDirty();
   }
 
@@ -118,7 +116,7 @@ export class AdminUsersComponent {
       next: (response) => {
         this.saving.set(false);
         this.created.set(response);
-        // Back to blank with ADMIN ticked, ready for the next account
+        // Back to blank with ADMIN picked, ready for the next account
         this.createForm.reset();
         // Slot the new user in by username, the order the list arrives in
         this.users.update((users) =>

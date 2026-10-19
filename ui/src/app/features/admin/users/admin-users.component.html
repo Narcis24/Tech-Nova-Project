@@ -60,21 +60,20 @@
 
   <div class="card-footer">
     <fieldset class="role-options">
-      <legend>Roles</legend>
-      <!-- Real checkboxes styled as chips, so keyboard and screen readers work as usual -->
+      <legend>Role</legend>
+      <!-- Real radio buttons styled as chips, so arrow keys and screen readers work as usual -->
       @for (role of allRoles; track role) {
         <label class="role-option">
           <input
-            type="checkbox"
+            type="radio"
+            name="new-role"
             class="visually-hidden"
+            [value]="role"
             [checked]="hasRole(role)"
-            (change)="toggleRole(role, $any($event.target).checked)"
+            (change)="selectRole(role)"
           />
           {{ role }}
         </label>
-      }
-      @if (showFieldErrors('roles') && f.roles.errors) {
-        <p class="field-error">Pick at least one role</p>
       }
     </fieldset>
 

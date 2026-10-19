@@ -206,7 +206,7 @@ describe('AdminUsersComponent', () => {
       return new HttpErrorResponse({ status: 409, error: { errorCode: 'USER_ALREADY_EXISTS', message } });
     }
 
-    it('shows a card with ADMIN ticked and every other role offered', () => {
+    it('shows a card with ADMIN picked and every other role offered', () => {
       expect(page.querySelector('.create-form h2')?.textContent).toContain('Create admin');
       expect(page.querySelector('label[for=new-username]')).not.toBeNull();
       expect(page.querySelector('label[for=new-email]')).not.toBeNull();
@@ -235,35 +235,29 @@ describe('AdminUsersComponent', () => {
       expect(JSON.stringify(createUser.calls.mostRecent().args[0].roles)).toBe('["ADMIN"]');
     });
 
-    it('sends extra roles that were ticked, in the order the API lists them', () => {
-      createUser.and.returnValue(of({ user: { ...NEW_ADMIN, roles: ['ADMIN', 'TRADER'] }, inviteSent: true }));
-      fillValid();
-      roleBox('TRADER').click();
-      fixture.detectChanges();
-      submit();
-
-      expect(createUser.calls.mostRecent().args[0].roles).toEqual(['ADMIN', 'TRADER']);
-    });
-
-    it('can create a user without ADMIN when it is unticked and another role is ticked', () => {
+    it('sends only the role picked, as a list of one', () => {
       createUser.and.returnValue(of({ user: { ...NEW_ADMIN, roles: ['TRADER'] }, inviteSent: true }));
       fillValid();
       roleBox('TRADER').click();
-      roleBox('ADMIN').click();
       fixture.detectChanges();
       submit();
 
       expect(createUser.calls.mostRecent().args[0].roles).toEqual(['TRADER']);
     });
 
-    it('refuses to submit with no role ticked', () => {
-      fillValid();
+    it('allows only one role at a time', () => {
+      roleBox('TRADER').click();
+      fixture.detectChanges();
+
+      expect(roleBox('ADMIN').type).toBe('radio');
+      expect(roleBox('TRADER').checked).toBeTrue();
+      expect(roleBox('ADMIN').checked).toBeFalse();
+
       roleBox('ADMIN').click();
       fixture.detectChanges();
-      submit();
 
-      expect(createUser).not.toHaveBeenCalled();
-      expect(page.querySelector('.role-options .field-error')?.textContent).toContain('Pick at least one role');
+      expect(roleBox('ADMIN').checked).toBeTrue();
+      expect(roleBox('TRADER').checked).toBeFalse();
     });
 
     it('shows field errors instead of submitting an invalid form', () => {
@@ -337,8 +331,8 @@ describe('AdminUsersComponent', () => {
       );
     });
 
-    it('clears back to ADMIN only after creating, ready for the next account', () => {
-      createUser.and.returnValue(of({ user: { ...NEW_ADMIN, roles: ['ADMIN', 'TRADER'] }, inviteSent: true }));
+    it('clears back to ADMIN after creating, ready for the next account', () => {
+      createUser.and.returnValue(of({ user: { ...NEW_ADMIN, roles: ['TRADER'] }, inviteSent: true }));
       fillValid();
       roleBox('TRADER').click();
       fixture.detectChanges();
