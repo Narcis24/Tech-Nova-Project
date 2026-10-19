@@ -1,5 +1,7 @@
 export * from './accountController.service';
 import { AccountControllerService } from './accountController.service';
+export * from './adminUserController.service';
+import { AdminUserControllerService } from './adminUserController.service';
 export * from './dashboardController.service';
 import { DashboardControllerService } from './dashboardController.service';
 export * from './instrumentController.service';
@@ -16,4 +18,4 @@ export * from './riskController.service';
 import { RiskControllerService } from './riskController.service';
 export * from './riskLimitController.service';
 import { RiskLimitControllerService } from './riskLimitController.service';
-export const APIS = [AccountControllerService, DashboardControllerService, InstrumentControllerService, OrderControllerService, PortfolioControllerService, PositionControllerService, PriceControllerService, RiskControllerService, RiskLimitControllerService];
+export const APIS = [AccountControllerService, AdminUserControllerService, DashboardControllerService, InstrumentControllerService, OrderControllerService, PortfolioControllerService, PositionControllerService, PriceControllerService, RiskControllerService, RiskLimitControllerService];

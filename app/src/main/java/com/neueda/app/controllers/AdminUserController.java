@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /** User management. SecurityConfig restricts every /v1/admin/** route to the ADMIN role. */
@@ -43,6 +44,7 @@ public class AdminUserController {
      * saved, and auth-service (on its own connection) can already see the new email address.
      */
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)   // so the OpenAPI spec documents 201, not the default 200
     public ResponseEntity<CreateUserResponse> createUser(@Valid @RequestBody CreateUserRequest request,
                                                          Authentication authentication) {
         AdminUserResponse user = adminUserService.createUser(authentication.getName(), request);
