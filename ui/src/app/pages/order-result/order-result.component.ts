@@ -1,5 +1,5 @@
-import { CurrencyPipe, DecimalPipe, TitleCasePipe } from '@angular/common';
-import { Component, computed, inject, signal, DOCUMENT } from '@angular/core';
+import { CurrencyPipe, DecimalPipe, DOCUMENT, TitleCasePipe } from '@angular/common';
+import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, exhaustMap, filter, map, merge, of, startWith, switchMap, timer } from 'rxjs';
