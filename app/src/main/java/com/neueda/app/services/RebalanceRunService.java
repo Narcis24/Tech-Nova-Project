@@ -14,6 +14,7 @@ import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.exceptions.RebalanceConflictException;
 import com.neueda.app.exceptions.RebalanceRunNotFoundException;
 import com.neueda.app.exceptions.TradingException;
+import com.neueda.app.events.RebalanceRunFinished;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.AccountPie;
 import com.neueda.app.models.Order;
@@ -38,6 +39,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,7 +51,8 @@ import org.springframework.transaction.annotation.Transactional;
  * run already moved on and does nothing.
  *
  * A run is started under the account's row lock, which keeps runs, links and unlinks of an account in
- * turn. After that a run is changed under its own row lock, which settlement never takes.
+ * turn. After that a run is changed under its own row lock, which settlement never takes. A run that ends
+ * publishes RebalanceRunFinished; what follows from it happens after the commit, never under these locks.
  */
 @Service
 @Transactional
@@ -66,13 +69,14 @@ public class RebalanceRunService {
     private final RebalancePlanner planner;
     private final OrderValidator orderValidator;
     private final OrderService orderService;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public RebalanceRunService(RebalanceRunRepository runRepository, RebalanceLegRepository legRepository,
                                AccountRepository accountRepository, AccountPieRepository accountPieRepository,
                                OrderRepository orderRepository, PieRepository pieRepository,
                                PieService pieService, RebalancePlanner planner, OrderValidator orderValidator,
-                               OrderService orderService, Clock clock) {
+                               OrderService orderService, ApplicationEventPublisher events, Clock clock) {
         this.runRepository = runRepository;
         this.legRepository = legRepository;
         this.accountRepository = accountRepository;
@@ -83,11 +87,13 @@ public class RebalanceRunService {
         this.planner = planner;
         this.orderValidator = orderValidator;
         this.orderService = orderService;
+        this.events = events;
         this.clock = clock;
     }
 
     /**
-     * Starts a run to the latest version of the pie the account follows and places its sells.
+     * Starts a run to the latest version of the pie the account follows, or to what a copy of a pie that is
+     * no longer public last applied, and places its sells.
      * Refused while the account has an active run, or orders still waiting that the run could not
      * tell apart from its own: they hold cash and shares the plan counts on.
      */
@@ -107,7 +113,12 @@ public class RebalanceRunService {
         Pie pie = pieRepository.findById(link.getPieId())
             .orElseThrow(() -> new PieNotFoundException("Pie not found: " + link.getPieId()));
 
-        RebalanceRun run = runRepository.save(RebalanceRun.start(accountId, pie.getPieId(), pie.getLatestVersion()));
+        Integer version = link.targetVersion(pie);
+        if (version == null) {
+            throw new PieNotFoundException("Pie not found: " + pie.getPieId());
+        }
+
+        RebalanceRun run = runRepository.save(RebalanceRun.start(accountId, pie.getPieId(), version));
         RebalancePlan plan = planner.plan(accountId, pieService.weightsAt(run.getPieId(), run.getTargetVersion()));
         place(run, plan, PlannedAction.SELL);
         step(run);
@@ -135,6 +146,9 @@ public class RebalanceRunService {
         // changeStatus cleared the persistence context, so load the run again to change it
         run = runRepository.findById(runId).orElseThrow(() -> notFound(runId));
         run.cancel("Cancelled by user, " + cancelled + " pending order(s) cancelled");
+        // A user who cancels does not want the sync that was waiting for this run
+        accountPieRepository.findById(run.getAccountId()).ifPresent(link -> link.setSyncPending(false));
+        events.publishEvent(new RebalanceRunFinished(runId, run.getAccountId(), run.getPieId(), run.getStatus()));
         log.info("Rebalance run cancelled: runId={}, cancelledOrders={}", runId, cancelled);
         return toResponse(run);
     }
@@ -210,6 +224,7 @@ public class RebalanceRunService {
         accountPieRepository.findById(run.getAccountId())
             .filter(link -> link.getPieId().equals(run.getPieId()))
             .ifPresent(link -> link.applyVersion(run.getTargetVersion()));
+        events.publishEvent(new RebalanceRunFinished(run.getRunId(), run.getAccountId(), run.getPieId(), run.getStatus()));
         log.info("Rebalance run ended: runId={}, status={}", run.getRunId(), run.getStatus());
     }
 

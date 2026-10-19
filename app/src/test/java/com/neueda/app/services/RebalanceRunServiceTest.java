@@ -54,6 +54,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -77,7 +78,7 @@ import static org.mockito.Mockito.when;
 @DataJpaTest
 @Import({RebalanceRunService.class, RebalanceCoordinator.class, RebalancePlanner.class, RebalanceCalculator.class,
     PortfolioService.class, PositionValuator.class, PriceService.class, OrderService.class, OrderValidator.class,
-    OrderSettlementService.class, PieService.class, RebalanceRunServiceTest.JsonConfig.class})
+    OrderSettlementService.class, PieService.class, PieIndexService.class, RebalanceRunServiceTest.JsonConfig.class})
 @ActiveProfiles("test")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class RebalanceRunServiceTest {
@@ -123,7 +124,7 @@ class RebalanceRunServiceTest {
     @BeforeEach
     void setUp() {
         when(clock.instant()).thenReturn(MARKET_OPEN);
-        when(clock.getZone()).thenReturn(java.time.ZoneOffset.UTC);
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
         for (String symbol : List.of("AAPL", "MSFT", "GOOG", "TSLA")) {
             instrumentRepository.save(new Instrument(symbol, symbol + " Inc.", AssetClass.EQUITY, "USD", true));
             priceRepository.save(new Price(symbol, LocalDate.now(), new BigDecimal("100.00")));

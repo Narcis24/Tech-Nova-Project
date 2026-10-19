@@ -12,6 +12,7 @@ import java.time.ZoneOffset;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** The pie an account follows. An account follows at most one. */
 @Entity
@@ -33,9 +34,11 @@ public class AccountPie {
     @Column(name = "applied_version")
     private Integer appliedVersion;
 
+    @Setter
     @Column(name = "auto_sync")
     private boolean autoSync;
 
+    @Setter
     @Column(name = "sync_pending")
     private boolean syncPending;
 
@@ -44,6 +47,35 @@ public class AccountPie {
 
     public void applyVersion(int version) {
         this.appliedVersion = version;
+    }
+
+    /**
+     * The version this link should be brought to: the pie's latest, except for a copy of a pie that is no longer
+     * public, which stays at what it last applied. Null if that is nothing yet.
+     */
+    public Integer targetVersion(Pie pie) {
+        return mode == PieLinkMode.COPY && !pie.isPublished() ? appliedVersion : Integer.valueOf(pie.getLatestVersion());
+    }
+
+    public boolean isBehind(Pie pie) {
+        return appliedVersion == null || appliedVersion < pie.getLatestVersion();
+    }
+
+    /** Keeps the holdings but follows a pie of the user's own from now on, one already at {@code appliedVersion}. */
+    public void makeOwn(UUID pieId, int appliedVersion) {
+        this.pieId = pieId;
+        this.mode = PieLinkMode.OWN;
+        this.appliedVersion = appliedVersion;
+        this.autoSync = false;
+        this.syncPending = false;
+        this.linkedAt = LocalDateTime.now(ZoneOffset.UTC);
+    }
+
+    public static AccountPie copy(String accountId, UUID pieId, boolean autoSync) {
+        AccountPie link = own(accountId, pieId);
+        link.mode = PieLinkMode.COPY;
+        link.autoSync = autoSync;
+        return link;
     }
 
     public static AccountPie own(String accountId, UUID pieId) {

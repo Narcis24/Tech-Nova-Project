@@ -59,6 +59,11 @@ public class Pie {
         publishedAt = now;
     }
 
+    /** Public and not deleted: the only state in which others can see and copy it. */
+    public boolean isPublished() {
+        return visibility == PieVisibility.PUBLIC && deletedAt == null;
+    }
+
     public void unpublish() {
         visibility = PieVisibility.PRIVATE;
         publishedAt = null;

@@ -1,5 +1,6 @@
 package com.neueda.app.repositories;
 
+import com.neueda.app.enums.PieLinkMode;
 import com.neueda.app.models.AccountPie;
 import com.neueda.app.enums.PieLinkMode;
 import java.util.Collection;
@@ -13,6 +14,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AccountPieRepository extends JpaRepository<AccountPie, String> {
     List<AccountPie> findByPieId(UUID pieId);
+
+    /** Accounts copying the pie that follow its new versions on their own. */
+    List<AccountPie> findByPieIdAndModeAndAutoSyncTrue(UUID pieId, PieLinkMode mode);
+
+    List<AccountPie> findBySyncPendingTrue();
 
     boolean existsByPieIdAndAccountIdIn(UUID pieId, Collection<String> accountIds);
     boolean existsByPieIdAndMode(UUID pieId, PieLinkMode mode);
