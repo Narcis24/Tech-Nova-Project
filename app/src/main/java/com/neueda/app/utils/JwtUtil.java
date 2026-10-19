@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @Component
 public class JwtUtil {
@@ -43,6 +44,30 @@ public class JwtUtil {
                     .getSubject();
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    /**
+     * The roles claim of a verified token, e.g. ["ADMIN", "TRADER"]. Empty if the token is invalid or the
+     * claim is missing or not a list; entries that are not strings are dropped.
+     */
+    public List<String> extractRoles(String token) {
+        try {
+            Object roles = Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload()
+                    .get("roles");
+            if (!(roles instanceof List<?> list)) {
+                return List.of();
+            }
+            return list.stream()
+                    .filter(String.class::isInstance)
+                    .map(String.class::cast)
+                    .toList();
+        } catch (Exception e) {
+            return List.of();
         }
     }
 

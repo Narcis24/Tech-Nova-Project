@@ -13,10 +13,7 @@ const SECRET = '0123456789abcdef0123456789abcdef';
 
 /** In-memory stand-in for the users, user_roles, refresh_tokens and password_reset_tokens tables, with the same rules as the SQL. */
 class FakeAuthRepository {
-  readonly users = new Map<
-    string,
-    NewUser & { roles: string[]; createdAt: string }
-  >();
+  readonly users = new Map<string, NewUser & { roles: string[] }>();
   readonly tokens = new Map<
     string,
     { username: string; expiresAt: number; revoked: boolean }
@@ -37,23 +34,8 @@ class FakeAuthRepository {
       (await this.findUserByEmail(user.email))
     )
       return false;
-    this.users.set(user.username, {
-      ...user,
-      roles: ['TRADER'],
-      createdAt: new Date().toISOString(),
-    });
+    this.users.set(user.username, { ...user, roles: ['TRADER'] });
     return true;
-  }
-  async listUsers() {
-    return [...this.users.values()]
-      .sort((a, b) => a.username.localeCompare(b.username))
-      .map(({ username, email, roles, createdAt }) => ({
-        username,
-        email,
-        roles,
-        createdAt,
-        createdBy: null,
-      }));
   }
   async saveRefreshToken(hash: string, username: string, ttl: number) {
     this.tokens.set(hash, {
@@ -488,76 +470,6 @@ describe('Auth (e2e)', () => {
     });
   });
 
-  describe('admin users', () => {
-    const listUsers = (token?: string) => {
-      const req = http().get('/auth/v1/admin/users');
-      return token ? req.set('Authorization', `Bearer ${token}`) : req;
-    };
-    const adminToken = async () => {
-      await post('register').send(REGISTRATION).expect(201);
-      repository.users.get('john_doe1')!.roles = ['ADMIN'];
-      return (
-        (await post('login').send(VALID).expect(200)).body as {
-          accessToken: string;
-        }
-      ).accessToken;
-    };
-
-    it('answers 401 without a token', async () => {
-      const res = await listUsers().expect(401);
-      expect(res.body).toEqual({
-        statusCode: 401,
-        error: 'Unauthorized',
-        message: 'Missing access token',
-      });
-    });
-
-    it('answers 401 for a token it did not sign', async () => {
-      const forged = jwt.sign(
-        { sub: 'john_doe1', roles: ['ADMIN'] },
-        'another-secret-another-secret-123',
-      );
-      await listUsers(forged).expect(401);
-    });
-
-    it('answers 403 for a trader', async () => {
-      const { accessToken } = await loggedIn();
-      const res = await listUsers(accessToken).expect(403);
-      expect(res.body.message).toBe('Admin role required');
-    });
-
-    it('lists every user with their roles, by username, without password hashes', async () => {
-      const token = await adminToken();
-      await post('register')
-        .send({
-          username: 'alice_001',
-          password: 'Something123@',
-          email: 'alice@example.com',
-        })
-        .expect(201);
-
-      const res = await listUsers(token).expect(200);
-
-      expect(res.body).toEqual([
-        {
-          username: 'alice_001',
-          email: 'alice@example.com',
-          roles: ['TRADER'],
-          createdAt: expect.any(String),
-          createdBy: null,
-        },
-        {
-          username: 'john_doe1',
-          email: EMAIL,
-          roles: ['ADMIN'],
-          createdAt: expect.any(String),
-          createdBy: null,
-        },
-      ]);
-      expect(JSON.stringify(res.body)).not.toMatch(/password/i);
-    });
-  });
-
   describe('operational endpoints', () => {
     it('reports health', async () => {
       const res = await http().get('/auth/health').expect(200);
@@ -568,7 +480,6 @@ describe('Auth (e2e)', () => {
       const res = await http().get('/auth/docs-json').expect(200);
       expect(res.body.servers).toEqual([{ url: '/auth' }]);
       expect(Object.keys(res.body.paths).sort()).toEqual([
-        '/v1/admin/users',
         '/v1/auth/forgot-password',
         '/v1/auth/login',
         '/v1/auth/logout',

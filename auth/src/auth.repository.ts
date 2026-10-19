@@ -5,7 +5,6 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import pg from 'pg';
-import type { AdminUser } from './dto.js';
 
 /** Who an access token is for: its sub and roles claims. */
 export interface TokenOwner {
@@ -93,29 +92,6 @@ export class AuthRepository implements OnModuleInit, OnModuleDestroy {
       [user.username, user.passwordHash, user.email],
     );
     return rowCount === 1;
-  }
-
-  /** Every user with their roles, by username. */
-  async listUsers(): Promise<AdminUser[]> {
-    const { rows } = await this.pool.query<{
-      username: string;
-      email: string | null;
-      roles: string[];
-      created_at: Date;
-      created_by: string | null;
-    }>(
-      `SELECT username, email, created_at, created_by,
-         ARRAY(SELECT role FROM user_roles r WHERE r.username = users.username ORDER BY role) AS roles
-       FROM users
-       ORDER BY username`,
-    );
-    return rows.map((row) => ({
-      username: row.username,
-      email: row.email,
-      roles: row.roles,
-      createdAt: row.created_at.toISOString(),
-      createdBy: row.created_by,
-    }));
   }
 
   private async findOneUser(sql: string, param: string): Promise<User | null> {

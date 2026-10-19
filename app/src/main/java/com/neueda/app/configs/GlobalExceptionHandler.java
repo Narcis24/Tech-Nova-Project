@@ -28,7 +28,9 @@ import com.neueda.app.exceptions.OrderNotFoundException;
 import com.neueda.app.exceptions.OrderNotTriggeredException;
 import com.neueda.app.exceptions.PositionNotFoundException;
 import com.neueda.app.exceptions.PriceNotFoundException;
+import com.neueda.app.exceptions.RoleChangeNotAllowedException;
 import com.neueda.app.exceptions.TradingException;
+import com.neueda.app.exceptions.UserNotFoundException;
 
 /**
  * Global Exception Handler for the Trading Application.
@@ -53,6 +55,30 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
     
+    /**
+     * Handles UserNotFoundException when an admin acts on a username that does not exist.
+     *
+     * @param ex the UserNotFoundException thrown by AdminUserService
+     * @return ResponseEntity containing ErrorResponse with 404 status
+     */
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse("USER_NOT_FOUND", ex.getMessage(), 404);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Handles RoleChangeNotAllowedException when a role change would lock admins out.
+     *
+     * @param ex the RoleChangeNotAllowedException thrown by AdminUserService
+     * @return ResponseEntity containing ErrorResponse with 409 status
+     */
+    @ExceptionHandler(RoleChangeNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleRoleChangeNotAllowed(RoleChangeNotAllowedException ex) {
+        ErrorResponse error = new ErrorResponse("ROLE_CHANGE_NOT_ALLOWED", ex.getMessage(), 409);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     /**
      * Handles AccountAccessDeniedException when the caller does not own the account.
      *

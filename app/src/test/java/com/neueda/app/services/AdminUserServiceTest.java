@@ -1,0 +1,132 @@
+package com.neueda.app.services;
+
+import com.neueda.app.dtos.AdminUserResponse;
+import com.neueda.app.enums.Role;
+import com.neueda.app.exceptions.RoleChangeNotAllowedException;
+import com.neueda.app.exceptions.UserNotFoundException;
+import com.neueda.app.models.User;
+import com.neueda.app.repositories.UserRepository;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+class AdminUserServiceTest {
+
+    private final UserRepository userRepository = mock(UserRepository.class);
+    private final AdminUserService adminUserService = new AdminUserService(userRepository);
+
+    /** A real User: its fields are set the way Hibernate sets them, since the app never constructs one. */
+    private static User user(String username, Role... roles) {
+        User user = new User();
+        ReflectionTestUtils.setField(user, "username", username);
+        ReflectionTestUtils.setField(user, "email", username + "@example.com");
+        ReflectionTestUtils.setField(user, "createdAt", Instant.parse("2026-10-19T09:00:00Z"));
+        ReflectionTestUtils.setField(user, "roles", new HashSet<>(Set.of(roles)));
+        return user;
+    }
+
+    private void given(List<String> admins, User user) {
+        when(userRepository.lockAdminUsernames()).thenReturn(admins);
+        when(userRepository.findById(user.getUsername())).thenReturn(Optional.of(user));
+    }
+
+    @Test
+    void listUsers_KeepsTheRepositoryOrderAndSortsEachUsersRoles() {
+        User alice = user("alice_001", Role.TRADER, Role.ADMIN);
+        User bob = user("bob_00001", Role.TRADER);
+        when(userRepository.findAllByOrderByUsernameAsc()).thenReturn(List.of(alice, bob));
+
+        List<AdminUserResponse> users = adminUserService.listUsers();
+
+        assertEquals(List.of("alice_001", "bob_00001"),
+            users.stream().map(AdminUserResponse::getUsername).toList());
+        assertEquals(List.of(Role.ADMIN, Role.TRADER), users.get(0).getRoles());
+        assertEquals(List.of(Role.TRADER), users.get(1).getRoles());
+        assertEquals("alice_001@example.com", users.get(0).getEmail());
+        assertNull(users.get(0).getCreatedBy());
+    }
+
+    @Test
+    void listUsers_NoUsers_ReturnsEmptyList() {
+        when(userRepository.findAllByOrderByUsernameAsc()).thenReturn(List.of());
+        assertEquals(List.of(), adminUserService.listUsers());
+    }
+
+    @Test
+    void updateRoles_PromotesATrader() {
+        User trader = user("trader_one", Role.TRADER);
+        given(List.of("test_admin"), trader);
+
+        AdminUserResponse result = adminUserService.updateRoles("test_admin", "trader_one",
+            Set.of(Role.ADMIN, Role.TRADER));
+
+        assertEquals(List.of(Role.ADMIN, Role.TRADER), result.getRoles());
+        assertEquals(Set.of(Role.ADMIN, Role.TRADER), trader.getRoles());
+    }
+
+    @Test
+    void updateRoles_DemotesAnotherAdminWhileOneRemains() {
+        User other = user("other_admin", Role.ADMIN);
+        given(List.of("test_admin", "other_admin"), other);
+
+        adminUserService.updateRoles("test_admin", "other_admin", Set.of(Role.TRADER));
+
+        assertEquals(Set.of(Role.TRADER), other.getRoles());
+    }
+
+    @Test
+    void updateRoles_AnAdminCanChangeTheirOwnRolesWhileKeepingAdmin() {
+        User self = user("test_admin", Role.ADMIN);
+        given(List.of("test_admin"), self);
+
+        adminUserService.updateRoles("test_admin", "test_admin", Set.of(Role.ADMIN, Role.TRADER));
+
+        assertEquals(Set.of(Role.ADMIN, Role.TRADER), self.getRoles());
+    }
+
+    @Test
+    void updateRoles_RefusesToRemoveYourOwnAdminRole() {
+        User self = user("test_admin", Role.ADMIN);
+        given(List.of("test_admin", "other_admin"), self);
+
+        RoleChangeNotAllowedException ex = assertThrows(RoleChangeNotAllowedException.class,
+            () -> adminUserService.updateRoles("test_admin", "test_admin", Set.of(Role.TRADER)));
+
+        assertEquals("You cannot remove your own admin role", ex.getMessage());
+        assertEquals(Set.of(Role.ADMIN), self.getRoles());
+    }
+
+    @Test
+    void updateRoles_RefusesToRemoveTheLastAdmin() {
+        // Only reachable if the acting admin lost ADMIN after their token was issued (up to 15 minutes)
+        User last = user("only_admin", Role.ADMIN);
+        given(List.of("only_admin"), last);
+
+        RoleChangeNotAllowedException ex = assertThrows(RoleChangeNotAllowedException.class,
+            () -> adminUserService.updateRoles("former_admin", "only_admin", Set.of(Role.TRADER)));
+
+        assertEquals("At least one admin must remain", ex.getMessage());
+        assertEquals(Set.of(Role.ADMIN), last.getRoles());
+    }
+
+    @Test
+    void updateRoles_UnknownUser_Throws() {
+        when(userRepository.lockAdminUsernames()).thenReturn(List.of("test_admin"));
+        when(userRepository.findById("nobody_00")).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class,
+            () -> adminUserService.updateRoles("test_admin", "nobody_00", Set.of(Role.TRADER)));
+    }
+}

@@ -8,7 +8,10 @@ import tools.jackson.databind.json.JsonMapper;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -69,5 +72,23 @@ class JwtFilterTest {
 
         assertEquals(401, response.getStatus());
         assertTrue(response.getContentAsString().contains("\"errorCode\":\"UNAUTHORIZED\""));
+    }
+
+    @Test
+    void rolesInTheTokenBecomeAuthorities() throws Exception {
+        when(jwtUtil.isTokenValid("admin")).thenReturn(true);
+        when(jwtUtil.extractUsername("admin")).thenReturn("test_admin");
+        when(jwtUtil.extractRoles("admin")).thenReturn(List.of("ADMIN", "TRADER"));
+
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/admin/users");
+        request.setContextPath("/api");
+        request.addHeader("Authorization", "Bearer admin");
+        // Read the authentication inside the chain, before anything clears it
+        List<String> seen = new java.util.ArrayList<>();
+        filter.doFilter(request, new MockHttpServletResponse(), (req, res) ->
+            SecurityContextHolder.getContext().getAuthentication().getAuthorities()
+                .forEach((GrantedAuthority a) -> seen.add(a.getAuthority())));
+
+        assertEquals(List.of("ROLE_ADMIN", "ROLE_TRADER"), seen);
     }
 }

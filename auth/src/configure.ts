@@ -16,7 +16,6 @@ export function configure(app: NestExpressApplication) {
     .setDescription('Registers users, checks credentials and issues JWTs')
     .setVersion('2.0.0')
     .addServer('/auth')
-    .addBearerAuth()
     .build();
   SwaggerModule.setup(
     'docs',

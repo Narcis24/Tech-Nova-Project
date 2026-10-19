@@ -110,37 +110,6 @@ export class TokenResponse {
   expiresIn: number;
 }
 
-/** Every role a user can hold; must match the CHECK on user_roles.role (V013). */
-export const ROLES = ['TRADER', 'ADMIN'] as const;
-
-/** A user as admins see them. Never includes the password hash. */
-export class AdminUser {
-  @ApiProperty({ example: 'john_doe1' })
-  username: string;
-
-  @ApiProperty({
-    type: 'string',
-    nullable: true,
-    example: 'john.doe@example.com',
-    description: 'Null for accounts registered before emails were collected',
-  })
-  email: string | null;
-
-  @ApiProperty({ enum: ROLES, isArray: true, example: ['TRADER'] })
-  roles: string[];
-
-  @ApiProperty({ format: 'date-time', example: '2026-10-19T09:00:00.000Z' })
-  createdAt: string;
-
-  @ApiProperty({
-    type: 'string',
-    nullable: true,
-    example: 'test_admin',
-    description: 'The admin who created the account; null if self-registered',
-  })
-  createdBy: string | null;
-}
-
 /** Nest's default error body; documents responses only. */
 export class ErrorResponse {
   @ApiProperty()
