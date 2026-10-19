@@ -8,6 +8,7 @@ import com.neueda.app.enums.RebalanceStatus;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.PieNotFoundException;
 import com.neueda.app.exceptions.PieNotLinkedException;
+import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.exceptions.RebalanceConflictException;
 import com.neueda.app.models.AccountPie;
 import com.neueda.app.models.Pie;
