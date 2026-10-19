@@ -1,8 +1,11 @@
 package com.neueda.trading.engine;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -13,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.zip.GZIPInputStream;
 
 import org.slf4j.LoggerFactory;
 
@@ -104,7 +108,7 @@ public final class Replay {
         int runs = 0;
         int orders = 0;
         int quotes = 0;
-        for (String text : Files.readAllLines(journal)) {
+        for (String text : readLines(journal)) {
             if (text.isBlank()) {
                 continue;
             }
@@ -139,6 +143,17 @@ public final class Replay {
             throw new IllegalArgumentException("the journal has no engine runs, orders or quotes");
         }
         return new Result(runs, orders, quotes, recorded, compare(recorded, replayed));
+    }
+
+    /** The journal's lines; a {@code .gz} journal is unzipped while it is read. */
+    static List<String> readLines(Path journal) throws IOException {
+        if (!journal.getFileName().toString().endsWith(".gz")) {
+            return Files.readAllLines(journal);
+        }
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                new GZIPInputStream(Files.newInputStream(journal)), StandardCharsets.UTF_8))) {
+            return reader.lines().toList();
+        }
     }
 
     private ExecutionEngine freshEngine(JsonNode line) {
