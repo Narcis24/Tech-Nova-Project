@@ -180,11 +180,6 @@ describe('AdminUsersComponent', () => {
 
     beforeEach(() => create(of(USERS)));
 
-    function openForm(): void {
-      page.querySelector<HTMLButtonElement>('.create-open')!.click();
-      fixture.detectChanges();
-    }
-
     function type(id: string, text: string): void {
       const input = page.querySelector<HTMLInputElement>(`#${id}`)!;
       input.value = text;
@@ -211,9 +206,7 @@ describe('AdminUsersComponent', () => {
       return new HttpErrorResponse({ status: 409, error: { errorCode: 'USER_ALREADY_EXISTS', message } });
     }
 
-    it('opens a form with ADMIN ticked and every other role offered', () => {
-      openForm();
-
+    it('shows a card with ADMIN ticked and every other role offered', () => {
       expect(page.querySelector('.create-form h2')?.textContent).toContain('Create admin');
       expect(page.querySelector('label[for=new-username]')).not.toBeNull();
       expect(page.querySelector('label[for=new-email]')).not.toBeNull();
@@ -221,16 +214,15 @@ describe('AdminUsersComponent', () => {
       expect(roleBox('TRADER').checked).toBeFalse();
     });
 
-    it('can be opened even when the users failed to load', () => {
+    it('is there even when the users failed to load', () => {
       TestBed.resetTestingModule();
       create(throwError(() => new Error('500')));
 
-      expect(page.querySelector('.create-open')).not.toBeNull();
+      expect(page.querySelector('.create-form')).not.toBeNull();
     });
 
     it('sends the username, email and ADMIN as a JSON array', () => {
       createUser.and.returnValue(of({ user: NEW_ADMIN, inviteSent: true }));
-      openForm();
       fillValid();
       submit();
 
@@ -245,7 +237,6 @@ describe('AdminUsersComponent', () => {
 
     it('sends extra roles that were ticked, in the order the API lists them', () => {
       createUser.and.returnValue(of({ user: { ...NEW_ADMIN, roles: ['ADMIN', 'TRADER'] }, inviteSent: true }));
-      openForm();
       fillValid();
       roleBox('TRADER').click();
       fixture.detectChanges();
@@ -256,7 +247,6 @@ describe('AdminUsersComponent', () => {
 
     it('can create a user without ADMIN when it is unticked and another role is ticked', () => {
       createUser.and.returnValue(of({ user: { ...NEW_ADMIN, roles: ['TRADER'] }, inviteSent: true }));
-      openForm();
       fillValid();
       roleBox('TRADER').click();
       roleBox('ADMIN').click();
@@ -267,7 +257,6 @@ describe('AdminUsersComponent', () => {
     });
 
     it('refuses to submit with no role ticked', () => {
-      openForm();
       fillValid();
       roleBox('ADMIN').click();
       fixture.detectChanges();
@@ -278,7 +267,6 @@ describe('AdminUsersComponent', () => {
     });
 
     it('shows field errors instead of submitting an invalid form', () => {
-      openForm();
       type('new-username', 'short');
       type('new-email', 'john@example');
       submit();
@@ -290,11 +278,9 @@ describe('AdminUsersComponent', () => {
 
     it('adds the new user to the list in username order and confirms the email was sent', () => {
       createUser.and.returnValue(of({ user: NEW_ADMIN, inviteSent: true }));
-      openForm();
       fillValid();
       submit();
 
-      expect(page.querySelector('.create-form')).toBeNull();
       expect(usernames()).toEqual(['invited_01', 'new_admin', 'old_user1', 'test_admin', 'trader_one']);
       expect(page.querySelector('output.create-result')?.textContent).toContain(
         'Created new_admin. A set-password email is on its way.',
@@ -303,7 +289,6 @@ describe('AdminUsersComponent', () => {
 
     it('warns when the account was created but the email was not sent', () => {
       createUser.and.returnValue(of({ user: NEW_ADMIN, inviteSent: false }));
-      openForm();
       fillValid();
       submit();
 
@@ -315,7 +300,6 @@ describe('AdminUsersComponent', () => {
     it('disables the buttons while the request is in flight', () => {
       const response = new Subject<CreateUserResponse>();
       createUser.and.returnValue(response);
-      openForm();
       fillValid();
       submit();
 
@@ -328,12 +312,11 @@ describe('AdminUsersComponent', () => {
 
       response.next({ user: NEW_ADMIN, inviteSent: true });
       fixture.detectChanges();
-      expect(page.querySelector('.create-form')).toBeNull();
+      expect(submitButton.disabled).toBeFalse();
     });
 
     it('shows what is taken when the username or email already exists, keeping the form open', () => {
       createUser.and.returnValue(throwError(() => conflict('Username already taken: new_admin')));
-      openForm();
       fillValid();
       submit();
 
@@ -346,7 +329,6 @@ describe('AdminUsersComponent', () => {
 
     it('shows a generic error when the server fails', () => {
       createUser.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
-      openForm();
       fillValid();
       submit();
 
@@ -355,20 +337,33 @@ describe('AdminUsersComponent', () => {
       );
     });
 
-    it('starts empty again with ADMIN ticked after cancelling', () => {
-      openForm();
+    it('clears back to ADMIN only after creating, ready for the next account', () => {
+      createUser.and.returnValue(of({ user: { ...NEW_ADMIN, roles: ['ADMIN', 'TRADER'] }, inviteSent: true }));
       fillValid();
       roleBox('TRADER').click();
       fixture.detectChanges();
-      page.querySelector<HTMLButtonElement>('.create-form button[type=button]')!.click();
-      fixture.detectChanges();
+      submit();
 
-      expect(page.querySelector('.create-form')).toBeNull();
-
-      openForm();
       expect(page.querySelector<HTMLInputElement>('#new-username')?.value).toBe('');
+      expect(page.querySelector<HTMLInputElement>('#new-email')?.value).toBe('');
       expect(roleBox('ADMIN').checked).toBeTrue();
       expect(roleBox('TRADER').checked).toBeFalse();
+      // A cleared form is untouched again, so it shows no "required" errors
+      expect(page.querySelector('.create-form .field-error')).toBeNull();
+    });
+
+    it('hides the last confirmation when the next account is submitted', () => {
+      createUser.and.returnValue(of({ user: NEW_ADMIN, inviteSent: true }));
+      fillValid();
+      submit();
+      expect(page.querySelector('output.create-result')).not.toBeNull();
+
+      createUser.and.returnValue(throwError(() => conflict('Email already in use: new.admin@example.com')));
+      fillValid();
+      submit();
+
+      expect(page.querySelector('output.create-result')).toBeNull();
+      expect(page.querySelector('.create-form [role=alert]')?.textContent).toContain('Email already in use');
     });
   });
 });

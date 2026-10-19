@@ -36,10 +36,9 @@ export class AdminUsersComponent {
   /** What the admin typed in the search box */
   readonly query = signal('');
 
-  readonly creating = signal(false);
   readonly saving = signal(false);
   readonly createError = signal('');
-  /** The account just created, kept after the form closes so the confirmation stays on screen */
+  /** The account just created, kept after the form clears so the confirmation stays on screen */
   readonly created = signal<CreateUserResponse | null>(null);
 
   // Same rules as CreateUserRequest.java; new accounts start as admins, other roles are opt-in
@@ -102,23 +101,13 @@ export class AdminUsersComponent {
     this.f.roles.markAsDirty();
   }
 
-  openCreate(): void {
-    this.created.set(null);
-    this.createError.set('');
-    this.createForm.reset();
-    this.creating.set(true);
-  }
-
-  cancelCreate(): void {
-    this.creating.set(false);
-  }
-
   create(): void {
     // A disabled submit button doesn't stop Enter in a field from submitting the form again
     if (this.saving()) {
       return;
     }
     this.createError.set('');
+    this.created.set(null);
     if (this.createForm.invalid) {
       this.createForm.markAllAsTouched();
       return;
@@ -128,8 +117,9 @@ export class AdminUsersComponent {
     this.adminUsers.createUser(this.createForm.getRawValue()).subscribe({
       next: (response) => {
         this.saving.set(false);
-        this.creating.set(false);
         this.created.set(response);
+        // Back to blank with ADMIN ticked, ready for the next account
+        this.createForm.reset();
         // Slot the new user in by username, the order the list arrives in
         this.users.update((users) =>
           [...(users ?? []), response.user].sort((a, b) => a.username.localeCompare(b.username)),
