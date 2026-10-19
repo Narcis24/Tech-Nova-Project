@@ -3,6 +3,12 @@ import jwt from 'jsonwebtoken';
 
 export const ACCESS_TOKEN_SECONDS = 900;
 
+/** What a verified access token says about its holder */
+export interface AccessTokenClaims {
+  sub: string;
+  roles: string[];
+}
+
 @Injectable()
 export class JwtService {
   private readonly secret: string;
@@ -24,5 +30,20 @@ export class JwtService {
       algorithm: 'HS256',
       expiresIn: ACCESS_TOKEN_SECONDS,
     });
+  }
+
+  /** Throws if the token is forged, expired, not HS256, or missing sub or roles. */
+  verifyAccessToken(token: string): AccessTokenClaims {
+    const payload = jwt.verify(token, this.secret, { algorithms: ['HS256'] });
+
+    if (
+      typeof payload === 'string' || // a string isn't our token format
+      typeof payload.sub !== 'string' || // must say who the token is for
+      !Array.isArray(payload.roles) || // roles must be a list...
+      !payload.roles.every((role) => typeof role === 'string') // ...of strings only
+    ) {
+      throw new Error('Malformed access token');
+    }
+    return { sub: payload.sub, roles: payload.roles };
   }
 }

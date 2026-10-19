@@ -1,8 +1,11 @@
+import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { ApiExcludeController } from '@nestjs/swagger';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
+import { AdminGuard, type AdminRequest } from './../src/admin.guard.js';
 import { AppModule } from './../src/app.module.js';
 import { AuthRepository, NewUser } from './../src/auth.repository.js';
 import { configure } from './../src/configure.js';
@@ -93,6 +96,17 @@ class FakeMailService {
   }
 }
 
+/** Test-only endpoint behind the AdminGuard, until the real admin endpoints exist. */
+@ApiExcludeController()
+@Controller('test-admin-only')
+class AdminOnlyController {
+  @Get()
+  @UseGuards(AdminGuard)
+  whoAmI(@Req() req: AdminRequest) {
+    return { username: req.admin.sub };
+  }
+}
+
 const VALID = { username: 'john_doe1', password: 'Something123@' };
 const EMAIL = 'john.doe@example.com';
 const REGISTRATION = { ...VALID, email: EMAIL };
@@ -107,6 +121,9 @@ describe('Auth (e2e)', () => {
     mail = new FakeMailService();
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
+      // AppModule does not export JwtService, so the guard on this test-only controller needs its own
+      controllers: [AdminOnlyController],
+      providers: [JwtService],
     })
       .overrideProvider(AuthRepository)
       .useValue(repository)
@@ -467,6 +484,46 @@ describe('Auth (e2e)', () => {
         .expect(400);
       expect(res.body).toMatchObject({ statusCode: 400, error: 'Bad Request' });
       expect(res.body.message).toBeDefined();
+    });
+  });
+
+  describe('admin guard', () => {
+    const adminOnly = (token?: string) => {
+      const req = http().get('/auth/test-admin-only');
+      return token ? req.set('Authorization', `Bearer ${token}`) : req;
+    };
+
+    it('answers 401 without a token', async () => {
+      const res = await adminOnly().expect(401);
+      expect(res.body).toEqual({
+        statusCode: 401,
+        error: 'Unauthorized',
+        message: 'Missing access token',
+      });
+    });
+
+    it('answers 401 for a token it did not sign', async () => {
+      const forged = jwt.sign(
+        { sub: 'john_doe1', roles: ['ADMIN'] },
+        'another-secret-another-secret-123',
+      );
+      await adminOnly(forged).expect(401);
+    });
+
+    it('answers 403 for a trader', async () => {
+      const { accessToken } = await loggedIn();
+      const res = await adminOnly(accessToken).expect(403);
+      expect(res.body.message).toBe('Admin role required');
+    });
+
+    it('lets an admin through', async () => {
+      await post('register').send(REGISTRATION).expect(201);
+      repository.users.get('john_doe1')!.roles = ['ADMIN'];
+      const { accessToken } = (await post('login').send(VALID).expect(200))
+        .body as { accessToken: string };
+
+      const res = await adminOnly(accessToken).expect(200);
+      expect(res.body).toEqual({ username: 'john_doe1' });
     });
   });
 
