@@ -3,7 +3,6 @@ package com.neueda.trading.engine;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -200,8 +199,9 @@ public class ExecutionEngine {
             return;
         }
         boolean market = "MARKET".equals(event.orderType());
+        // The injected clock, never the system time, so a replay of a recorded day decides the same way
         FillRule.Decision decision = quoteCache
-            .fresh(event.symbol(), Instant.now(), Duration.ofSeconds(props.maxQuoteAgeSeconds()))
+            .fresh(event.symbol(), clock.instant(), Duration.ofSeconds(props.maxQuoteAgeSeconds()))
             .<FillRule.Decision>map(q -> FillRule.decide(event, q))
             .orElseGet(() -> market
                 ? new FillRule.Reject("No fresh quote for " + event.symbol())
