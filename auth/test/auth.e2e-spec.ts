@@ -11,9 +11,9 @@ import { MailService } from './../src/mail.service.js';
 
 const SECRET = '0123456789abcdef0123456789abcdef';
 
-/** In-memory stand-in for the users, refresh_tokens and password_reset_tokens tables, with the same rules as the SQL. */
+/** In-memory stand-in for the users, user_roles, refresh_tokens and password_reset_tokens tables, with the same rules as the SQL. */
 class FakeAuthRepository {
-  readonly users = new Map<string, NewUser>();
+  readonly users = new Map<string, NewUser & { roles: string[] }>();
   readonly tokens = new Map<
     string,
     { username: string; expiresAt: number; revoked: boolean }
@@ -34,7 +34,7 @@ class FakeAuthRepository {
       (await this.findUserByEmail(user.email))
     )
       return false;
-    this.users.set(user.username, user);
+    this.users.set(user.username, { ...user, roles: ['TRADER'] });
     return true;
   }
   async saveRefreshToken(hash: string, username: string, ttl: number) {
@@ -49,7 +49,10 @@ class FakeAuthRepository {
     if (!old || old.revoked || old.expiresAt <= Date.now()) return null;
     old.revoked = true;
     await this.saveRefreshToken(newHash, old.username, ttl);
-    return old.username;
+    return {
+      username: old.username,
+      roles: this.users.get(old.username)?.roles ?? [],
+    };
   }
   async revokeRefreshToken(hash: string) {
     const token = this.tokens.get(hash);
@@ -196,6 +199,24 @@ describe('Auth (e2e)', () => {
         roles: ['TRADER'],
         iat: expect.any(Number),
         exp: claims.iat! + 900,
+      });
+    });
+
+    it('puts every role of the user into the token, and refresh picks up a role change', async () => {
+      await post('register').send(REGISTRATION).expect(201);
+      repository.users.get('john_doe1')!.roles = ['ADMIN', 'TRADER'];
+
+      const login = await post('login').send(VALID).expect(200);
+      expect(jwt.decode(login.body.accessToken)).toMatchObject({
+        roles: ['ADMIN', 'TRADER'],
+      });
+
+      repository.users.get('john_doe1')!.roles = ['TRADER'];
+      const refreshed = await post('refresh')
+        .send({ refreshToken: login.body.refreshToken })
+        .expect(200);
+      expect(jwt.decode(refreshed.body.accessToken)).toMatchObject({
+        roles: ['TRADER'],
       });
     });
 

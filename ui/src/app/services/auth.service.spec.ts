@@ -15,8 +15,9 @@ const REFRESH_TOKEN_KEY = 'technova.refreshToken';
 const CREDENTIALS = { username: 'trader01', password: 'Trader.Pass01' };
 const TOKENS = { accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 };
 const NEW_TOKENS = { accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 };
-// Only the payload is real: username() reads it without checking the signature
-const JWT = `header.${btoa(JSON.stringify({ sub: 'trader01' }))}.signature`;
+// Only the payload is real: username() and roles() read it without checking the signature
+const jwtWith = (claims: object) => `header.${btoa(JSON.stringify(claims))}.signature`;
+const JWT = jwtWith({ sub: 'trader01' });
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -190,6 +191,61 @@ describe('AuthService', () => {
       logIn();
 
       expect(service.username()).toBeNull();
+    });
+  });
+
+  describe('roles', () => {
+    function logInWith(claims: object): void {
+      service.login(CREDENTIALS).subscribe();
+      http.expectOne(LOGIN_URL).flush({ ...TOKENS, accessToken: jwtWith(claims) });
+    }
+
+    it('reads every role from the access token', () => {
+      logInWith({ sub: 'test_admin', roles: ['ADMIN', 'TRADER'] });
+
+      expect(service.roles()).toEqual(['ADMIN', 'TRADER']);
+      expect(service.isAdmin()).toBeTrue();
+    });
+
+    it('is not admin with only TRADER', () => {
+      logInWith({ sub: 'trader01', roles: ['TRADER'] });
+
+      expect(service.isAdmin()).toBeFalse();
+    });
+
+    it('is empty when the claim is missing or not a list of strings', () => {
+      logInWith({ sub: 'trader01' });
+      expect(service.roles()).toEqual([]);
+
+      logInWith({ sub: 'trader01', roles: 'ADMIN' });
+      expect(service.roles()).toEqual([]);
+      expect(service.isAdmin()).toBeFalse();
+
+      logInWith({ sub: 'trader01', roles: [1, 'TRADER'] });
+      expect(service.roles()).toEqual(['TRADER']);
+    });
+
+    it('is empty when logged out', () => {
+      expect(service.roles()).toEqual([]);
+      expect(service.isAdmin()).toBeFalse();
+    });
+
+    it('gives admins /admin as their home page and everyone else /dashboard', () => {
+      expect(service.homeUrl()).toBe('/dashboard');
+
+      logInWith({ sub: 'test_admin', roles: ['ADMIN', 'TRADER'] });
+      expect(service.homeUrl()).toBe('/admin');
+
+      logInWith({ sub: 'trader01', roles: ['TRADER'] });
+      expect(service.homeUrl()).toBe('/dashboard');
+    });
+
+    it('follows the token: logging out drops the admin role', () => {
+      logInWith({ sub: 'test_admin', roles: ['ADMIN'] });
+      service.logout();
+      http.expectOne(LOGOUT_URL).flush(null);
+
+      expect(service.isAdmin()).toBeFalse();
     });
   });
 

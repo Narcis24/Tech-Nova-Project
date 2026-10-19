@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, provideRouter } from '@angular/router';
@@ -14,6 +14,8 @@ class BlankComponent {}
 describe('LoginComponent', () => {
   let auth: jasmine.SpyObj<AuthService>;
   let loginResult: Subject<void>;
+  // Where the real service would send this user; set to /admin to log in as an admin
+  const homeUrl = signal<'/admin' | '/dashboard'>('/dashboard');
   let harness: RouterTestingHarness;
   let page: HTMLElement;
 
@@ -40,7 +42,8 @@ describe('LoginComponent', () => {
 
   beforeEach(async () => {
     loginResult = new Subject<void>();
-    auth = jasmine.createSpyObj<AuthService>('AuthService', ['login']);
+    homeUrl.set('/dashboard');
+    auth = jasmine.createSpyObj<AuthService>('AuthService', ['login'], { homeUrl });
     auth.login.and.returnValue(loginResult);
 
     TestBed.configureTestingModule({
@@ -119,6 +122,32 @@ describe('LoginComponent', () => {
     await harness.fixture.whenStable();
 
     expect(TestBed.inject(Router).url).toBe('/dashboard');
+  });
+
+  it('goes to the admin page after an admin logs in', async () => {
+    await open();
+    homeUrl.set('/admin');
+    type('username', 'test_admin');
+    type('password', 'AdminPass123!');
+    submit();
+
+    loginResult.next();
+    await harness.fixture.whenStable();
+
+    expect(TestBed.inject(Router).url).toBe('/admin');
+  });
+
+  it('still takes an admin back to the page they came from', async () => {
+    await open('/login?returnUrl=%2Forders');
+    homeUrl.set('/admin');
+    type('username', 'test_admin');
+    type('password', 'AdminPass123!');
+    submit();
+
+    loginResult.next();
+    await harness.fixture.whenStable();
+
+    expect(TestBed.inject(Router).url).toBe('/orders');
   });
 
   it('goes back to the page the user came from', async () => {

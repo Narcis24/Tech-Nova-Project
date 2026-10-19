@@ -15,7 +15,9 @@ describe('JwtService', () => {
   });
 
   it('issues an HS256 token with exactly sub, roles, iat and exp, valid for 15 minutes', () => {
-    const token = new JwtService(SECRET).generateAccessToken('john_doe1');
+    const token = new JwtService(SECRET).generateAccessToken('john_doe1', [
+      'TRADER',
+    ]);
     const { header, payload } = jwt.decode(token, { complete: true })!;
     const claims = payload as jwt.JwtPayload;
 
@@ -29,9 +31,20 @@ describe('JwtService', () => {
     ).not.toThrow();
   });
 
+  it('puts every role the user has into the token', () => {
+    const token = new JwtService(SECRET).generateAccessToken('john_doe1', [
+      'ADMIN',
+      'TRADER',
+    ]);
+    const claims = jwt.decode(token) as jwt.JwtPayload;
+
+    expect(claims.roles).toEqual(['ADMIN', 'TRADER']);
+  });
+
   it('uses HS256 even with a long secret', () => {
     const token = new JwtService('x'.repeat(64)).generateAccessToken(
       'john_doe1',
+      ['TRADER'],
     );
     expect(jwt.decode(token, { complete: true })!.header.alg).toBe('HS256');
   });
