@@ -68,12 +68,12 @@ describe('NavBarComponent', () => {
     const tabs = (): (string | undefined)[] =>
       Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('.tab')).map((tab) => tab.textContent?.trim());
 
-    expect(tabs()).toEqual(['Portfolio', 'Trade', 'Orders']);
+    expect(tabs()).toEqual(['Portfolio', 'Trade', 'Pies', 'Orders']);
 
     isAdmin.set(true);
     fixture.detectChanges();
 
-    expect(tabs()).toEqual(['Portfolio', 'Trade', 'Orders', 'Admin']);
+    expect(tabs()).toEqual(['Portfolio', 'Trade', 'Pies', 'Orders', 'Admin']);
   });
 
   it("shows the user's initial and name", () => {
