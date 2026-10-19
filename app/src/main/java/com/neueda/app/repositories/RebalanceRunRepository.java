@@ -17,6 +17,8 @@ import org.springframework.stereotype.Repository;
 public interface RebalanceRunRepository extends JpaRepository<RebalanceRun, UUID> {
     boolean existsByAccountIdAndStatusIn(String accountId, Collection<RebalanceStatus> statuses);
 
+    Optional<RebalanceRun> findFirstByAccountIdAndStatusIn(String accountId, Collection<RebalanceStatus> statuses);
+
     List<RebalanceRun> findByStatusIn(Collection<RebalanceStatus> statuses);
 
     /**

@@ -118,6 +118,14 @@ public class PieService {
         return toResponse(pie, slices);
     }
 
+    /** A private pie of the owner's with the slices of one version of another, which it leaves untouched. */
+    @Transactional
+    public Pie duplicate(String owner, Pie source, int version) {
+        Pie pie = pieRepository.save(Pie.create(owner, source.getName(), source.getDescription()));
+        saveVersion(pie.getPieId(), 1, weightsAt(source.getPieId(), version));
+        return pie;
+    }
+
     @Transactional
     public PieResponse update(UUID pieId, String owner, SavePieRequest req) {
         Pie pie = requireOwnedForUpdate(pieId, owner);
@@ -153,14 +161,6 @@ public class PieService {
         makePrivate(pie);
         pie.setDeletedAt(now());
         pieRepository.save(pie);
-    }
-
-    /** Symbol to target weight (%) at the pie's latest version. */
-    @Transactional(readOnly = true)
-    public Map<String, BigDecimal> latestWeights(UUID pieId) {
-        Pie pie = pieRepository.findById(pieId)
-            .orElseThrow(() -> new PieNotFoundException("Pie not found: " + pieId));
-        return toWeights(latestSlices(pie));
     }
 
     /** Symbol to target weight (%) at one version, which never changes once saved. */

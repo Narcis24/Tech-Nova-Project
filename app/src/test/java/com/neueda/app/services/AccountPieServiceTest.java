@@ -4,7 +4,10 @@ import com.neueda.app.dtos.AccountPieResponse;
 import com.neueda.app.dtos.PortfolioSnapshotResponse;
 import com.neueda.app.dtos.PositionResponse;
 import com.neueda.app.dtos.RebalancePreviewResponse;
+import com.neueda.app.dtos.RebalanceRunResponse;
 import com.neueda.app.dtos.RiskWarning;
+import com.neueda.app.enums.PieLinkMode;
+import com.neueda.app.exceptions.AccountNotActiveException;
 import com.neueda.app.exceptions.PieNotFoundException;
 import com.neueda.app.exceptions.PieNotLinkedException;
 import com.neueda.app.exceptions.PriceNotFoundException;
@@ -13,6 +16,7 @@ import com.neueda.app.exceptions.RebalanceConflictException;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.AccountPie;
 import com.neueda.app.models.Pie;
+import com.neueda.app.models.RebalanceRun;
 import com.neueda.app.repositories.AccountPieRepository;
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.PieRepository;
@@ -20,6 +24,7 @@ import com.neueda.app.repositories.RebalanceRunRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
@@ -40,40 +45,50 @@ class AccountPieServiceTest {
     private static final UUID PIE_ID = UUID.randomUUID();
 
     private AccountPieRepository accountPieRepository;
+    private PieRepository pieRepository;
     private PieService pieService;
     private PortfolioService portfolioService;
     private PriceService priceService;
     private RiskService riskService;
     private AccountRepository accountRepository;
     private RebalanceRunRepository rebalanceRunRepository;
+    private RebalanceRunService runService;
+    private Account account;
+    private Pie pie;
     private AccountPieService service;
 
     @BeforeEach
     void setUp() {
         accountPieRepository = mock(AccountPieRepository.class);
-        PieRepository pieRepository = mock(PieRepository.class);
+        pieRepository = mock(PieRepository.class);
         pieService = mock(PieService.class);
         portfolioService = mock(PortfolioService.class);
         priceService = mock(PriceService.class);
         riskService = mock(RiskService.class);
         accountRepository = mock(AccountRepository.class);
         rebalanceRunRepository = mock(RebalanceRunRepository.class);
-        when(accountRepository.findByIdForUpdate(ACCOUNT)).thenReturn(Optional.of(mock(Account.class)));
+        runService = mock(RebalanceRunService.class);
+        account = mock(Account.class);
+        when(accountRepository.findByIdForUpdate(ACCOUNT)).thenReturn(Optional.of(account));
+        when(accountRepository.findById(ACCOUNT)).thenReturn(Optional.of(account));
         service = new AccountPieService(accountPieRepository, pieRepository, pieService,
             new RebalancePlanner(portfolioService, priceService,
                 new RebalanceCalculator(new BigDecimal("10"), new BigDecimal("0.5"), BigDecimal.ONE)),
-            riskService, accountRepository, rebalanceRunRepository);
+            riskService, accountRepository, rebalanceRunRepository, runService);
 
-        Pie pie = mock(Pie.class);
+        pie = mock(Pie.class);
         when(pie.getPieId()).thenReturn(PIE_ID);
+        when(pie.getOwnerUsername()).thenReturn("author");
+        when(pie.isPublished()).thenReturn(true);
         when(pie.getName()).thenReturn("Tech");
         when(pie.getLatestVersion()).thenReturn(2);
         when(pieRepository.findById(PIE_ID)).thenReturn(Optional.of(pie));
         Map<String, BigDecimal> targets = new LinkedHashMap<>();
         targets.put("AAPL", new BigDecimal("60"));
         targets.put("MSFT", new BigDecimal("30"));
-        when(pieService.latestWeights(PIE_ID)).thenReturn(targets);
+        when(pieService.weightsAt(PIE_ID, 2)).thenReturn(targets);
         when(accountPieRepository.save(any(AccountPie.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(priceService.getCurrentPrice(any())).thenReturn(new BigDecimal("100"));
     }
 
     private void linked() {
@@ -199,5 +214,223 @@ class AccountPieServiceTest {
 
         PriceNotFoundException ex = assertThrows(PriceNotFoundException.class, () -> service.preview(ACCOUNT));
         assertEquals("No price for MSFT, so the rebalance can't be planned", ex.getMessage());
+    }
+
+    // ---------- copying ----------
+
+    private void copyOf(Integer applied) {
+        AccountPie link = AccountPie.copy(ACCOUNT, PIE_ID, true);
+        if (applied != null) {
+            link.applyVersion(applied);
+        }
+        when(accountPieRepository.findById(ACCOUNT)).thenReturn(Optional.of(link));
+    }
+
+    @Test
+    void previewCopy_plansTheLatestVersionOfAPublicPie_andLinksAndPlacesNothing() {
+        portfolio("1000");
+        when(priceService.getCurrentPrice(any())).thenReturn(new BigDecimal("100"));
+
+        RebalancePreviewResponse preview = service.previewCopy(ACCOUNT, "jay", PIE_ID);
+
+        assertEquals(PIE_ID, preview.getPieId());
+        assertEquals(2, preview.getVersion());
+        assertEquals(2, preview.getLegs().size());
+        verify(accountPieRepository, never()).save(any());
+        verifyNoInteractions(runService);
+    }
+
+    @Test
+    void previewCopyAndCopy_ownPie_conflictEvenWhenPrivate() {
+        when(pie.getOwnerUsername()).thenReturn("jay");
+        when(pie.isPublished()).thenReturn(false);
+
+        assertThrows(RebalanceConflictException.class, () -> service.previewCopy(ACCOUNT, "jay", PIE_ID));
+        assertThrows(RebalanceConflictException.class, () -> service.copy(ACCOUNT, "jay", PIE_ID, true));
+        verify(accountPieRepository, never()).save(any());
+        verifyNoInteractions(runService);
+    }
+
+    @Test
+    void previewCopyAndCopy_privatePie_notFound() {
+        when(pie.isPublished()).thenReturn(false);
+
+        assertThrows(PieNotFoundException.class, () -> service.previewCopy(ACCOUNT, "jay", PIE_ID));
+        assertThrows(PieNotFoundException.class, () -> service.copy(ACCOUNT, "jay", PIE_ID, true));
+        verify(accountPieRepository, never()).save(any());
+        verifyNoInteractions(runService);
+    }
+
+    @Test
+    void previewCopyAndCopy_deletedPieOrUnknownPie_notFound() {
+        when(pie.getDeletedAt()).thenReturn(java.time.LocalDateTime.now());
+
+        assertThrows(PieNotFoundException.class, () -> service.previewCopy(ACCOUNT, "jay", PIE_ID));
+        assertThrows(PieNotFoundException.class, () -> service.copy(ACCOUNT, "jay", UUID.randomUUID(), true));
+        verify(accountPieRepository, never()).save(any());
+    }
+
+    @Test
+    void previewCopyAndCopy_inactiveAccount_refused() {
+        doThrow(new AccountNotActiveException("SUSPENDED")).when(account).validateStatus();
+
+        assertThrows(AccountNotActiveException.class, () -> service.previewCopy(ACCOUNT, "jay", PIE_ID));
+        assertThrows(AccountNotActiveException.class, () -> service.copy(ACCOUNT, "jay", PIE_ID, true));
+        verify(accountPieRepository, never()).save(any());
+        verifyNoInteractions(runService);
+    }
+
+    @Test
+    void copy_linksTheAccountAsACopyAndThenStartsTheRun() {
+        RebalanceRunResponse run = mock(RebalanceRunResponse.class);
+        when(runService.start(ACCOUNT)).thenReturn(run);
+
+        assertSame(run, service.copy(ACCOUNT, "jay", PIE_ID, false));
+
+        ArgumentCaptor<AccountPie> saved = ArgumentCaptor.forClass(AccountPie.class);
+        InOrder order = inOrder(accountPieRepository, runService);
+        order.verify(accountPieRepository).save(saved.capture());
+        order.verify(runService).start(ACCOUNT);
+        assertEquals(PieLinkMode.COPY, saved.getValue().getMode());
+        assertEquals(PIE_ID, saved.getValue().getPieId());
+        assertFalse(saved.getValue().isAutoSync());
+        assertNull(saved.getValue().getAppliedVersion());
+    }
+
+    @Test
+    void copy_alreadyCopyingThePie_conflict() {
+        copyOf(1);
+
+        assertThrows(RebalanceConflictException.class, () -> service.copy(ACCOUNT, "jay", PIE_ID, true));
+        verify(accountPieRepository, never()).save(any());
+        verifyNoInteractions(runService);
+    }
+
+    @Test
+    void updateCopySettings_turningItOffDropsTheWaitingSync() {
+        copyOf(1);
+        AccountPie link = accountPieRepository.findById(ACCOUNT).orElseThrow();
+        link.setSyncPending(true);
+        portfolio("0");
+
+        AccountPieResponse response = service.updateCopySettings(ACCOUNT, false);
+
+        assertFalse(link.isAutoSync());
+        assertFalse(link.isSyncPending());
+        assertFalse(response.isAutoSync());
+        verifyNoInteractions(runService);
+    }
+
+    @Test
+    void updateCopySettings_ownLink_conflict() {
+        linked();
+
+        assertThrows(RebalanceConflictException.class, () -> service.updateCopySettings(ACCOUNT, true));
+    }
+
+    @Test
+    void get_copyBehindAPublicPie_offersTheUpdate() {
+        copyOf(1);
+        UUID runId = UUID.randomUUID();
+        RebalanceRun run = mock(RebalanceRun.class);
+        when(run.getRunId()).thenReturn(runId);
+        when(rebalanceRunRepository.findFirstByAccountIdAndStatusIn(ACCOUNT, RebalanceStatus.ACTIVE))
+            .thenReturn(Optional.of(run));
+        portfolio("1000");
+
+        AccountPieResponse response = service.get(ACCOUNT);
+
+        assertTrue(response.isPublished());
+        assertTrue(response.isUpdateAvailable());
+        assertTrue(response.isAutoSync());
+        assertEquals(1, response.getAppliedVersion());
+        assertEquals(2, response.getLatestVersion());
+        assertEquals(runId, response.getActiveRunId());
+    }
+
+    @Test
+    void getAndPreview_copyOfAPieNoLongerPublic_stayOnTheAppliedVersion() {
+        copyOf(1);
+        when(pie.isPublished()).thenReturn(false);
+        when(pie.getLatestVersion()).thenReturn(3);  // the author kept editing in private
+        Map<String, BigDecimal> applied = new LinkedHashMap<>();
+        applied.put("AAPL", new BigDecimal("50"));
+        when(pieService.weightsAt(PIE_ID, 1)).thenReturn(applied);
+        portfolio("1000");
+        when(priceService.getCurrentPrice(any())).thenReturn(new BigDecimal("100"));
+
+        AccountPieResponse response = service.get(ACCOUNT);
+        RebalancePreviewResponse preview = service.preview(ACCOUNT);
+
+        assertFalse(response.isPublished());
+        assertFalse(response.isUpdateAvailable());
+        assertEquals(1, response.getLatestVersion());
+        assertEquals(1, preview.getVersion());
+        assertEquals(List.of("AAPL"), preview.getLegs().stream().filter(l -> l.isInPie()).map(l -> l.getSymbol()).toList());
+        verify(pieService, never()).weightsAt(PIE_ID, 3);
+    }
+
+    @Test
+    void getAndPreview_copyOfAPieNoLongerPublicWithNothingApplied_hasNoTarget() {
+        copyOf(null);
+        when(pie.isPublished()).thenReturn(false);
+
+        AccountPieResponse response = service.get(ACCOUNT);
+
+        assertTrue(response.getDrift().isEmpty());
+        assertEquals(0, response.getLatestVersion());
+        assertThrows(PieNotFoundException.class, () -> service.preview(ACCOUNT));
+        verifyNoInteractions(portfolioService);
+    }
+
+    // ---------- make it mine ----------
+
+    @Test
+    void makeMine_duplicatesTheAppliedVersionAndRelinksWithoutOrders() {
+        copyOf(1);
+        Pie mine = mock(Pie.class);
+        UUID mineId = UUID.randomUUID();
+        when(mine.getPieId()).thenReturn(mineId);
+        when(mine.getName()).thenReturn("Tech");
+        when(mine.getLatestVersion()).thenReturn(1);
+        when(pieService.duplicate("jay", pie, 1)).thenReturn(mine);
+        when(pieRepository.findById(mineId)).thenReturn(Optional.of(mine));
+        when(pieService.weightsAt(mineId, 1)).thenReturn(Map.of("AAPL", new BigDecimal("50")));
+        portfolio("1000");
+
+        AccountPieResponse response = service.makeMine(ACCOUNT, "jay");
+
+        AccountPie link = accountPieRepository.findById(ACCOUNT).orElseThrow();
+        assertEquals(PieLinkMode.OWN, link.getMode());
+        assertEquals(mineId, link.getPieId());
+        assertEquals(1, link.getAppliedVersion());
+        assertFalse(link.isAutoSync());
+        assertEquals("OWN", response.getMode());
+        assertFalse(response.isUpdateAvailable());
+        verifyNoInteractions(runService);
+    }
+
+    @Test
+    void makeMine_nothingAppliedYet_conflict() {
+        copyOf(null);
+
+        assertThrows(RebalanceConflictException.class, () -> service.makeMine(ACCOUNT, "jay"));
+        verify(pieService, never()).duplicate(any(), any(), anyInt());
+    }
+
+    @Test
+    void makeMine_ownLink_conflict() {
+        linked();
+
+        assertThrows(RebalanceConflictException.class, () -> service.makeMine(ACCOUNT, "jay"));
+    }
+
+    @Test
+    void makeMine_whileRunActive_conflict() {
+        copyOf(1);
+        when(rebalanceRunRepository.existsByAccountIdAndStatusIn(ACCOUNT, RebalanceStatus.ACTIVE)).thenReturn(true);
+
+        assertThrows(RebalanceConflictException.class, () -> service.makeMine(ACCOUNT, "jay"));
+        verify(pieService, never()).duplicate(any(), any(), anyInt());
     }
 }
