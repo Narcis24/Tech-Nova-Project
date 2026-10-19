@@ -1,6 +1,9 @@
 export * from './accountResponse';
+export * from './adminUserResponse';
 export * from './balanceResponse';
 export * from './cashAmountRequest';
+export * from './createUserRequest';
+export * from './createUserResponse';
 export * from './instrumentResponse';
 export * from './marketAssetResponse';
 export * from './openAccountRequest';
@@ -15,3 +18,4 @@ export * from './priceResponse';
 export * from './riskLimitResponse';
 export * from './riskWarning';
 export * from './updateRiskLimitRequest';
+export * from './updateRolesRequest';

@@ -6,12 +6,25 @@ import {
 } from '@nestjs/common';
 import pg from 'pg';
 
-export interface User {
+/** Who an access token is for: its sub and roles claims. */
+export interface TokenOwner {
   username: string;
-  passwordHash: string;
+  roles: string[];
 }
 
-export interface NewUser extends User {
+export interface User extends TokenOwner {
+  /** Null for an account an admin created whose owner has not set a password yet. */
+  passwordHash: string | null;
+}
+
+// ARRAY(...) rather than array_agg: a user with no role gets an empty list, not null
+const SELECT_USER = `SELECT username, password_hash,
+  ARRAY(SELECT role FROM user_roles r WHERE r.username = users.username ORDER BY role) AS roles
+  FROM users`;
+
+export interface NewUser {
+  username: string;
+  passwordHash: string;
   email: string;
 }
 
@@ -33,7 +46,7 @@ export class AuthRepository implements OnModuleInit, OnModuleDestroy {
     );
   }
 
-  /** Fails startup if the database is unreachable or a table or column is missing (run migrations V010 and V012). */
+  /** Fails startup if the database is unreachable or a table or column is missing (run migrations V010, V012 and V013). */
   async onModuleInit() {
     if (process.env.DB_PASSWORD === undefined) {
       throw new Error('DB_PASSWORD is not set');
@@ -41,6 +54,7 @@ export class AuthRepository implements OnModuleInit, OnModuleDestroy {
     await this.pool.query(
       'SELECT username, password_hash, email FROM users LIMIT 0',
     );
+    await this.pool.query('SELECT username, role FROM user_roles LIMIT 0');
     await this.pool.query(
       'SELECT token_hash, username, expires_at, revoked_at FROM refresh_tokens LIMIT 0',
     );
@@ -54,38 +68,45 @@ export class AuthRepository implements OnModuleInit, OnModuleDestroy {
   }
 
   async findUser(username: string): Promise<User | null> {
-    const { rows } = await this.pool.query<{
-      username: string;
-      password_hash: string;
-    }>('SELECT username, password_hash FROM users WHERE username = $1', [
-      username,
-    ]);
-    return rows.length === 0
-      ? null
-      : { username: rows[0].username, passwordHash: rows[0].password_hash };
+    return this.findOneUser(`${SELECT_USER} WHERE username = $1`, username);
   }
 
   /** Ignores the case of the email. */
   async findUserByEmail(email: string): Promise<User | null> {
-    const { rows } = await this.pool.query<{
-      username: string;
-      password_hash: string;
-    }>(
-      'SELECT username, password_hash FROM users WHERE LOWER(email) = LOWER($1)',
-      [email],
+    return this.findOneUser(
+      `${SELECT_USER} WHERE LOWER(email) = LOWER($1)`,
+      email,
     );
-    return rows.length === 0
-      ? null
-      : { username: rows[0].username, passwordHash: rows[0].password_hash };
   }
 
-  /** False if the username or the email (ignoring case) is taken. */
+  /** Registers the user as a TRADER. False if the username or the email (ignoring case) is taken. */
   async createUser(user: NewUser): Promise<boolean> {
+    // One statement, so a user is never left without a role
     const { rowCount } = await this.pool.query(
-      'INSERT INTO users (username, password_hash, email) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+      `WITH created AS (
+         INSERT INTO users (username, password_hash, email) VALUES ($1, $2, $3)
+         ON CONFLICT DO NOTHING
+         RETURNING username
+       )
+       INSERT INTO user_roles (username, role) SELECT username, 'TRADER' FROM created`,
       [user.username, user.passwordHash, user.email],
     );
     return rowCount === 1;
+  }
+
+  private async findOneUser(sql: string, param: string): Promise<User | null> {
+    const { rows } = await this.pool.query<{
+      username: string;
+      password_hash: string | null;
+      roles: string[];
+    }>(sql, [param]);
+    return rows.length === 0
+      ? null
+      : {
+          username: rows[0].username,
+          passwordHash: rows[0].password_hash,
+          roles: rows[0].roles,
+        };
   }
 
   async saveRefreshToken(
@@ -107,19 +128,24 @@ export class AuthRepository implements OnModuleInit, OnModuleDestroy {
     oldHash: string,
     newHash: string,
     ttlSeconds: number,
-  ): Promise<string | null> {
-    const { rows } = await this.pool.query<{ username: string }>(
+  ): Promise<TokenOwner | null> {
+    const { rows } = await this.pool.query<TokenOwner>(
       `WITH used AS (
          UPDATE refresh_tokens SET revoked_at = now()
          WHERE token_hash = $1 AND revoked_at IS NULL AND expires_at > now()
          RETURNING username
+       ),
+       issued AS (
+         INSERT INTO refresh_tokens (token_hash, username, expires_at)
+         SELECT $2, username, now() + $3 * interval '1 second' FROM used
+         RETURNING username
        )
-       INSERT INTO refresh_tokens (token_hash, username, expires_at)
-       SELECT $2, username, now() + $3 * interval '1 second' FROM used
-       RETURNING username`,
+       SELECT username,
+              ARRAY(SELECT role FROM user_roles r WHERE r.username = issued.username ORDER BY role) AS roles
+       FROM issued`,
       [oldHash, newHash, ttlSeconds],
     );
-    return rows.length === 0 ? null : rows[0].username;
+    return rows.length === 0 ? null : rows[0];
   }
 
   async revokeRefreshToken(tokenHash: string) {

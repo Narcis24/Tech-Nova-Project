@@ -16,6 +16,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-technova}
       POSTGRES_USER: ${POSTGRES_USER:-technova}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      # Read once, when the volume is first created (V014); empty means no test admin
+      TEST_ADMIN_PASSWORD: ${TEST_ADMIN_PASSWORD:-}
 
     volumes:
       - db_data:/var/lib/postgresql/data
@@ -62,6 +64,9 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
 
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+
+      # Invite emails for users an admin creates go through auth-service
+      AUTH_URL: http://auth-service:8082
 
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
 

@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import { createHash, randomBytes } from 'node:crypto';
-import { AuthRepository } from './auth.repository.js';
+import { AuthRepository, TokenOwner } from './auth.repository.js';
 import type {
   Credentials,
   RegisterRequest,
@@ -64,7 +64,8 @@ export class AuthService {
     const matches = await bcrypt
       .compare(password, user?.passwordHash ?? DUMMY_HASH)
       .catch(() => false);
-    if (user === null || !matches) {
+    // No role means no access; same message, so the response does not reveal the account exists
+    if (user === null || !matches || user.roles.length === 0) {
       throw new UnauthorizedException('Invalid username or password');
     }
 
@@ -74,20 +75,21 @@ export class AuthService {
       user.username,
       REFRESH_TOKEN_SECONDS,
     );
-    return this.tokenResponse(user.username, refreshToken);
+    return this.tokenResponse(user, refreshToken);
   }
 
+  /** The new access token carries the user's roles as they are now, so a role change shows up here. */
   async refresh(refreshToken: string): Promise<TokenResponse> {
     const next = randomBytes(32).toString('base64url');
-    const username = await this.repository.rotateRefreshToken(
+    const owner = await this.repository.rotateRefreshToken(
       hashToken(refreshToken),
       hashToken(next),
       REFRESH_TOKEN_SECONDS,
     );
-    if (username === null) {
+    if (owner === null || owner.roles.length === 0) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
-    return this.tokenResponse(username, next);
+    return this.tokenResponse(owner, next);
   }
 
   async logout(refreshToken: string): Promise<void> {
@@ -132,9 +134,12 @@ export class AuthService {
     }
   }
 
-  private tokenResponse(username: string, refreshToken: string): TokenResponse {
+  private tokenResponse(
+    { username, roles }: TokenOwner,
+    refreshToken: string,
+  ): TokenResponse {
     return {
-      accessToken: this.jwtService.generateAccessToken(username),
+      accessToken: this.jwtService.generateAccessToken(username, roles),
       refreshToken,
       tokenType: 'Bearer',
       expiresIn: ACCESS_TOKEN_SECONDS,

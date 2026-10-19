@@ -4,7 +4,12 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
-import { AuthRepository, NewUser, User } from './auth.repository.js';
+import {
+  AuthRepository,
+  NewUser,
+  TokenOwner,
+  User,
+} from './auth.repository.js';
 import { AuthService, hashToken } from './auth.service.js';
 import { JwtService } from './jwt.service.js';
 import { MailService } from './mail.service.js';
@@ -22,7 +27,7 @@ describe('AuthService', () => {
           oldHash: string,
           newHash: string,
           ttl: number,
-        ) => Promise<string | null>
+        ) => Promise<TokenOwner | null>
       >(),
     revokeRefreshToken: vi.fn<(hash: string) => Promise<void>>(),
     saveResetToken:
@@ -74,6 +79,7 @@ describe('AuthService', () => {
     repository.findUser.mockResolvedValue({
       username: 'john_doe1',
       passwordHash,
+      roles: ['TRADER'],
     });
 
     const response = await authService.login(credentials);
@@ -84,11 +90,53 @@ describe('AuthService', () => {
       tokenType: 'Bearer',
       expiresIn: 900,
     });
-    expect(jwtService.generateAccessToken).toHaveBeenCalledWith('john_doe1');
+    expect(jwtService.generateAccessToken).toHaveBeenCalledWith('john_doe1', [
+      'TRADER',
+    ]);
     expect(repository.saveRefreshToken).toHaveBeenCalledWith(
       hashToken(response.refreshToken),
       'john_doe1',
       SEVEN_DAYS,
+    );
+  });
+
+  it('puts every role of the user into the access token', async () => {
+    repository.findUser.mockResolvedValue({
+      username: 'john_doe1',
+      passwordHash: await bcrypt.hash('Something123@', 4),
+      roles: ['ADMIN', 'TRADER'],
+    });
+
+    await authService.login(credentials);
+
+    expect(jwtService.generateAccessToken).toHaveBeenCalledWith('john_doe1', [
+      'ADMIN',
+      'TRADER',
+    ]);
+  });
+
+  it('refuses a user with no role the same way as a wrong password', async () => {
+    repository.findUser.mockResolvedValue({
+      username: 'john_doe1',
+      passwordHash: await bcrypt.hash('Something123@', 4),
+      roles: [],
+    });
+
+    await expect(authService.login(credentials)).rejects.toThrow(
+      new UnauthorizedException('Invalid username or password'),
+    );
+    expect(repository.saveRefreshToken).not.toHaveBeenCalled();
+  });
+
+  it('refuses an account whose password was never set', async () => {
+    repository.findUser.mockResolvedValue({
+      username: 'john_doe1',
+      passwordHash: null,
+      roles: ['TRADER'],
+    });
+
+    await expect(authService.login(credentials)).rejects.toThrow(
+      new UnauthorizedException('Invalid username or password'),
     );
   });
 
@@ -101,12 +149,14 @@ describe('AuthService', () => {
     repository.findUser.mockResolvedValue({
       username: 'john_doe1',
       passwordHash: await bcrypt.hash('another-password', 4),
+      roles: ['TRADER'],
     });
     await expect(authService.login(credentials)).rejects.toThrow(expected);
 
     repository.findUser.mockResolvedValue({
       username: 'john_doe1',
       passwordHash: 'not-a-hash',
+      roles: ['TRADER'],
     });
     await expect(authService.login(credentials)).rejects.toThrow(expected);
 
@@ -127,8 +177,11 @@ describe('AuthService', () => {
     compare.mockRestore();
   });
 
-  it('rotates a refresh token', async () => {
-    repository.rotateRefreshToken.mockResolvedValue('john_doe1');
+  it('rotates a refresh token and issues an access token with the current roles', async () => {
+    repository.rotateRefreshToken.mockResolvedValue({
+      username: 'john_doe1',
+      roles: ['ADMIN', 'TRADER'],
+    });
 
     const response = await authService.refresh('old-token');
 
@@ -138,7 +191,10 @@ describe('AuthService', () => {
       hashToken(response.refreshToken),
       SEVEN_DAYS,
     );
-    expect(jwtService.generateAccessToken).toHaveBeenCalledWith('john_doe1');
+    expect(jwtService.generateAccessToken).toHaveBeenCalledWith('john_doe1', [
+      'ADMIN',
+      'TRADER',
+    ]);
   });
 
   it('rejects an unusable refresh token with 401', async () => {
@@ -147,6 +203,18 @@ describe('AuthService', () => {
     await expect(authService.refresh('old-token')).rejects.toThrow(
       new UnauthorizedException('Invalid or expired refresh token'),
     );
+  });
+
+  it('rejects a refresh for a user who no longer has a role', async () => {
+    repository.rotateRefreshToken.mockResolvedValue({
+      username: 'john_doe1',
+      roles: [],
+    });
+
+    await expect(authService.refresh('old-token')).rejects.toThrow(
+      new UnauthorizedException('Invalid or expired refresh token'),
+    );
+    expect(jwtService.generateAccessToken).not.toHaveBeenCalled();
   });
 
   it('logs out by revoking the hash', async () => {
@@ -161,6 +229,7 @@ describe('AuthService', () => {
       repository.findUserByEmail.mockResolvedValue({
         username: 'john_doe1',
         passwordHash: 'x',
+        roles: ['TRADER'],
       });
 
       await authService.forgotPassword('john.doe@example.com');
@@ -189,6 +258,7 @@ describe('AuthService', () => {
       repository.findUserByEmail.mockResolvedValue({
         username: 'john_doe1',
         passwordHash: 'x',
+        roles: ['TRADER'],
       });
       mailService.sendPasswordReset.mockRejectedValueOnce(
         new Error('connection refused'),

@@ -1,6 +1,7 @@
 api.base.service.ts
 api.module.ts
 api/accountController.service.ts
+api/adminUserController.service.ts
 api/api.ts
 api/dashboardController.service.ts
 api/instrumentController.service.ts
@@ -14,8 +15,11 @@ configuration.ts
 encoder.ts
 index.ts
 model/accountResponse.ts
+model/adminUserResponse.ts
 model/balanceResponse.ts
 model/cashAmountRequest.ts
+model/createUserRequest.ts
+model/createUserResponse.ts
 model/instrumentResponse.ts
 model/marketAssetResponse.ts
 model/models.ts
@@ -31,6 +35,7 @@ model/priceResponse.ts
 model/riskLimitResponse.ts
 model/riskWarning.ts
 model/updateRiskLimitRequest.ts
+model/updateRolesRequest.ts
 param.ts
 provide-api.ts
 query.params.ts
