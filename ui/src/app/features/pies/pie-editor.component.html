@@ -6,6 +6,9 @@
   <p class="error" role="alert">Couldn't load this pie.</p>
   <a routerLink="/pies">Back to pies</a>
 } @else {
+  @if (instrumentError()) {
+    <p class="error" role="alert">Couldn't load stocks. Reload the page to try again.</p>
+  }
   <form (submit)="$event.preventDefault(); save()">
     <div class="field">
       <label for="name">Name</label>
@@ -38,6 +41,9 @@
               (change)="setRow($index, { symbol: $any($event.target).value })"
             >
               <option value="" [selected]="!row.symbol">Choose a stock</option>
+              @if (row.symbol && !isTradable(row.symbol)) {
+                <option [value]="row.symbol" selected>{{ row.symbol }} · Unavailable</option>
+              }
               @for (instrument of instruments(); track instrument.symbol) {
                 <option [value]="instrument.symbol" [selected]="instrument.symbol === row.symbol">
                   {{ instrument.symbol }} · {{ instrument.name }}

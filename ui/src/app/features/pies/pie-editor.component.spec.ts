@@ -163,4 +163,27 @@ describe('PieEditorComponent', () => {
     expect(root.querySelector('[role="alert"]')?.textContent).toContain('Symbol is not tradable');
     expect(navigate).not.toHaveBeenCalled();
   });
+
+  it('keeps an unavailable saved symbol visible and blocks saving until it is replaced', () => {
+    pies.get.and.returnValue(of({ ...PIE, slices: [{ symbol: 'OLD', weightPct: 50 }] }));
+    create('p1');
+    expect(symbols()[0].selectedOptions[0].textContent).toContain('OLD · Unavailable');
+    expect(button('Save').disabled).toBeTrue();
+    fixture.componentInstance.save();
+    expect(pies.update).not.toHaveBeenCalled();
+
+    type(symbols()[0], 'AAPL');
+    expect(button('Save').disabled).toBeFalse();
+  });
+
+  it('shows an instrument load failure and blocks saving', () => {
+    TestBed.overrideProvider(InstrumentControllerService, {
+      useValue: { getInstruments: () => throwError(() => new Error('offline')) },
+    });
+    create('p1');
+    expect(root.querySelector('[role="alert"]')?.textContent).toContain("Couldn't load stocks");
+    expect(button('Save').disabled).toBeTrue();
+    fixture.componentInstance.save();
+    expect(pies.update).not.toHaveBeenCalled();
+  });
 });

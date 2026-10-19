@@ -27,11 +27,17 @@ export class PieEditorComponent {
   private readonly api = inject(PieControllerService);
   private readonly router = inject(Router);
   readonly pieId = inject(ActivatedRoute).snapshot.paramMap.get('pieId');
+  readonly instrumentError = signal(false);
 
   readonly instruments = toSignal(
     inject(InstrumentControllerService)
       .getInstruments(true)
-      .pipe(catchError(() => of([]))),
+      .pipe(
+        catchError(() => {
+          this.instrumentError.set(true);
+          return of([]);
+        }),
+      ),
     {
       initialValue: [],
     },
@@ -68,8 +74,9 @@ export class PieEditorComponent {
     return (
       name.length > 0 &&
       name.length <= NAME_MAX &&
+      !this.instrumentError() &&
       this.rows().length > 0 &&
-      this.rows().every((r) => r.symbol) &&
+      this.rows().every((r) => this.isTradable(r.symbol)) &&
       this.weights().every((w) => w > 0) &&
       !this.overAllocated() &&
       !this.duplicate()
@@ -95,6 +102,10 @@ export class PieEditorComponent {
 
   addRow(): void {
     this.rows.update((rows) => [...rows, { symbol: '', weight: '' }]);
+  }
+
+  isTradable(symbol: string): boolean {
+    return this.instruments().some((instrument) => instrument.symbol === symbol);
   }
 
   removeRow(index: number): void {
