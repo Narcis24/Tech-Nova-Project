@@ -1,7 +1,6 @@
 package com.neueda.app.repositories;
 
 import com.neueda.app.models.AccountPie;
-import com.neueda.app.enums.PieLinkMode;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -15,7 +14,6 @@ public interface AccountPieRepository extends JpaRepository<AccountPie, String> 
     List<AccountPie> findByPieId(UUID pieId);
 
     boolean existsByPieIdAndAccountIdIn(UUID pieId, Collection<String> accountIds);
-    boolean existsByPieIdAndMode(UUID pieId, PieLinkMode mode);
 
     /** Number of accounts copying each pie. Pies nobody copies are absent. */
     @Query("select a.pieId as pieId, count(a) as followers from AccountPie a "

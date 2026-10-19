@@ -2,7 +2,6 @@ export * from './accountPieResponse';
 export * from './accountResponse';
 export * from './balanceResponse';
 export * from './cashAmountRequest';
-export * from './indexPoint';
 export * from './instrumentResponse';
 export * from './linkPieRequest';
 export * from './marketAssetResponse';

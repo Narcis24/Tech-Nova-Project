@@ -18,13 +18,9 @@
       <h2 id="publishing-heading">{{ published() ? 'Public' : 'Private' }}</h2>
       @if (published()) {
         <p>On Discover since {{ pie.publishedAt | date: 'mediumDate' }}.</p>
-        <p>Unpublishing clears this performance history. Publishing again starts from 100.</p>
         <a [routerLink]="['/discover', pie.pieId]">View public page</a>
       } @else {
-        <p>
-          Publish to show this pie's stocks, weights and performance on Discover. Performance counts from the day you
-          publish. Your accounts and balances stay private.
-        </p>
+        <p>Publish to show this pie's stocks and weights on Discover. Your accounts and balances stay private.</p>
       }
     </div>
     <button type="button" [class.secondary]="published()" [disabled]="working()" (click)="togglePublished()">

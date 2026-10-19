@@ -5,7 +5,6 @@ import com.neueda.app.dtos.PieSliceRequest;
 import com.neueda.app.dtos.PieSliceResponse;
 import com.neueda.app.dtos.SavePieRequest;
 import com.neueda.app.exceptions.InvalidPieException;
-import com.neueda.app.exceptions.PieEditTooSoonException;
 import com.neueda.app.exceptions.PieInUseException;
 import com.neueda.app.exceptions.PieNotFoundException;
 import com.neueda.app.services.AccountAccess;
@@ -161,13 +160,4 @@ class PieControllerTest {
             .andExpect(jsonPath("$.publishedAt").doesNotExist());
     }
 
-    @Test
-    void update_publicPieEditedTooSoon_409() throws Exception {
-        when(pieService.update(eq(PIE_ID), eq("jay"), any(SavePieRequest.class)))
-            .thenThrow(new PieEditTooSoonException("once every 24 hours"));
-
-        mockMvc.perform(put("/v1/pies/" + PIE_ID).contentType(MediaType.APPLICATION_JSON).content(body("Tech")))
-            .andExpect(status().isConflict())
-            .andExpect(jsonPath("$.errorCode").value("PIE_EDIT_TOO_SOON"));
-    }
 }

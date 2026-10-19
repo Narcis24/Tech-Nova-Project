@@ -6,7 +6,6 @@ import com.neueda.app.models.AccountPie;
 import com.neueda.app.models.Pie;
 import com.neueda.app.models.PieSlice;
 import com.neueda.app.models.PieVersion;
-import com.neueda.app.models.Price;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -14,7 +13,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -42,9 +40,6 @@ class PieRepositoryTest {
 
     @Autowired
     private AccountPieRepository accountPies;
-
-    @Autowired
-    private PriceRepository prices;
 
     @Test
     void savesPieWithVersionAndSlices_andReadsSlicesByWeight() {
@@ -113,37 +108,6 @@ class PieRepositoryTest {
         assertEquals(List.of(shown.getPieId()), found.stream().map(Pie::getPieId).toList());
         assertTrue(pies.findByPieIdAndVisibilityAndDeletedAtIsNull(shown.getPieId(), PieVisibility.PUBLIC).isPresent());
         assertTrue(pies.findByPieIdAndVisibilityAndDeletedAtIsNull(deleted.getPieId(), PieVisibility.PUBLIC).isEmpty());
-        assertTrue(pies.lockPublic(shown.getPieId()).isPresent());
-        assertTrue(pies.lockPublic(deleted.getPieId()).isEmpty());
-    }
-
-    @Test
-    void lockPublic_ignoresPrivatePie() {
-        Pie pie = pies.save(Pie.create("jay", "Private", null));
-
-        assertTrue(pies.lockPublic(pie.getPieId()).isEmpty());
-        pie.publish(LocalDateTime.now(ZoneOffset.UTC));
-        pies.save(pie);
-        assertTrue(pies.lockPublic(pie.getPieId()).isPresent());
-    }
-
-    @Test
-    void versionQueries_findNewVersionsAndTheOneLiveAtAnInstant() {
-        Pie pie = pies.save(Pie.create("jay", "Core", null));
-        LocalDateTime t1 = LocalDateTime.of(2026, 3, 1, 9, 0);
-        LocalDateTime t2 = LocalDateTime.of(2026, 3, 5, 9, 0);
-        versions.save(new PieVersion(pie.getPieId(), 1, t1));
-        assertFalse(versions.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(pie.getPieId(), 1, t1.minusSeconds(1)));
-        versions.save(new PieVersion(pie.getPieId(), 2, t2));
-
-        assertTrue(versions.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(pie.getPieId(), 1, t2.minusSeconds(1)));
-        assertFalse(versions.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(pie.getPieId(), 1, t2));
-        assertEquals(2, versions.findFirstByPieIdAndCreatedAtBeforeOrderByVersionDesc(pie.getPieId(), t2.plusSeconds(1))
-            .orElseThrow().getVersion());
-        // created exactly at the instant is not yet live
-        assertEquals(1, versions.findFirstByPieIdAndCreatedAtBeforeOrderByVersionDesc(pie.getPieId(), t2)
-            .orElseThrow().getVersion());
-        assertTrue(versions.findFirstByPieIdAndCreatedAtBeforeOrderByVersionDesc(pie.getPieId(), t1).isEmpty());
     }
 
     @Test
@@ -163,20 +127,4 @@ class PieRepositoryTest {
         assertEquals(Map.of(pie.getPieId(), 2L), counts);
     }
 
-    @Test
-    void findClosesOnOrBefore_isTheLatestCloseByThatDay() {
-        prices.save(new Price("AAPL", LocalDate.of(2026, 3, 5), new BigDecimal("100")));
-        prices.save(new Price("AAPL", LocalDate.of(2026, 3, 9), new BigDecimal("120")));
-        prices.save(new Price("MSFT", LocalDate.of(2026, 3, 9), new BigDecimal("300")));
-
-        Map<String, BigDecimal> weekend = prices.findClosesOnOrBefore(List.of("AAPL", "MSFT", "NOPE"), LocalDate.of(2026, 3, 8))
-            .stream().collect(Collectors.toMap(Price::getSymbol, Price::getPrice));
-        Map<String, BigDecimal> monday = prices.findClosesOnOrBefore(List.of("AAPL", "MSFT"), LocalDate.of(2026, 3, 9))
-            .stream().collect(Collectors.toMap(Price::getSymbol, Price::getPrice));
-
-        assertEquals(0, new BigDecimal("100").compareTo(weekend.get("AAPL")));
-        assertEquals(1, weekend.size()); // MSFT has no bar yet, NOPE never will
-        assertEquals(0, new BigDecimal("120").compareTo(monday.get("AAPL")));
-        assertEquals(0, new BigDecimal("300").compareTo(monday.get("MSFT")));
-    }
 }

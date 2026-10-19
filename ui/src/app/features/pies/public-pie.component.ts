@@ -7,25 +7,20 @@ import { catchError, map, of, startWith, switchMap } from 'rxjs';
 
 import { DonutChartComponent } from '../../components/donut-chart/donut-chart.component';
 import { PublicPieControllerService, PublicPieResponse } from '../../generated/trading-api-client';
-import { IndexChartComponent } from './index-chart.component';
-import { WINDOWS, formatReturn, returnTone } from './pie-return';
 
 type State =
   { status: 'loading' } | { status: 'missing' } | { status: 'error' } | { status: 'ready'; pie: PublicPieResponse };
 
-/** One public pie: who runs it, how it has performed, and what it holds. */
+/** One public allocation template and its author. */
 @Component({
   selector: 'app-public-pie',
-  imports: [DatePipe, DecimalPipe, DonutChartComponent, IndexChartComponent, RouterLink],
+  imports: [DatePipe, DecimalPipe, DonutChartComponent, RouterLink],
   templateUrl: './public-pie.component.html',
   styleUrls: ['./pies-shared.css', './public-pie.component.css'],
 })
 export class PublicPieComponent {
   private readonly api = inject(PublicPieControllerService);
   private readonly pieId = inject(ActivatedRoute).snapshot.paramMap.get('pieId')!;
-  readonly windows = WINDOWS;
-  readonly formatReturn = formatReturn;
-  readonly returnTone = returnTone;
 
   readonly state = signal<State>({ status: 'loading' });
   readonly current = computed(() => {
@@ -38,7 +33,6 @@ export class PublicPieComponent {
     const slices = (pie.slices ?? []).map((s) => ({ label: s.symbol ?? '', pct: Number(s.weightPct) }));
     return pie.cashPct ? [...slices, { label: 'Cash', pct: Number(pie.cashPct) }] : slices;
   });
-  readonly pending = computed(() => this.windows.some((w) => this.current()?.returns?.[w] == null));
   private readonly revision = signal(0);
 
   constructor() {

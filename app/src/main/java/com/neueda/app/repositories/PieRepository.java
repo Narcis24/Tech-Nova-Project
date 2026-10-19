@@ -18,14 +18,10 @@ public interface PieRepository extends JpaRepository<Pie, UUID> {
 
     Optional<Pie> findByPieIdAndOwnerUsernameAndDeletedAtIsNull(UUID id, String owner);
 
-    /** Locks the row until the transaction ends, so edits, publishing and the index job of one pie run one at a time. */
+    /** Locks the row until the transaction ends, so edits and publishing of one pie run one at a time. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from Pie p where p.pieId = :id and p.ownerUsername = :owner and p.deletedAt is null")
     Optional<Pie> lockOwned(@Param("id") UUID id, @Param("owner") String owner);
-
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select p from Pie p where p.pieId = :id and p.visibility = com.neueda.app.enums.PieVisibility.PUBLIC and p.deletedAt is null")
-    Optional<Pie> lockPublic(@Param("id") UUID id);
 
     List<Pie> findByVisibilityAndDeletedAtIsNull(PieVisibility visibility);
 

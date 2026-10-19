@@ -27,7 +27,6 @@ import com.neueda.app.exceptions.InvalidOrderStateException;
 import com.neueda.app.exceptions.InvalidPieException;
 import com.neueda.app.exceptions.OrderNotFoundException;
 import com.neueda.app.exceptions.OrderNotTriggeredException;
-import com.neueda.app.exceptions.PieEditTooSoonException;
 import com.neueda.app.exceptions.PieInUseException;
 import com.neueda.app.exceptions.PieNotFoundException;
 import com.neueda.app.exceptions.PieNotLinkedException;
@@ -88,12 +87,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleInvalidPie(InvalidPieException ex) {
         ErrorResponse error = new ErrorResponse("INVALID_PIE", ex.getMessage(), 422);
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
-    }
-
-    @ExceptionHandler(PieEditTooSoonException.class)
-    public ResponseEntity<ErrorResponse> handlePieEditTooSoon(PieEditTooSoonException ex) {
-        ErrorResponse error = new ErrorResponse("PIE_EDIT_TOO_SOON", ex.getMessage(), 409);
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(PieInUseException.class)

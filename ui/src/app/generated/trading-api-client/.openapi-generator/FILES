@@ -21,7 +21,6 @@ model/accountPieResponse.ts
 model/accountResponse.ts
 model/balanceResponse.ts
 model/cashAmountRequest.ts
-model/indexPoint.ts
 model/instrumentResponse.ts
 model/linkPieRequest.ts
 model/marketAssetResponse.ts

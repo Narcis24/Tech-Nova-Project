@@ -42,7 +42,6 @@ test('publishes a pie, finds it on Discover, then unpublishes it', async ({ page
   await expect(page.locator('.holdings')).toContainText('Cash');
 
   await page.getByRole('link', { name: 'Back to Discover' }).click();
-  await page.getByRole('button', { name: 'ALL', exact: true }).click();
   await expect(page.getByRole('link', { name: pieName, exact: true })).toBeVisible();
   await expect(page.locator('.entry', { hasText: pieName })).toContainText(`by ${username}`);
 
@@ -53,7 +52,6 @@ test('publishes a pie, finds it on Discover, then unpublishes it', async ({ page
 
   await page.getByRole('link', { name: 'Back to pies' }).click();
   await page.getByRole('navigation', { name: 'Pies' }).getByRole('link', { name: 'Discover' }).click();
-  await page.getByRole('button', { name: 'ALL', exact: true }).click();
   await expect(page.locator('.entry').first()).toBeVisible();
   await expect(page.getByRole('link', { name: pieName, exact: true })).toHaveCount(0);
 

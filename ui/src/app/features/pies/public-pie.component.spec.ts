@@ -1,5 +1,4 @@
-import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { Observable, Subject, of, throwError } from 'rxjs';
@@ -21,12 +20,6 @@ const PIE: PublicPieResponse = {
     { symbol: 'AAPL', name: 'Apple', weightPct: 50 },
     { symbol: 'MSFT', name: 'Microsoft', weightPct: 40 },
   ],
-  points: [
-    { date: '2026-03-02', value: 100 },
-    { date: '2026-03-03', value: 103 },
-    { date: '2026-03-04', value: 101.5 },
-  ],
-  returns: { '7D': 1.5, '30D': -2, ALL: 1.5 },
 };
 
 /** The visible text of each child, as a row would read aloud. */
@@ -54,8 +47,6 @@ describe('PublicPieComponent', () => {
       imports: [PublicPieComponent],
       providers: [
         provideRouter([]),
-        provideHttpClient(),
-        provideHttpClientTesting(),
         { provide: PublicPieControllerService, useValue: api },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'p1' } } } },
       ],
@@ -73,30 +64,11 @@ describe('PublicPieComponent', () => {
     expect(root.querySelector('.back')!.getAttribute('href')).toBe('/discover');
   });
 
-  it('shows returns for each window, followers and a dash where the pie is too new', () => {
+  it('shows followers without performance rankings or history', () => {
     create();
-    const stats = Array.from(root.querySelectorAll('.stats > div')).map(cells);
-    expect(stats).toEqual([
-      '7D return +1.50%',
-      '30D return -2.00%',
-      '90D return —',
-      'ALL return +1.50%',
-      'Followers 1,200',
-    ]);
-  });
-
-  it('explains the dashes only when a window is missing', () => {
-    create();
-    expect(root.querySelector('.pending')!.textContent).toContain("hasn't been public for that long");
-    api.getPublicPie.and.returnValue(of({ ...PIE, returns: { '7D': 1, '30D': 2, '90D': 3, ALL: 4 } }));
-    fixture = TestBed.createComponent(PublicPieComponent);
-    fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.pending')).toBeNull();
-  });
-
-  it('charts the index', () => {
-    create();
-    expect(root.querySelector('app-index-chart polyline')).not.toBeNull();
+    expect(Array.from(root.querySelectorAll('.stats > div')).map(cells)).toEqual(['Followers 1,200']);
+    expect(root.querySelector('app-index-chart')).toBeNull();
+    expect(root.textContent).not.toContain('return');
   });
 
   it('lists the slices and cash', () => {

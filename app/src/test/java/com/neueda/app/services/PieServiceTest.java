@@ -1,10 +1,7 @@
 package com.neueda.app.services;
 
 import com.neueda.app.dtos.PieResponse;
-import com.neueda.app.enums.PieLinkMode;
 import com.neueda.app.enums.PieVisibility;
-import com.neueda.app.events.PieVersionSaved;
-import com.neueda.app.exceptions.PieEditTooSoonException;
 import com.neueda.app.dtos.PieSliceRequest;
 import com.neueda.app.dtos.SavePieRequest;
 import com.neueda.app.exceptions.InvalidPieException;
@@ -28,7 +25,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -54,8 +50,6 @@ class PieServiceTest {
     private AccountPieRepository accountPieRepository;
     private AccountRepository accountRepository;
     private InstrumentRepository instrumentRepository;
-    private PieIndexService pieIndexService;
-    private ApplicationEventPublisher events;
     private PieService pieService;
 
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 3, 10, 12, 0);
@@ -69,10 +63,8 @@ class PieServiceTest {
         accountPieRepository = mock(AccountPieRepository.class);
         accountRepository = mock(AccountRepository.class);
         instrumentRepository = mock(InstrumentRepository.class);
-        pieIndexService = mock(PieIndexService.class);
-        events = mock(ApplicationEventPublisher.class);
         pieService = new PieService(pieRepository, pieVersionRepository, pieSliceRepository,
-            accountPieRepository, accountRepository, instrumentRepository, pieIndexService, events, clock);
+            accountPieRepository, accountRepository, instrumentRepository, clock);
 
         when(pieRepository.save(any(Pie.class))).thenAnswer(inv -> inv.getArgument(0));
         for (String symbol : List.of("AAPL", "MSFT", "GOOG")) {
@@ -236,22 +228,7 @@ class PieServiceTest {
     }
 
     @Test
-    void followedPie_cannotBypassCooldownByUnpublishingOrRepublishing() {
-        Pie pie = publicPie(2, NOW.minusDays(2), "AAPL", "50");
-        when(accountPieRepository.existsByPieIdAndMode(pie.getPieId(), PieLinkMode.COPY))
-            .thenReturn(true);
-        when(pieVersionRepository.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(pie.getPieId(), 1, NOW.minusHours(24)))
-            .thenReturn(true);
-        pieService.unpublish(pie.getPieId(), OWNER);
-        assertThrows(PieEditTooSoonException.class,
-            () -> pieService.update(pie.getPieId(), OWNER, request("New", "AAPL", "60")));
-        pieService.publish(pie.getPieId(), OWNER);
-        assertThrows(PieEditTooSoonException.class,
-            () -> pieService.update(pie.getPieId(), OWNER, request("New", "AAPL", "60")));
-    }
-
-    @Test
-    void publish_makesPublicAndStartsIndexToday() {
+    void publish_makesPublicToday() {
         Pie pie = existingPie(2, "AAPL", "60");
 
         PieResponse response = pieService.publish(pie.getPieId(), OWNER);
@@ -259,8 +236,6 @@ class PieServiceTest {
         assertEquals("PUBLIC", response.getVisibility());
         assertEquals(NOW, response.getPublishedAt());
         assertEquals(NOW, pie.getPublishedAt());
-        verify(pieIndexService).restart(pie.getPieId(), NOW.toLocalDate());
-        verify(events).publishEvent(new PieVersionSaved(pie.getPieId(), 2));
     }
 
     @Test
@@ -271,8 +246,6 @@ class PieServiceTest {
         PieResponse response = pieService.publish(pie.getPieId(), OWNER);
 
         assertEquals(earlier, response.getPublishedAt());
-        verify(pieIndexService, never()).restart(any(), any());
-        verify(events, never()).publishEvent(any(Object.class));
     }
 
     @Test
@@ -285,7 +258,7 @@ class PieServiceTest {
     }
 
     @Test
-    void unpublish_makesPrivateAndDropsIndex() {
+    void unpublish_makesPrivate() {
         Pie pie = publicPie(1, NOW.minusDays(3), "AAPL", "60");
 
         PieResponse response = pieService.unpublish(pie.getPieId(), OWNER);
@@ -293,74 +266,31 @@ class PieServiceTest {
         assertEquals("PRIVATE", response.getVisibility());
         assertNull(response.getPublishedAt());
         assertNull(pie.getPublishedAt());
-        verify(pieIndexService).clear(pie.getPieId());
     }
 
     @Test
     void unpublish_private_changesNothing() {
         Pie pie = existingPie(1, "AAPL", "60");
 
-        pieService.unpublish(pie.getPieId(), OWNER);
+        PieResponse response = pieService.unpublish(pie.getPieId(), OWNER);
 
-        verify(pieIndexService, never()).clear(any());
+        assertEquals("PRIVATE", response.getVisibility());
+        assertNull(response.getPublishedAt());
+        assertEquals(1, response.getVersion());
     }
 
     @Test
-    void update_publicPie_firstNewVersionAllowed_andAnnounced() {
-        Pie pie = publicPie(2, NOW.minusHours(2), "AAPL", "60");
-        when(pieVersionRepository.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(pie.getPieId(), 1, NOW.minusHours(24))).thenReturn(false);
-
-        PieResponse response = pieService.update(pie.getPieId(), OWNER, request("Same", "AAPL", "50"));
-
-        assertEquals(3, response.getVersion());
-        verify(events).publishEvent(new PieVersionSaved(pie.getPieId(), 3));
-    }
-
-    @Test
-    void update_publicPie_secondVersionWithin24h_conflict() {
-        Pie pie = publicPie(2, NOW.minusDays(5), "AAPL", "60");
-        when(pieVersionRepository.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(pie.getPieId(), 1, NOW.minusHours(24))).thenReturn(true);
-
-        assertThrows(PieEditTooSoonException.class,
-            () -> pieService.update(pie.getPieId(), OWNER, request("Same", "AAPL", "50")));
-
-        assertEquals(2, pie.getLatestVersion());
-        verify(pieVersionRepository, never()).save(any());
-        verify(events, never()).publishEvent(any(Object.class));
-    }
-
-    @Test
-    void update_publicPie_republishingDoesNotResetCooldown() {
-        Pie pie = publicPie(2, NOW.minusHours(5), "AAPL", "60");
-        when(pieVersionRepository.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(
-            pie.getPieId(), 1, NOW.minusHours(24))).thenReturn(true);
-
-        assertThrows(PieEditTooSoonException.class,
-            () -> pieService.update(pie.getPieId(), OWNER, request("Same", "AAPL", "50")));
-        assertEquals(2, pie.getLatestVersion());
-    }
-
-    @Test
-    void update_publicPie_nameAndDescriptionOnly_alwaysAllowed() {
-        Pie pie = publicPie(2, NOW.minusDays(5), "AAPL", "60");
-        when(pieVersionRepository.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(any(), eq(1), any())).thenReturn(true);
-
-        PieResponse response = pieService.update(pie.getPieId(), OWNER, request("Renamed", "AAPL", "60"));
-
-        assertEquals(2, response.getVersion());
-        assertEquals("Renamed", pie.getName());
-        verify(events, never()).publishEvent(any(Object.class));
-    }
-
-    @Test
-    void update_privatePie_noLimitAndNoEvent() {
-        Pie pie = existingPie(2, "AAPL", "60");
-        when(pieVersionRepository.existsByPieIdAndVersionGreaterThanAndCreatedAtAfter(any(), eq(1), any())).thenReturn(true);
-
-        pieService.update(pie.getPieId(), OWNER, request("New", "AAPL", "50"));
-
-        assertEquals(3, pie.getLatestVersion());
-        verify(events, never()).publishEvent(any(Object.class));
+    void publicAndPrivatePies_allowRepeatedAllocationEditsImmediately() {
+        for (boolean published : List.of(false, true)) {
+            Pie pie = existingPie(1, "AAPL", "60");
+            if (published) {
+                pie.publish(NOW);
+            }
+            assertEquals(2, pieService.update(pie.getPieId(), OWNER, request("New", "AAPL", "50")).getVersion());
+            when(pieSliceRepository.findByPieIdAndVersionOrderByWeightPctDescSymbolAsc(pie.getPieId(), 2))
+                .thenReturn(List.of(new PieSlice(pie.getPieId(), 2, "AAPL", new BigDecimal("50"))));
+            assertEquals(3, pieService.update(pie.getPieId(), OWNER, request("New", "AAPL", "40")).getVersion());
+        }
     }
 
     @Test
@@ -387,7 +317,7 @@ class PieServiceTest {
     }
 
     @Test
-    void delete_publicPie_goesPrivateAndDropsIndex() {
+    void delete_publicPie_goesPrivate() {
         Pie pie = publicPie(1, NOW.minusDays(3), "AAPL", "60");
 
         pieService.delete(pie.getPieId(), OWNER);
@@ -395,6 +325,5 @@ class PieServiceTest {
         assertEquals(PieVisibility.PRIVATE, pie.getVisibility());
         assertNull(pie.getPublishedAt());
         assertEquals(NOW, pie.getDeletedAt());
-        verify(pieIndexService).clear(pie.getPieId());
     }
 }

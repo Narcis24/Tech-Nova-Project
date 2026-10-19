@@ -3,16 +3,7 @@
 </div>
 <app-pie-tabs />
 
-<div class="toolbar">
-  <p class="intro">Public pies ranked by return since they were published.</p>
-  <div class="windows" role="group" aria-label="Return window">
-    @for (option of windows; track option) {
-      <button type="button" class="window" [attr.aria-pressed]="window() === option" (click)="choose(option)">
-        {{ option }}
-      </button>
-    }
-  </div>
-</div>
+<p class="intro">Browse public pies and their target allocations.</p>
 
 @if (loading()) {
   <output class="empty">Loading public pies…</output>
@@ -22,18 +13,11 @@
     <button type="button" class="secondary" (click)="retry()">Try again</button>
   </div>
 } @else if (!pies().length) {
-  <p class="empty">
-    @if (window() === 'ALL') {
-      No public pies yet.
-    } @else {
-      No pie has been public for {{ window() }} yet. Try a shorter window or ALL.
-    }
-  </p>
+  <p class="empty">No public pies yet.</p>
 } @else {
-  <ol class="board">
-    @for (pie of pies(); track pie.pieId; let rank = $index) {
+  <ul class="board">
+    @for (pie of pies(); track pie.pieId) {
       <li class="entry">
-        <span class="rank" aria-hidden="true">{{ rank + 1 }}</span>
         <div class="identity">
           <h2>
             <a [routerLink]="['/discover', pie.pieId]">{{ pie.name }}</a>
@@ -44,12 +28,6 @@
           <p class="author">by {{ pie.authorUsername }}</p>
         </div>
         <dl class="metrics">
-          <div class="metric main">
-            <dt>{{ window() }} return</dt>
-            <dd [class.gain]="returnTone(pie.returnPct) === 'gain'" [class.loss]="returnTone(pie.returnPct) === 'loss'">
-              {{ formatReturn(pie.returnPct) }}
-            </dd>
-          </div>
           <div class="metric">
             <dt>Followers</dt>
             <dd>{{ pie.followers | number }}</dd>
@@ -61,5 +39,5 @@
         </dl>
       </li>
     }
-  </ol>
+  </ul>
 }

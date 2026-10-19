@@ -115,7 +115,6 @@ class RebalanceRunServiceTest {
     @Autowired private RebalanceLegRepository legRepository;
 
     @MockitoBean private EventProducerService eventProducerService;
-    @MockitoBean private PieIndexService pieIndexService;
     @MockitoBean private Clock clock;
 
     private UUID pieId;

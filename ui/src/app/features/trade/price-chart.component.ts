@@ -27,9 +27,6 @@ interface HistoryState {
 export class PriceChartComponent {
   readonly sessionDate = sessionDate;
   readonly Math = Math;
-  /** Supplied index data reuses the plot without stock quotes or currency labels. */
-  readonly indexPoints = input<PriceHistoryPoint[] | null>(null);
-  readonly indexMode = computed(() => this.indexPoints() !== null);
   readonly symbol = input('');
   readonly instrumentName = input('');
   readonly pendingSymbol = input(false);
@@ -39,16 +36,10 @@ export class PriceChartComponent {
   private readonly api = inject(PriceControllerService);
   private readonly revision = signal(0);
   readonly normalizedSymbol = computed(() => this.symbol().trim().toUpperCase());
-  private readonly request = computed(() => ({
-    symbol: this.normalizedSymbol(),
-    revision: this.revision(),
-    indexMode: this.indexMode(),
-  }));
+  private readonly request = computed(() => ({ symbol: this.normalizedSymbol(), revision: this.revision() }));
   readonly state = signal<HistoryState>({ symbol: '', loading: false, error: false, points: [] });
   readonly loading = computed(
-    () =>
-      !this.indexMode() &&
-      (this.pendingSymbol() || this.state().loading || this.state().symbol !== this.normalizedSymbol()),
+    () => this.pendingSymbol() || this.state().loading || this.state().symbol !== this.normalizedSymbol(),
   );
   readonly range = signal<1 | 3 | 12>(1);
   readonly ranges = [
@@ -57,15 +48,7 @@ export class PriceChartComponent {
     { months: 12, label: '1Y' },
   ] as const;
   readonly hovered = signal<number | null>(null);
-  readonly points = computed(() => {
-    const supplied = this.indexPoints();
-    if (supplied !== null) {
-      return supplied
-        .filter((p) => p.date && p.close != null && Number.isFinite(Number(p.close)))
-        .sort((a, b) => a.date!.localeCompare(b.date!));
-    }
-    return this.state().symbol === this.normalizedSymbol() ? this.state().points : [];
-  });
+  readonly points = computed(() => (this.state().symbol === this.normalizedSymbol() ? this.state().points : []));
   readonly latest = computed(() => this.points().at(-1));
   readonly dailyChange = computed(() =>
     this.points().length > 1 ? Number(this.latest()!.close) - Number(this.points().at(-2)!.close) : null,
@@ -74,7 +57,6 @@ export class PriceChartComponent {
     this.dailyChange() == null ? null : this.dailyChange()! / Number(this.points().at(-2)!.close),
   );
   readonly visible = computed(() => {
-    if (this.indexMode()) return this.points();
     const latest = this.latest();
     if (!latest?.date) return [];
     const end = new Date(latest.date + 'T00:00:00Z'),
@@ -109,9 +91,9 @@ export class PriceChartComponent {
   constructor() {
     toObservable(this.request)
       .pipe(
-        switchMap(({ symbol, indexMode }) => {
+        switchMap(({ symbol }) => {
           const empty: HistoryState = { symbol, loading: false, error: false, points: [] };
-          if (indexMode || !/^[A-Z0-9.-]{1,10}$/.test(symbol)) return of(empty);
+          if (!/^[A-Z0-9.-]{1,10}$/.test(symbol)) return of(empty);
           // Cancel on every symbol change, including the brief typing delay.
           return timer(250).pipe(
             switchMap(() => this.api.getPriceHistory(symbol)),
