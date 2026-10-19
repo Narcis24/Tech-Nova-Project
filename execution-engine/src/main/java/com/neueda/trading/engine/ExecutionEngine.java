@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -42,6 +43,7 @@ public class ExecutionEngine {
     private final Map<UUID, OrderPlacedEvent> resting = new HashMap<>();
     private final Clock clock;
     private final boolean enforceMarketHours;
+    private final DecisionJournal journal;
 
     @Autowired
     public ExecutionEngine(
@@ -49,8 +51,9 @@ public class ExecutionEngine {
             EventProducerService eventProducerService,
             QuoteCache quoteCache,
             MarketDataProperties props,
+            DecisionJournal journal,
             @Value("${market-data.enforce-market-hours:true}") boolean enforceMarketHours) {
-        this(objectMapper, eventProducerService, quoteCache, props, Clock.systemUTC(), enforceMarketHours);
+        this(objectMapper, eventProducerService, quoteCache, props, journal, Clock.systemUTC(), enforceMarketHours);
     }
 
     /** Tests pass a fixed clock to decide whether the market is open. */
@@ -59,9 +62,11 @@ public class ExecutionEngine {
             EventProducerService eventProducerService,
             QuoteCache quoteCache,
             MarketDataProperties props,
+            DecisionJournal journal,
             Clock clock,
             boolean enforceMarketHours) {
 
+        this.journal = journal;
         this.clock = clock;
         this.enforceMarketHours = enforceMarketHours;
         this.objectMapper = objectMapper;
@@ -77,6 +82,7 @@ public class ExecutionEngine {
     @EventListener(ApplicationReadyEvent.class)
     public void announceStarted() {
         log.info("Execution engine started, asking for pending orders");
+        journal(JournalTypes.ENGINE_STARTED, Map.of());
         eventProducerService.publishEvent(
             Topics.ORDER_EXECUTION,
             "execution-engine",
@@ -183,6 +189,12 @@ public class ExecutionEngine {
     @KafkaListener(topics = MarketDataPoller.TOPIC, groupId = "execution-engine-quotes")
     public void onQuote(String message) {
         Quote quote = objectMapper.treeToValue(objectMapper.readTree(message).path("payload"), Quote.class);
+        accept(quote);
+    }
+
+    /** Synchronized with orders, so the journal holds quotes and orders in the order they were handled. */
+    synchronized void accept(Quote quote) {
+        journal(JournalTypes.QUOTE_RECEIVED, Map.of("quote", quote));
         quoteCache.put(quote);
         recheckResting(quote);
     }
@@ -193,7 +205,9 @@ public class ExecutionEngine {
      * every order rests until the first quote after the open.
      */
     synchronized void handle(OrderPlacedEvent event) {
+        journal(JournalTypes.ORDER_RECEIVED, Map.of("order", event));
         if (!marketOpen()) {
+            journalDecision(event, JournalTypes.QUEUED_MARKET_CLOSED, null, null);
             resting.put(event.orderId(), event);
             log.info("Market closed, order waits for the open: orderId={}, symbol={}", event.orderId(), event.symbol());
             return;
@@ -208,9 +222,16 @@ public class ExecutionEngine {
                 : new FillRule.Wait());
 
         switch (decision) {
-            case FillRule.Fill(BigDecimal price) -> publishFill(event, price);
-            case FillRule.Reject(String reason) -> publishReject(event, reason);
+            case FillRule.Fill(BigDecimal price) -> {
+                journalDecision(event, JournalTypes.FILL, price, null);
+                publishFill(event, price);
+            }
+            case FillRule.Reject(String reason) -> {
+                journalDecision(event, JournalTypes.REJECT, null, reason);
+                publishReject(event, reason);
+            }
             case FillRule.Wait() -> {
+                journalDecision(event, JournalTypes.WAIT, null, null);
                 resting.put(event.orderId(), event);
                 log.info("Resting LIMIT order: orderId={}, symbol={}", event.orderId(), event.symbol());
             }
@@ -229,18 +250,37 @@ public class ExecutionEngine {
             switch (FillRule.decide(order, quote)) {
                 case FillRule.Fill(BigDecimal price) -> {
                     resting.remove(order.orderId());
+                    journalDecision(order, JournalTypes.FILL, price, null);
                     publishFill(order, price);
                 }
                 // A MARKET order queued overnight that still cannot be priced
                 case FillRule.Reject(String reason) -> {
                     resting.remove(order.orderId());
+                    journalDecision(order, JournalTypes.REJECT, null, reason);
                     publishReject(order, reason);
                 }
                 case FillRule.Wait() -> {
-                    // stays resting
+                    // stays resting; not journalled on every quote, a replay re-runs the checks itself
                 }
             }
         }
+    }
+
+    private void journal(String type, Map<String, Object> fields) {
+        journal.record(clock.instant(), type, fields);
+    }
+
+    private void journalDecision(OrderPlacedEvent order, String decision, BigDecimal price, String reason) {
+        Map<String, Object> fields = new LinkedHashMap<>();
+        fields.put("orderId", order.orderId());
+        fields.put("decision", decision);
+        if (price != null) {
+            fields.put("price", price);
+        }
+        if (reason != null) {
+            fields.put("reason", reason);
+        }
+        journal(JournalTypes.DECISION, fields);
     }
 
     /** The E2E tests turn the hours off: they run at any time against a stub market. */
