@@ -21,37 +21,6 @@
       </li>
     }
   </ul>
-
-  <section class="recent" aria-labelledby="recent-heading">
-    <h2 id="recent-heading">Newest users</h2>
-    @if (recentUsers().length) {
-      <ul class="users">
-        @for (user of recentUsers(); track user.username) {
-          <li class="user">
-            <div class="user-main">
-              <span class="user-name">{{ user.username }}</span>
-              @if (user.email) {
-                <span class="user-email">{{ user.email }}</span>
-              }
-            </div>
-            <div class="user-roles">
-              @for (role of user.roles; track role) {
-                <span class="role" [class.role-admin]="role === 'ADMIN'">{{ role }}</span>
-              }
-            </div>
-            <span class="user-created">
-              {{ user.createdAt | date: 'd MMM y' }}
-              @if (user.createdBy) {
-                · by {{ user.createdBy }}
-              }
-            </span>
-          </li>
-        }
-      </ul>
-    } @else {
-      <p class="empty">No users yet.</p>
-    }
-  </section>
 }
 
 <!-- Outside the users block, so it loads and fails on its own -->

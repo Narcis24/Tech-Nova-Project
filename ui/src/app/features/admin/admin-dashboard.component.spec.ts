@@ -78,12 +78,11 @@ describe('AdminDashboardComponent', () => {
     expect(texts(page, '.stat-value')).toEqual(['3', '2', '2', '1']);
   });
 
-  it('lists the newest users first, with their roles and who created them', () => {
+  it("doesn't list individual users; that's the users page", () => {
     const page = create(of(USERS));
 
-    expect(texts(page, '.user-name')).toEqual(['invited_01', 'trader_one', 'test_admin']);
-    expect(texts(page, '.user')[0]).toContain('by test_admin');
-    expect(texts(page, '.user:nth-child(2) .role')).toEqual(['ADMIN', 'TRADER']);
+    expect(page.textContent).not.toContain('Newest users');
+    expect(page.textContent).not.toContain('invited.01@example.com');
   });
 
   it('shows loading until the users arrive', () => {
@@ -99,10 +98,10 @@ describe('AdminDashboardComponent', () => {
     expect(texts(page, '.stat')).toHaveSize(4);
   });
 
-  it('says when there are no users', () => {
+  it('counts zero when there are no users', () => {
     const page = create(of([]));
 
-    expect(page.textContent).toContain('No users yet.');
+    expect(texts(page, '.stat-value')).toEqual(['0', '0', '0', '0']);
   });
 
   it('shows an error that can be retried', () => {
@@ -115,6 +114,6 @@ describe('AdminDashboardComponent', () => {
     fixture.detectChanges();
 
     expect(page.querySelector('[role=alert]')).toBeNull();
-    expect(texts(page, '.user-name')).toHaveSize(3);
+    expect(texts(page, '.stat-value')).toEqual(['3', '2', '2', '1']);
   });
 });

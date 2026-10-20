@@ -20,44 +20,34 @@
     </div>
   </header>
 
-  <!-- Temporary plain selects; step 18 replaces them with filter chips -->
-  <div class="filters" aria-label="Filters">
-    <label>
-      Asset class
-      <select [value]="filters().assetClass ?? ''" (change)="setFilter('assetClass', selected($event))">
-        <option value="">All</option>
-        @for (option of assetClasses; track option.value) {
-          <option [value]="option.value">{{ option.label }}</option>
-        }
-      </select>
-    </label>
-    <label>
-      Side
-      <select [value]="filters().side ?? ''" (change)="setFilter('side', selected($event))">
-        <option value="">Buy and sell</option>
-        @for (option of sides; track option.value) {
-          <option [value]="option.value">{{ option.label }}</option>
-        }
-      </select>
-    </label>
-    <label>
-      Order type
-      <select [value]="filters().orderType ?? ''" (change)="setFilter('orderType', selected($event))">
-        <option value="">Market and limit</option>
-        @for (option of orderTypes; track option.value) {
-          <option [value]="option.value">{{ option.label }}</option>
-        }
-      </select>
-    </label>
-    <label>
-      Trader
-      <select [value]="filters().trader ?? ''" (change)="setFilter('trader', selected($event))">
-        <option value="">All traders</option>
-        @for (trader of traders(); track trader) {
-          <option [value]="trader">{{ trader }}</option>
-        }
-      </select>
-    </label>
+  <div class="filters" role="group" aria-label="Filters">
+    <app-filter-chip
+      label="Asset class"
+      [options]="assetClasses"
+      [value]="filters().assetClass"
+      (valueChange)="setFilter('assetClass', $event)"
+    />
+    <app-filter-chip
+      label="Side"
+      allLabel="Buy and sell"
+      [options]="sides"
+      [value]="filters().side"
+      (valueChange)="setFilter('side', $event)"
+    />
+    <app-filter-chip
+      label="Order type"
+      allLabel="Market and limit"
+      [options]="orderTypes"
+      [value]="filters().orderType"
+      (valueChange)="setFilter('orderType', $event)"
+    />
+    <app-filter-chip
+      label="Trader"
+      [options]="traderOptions()"
+      [value]="filters().trader"
+      [searchable]="true"
+      (valueChange)="setFilter('trader', $event)"
+    />
 
     @if (hasFilters()) {
       <button type="button" class="clear" (click)="clearFilters()">Clear filters</button>

@@ -1,9 +1,4 @@
 /* Dashboard-only styles; headings, role badges and errors are in shared/admin-page.css */
-h2 {
-  margin: 0 0 12px;
-  font-size: 18px;
-  font-weight: 600;
-}
 
 /* To the users page; underlined only on hover, like the nav tabs */
 .manage-link {
@@ -22,7 +17,7 @@ h2 {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
-  margin: 0 0 32px;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -46,64 +41,14 @@ h2 {
   color: var(--secondary-text-color);
 }
 
-.users {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.user {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  align-items: center;
-  gap: 16px;
-  min-height: 64px;
-  padding: 12px 16px;
-  box-sizing: border-box;
-  border-radius: 14px;
-  background: var(--card-background-color);
-}
-
-.user-main {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.user-name {
-  font-size: 17px;
-  font-weight: 600;
-}
-
-.user-email,
-.user-created {
-  font-size: 14px;
-  color: var(--secondary-text-color);
-  overflow-wrap: anywhere;
-}
-
-.user-roles {
-  display: flex;
-  gap: 6px;
-}
-
-/* Phones: two tiles per row, and each user stacks */
+/* Phones: two tiles per row */
 @media (max-width: 640px) {
   .stats {
     grid-template-columns: repeat(2, 1fr);
   }
-
-  .user {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
 }
 
-/* Space between the users section and the analytics card below it */
+/* Space between the user counts and the analytics card below them */
 .analytics {
   display: block;
   margin-top: 32px;

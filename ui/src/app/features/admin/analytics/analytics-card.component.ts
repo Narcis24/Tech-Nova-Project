@@ -10,6 +10,7 @@ import {
   AdminUserControllerService,
 } from '../../../generated/trading-api-client';
 import { AnalyticsFilters, ASSET_CLASSES, DEFAULT_PERIOD, oneOf, ORDER_TYPES, PERIODS, SIDES } from './analytics';
+import { ChipOption, FilterChipComponent } from './filter-chip.component';
 
 /** Where the latest request is; only one of these at a time, so the template can't show two. */
 type LoadState = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: AdminAnalyticsResponse };
@@ -17,7 +18,7 @@ type LoadState = { status: 'loading' } | { status: 'error' } | { status: 'ready'
 /** Trading activity across all accounts, on the admin home page. Data from GET /v1/admin/analytics. */
 @Component({
   selector: 'app-analytics-card',
-  imports: [CurrencyPipe, DatePipe, DecimalPipe, PercentPipe],
+  imports: [CurrencyPipe, DatePipe, DecimalPipe, PercentPipe, FilterChipComponent],
   templateUrl: './analytics-card.component.html',
   styleUrls: ['../../../shared/admin-page.css', './analytics-card.component.css'],
 })
@@ -72,6 +73,9 @@ export class AnalyticsCardComponent {
       catchError(() => of<string[]>([])),
     ),
     { initialValue: [] },
+  );
+  readonly traderOptions = computed<ChipOption[]>(() =>
+    this.traders().map((trader) => ({ value: trader, label: trader })),
   );
 
   readonly exporting = signal(false);
@@ -131,11 +135,6 @@ export class AnalyticsCardComponent {
 
   retry(): void {
     this.revision.update((value) => value + 1);
-  }
-
-  /** A select's value, or null for its "All" option (value ""). */
-  selected(event: Event): string | null {
-    return (event.target as HTMLSelectElement).value || null;
   }
 
   exportCsv(): void {

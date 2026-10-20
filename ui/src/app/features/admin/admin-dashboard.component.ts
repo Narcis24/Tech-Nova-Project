@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
@@ -6,12 +5,13 @@ import { AdminUserControllerService, AdminUserResponse } from '../../generated/t
 import { AuthService } from '../../services/auth.service';
 import { AnalyticsCardComponent } from './analytics/analytics-card.component';
 
-const RECENT_USERS = 5;
-
-/** The admin's home page: who uses TechNova, at a glance. Data from GET /v1/admin/users. */
+/**
+ * The admin's home page: user counts from GET /v1/admin/users, then trading activity in the
+ * analytics card. The full user list is on the users page.
+ */
 @Component({
   selector: 'app-admin-dashboard',
-  imports: [RouterLink, DatePipe, AnalyticsCardComponent],
+  imports: [RouterLink, AnalyticsCardComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['../../shared/admin-page.css', './admin-dashboard.component.css'],
 })
@@ -31,11 +31,6 @@ export class AdminDashboardComponent {
       { label: 'Created by admins', value: users.filter((user) => user.createdBy).length },
     ];
   });
-
-  /** Newest first; ISO timestamps sort correctly as text */
-  readonly recentUsers = computed(() =>
-    [...(this.users() ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, RECENT_USERS),
-  );
 
   constructor() {
     this.load();
