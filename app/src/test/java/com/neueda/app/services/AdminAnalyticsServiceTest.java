@@ -1,9 +1,12 @@
 package com.neueda.app.services;
 
 import com.neueda.app.dtos.AdminAnalyticsResponse;
+import com.neueda.app.dtos.AdminLiveResponse;
 import com.neueda.app.dtos.AnalyticsBucket;
 import com.neueda.app.dtos.AnalyticsTotals;
 import com.neueda.app.dtos.AssetMixEntry;
+import com.neueda.app.dtos.LiveHour;
+import com.neueda.app.dtos.LiveInstrument;
 import com.neueda.app.dtos.TopTradedInstrument;
 import com.neueda.app.enums.AnalyticsBucketSize;
 import com.neueda.app.enums.AnalyticsPeriod;
@@ -28,6 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -302,6 +307,134 @@ class AdminAnalyticsServiceTest {
         assertMoney("1", share(response.assetMix(), AssetClass.EQUITY));
     }
 
+    // --- Live
+
+    @Test
+    void liveHasSevenMarketHoursForTodayAndTheTwoTradingDaysBefore() {
+        AdminLiveResponse live = live();
+
+        assertEquals(NOW, live.asOf());
+        assertEquals(21, live.hourly().size());
+        // Tuesday, so Friday and Monday; the weekend is skipped
+        assertEquals(Instant.parse("2026-10-16T13:00:00Z"), live.hourly().get(0).start());    // Fri 09:00 New York
+        assertEquals(Instant.parse("2026-10-16T19:00:00Z"), live.hourly().get(6).start());    // Fri 15:00
+        assertEquals(Instant.parse("2026-10-19T13:00:00Z"), live.hourly().get(7).start());    // Mon 09:00
+        assertEquals(Instant.parse("2026-10-20T13:00:00Z"), live.hourly().get(14).start());   // Tue 09:00
+    }
+
+    @Test
+    void liveMarksTodaysLaterHoursAsFuture() {
+        List<LiveHour> hourly = live().hourly();
+
+        assertFalse(hourly.get(13).future());   // Mon 15:00
+        assertFalse(hourly.get(19).future());   // Tue 14:00, the hour it is now
+        assertTrue(hourly.get(20).future());    // Tue 15:00
+    }
+
+    @Test
+    void liveOnMondayGoesBackToThursdayAndFriday() {
+        // Monday 19 Oct 2026, 10:00 in New York
+        AdminLiveResponse live = new AdminAnalyticsService(orderRepository,
+            Clock.fixed(Instant.parse("2026-10-19T14:00:00Z"), ZoneOffset.UTC)).live(null, null, null, null);
+
+        assertEquals(Instant.parse("2026-10-15T13:00:00Z"), live.hourly().get(0).start());    // Thu 09:00
+        assertEquals(Instant.parse("2026-10-16T13:00:00Z"), live.hourly().get(7).start());    // Fri 09:00
+        assertEquals(Instant.parse("2026-10-19T13:00:00Z"), live.hourly().get(14).start());   // Mon 09:00
+    }
+
+    @Test
+    void liveAtTheWeekendShowsTheLastThreeWeekdaysWithNothingInTheFuture() {
+        // Saturday 17 Oct 2026, noon in New York
+        AdminLiveResponse live = new AdminAnalyticsService(orderRepository,
+            Clock.fixed(Instant.parse("2026-10-17T16:00:00Z"), ZoneOffset.UTC)).live(null, null, null, null);
+
+        assertEquals(Instant.parse("2026-10-14T13:00:00Z"), live.hourly().get(0).start());    // Wed 09:00
+        assertEquals(Instant.parse("2026-10-16T19:00:00Z"), live.hourly().get(20).start());   // Fri 15:00
+        assertTrue(live.hourly().stream().noneMatch(LiveHour::future));
+    }
+
+    @Test
+    void liveReadsFromTheFirstTradingDayToMidnightTonightWithTheFilters() {
+        service.live(AssetClass.ETF, OrderSide.SELL, OrderType.LIMIT, "alice");
+
+        verify(orderRepository).findActivity(LocalDateTime.of(2026, 10, 16, 4, 0), LocalDateTime.of(2026, 10, 21, 4, 0),
+            AssetClass.ETF, OrderSide.SELL, OrderType.LIMIT, "alice");
+        verify(orderRepository).countWithStatus(argThat(statuses -> statuses.size() == 2
+                && statuses.containsAll(List.of(OrderStatus.PENDING, OrderStatus.PUBLISHED))),
+            eq(AssetClass.ETF), eq(OrderSide.SELL), eq(OrderType.LIMIT), eq("alice"));
+    }
+
+    @Test
+    void liveCountsOrdersTodayAndInTheLastHour() {
+        orders(
+            filled("2026-10-19T15:00:00", "AAPL", 1, "1"),    // yesterday
+            filled("2026-10-20T12:00:00", "AAPL", 1, "1"),    // 08:00, before the open
+            filled("2026-10-20T17:30:00", "AAPL", 1, "1"),    // 13:30, exactly an hour ago: not in the last hour
+            filled("2026-10-20T17:45:00", "AAPL", 1, "1"),    // 13:45
+            filled("2026-10-20T18:30:00", "AAPL", 1, "1"));   // 14:30, now
+
+        AdminLiveResponse live = live();
+
+        assertEquals(4, live.ordersToday());
+        assertEquals(2, live.ordersLastHour());
+    }
+
+    @Test
+    void liveBarsCountOrdersInTheirNewYorkMarketHour() {
+        orders(
+            filled("2026-10-16T19:59:00", "AAPL", 1, "1"),    // Fri 15:59, the last bar of Friday
+            filled("2026-10-20T12:00:00", "AAPL", 1, "1"),    // Tue 08:00: today's total, but no bar
+            filled("2026-10-20T13:15:00", "AAPL", 1, "1"),    // Tue 09:15
+            filled("2026-10-20T13:45:00", "GLD", 1, "1"));    // Tue 09:45
+
+        AdminLiveResponse live = live();
+
+        assertEquals(1, live.hourly().get(6).orders());
+        assertEquals(2, live.hourly().get(14).orders());
+        assertEquals(3, live.hourly().stream().mapToLong(LiveHour::orders).sum());
+        assertEquals(3, live.ordersToday());
+    }
+
+    @Test
+    void liveOpenOrdersComeFromTheStatusCount() {
+        when(orderRepository.countWithStatus(any(), any(), any(), any(), any())).thenReturn(4L);
+
+        assertEquals(4, live().openOrders());
+    }
+
+    @Test
+    void liveTopTodayCountsEveryOrderTodayAndKeepsTheTopThree() {
+        orders(
+            filled("2026-10-19T15:00:00", "NVDA", 1, "1"),    // yesterday: not counted
+            filled("2026-10-19T15:01:00", "NVDA", 1, "1"),
+            filled("2026-10-19T15:02:00", "NVDA", 1, "1"),
+            row("2026-10-20T14:00:00", "AAPL", OrderSide.BUY, OrderStatus.CANCELLED, 1, "1", "alice"),
+            filled("2026-10-20T14:01:00", "AAPL", 1, "1"),
+            filled("2026-10-20T14:02:00", "AAPL", 1, "1"),
+            filled("2026-10-20T14:03:00", "GLD", 1, "1"),
+            filled("2026-10-20T14:04:00", "GLD", 1, "1"),
+            filled("2026-10-20T14:05:00", "MSFT", 1, "1"),
+            filled("2026-10-20T14:06:00", "IBM", 1, "1"));   // ties with MSFT; MSFT loses on symbol order
+
+        List<LiveInstrument> top = live().topToday();
+
+        assertEquals(List.of("AAPL", "GLD", "IBM"), top.stream().map(LiveInstrument::symbol).toList());
+        assertEquals(3, top.get(0).orders());
+        assertEquals("Apple Inc.", top.get(0).name());
+        assertEquals(AssetClass.COMMODITY, top.get(1).assetClass());
+    }
+
+    @Test
+    void liveWithNoOrdersIsAllZero() {
+        AdminLiveResponse live = live();
+
+        assertEquals(0, live.ordersToday());
+        assertEquals(0, live.ordersLastHour());
+        assertEquals(0, live.openOrders());
+        assertTrue(live.hourly().stream().allMatch(hour -> hour.orders() == 0));
+        assertTrue(live.topToday().isEmpty());
+    }
+
     // --- CSV export
 
     @Test
@@ -353,6 +486,10 @@ class AdminAnalyticsServiceTest {
     }
 
     // --- Helpers
+
+    private AdminLiveResponse live() {
+        return service.live(null, null, null, null);
+    }
 
     private AdminAnalyticsResponse analytics(AnalyticsPeriod period) {
         return service.analytics(period, null, null, null, null);

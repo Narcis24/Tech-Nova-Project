@@ -2,7 +2,10 @@ package com.neueda.app.controllers;
 
 import com.neueda.app.configs.SecurityConfig;
 import com.neueda.app.dtos.AdminAnalyticsResponse;
+import com.neueda.app.dtos.AdminLiveResponse;
 import com.neueda.app.dtos.AnalyticsTotals;
+import com.neueda.app.dtos.LiveHour;
+import com.neueda.app.dtos.LiveInstrument;
 import com.neueda.app.enums.AnalyticsBucketSize;
 import com.neueda.app.enums.AnalyticsPeriod;
 import com.neueda.app.enums.AssetClass;
@@ -195,6 +198,70 @@ class AdminAnalyticsControllerTest {
         mockMvc.perform(get("/v1/admin/analytics/export").param("period", "FOREVER")
                 .header("Authorization", "Bearer admin-token"))
             .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(adminAnalyticsService);
+    }
+
+    @Test
+    void live_Admin_ReturnsTheServicesResponse() throws Exception {
+        when(adminAnalyticsService.live(any(), any(), any(), any())).thenReturn(new AdminLiveResponse(
+            Instant.parse("2026-10-20T18:30:00Z"), 37, 6, 4,
+            List.of(new LiveHour(Instant.parse("2026-10-20T13:00:00Z"), 5, false)),
+            List.of(new LiveInstrument("NVDA", "NVIDIA Corporation", AssetClass.EQUITY, 7))));
+
+        mockMvc.perform(get("/v1/admin/analytics/live").header("Authorization", "Bearer admin-token"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.ordersToday").value(37))
+            .andExpect(jsonPath("$.ordersLastHour").value(6))
+            .andExpect(jsonPath("$.openOrders").value(4))
+            .andExpect(jsonPath("$.hourly[0].orders").value(5))
+            .andExpect(jsonPath("$.hourly[0].future").value(false))
+            .andExpect(jsonPath("$.topToday[0].symbol").value("NVDA"));
+    }
+
+    @Test
+    void live_PassesTheFiltersToTheService() throws Exception {
+        mockMvc.perform(get("/v1/admin/analytics/live")
+                .param("assetClass", "ETF")
+                .param("side", "SELL")
+                .param("orderType", "LIMIT")
+                .param("trader", "alice")
+                .header("Authorization", "Bearer admin-token"))
+            .andExpect(status().isOk());
+
+        verify(adminAnalyticsService).live(AssetClass.ETF, OrderSide.SELL, OrderType.LIMIT, "alice");
+    }
+
+    @Test
+    void live_NoParameters_HasNoFilters() throws Exception {
+        mockMvc.perform(get("/v1/admin/analytics/live").header("Authorization", "Bearer admin-token"))
+            .andExpect(status().isOk());
+
+        verify(adminAnalyticsService).live(null, null, null, null);
+    }
+
+    @Test
+    void live_NoToken_Returns401() throws Exception {
+        mockMvc.perform(get("/v1/admin/analytics/live"))
+            .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(adminAnalyticsService);
+    }
+
+    @Test
+    void live_Trader_Returns403() throws Exception {
+        mockMvc.perform(get("/v1/admin/analytics/live").header("Authorization", "Bearer trader-token"))
+            .andExpect(status().isForbidden());
+
+        verifyNoInteractions(adminAnalyticsService);
+    }
+
+    @Test
+    void live_UnknownSide_Returns400() throws Exception {
+        mockMvc.perform(get("/v1/admin/analytics/live").param("side", "HOLD")
+                .header("Authorization", "Bearer admin-token"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("Invalid value for side"));
 
         verifyNoInteractions(adminAnalyticsService);
     }

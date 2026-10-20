@@ -1,9 +1,12 @@
 package com.neueda.app.services;
 
 import com.neueda.app.dtos.AdminAnalyticsResponse;
+import com.neueda.app.dtos.AdminLiveResponse;
 import com.neueda.app.dtos.AnalyticsBucket;
 import com.neueda.app.dtos.AnalyticsTotals;
 import com.neueda.app.dtos.AssetMixEntry;
+import com.neueda.app.dtos.LiveHour;
+import com.neueda.app.dtos.LiveInstrument;
 import com.neueda.app.dtos.TopTradedInstrument;
 import com.neueda.app.enums.AnalyticsBucketSize;
 import com.neueda.app.enums.AnalyticsPeriod;
@@ -21,6 +24,7 @@ import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -50,6 +54,13 @@ public class AdminAnalyticsService {
     static final ZoneId MARKET_ZONE = ZoneId.of("America/New_York");
     private static final int TOP_TRADED = 6;
     private static final int RATE_SCALE = 4;
+    private static final int LIVE_TRADING_DAYS = 3;
+    private static final int LIVE_TOP = 3;
+    // The hours the Live bars cover: 9:00 (the 9:30 open falls in it) to the 15:00 hour, before the 16:00 close
+    private static final int MARKET_FIRST_HOUR = 9;
+    private static final int MARKET_LAST_HOUR = 15;
+    // Statuses an order is still waiting in
+    private static final Set<OrderStatus> OPEN = EnumSet.of(OrderStatus.PENDING, OrderStatus.PUBLISHED);
     // A plain local time, which spreadsheets read as a date without any setup
     private static final DateTimeFormatter CSV_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final String CSV_HEADER = "start_new_york,traded_value,orders,fill_rate,active_traders,"
@@ -130,6 +141,75 @@ public class AdminAnalyticsService {
                 .collect(Collectors.joining(","))).append('\n');
         }
         return csv.toString();
+    }
+
+    /**
+     * What's happening right now for the Live panel, with the card's filters but not its period:
+     * counts for today and the last hour, open orders, and orders per market hour over the last
+     * three trading days.
+     */
+    @Transactional(readOnly = true)
+    public AdminLiveResponse live(AssetClass assetClass, OrderSide side, OrderType orderType, String trader) {
+        ZonedDateTime now = ZonedDateTime.now(clock).withZoneSameInstant(MARKET_ZONE);
+        ZonedDateTime today = now.toLocalDate().atStartOfDay(MARKET_ZONE);
+        List<LocalDate> tradingDays = lastTradingDays(now.toLocalDate(), LIVE_TRADING_DAYS);
+
+        // From the first trading day shown up to midnight tonight; today's orders are in the same rows
+        ZonedDateTime from = tradingDays.get(0).atStartOfDay(MARKET_ZONE);
+        List<OrderActivity> rows = orderRepository.findActivity(
+            utc(from), utc(today.plusDays(1)), assetClass, side, orderType, trader);
+
+        List<OrderActivity> todayRows = rows.stream()
+            .filter(row -> !market(row.createdOn()).isBefore(today)).toList();
+        ZonedDateTime hourAgo = now.minusHours(1);
+        long lastHour = todayRows.stream()
+            .filter(row -> market(row.createdOn()).isAfter(hourAgo) && !market(row.createdOn()).isAfter(now))
+            .count();
+        long open = orderRepository.countWithStatus(OPEN, assetClass, side, orderType, trader);
+
+        return new AdminLiveResponse(now.toInstant(), todayRows.size(), lastHour, open,
+            liveHours(tradingDays, rows, now), topToday(todayRows));
+    }
+
+    // The given day if it's a weekday, and the weekdays before it, oldest first. Holidays aren't handled,
+    // as in MarketHours.java.
+    private static List<LocalDate> lastTradingDays(LocalDate day, int count) {
+        List<LocalDate> days = new ArrayList<>();
+        for (LocalDate d = day; days.size() < count; d = d.minusDays(1)) {
+            if (d.getDayOfWeek() != DayOfWeek.SATURDAY && d.getDayOfWeek() != DayOfWeek.SUNDAY) {
+                days.add(0, d);
+            }
+        }
+        return days;
+    }
+
+    private static List<LiveHour> liveHours(List<LocalDate> tradingDays, List<OrderActivity> rows, ZonedDateTime now) {
+        Map<Instant, Long> byHour = rows.stream().collect(Collectors.groupingBy(
+            row -> market(row.createdOn()).truncatedTo(ChronoUnit.HOURS).toInstant(), Collectors.counting()));
+        List<LiveHour> hours = new ArrayList<>();
+        for (LocalDate day : tradingDays) {
+            for (int hour = MARKET_FIRST_HOUR; hour <= MARKET_LAST_HOUR; hour++) {
+                ZonedDateTime start = day.atTime(hour, 0).atZone(MARKET_ZONE);
+                hours.add(new LiveHour(start.toInstant(), byHour.getOrDefault(start.toInstant(), 0L),
+                    start.isAfter(now)));
+            }
+        }
+        return hours;
+    }
+
+    private static List<LiveInstrument> topToday(List<OrderActivity> todayRows) {
+        return todayRows.stream()
+            .collect(Collectors.groupingBy(OrderActivity::symbol))
+            .values().stream()
+            .map(orders -> {
+                OrderActivity first = orders.get(0);
+                return new LiveInstrument(first.symbol(), first.instrumentName(), first.assetClass(), orders.size());
+            })
+            // Ties broken by symbol, so the list doesn't reorder between refreshes
+            .sorted(Comparator.comparingLong(LiveInstrument::orders).reversed()
+                .thenComparing(LiveInstrument::symbol))
+            .limit(LIVE_TOP)
+            .toList();
     }
 
     /** A half-open span of time, [from, to), in market time. */
