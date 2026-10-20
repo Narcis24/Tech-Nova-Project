@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
@@ -17,7 +17,8 @@ describe('NavBarComponent', () => {
   const accounts = signal<Account[]>(ACCOUNTS);
   const currentAccountId = signal<string | null>('ACC001');
   const isAdmin = signal(false);
-  let auth: { username: typeof username; isAdmin: typeof isAdmin; logout: jasmine.Spy };
+  const homeUrl = computed(() => (isAdmin() ? '/admin' : '/dashboard'));
+  let auth: { username: typeof username; isAdmin: typeof isAdmin; homeUrl: typeof homeUrl; logout: jasmine.Spy };
   let accountService: {
     accounts: typeof accounts;
     currentAccountId: typeof currentAccountId;
@@ -31,7 +32,7 @@ describe('NavBarComponent', () => {
     accounts.set(ACCOUNTS);
     currentAccountId.set('ACC001');
     isAdmin.set(false);
-    auth = { username, isAdmin, logout: jasmine.createSpy('logout') };
+    auth = { username, isAdmin, homeUrl, logout: jasmine.createSpy('logout') };
     accountService = { accounts, currentAccountId, selectAccount: jasmine.createSpy('selectAccount') };
 
     await TestBed.configureTestingModule({
@@ -41,6 +42,8 @@ describe('NavBarComponent', () => {
           { path: 'dashboard', component: BlankComponent },
           { path: 'trade', component: BlankComponent },
           { path: 'orders', component: BlankComponent },
+          { path: 'admin', component: BlankComponent },
+          { path: 'admin/users', component: BlankComponent },
         ]),
         { provide: AuthService, useValue: auth },
         { provide: AccountService, useValue: accountService },
@@ -64,16 +67,51 @@ describe('NavBarComponent', () => {
     expect(current.map((tab) => tab.textContent?.trim())).toEqual(['Trade']);
   });
 
-  it('shows the Admin tab only to admins', () => {
+  describe('for an admin', () => {
     const tabs = (): (string | undefined)[] =>
       Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('.tab')).map((tab) => tab.textContent?.trim());
 
-    expect(tabs()).toEqual(['Portfolio', 'Trade', 'Orders']);
+    it('shows the trading tabs to traders', () => {
+      expect(tabs()).toEqual(['Portfolio', 'Trade', 'Orders']);
+    });
 
-    isAdmin.set(true);
-    fixture.detectChanges();
+    it('shows only the admin tabs, no trading ones', () => {
+      isAdmin.set(true);
+      fixture.detectChanges();
 
-    expect(tabs()).toEqual(['Portfolio', 'Trade', 'Orders', 'Admin']);
+      expect(tabs()).toEqual(['Overview', 'Users']);
+    });
+
+    it('marks only Users as current on /admin/users, not Overview too', async () => {
+      isAdmin.set(true);
+      fixture.detectChanges();
+      await TestBed.inject(Router).navigateByUrl('/admin/users');
+      fixture.detectChanges();
+
+      const current: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('[aria-current="page"]'));
+      expect(current.map((tab) => tab.textContent?.trim())).toEqual(['Users']);
+    });
+
+    it('points the logo at the home page', () => {
+      expect(fixture.nativeElement.querySelector('.brand').getAttribute('href')).toBe('/dashboard');
+
+      isAdmin.set(true);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.brand').getAttribute('href')).toBe('/admin');
+    });
+
+    it('hides the account pill and the trading links in the avatar menu', () => {
+      isAdmin.set(true);
+      fixture.detectChanges();
+      fixture.nativeElement.querySelector('.menu-button').click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.account')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.menu-account')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.menu-change-account')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.menu-sign-out')).not.toBeNull();
+    });
   });
 
   it("shows the user's initial and name", () => {
