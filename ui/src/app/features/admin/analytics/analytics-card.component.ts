@@ -1,4 +1,4 @@
-import { CurrencyPipe, DatePipe, DecimalPipe, DOCUMENT, PercentPipe } from '@angular/common';
+import { DatePipe, DOCUMENT } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -9,8 +9,19 @@ import {
   AdminAnalyticsResponse,
   AdminUserControllerService,
 } from '../../../generated/trading-api-client';
-import { AnalyticsFilters, ASSET_CLASSES, DEFAULT_PERIOD, oneOf, ORDER_TYPES, PERIODS, SIDES } from './analytics';
+import {
+  AnalyticsFilters,
+  ASSET_CLASSES,
+  DEFAULT_PERIOD,
+  MetricKey,
+  METRICS,
+  oneOf,
+  ORDER_TYPES,
+  PERIODS,
+  SIDES,
+} from './analytics';
 import { ChipOption, FilterChipComponent } from './filter-chip.component';
+import { MetricTabsComponent } from './metric-tabs.component';
 
 /** Where the latest request is; only one of these at a time, so the template can't show two. */
 type LoadState = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: AdminAnalyticsResponse };
@@ -18,7 +29,7 @@ type LoadState = { status: 'loading' } | { status: 'error' } | { status: 'ready'
 /** Trading activity across all accounts, on the admin home page. Data from GET /v1/admin/analytics. */
 @Component({
   selector: 'app-analytics-card',
-  imports: [CurrencyPipe, DatePipe, DecimalPipe, PercentPipe, FilterChipComponent],
+  imports: [DatePipe, FilterChipComponent, MetricTabsComponent],
   templateUrl: './analytics-card.component.html',
   styleUrls: ['../../../shared/admin-page.css', './analytics-card.component.css'],
 })
@@ -77,6 +88,10 @@ export class AnalyticsCardComponent {
   readonly traderOptions = computed<ChipOption[]>(() =>
     this.traders().map((trader) => ({ value: trader, label: trader })),
   );
+
+  // Which figure the chart shows; picked with the metric tabs
+  readonly metric = signal<MetricKey>('tradedValue');
+  readonly metricLabel = computed(() => METRICS.find((m) => m.key === this.metric())?.label ?? '');
 
   readonly exporting = signal(false);
   readonly exportError = signal(false);

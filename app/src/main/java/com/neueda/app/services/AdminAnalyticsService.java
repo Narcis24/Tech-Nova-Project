@@ -94,6 +94,17 @@ public class AdminAnalyticsService {
             .collect(Collectors.partitioningBy(row -> market(row.createdOn()).isBefore(current.from())));
         List<OrderActivity> currentRows = beforeCurrent.get(false);
         List<OrderActivity> previousRows = beforeCurrent.get(true);
+        // The current period only has data up to now, so compare it with the previous one up to the same
+        // point: today until 10:50 against yesterday until 10:50, not all of yesterday. The same clock time,
+        // N days earlier, so a daylight-saving change in between doesn't shift it by an hour.
+        List<OrderActivity> previousSoFar = List.of();
+        if (previous != null) {
+            ZonedDateTime previousCutoff =
+                now.minusDays(ChronoUnit.DAYS.between(previous.from().toLocalDate(), current.from().toLocalDate()));
+            previousSoFar = previousRows.stream()
+                .filter(row -> market(row.createdOn()).isBefore(previousCutoff))
+                .toList();
+        }
 
         AnalyticsBucketSize size = period.bucketSize();
         return new AdminAnalyticsResponse(
@@ -104,7 +115,8 @@ public class AdminAnalyticsService {
             previous == null ? null : previous.from().toInstant(),
             previous == null ? null : previous.to().toInstant(),
             totals(currentRows),
-            previous == null ? null : totals(previousRows),
+            previous == null ? null : totals(previousSoFar),
+            // The whole previous period, so the chart's dashed line shows how it ended
             buckets(current, size, currentRows, now),
             previous == null ? List.of() : buckets(previous, size, previousRows, now),
             topTraded(currentRows),

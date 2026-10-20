@@ -1,4 +1,4 @@
-/** Shared by the admin analytics components: the filter values the API takes, and their labels. */
+/** Shared by the admin analytics components: filter values and labels, metrics, and which chart points to draw. */
 
 /** The values the API accepts. A typo here is a compile error, not a 400 at runtime. */
 export type Period = 'TODAY' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'LAST_90_DAYS' | 'YEAR_TO_DATE';
@@ -51,4 +51,128 @@ export const ORDER_TYPES: readonly Option<OrderType>[] = [
 /** The value if it's one of the options, otherwise null; so a hand-edited URL can't break the card. */
 export function oneOf<T extends string>(value: string | null, options: readonly Option<T>[]): T | null {
   return options.find((option) => option.value === value)?.value ?? null;
+}
+
+// --- Metrics
+
+export type MetricKey = 'tradedValue' | 'orders' | 'fillRate' | 'activeTraders';
+
+/** The four headline figures, as AnalyticsTotals holds them; fillRate is null while no order has finished. */
+export type Totals = Record<MetricKey, number | null | undefined>;
+
+const MONEY = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  notation: 'compact',
+  maximumFractionDigits: 2,
+});
+const COUNT = new Intl.NumberFormat('en-US');
+
+export interface Metric {
+  key: MetricKey;
+  label: string;
+  // A CSS colour variable from styles.css; each tab and its chart line share it
+  color: string;
+  format: (value: number) => string;
+  // A rate compares in percentage points ("▲ 1.2 pts"), not as a % of itself
+  isRate: boolean;
+}
+
+// Tab order; the colours were checked as neighbours in this order (see styles.css)
+export const METRICS: readonly Metric[] = [
+  {
+    key: 'tradedValue',
+    label: 'Traded value',
+    color: 'var(--metric-traded-value-color)',
+    format: (v) => MONEY.format(v),
+    isRate: false,
+  },
+  {
+    key: 'orders',
+    label: 'Orders placed',
+    color: 'var(--metric-orders-color)',
+    format: (v) => COUNT.format(v),
+    isRate: false,
+  },
+  {
+    key: 'fillRate',
+    label: 'Fill rate',
+    color: 'var(--metric-fill-rate-color)',
+    format: (v) => `${(v * 100).toFixed(1)}%`,
+    isRate: true,
+  },
+  {
+    key: 'activeTraders',
+    label: 'Active traders',
+    color: 'var(--metric-active-traders-color)',
+    format: (v) => COUNT.format(v),
+    isRate: false,
+  },
+];
+
+export interface Change {
+  direction: 'up' | 'down' | 'flat';
+  text: string;
+}
+
+/** How a figure moved since the previous period, or null when one side is missing (YTD, or no fill rate). */
+export function change(
+  metric: Metric,
+  current: number | null | undefined,
+  previous: number | null | undefined,
+): Change | null {
+  if (current == null || previous == null) {
+    return null;
+  }
+  if (metric.isRate) {
+    const points = Math.round((current - previous) * 1000) / 10;
+    return points === 0
+      ? { direction: 'flat', text: 'No change' }
+      : arrow(points, `${Math.abs(points).toFixed(1)} pts`);
+  }
+  if (previous === 0) {
+    return current === 0 ? { direction: 'flat', text: 'No change' } : { direction: 'up', text: 'New' };
+  }
+  const percent = Math.round(((current - previous) / previous) * 100);
+  return percent === 0 ? { direction: 'flat', text: 'No change' } : arrow(percent, `${Math.abs(percent)}%`);
+}
+
+function arrow(amount: number, text: string): Change {
+  return amount > 0 ? { direction: 'up', text: `▲ ${text}` } : { direction: 'down', text: `▼ ${text}` };
+}
+
+// --- Chart points
+
+// Market days and hours are New York time, as the API groups them
+const NEW_YORK = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  weekday: 'short',
+  hour: 'numeric',
+  hourCycle: 'h23',
+});
+const MARKET_OPEN_HOUR = 9;
+const MARKET_CLOSE_HOUR = 16;
+
+export interface DrawnBucket {
+  start: string;
+  future: boolean;
+}
+
+/**
+ * The buckets worth drawing: daily charts leave out weekends, when nothing trades, and Today keeps
+ * market hours, so lines don't dip to zero every night and weekend. Weekly buckets are all kept.
+ */
+export function drawnBuckets<T extends DrawnBucket>(buckets: readonly T[], bucketSize: string): T[] {
+  return buckets.filter((bucket) => {
+    if (bucketSize === 'WEEK') {
+      return true;
+    }
+    const parts = NEW_YORK.formatToParts(new Date(bucket.start));
+    const part = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+    if (bucketSize === 'DAY') {
+      return part('weekday') !== 'Sat' && part('weekday') !== 'Sun';
+    }
+    const hour = Number(part('hour'));
+    return hour >= MARKET_OPEN_HOUR && hour < MARKET_CLOSE_HOUR;
+  });
 }

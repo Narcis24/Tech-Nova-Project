@@ -1,0 +1,32 @@
+<div class="tabs" role="tablist" aria-label="Metric shown in the chart">
+  @for (tab of tabs(); track tab.metric.key; let i = $index) {
+    <button
+      #tab
+      type="button"
+      class="tab"
+      role="tab"
+      [style.--metric-color]="tab.metric.color"
+      [attr.aria-selected]="tab.metric.key === selected()"
+      [attr.aria-controls]="panelId()"
+      [tabindex]="tab.metric.key === selected() ? 0 : -1"
+      (click)="choose(tab.metric.key)"
+      (keydown)="onKeydown($event, i)"
+    >
+      <span class="label">{{ tab.metric.label }}</span>
+      <span class="row">
+        <span class="value">{{ tab.value }}</span>
+        @if (tab.change; as change) {
+          <span class="change" [attr.data-direction]="change.direction">
+            {{ change.text }}<span class="visually-hidden"> on the previous period</span>
+          </span>
+        }
+      </span>
+      <svg class="trend" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">
+        @if (tab.line) {
+          <path class="area" [attr.d]="tab.area" />
+          <path class="line" [attr.d]="tab.line" />
+        }
+      </svg>
+    </button>
+  }
+</div>

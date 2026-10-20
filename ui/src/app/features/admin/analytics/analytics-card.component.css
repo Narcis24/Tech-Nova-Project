@@ -99,28 +99,16 @@ h2 {
   opacity: 0.6;
 }
 
-.totals {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+/* The tabs run edge to edge, across the card's padding */
+.metric-tabs {
+  display: block;
+  margin: 0 -24px;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  margin: 0;
-}
-
-.totals div {
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: var(--card-background-color);
-}
-
-dt {
-  font-size: 13px;
-  color: var(--secondary-text-color);
-}
-
-dd {
-  margin: 4px 0 0;
-  font-size: 24px;
-  font-weight: 600;
 }
 
 /* Old numbers stay visible, dimmed, while new ones load */
@@ -133,8 +121,8 @@ dd {
     padding: 16px;
   }
 
-  .totals {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .metric-tabs {
+    margin: 0 -16px;
   }
 
   .export {

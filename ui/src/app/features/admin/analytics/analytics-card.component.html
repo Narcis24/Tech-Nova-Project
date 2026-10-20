@@ -67,26 +67,20 @@
       <button type="button" class="retry" (click)="retry()">Try again</button>
     </div>
   } @else if (data(); as data) {
-    <!-- Temporary summary; steps 19-22 replace it with the tabs, chart and lists -->
-    <dl class="totals" [class.stale]="state().status === 'loading'">
-      <div>
-        <dt>Traded value</dt>
-        <dd>{{ data.totals.tradedValue | currency: 'USD' : 'symbol' : '1.0-0' }}</dd>
-      </div>
-      <div>
-        <dt>Orders placed</dt>
-        <dd>{{ data.totals.orders | number }}</dd>
-      </div>
-      <div>
-        <dt>Fill rate</dt>
-        <dd>{{ data.totals.fillRate == null ? '–' : (data.totals.fillRate | percent: '1.1-1') }}</dd>
-      </div>
-      <div>
-        <dt>Active traders</dt>
-        <dd>{{ data.totals.activeTraders | number }}</dd>
-      </div>
-    </dl>
-    <p class="note">{{ data.buckets.length }} chart points · {{ data.topTradedInstruments.length }} top instruments</p>
+    <div class="body" [class.stale]="state().status === 'loading'">
+      <app-metric-tabs
+        class="metric-tabs"
+        [data]="data"
+        [selected]="metric()"
+        panelId="analytics-chart"
+        (selectedChange)="metric.set($event)"
+      />
+      <!-- Temporary; step 20 replaces it with the chart, which gets id="analytics-chart" -->
+      <p class="note" id="analytics-chart">
+        Chart of {{ metricLabel() }} · {{ data.buckets.length }} points · {{ data.topTradedInstruments.length }} top
+        instruments
+      </p>
+    </div>
   } @else {
     <p class="loading">Loading trading activity…</p>
   }
