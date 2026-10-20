@@ -343,6 +343,27 @@ class ExecutionEngineTest {
         assertEquals(List.of("ENGINE_STARTED"), journalTypes("2026-10-14"));
     }
 
+    @Test
+    void aCancelledWaitingOrderNeverFillsOnALaterQuote() throws Exception {
+        place("LIMIT", "90.00");
+        engine.handleOrderPlaced(mapper.writeValueAsString(new EventEnvelope<>("e2", "ORDER_CANCELLED",
+            Instant.now(), "app", 1, new com.neueda.events.OrderCancelledEvent(orderId))));
+
+        engine.onQuote(quoteMessage("88.50", "89.00"));             // would have crossed the 90.00 limit
+
+        verify(producer, never()).publishEvent(any(), any(), eq("ORDER_EXECUTED"), any(), any());
+        assertEquals(List.of("ORDER_RECEIVED", "DECISION:WAIT", "ORDER_CANCELLED", "QUOTE_RECEIVED"),
+            journalTypes("2026-10-14"));
+    }
+
+    @Test
+    void cancellingAnOrderThatIsNotWaitingIsHarmless() throws Exception {
+        engine.cancel(UUID.randomUUID());
+
+        verify(producer, never()).publishEvent(any(), any(), any(), any(), any());
+        assertEquals(List.of("ORDER_CANCELLED"), journalTypes("2026-10-14"));
+    }
+
     private String quoteMessage(String bid, String ask) throws Exception {
         return mapper.writeValueAsString(new EventEnvelope<>("q", "MARKET_DATA", Instant.now(), "p", 1,
             new Quote("AAPL", new BigDecimal(bid), new BigDecimal(ask), Instant.now())));

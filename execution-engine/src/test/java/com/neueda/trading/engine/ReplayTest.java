@@ -220,4 +220,24 @@ class ReplayTest {
         assertEquals(1, Replay.execute(new String[] {empty.toString()}, new PrintStream(out)));
         assertTrue(out.toString().contains("no journals found"), out.toString());
     }
+
+    @Test
+    void aCancelInTheJournalIsReplayedSoTheOrderDoesNotFill() throws Exception {
+        ExecutionEngine engine = recordingEngine(true);
+        OrderPlacedEvent limit = order("LIMIT", "90.00");
+        engine.handle(limit);                                        // WAIT
+        engine.cancel(limit.orderId());
+        engine.accept(quote("88.50", "89.00", OPEN));                // crosses, but the order was cancelled
+
+        Replay.Result result = replay("2026-10-14");
+        assertTrue(result.matches(), () -> result.differences().toString());
+        assertEquals(List.of("WAIT"), result.recorded().stream().map(Replay.Decision::decision).toList());
+
+        // Without the cancel line, the replay engine would fill it: proof the cancel is fed, not skipped
+        Path journal = dir.resolve("2026-10-14.jsonl");
+        Files.write(journal, Files.readAllLines(journal).stream().filter(l -> !l.contains("ORDER_CANCELLED")).toList());
+        Replay.Result withoutCancel = replay("2026-10-14");
+        assertEquals(1, withoutCancel.differences().size(), () -> withoutCancel.differences().toString());
+        assertEquals("FILL", withoutCancel.differences().getFirst().replayed().decision());
+    }
 }

@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
@@ -227,6 +228,10 @@ public final class Replay {
                     engine.accept(mapper.treeToValue(line.get("quote"), Quote.class));
                     lastQuotes.put(line.get("quote").get("symbol").asString(), line.get("quote"));
                     quotes++;
+                }
+                case JournalTypes.ORDER_CANCELLED -> {
+                    engine = engine != null ? engine : freshEngine(line);
+                    engine.cancel(UUID.fromString(line.get("orderId").asString()));
                 }
                 case JournalTypes.DECISION -> {
                     String orderId = line.get("orderId").asString();
