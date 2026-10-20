@@ -230,6 +230,10 @@ public final class Replay {
                     lastQuotes.put(line.get("quote").get("symbol").asString(), line.get("quote"));
                     quotes++;
                 }
+                case JournalTypes.ORDER_CANCELLED -> {
+                    engine = engine != null ? engine : freshEngine(line);
+                    engine.cancel(UUID.fromString(line.get("orderId").asString()));
+                }
                 case JournalTypes.DECISION -> {
                     String orderId = line.get("orderId").asString();
                     recorded.add(new Decision(
