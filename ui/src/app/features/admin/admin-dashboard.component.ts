@@ -4,13 +4,14 @@ import { RouterLink } from '@angular/router';
 
 import { AdminUserControllerService, AdminUserResponse } from '../../generated/trading-api-client';
 import { AuthService } from '../../services/auth.service';
+import { AnalyticsCardComponent } from './analytics/analytics-card.component';
 
 const RECENT_USERS = 5;
 
 /** The admin's home page: who uses TechNova, at a glance. Data from GET /v1/admin/users. */
 @Component({
   selector: 'app-admin-dashboard',
-  imports: [RouterLink, DatePipe],
+  imports: [RouterLink, DatePipe, AnalyticsCardComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['../../shared/admin-page.css', './admin-dashboard.component.css'],
 })

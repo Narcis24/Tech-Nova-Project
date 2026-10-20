@@ -102,3 +102,9 @@ h2 {
     gap: 8px;
   }
 }
+
+/* Space between the users section and the analytics card below it */
+.analytics {
+  display: block;
+  margin-top: 32px;
+}

@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Observable, Subject, of, throwError } from 'rxjs';
@@ -6,6 +6,11 @@ import { Observable, Subject, of, throwError } from 'rxjs';
 import { AdminUserControllerService, AdminUserResponse } from '../../generated/trading-api-client';
 import { AuthService } from '../../services/auth.service';
 import { AdminDashboardComponent } from './admin-dashboard.component';
+import { AnalyticsCardComponent } from './analytics/analytics-card.component';
+
+// Stands in for the analytics card, which has its own spec and services
+@Component({ selector: 'app-analytics-card', template: '' })
+class AnalyticsCardStub {}
 
 const USERS: AdminUserResponse[] = [
   { username: 'test_admin', email: 'test_admin@technova.local', roles: ['ADMIN'], createdAt: '2026-10-19T09:25:14Z' },
@@ -38,6 +43,10 @@ describe('AdminDashboardComponent', () => {
         { provide: AdminUserControllerService, useValue: { listUsers } },
         { provide: AuthService, useValue: { username: signal('test_admin') } },
       ],
+    });
+    TestBed.overrideComponent(AdminDashboardComponent, {
+      remove: { imports: [AnalyticsCardComponent] },
+      add: { imports: [AnalyticsCardStub] },
     });
     fixture = TestBed.createComponent(AdminDashboardComponent);
     fixture.detectChanges();
