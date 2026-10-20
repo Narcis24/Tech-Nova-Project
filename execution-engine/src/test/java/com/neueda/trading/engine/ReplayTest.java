@@ -220,4 +220,62 @@ class ReplayTest {
         assertEquals(1, Replay.execute(new String[] {empty.toString()}, new PrintStream(out)));
         assertTrue(out.toString().contains("no journals found"), out.toString());
     }
+
+    /** Rewrites the journal's lines; for simulating journals that differ from what the engine decides. */
+    private void editJournal(String day, java.util.function.UnaryOperator<List<String>> edit) throws Exception {
+        Path journal = dir.resolve(day + ".jsonl");
+        Files.write(journal, edit.apply(new java.util.ArrayList<>(Files.readAllLines(journal))));
+    }
+
+    @Test
+    void decisionsOfDifferentOrdersInAnotherOrderStillMatch() throws Exception {
+        ExecutionEngine engine = recordingEngine(true);
+        engine.handle(order("MARKET", null));                       // REJECT (no quote)
+        engine.handle(order("LIMIT", "90.00"));                     // WAIT
+        // Swap the two decision lines, as a race between two orders could
+        editJournal("2026-10-14", lines -> {
+            int reject = indexOf(lines, "\"REJECT\"");
+            int wait = indexOf(lines, "\"WAIT\"");
+            String first = lines.get(reject);
+            lines.set(reject, lines.get(wait));
+            lines.set(wait, first);
+            return lines;
+        });
+
+        Replay.Result result = replay("2026-10-14");
+
+        assertTrue(result.matches(), () -> result.differences().toString());
+    }
+
+    @Test
+    void aMissingDecisionOnlyAffectsItsOwnOrder() throws Exception {
+        ExecutionEngine engine = recordingEngine(true);
+        OrderPlacedEvent limit = order("LIMIT", "90.00");
+        engine.handle(limit);                                       // WAIT
+        for (int i = 0; i < 5; i++) {
+            engine.handle(order("MARKET", null));                   // 5 x REJECT, after the WAIT
+        }
+        editJournal("2026-10-14", lines -> {
+            lines.remove(indexOf(lines, "\"WAIT\""));
+            return lines;
+        });
+
+        Replay.Result result = replay("2026-10-14");
+
+        // Compared by position, all 5 later rejections would also have shown as different
+        assertEquals(1, result.differences().size(), () -> result.differences().toString());
+        Replay.Difference missing = result.differences().getFirst();
+        assertEquals(null, missing.recorded());
+        assertEquals(limit.orderId().toString(), missing.replayed().orderId());
+        assertTrue(missing.toString().startsWith("not recorded"), missing.toString());
+    }
+
+    private static int indexOf(List<String> lines, String text) {
+        for (int i = 0; i < lines.size(); i++) {
+            if (lines.get(i).contains(text)) {
+                return i;
+            }
+        }
+        throw new AssertionError("no journal line contains " + text);
+    }
 }
