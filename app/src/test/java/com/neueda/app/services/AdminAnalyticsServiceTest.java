@@ -302,6 +302,56 @@ class AdminAnalyticsServiceTest {
         assertMoney("1", share(response.assetMix(), AssetClass.EQUITY));
     }
 
+    // --- CSV export
+
+    @Test
+    void exportHasAHeaderAndOneRowPerChartPointSoFar() {
+        noOrders();
+
+        List<String> lines = service.exportCsv(AnalyticsPeriod.TODAY, null, null, null, null).lines().toList();
+
+        assertEquals("start_new_york,traded_value,orders,fill_rate,active_traders,buy_value,sell_value,"
+            + "equity_value,bond_value,commodity_value,etf_value", lines.get(0));
+        // Midnight to the 14:00 hour; 15:00 onwards hasn't happened yet
+        assertEquals(1 + 15, lines.size());
+        assertEquals("2026-10-20 00:00,0,0,,0,0,0,0,0,0,0", lines.get(1));
+        assertTrue(lines.get(15).startsWith("2026-10-20 14:00,"));
+    }
+
+    @Test
+    void exportRowsMatchTheChartPointsInNewYorkTime() {
+        orders(
+            row("2026-10-20T13:15:00", "AAPL", OrderSide.BUY, OrderStatus.FILLED, 10, "150.00", "alice"),   // 09:15
+            row("2026-10-20T13:20:00", "GLD", OrderSide.SELL, OrderStatus.FILLED, 2, "100.00", "bob"),
+            row("2026-10-20T13:25:00", "AAPL", OrderSide.BUY, OrderStatus.CANCELLED, 1, "150.00", "bob"));
+
+        String nineOClock = service.exportCsv(AnalyticsPeriod.TODAY, null, null, null, null).lines()
+            .filter(line -> line.startsWith("2026-10-20 09:00,")).findFirst().orElseThrow();
+
+        // traded, orders, fill rate (2 of 3), traders, buy, sell, then equity, bond, commodity, etf
+        assertEquals("2026-10-20 09:00,1700.00,3,0.6667,2,1500.00,200.00,1500.00,0,200.00,0", nineOClock);
+    }
+
+    @Test
+    void exportWritesLargeValuesWithoutScientificNotation() {
+        orders(filled("2026-10-20T14:00:00", "AAPL", 100000, "1000.00"));
+
+        String csv = service.exportCsv(AnalyticsPeriod.TODAY, null, null, null, null);
+
+        assertTrue(csv.contains(",100000000.00,"));
+        assertFalse(csv.contains("E+"));
+    }
+
+    @Test
+    void exportUsesTheSameQueryAsTheDashboard() {
+        noOrders();
+
+        service.exportCsv(AnalyticsPeriod.LAST_7_DAYS, AssetClass.ETF, OrderSide.SELL, OrderType.LIMIT, "alice");
+
+        verify(orderRepository).findActivity(LocalDateTime.of(2026, 10, 7, 4, 0), LocalDateTime.of(2026, 10, 21, 4, 0),
+            AssetClass.ETF, OrderSide.SELL, OrderType.LIMIT, "alice");
+    }
+
     // --- Helpers
 
     private AdminAnalyticsResponse analytics(AnalyticsPeriod period) {

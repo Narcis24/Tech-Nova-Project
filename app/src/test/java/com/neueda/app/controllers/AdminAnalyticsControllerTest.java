@@ -28,6 +28,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -144,6 +146,53 @@ class AdminAnalyticsControllerTest {
     @Test
     void analytics_LowerCaseAssetClass_Returns400() throws Exception {
         mockMvc.perform(get("/v1/admin/analytics").param("assetClass", "etf")
+                .header("Authorization", "Bearer admin-token"))
+            .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(adminAnalyticsService);
+    }
+
+    @Test
+    void export_Admin_ReturnsACsvDownload() throws Exception {
+        when(adminAnalyticsService.exportCsv(any(), any(), any(), any(), any()))
+            .thenReturn("start_new_york,traded_value\n2026-10-20 09:00,1500.00\n");
+
+        mockMvc.perform(get("/v1/admin/analytics/export").param("period", "LAST_7_DAYS")
+                .header("Authorization", "Bearer admin-token"))
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith("text/csv"))
+            .andExpect(header().string("Content-Disposition",
+                "attachment; filename=\"technova-analytics-last-7-days.csv\""))
+            .andExpect(content().string("start_new_york,traded_value\n2026-10-20 09:00,1500.00\n"));
+    }
+
+    @Test
+    void export_PassesTheSameParametersAsAnalytics() throws Exception {
+        when(adminAnalyticsService.exportCsv(any(), any(), any(), any(), any())).thenReturn("");
+
+        mockMvc.perform(get("/v1/admin/analytics/export")
+                .param("assetClass", "BOND")
+                .param("side", "BUY")
+                .param("orderType", "MARKET")
+                .param("trader", "bob")
+                .header("Authorization", "Bearer admin-token"))
+            .andExpect(status().isOk());
+
+        verify(adminAnalyticsService).exportCsv(AnalyticsPeriod.LAST_30_DAYS, AssetClass.BOND, OrderSide.BUY,
+            OrderType.MARKET, "bob");
+    }
+
+    @Test
+    void export_Trader_Returns403() throws Exception {
+        mockMvc.perform(get("/v1/admin/analytics/export").header("Authorization", "Bearer trader-token"))
+            .andExpect(status().isForbidden());
+
+        verifyNoInteractions(adminAnalyticsService);
+    }
+
+    @Test
+    void export_UnknownPeriod_Returns400() throws Exception {
+        mockMvc.perform(get("/v1/admin/analytics/export").param("period", "FOREVER")
                 .header("Authorization", "Bearer admin-token"))
             .andExpect(status().isBadRequest());
 

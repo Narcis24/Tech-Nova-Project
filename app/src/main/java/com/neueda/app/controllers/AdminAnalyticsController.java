@@ -6,6 +6,10 @@ import com.neueda.app.enums.AssetClass;
 import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderType;
 import com.neueda.app.services.AdminAnalyticsService;
+import java.nio.charset.StandardCharsets;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/v1/admin/analytics")
 public class AdminAnalyticsController {
+
+    private static final MediaType CSV = new MediaType("text", "csv", StandardCharsets.UTF_8);
 
     private final AdminAnalyticsService adminAnalyticsService;
 
@@ -36,5 +42,22 @@ public class AdminAnalyticsController {
         @RequestParam(required = false) String trader) {
             
             return ResponseEntity.ok(adminAnalyticsService.analytics(period, assetClass, side, orderType, trader));
+    }
+
+    /** The same data as a CSV download, one row per chart point. Takes the same parameters as analytics. */
+    @GetMapping(value = "/export", produces = "text/csv")
+    public ResponseEntity<String> export(
+        @RequestParam(defaultValue = "LAST_30_DAYS") AnalyticsPeriod period,
+        @RequestParam(required = false) AssetClass assetClass,
+        @RequestParam(required = false) OrderSide side,
+        @RequestParam(required = false) OrderType orderType,
+        @RequestParam(required = false) String trader) {
+
+            String filename = "technova-analytics-" + period.name().toLowerCase().replace('_', '-') + ".csv";
+            return ResponseEntity.ok()
+                // attachment: browsers save the file instead of showing it
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(filename).build().toString())
+                .contentType(CSV)
+                .body(adminAnalyticsService.exportCsv(period, assetClass, side, orderType, trader));
     }
 }

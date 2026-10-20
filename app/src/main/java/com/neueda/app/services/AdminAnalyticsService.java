@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
@@ -49,6 +50,11 @@ public class AdminAnalyticsService {
     static final ZoneId MARKET_ZONE = ZoneId.of("America/New_York");
     private static final int TOP_TRADED = 6;
     private static final int RATE_SCALE = 4;
+    // A plain local time, which spreadsheets read as a date without any setup
+    private static final DateTimeFormatter CSV_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final String CSV_HEADER = "start_new_york,traded_value,orders,fill_rate,active_traders,"
+        + "buy_value,sell_value,"
+        + Arrays.stream(AssetClass.values()).map(c -> c.name().toLowerCase() + "_value").collect(Collectors.joining(","));
     // Statuses an order can't leave; the fill rate is taken over these
     private static final Set<OrderStatus> FINISHED =
         EnumSet.of(OrderStatus.FILLED, OrderStatus.CANCELLED, OrderStatus.REJECTED, OrderStatus.EXPIRED);
@@ -92,6 +98,38 @@ public class AdminAnalyticsService {
             previous == null ? List.of() : buckets(previous, size, previousRows, now),
             topTraded(currentRows),
             assetMix(currentRows));
+    }
+
+    /**
+     * The same period and filters as analytics, one CSV row per chart point. Hours that haven't
+     * happened yet are left out. Times are New York, as the card shows them.
+     */
+    @Transactional(readOnly = true)
+    public String exportCsv(AnalyticsPeriod period, AssetClass assetClass,
+                            OrderSide side, OrderType orderType, String trader) {
+        StringBuilder csv = new StringBuilder(CSV_HEADER).append('\n');
+        for (AnalyticsBucket bucket : analytics(period, assetClass, side, orderType, trader).buckets()) {
+            if (bucket.future()) {
+                continue;
+            }
+            AnalyticsTotals totals = bucket.totals();
+            List<Object> cells = new ArrayList<>(List.of(
+                CSV_TIME.format(bucket.start().atZone(MARKET_ZONE)),
+                totals.tradedValue(),
+                totals.orders(),
+                totals.fillRate() == null ? "" : totals.fillRate(),   // blank, not 0, when nothing finished
+                totals.activeTraders(),
+                bucket.bySide().get(OrderSide.BUY).tradedValue(),
+                bucket.bySide().get(OrderSide.SELL).tradedValue()));
+            for (AssetClass assetClassColumn : AssetClass.values()) {
+                cells.add(bucket.byAssetClass().get(assetClassColumn).tradedValue());
+            }
+            // toPlainString, as toString can give 1E+3, which spreadsheets misread
+            csv.append(cells.stream()
+                .map(cell -> cell instanceof BigDecimal number ? number.toPlainString() : String.valueOf(cell))
+                .collect(Collectors.joining(","))).append('\n');
+        }
+        return csv.toString();
     }
 
     /** A half-open span of time, [from, to), in market time. */
