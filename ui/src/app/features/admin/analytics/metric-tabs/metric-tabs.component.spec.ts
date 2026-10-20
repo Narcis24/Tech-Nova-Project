@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { AdminAnalyticsResponse, AnalyticsBucket, AnalyticsTotals } from '../../../generated/trading-api-client';
-import { MetricKey } from './analytics';
+import { AdminAnalyticsResponse, AnalyticsBucket, AnalyticsTotals } from '../../../../generated/trading-api-client';
+import { MetricKey } from '../analytics';
 import { MetricTabsComponent } from './metric-tabs.component';
 
 const ZERO: AnalyticsTotals = { tradedValue: 0, orders: 0, activeTraders: 0 };

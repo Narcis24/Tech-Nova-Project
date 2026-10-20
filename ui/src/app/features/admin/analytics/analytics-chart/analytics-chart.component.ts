@@ -10,8 +10,8 @@ import {
   viewChild,
 } from '@angular/core';
 
-import { AdminAnalyticsResponse, AnalyticsBucket, AnalyticsTotals } from '../../../generated/trading-api-client';
-import { ASSET_CLASSES, drawnBuckets, MetricKey, METRICS } from './analytics';
+import { AdminAnalyticsResponse, AnalyticsBucket, AnalyticsTotals } from '../../../../generated/trading-api-client';
+import { ASSET_CLASSES, drawnBuckets, MetricKey, METRICS } from '../analytics';
 
 export type Split = 'total' | 'assetClass' | 'side';
 

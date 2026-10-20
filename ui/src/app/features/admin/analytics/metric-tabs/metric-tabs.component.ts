@@ -1,7 +1,7 @@
 import { Component, computed, ElementRef, input, output, viewChildren } from '@angular/core';
 
-import { AdminAnalyticsResponse } from '../../../generated/trading-api-client';
-import { change, Change, drawnBuckets, Metric, MetricKey, METRICS } from './analytics';
+import { AdminAnalyticsResponse } from '../../../../generated/trading-api-client';
+import { change, Change, drawnBuckets, Metric, MetricKey, METRICS } from '../analytics';
 
 /** One tab, worked out once per response rather than in the template. */
 interface Tab {

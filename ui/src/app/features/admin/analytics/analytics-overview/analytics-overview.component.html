@@ -1,0 +1,25 @@
+@if (store.state().status === 'error') {
+  <div class="load-error" role="alert">
+    <p>Couldn't load the trading activity.</p>
+    <button type="button" class="retry" (click)="store.retry()">Try again</button>
+  </div>
+} @else if (store.data(); as data) {
+  <div class="body" [class.stale]="store.loading()">
+    <app-metric-tabs
+      class="metric-tabs"
+      [data]="data"
+      [selected]="store.metric()"
+      panelId="analytics-chart"
+      (selectedChange)="store.metric.set($event)"
+    />
+    <app-analytics-chart
+      id="analytics-chart"
+      role="tabpanel"
+      [attr.aria-label]="store.metricLabel()"
+      [data]="data"
+      [metricKey]="store.metric()"
+    />
+  </div>
+} @else {
+  <p class="loading">Loading trading activity…</p>
+}

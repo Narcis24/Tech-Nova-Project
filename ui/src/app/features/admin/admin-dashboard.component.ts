@@ -3,15 +3,18 @@ import { RouterLink } from '@angular/router';
 
 import { AdminUserControllerService, AdminUserResponse } from '../../generated/trading-api-client';
 import { AuthService } from '../../services/auth.service';
-import { AnalyticsCardComponent } from './analytics/analytics-card.component';
+import { AnalyticsFiltersComponent } from './analytics/analytics-filters/analytics-filters.component';
+import { AnalyticsOverviewComponent } from './analytics/analytics-overview/analytics-overview.component';
+import { AnalyticsStore } from './analytics/analytics.store';
 
 /**
- * The admin's home page: user counts from GET /v1/admin/users, then trading activity in the
- * analytics card. The full user list is on the users page.
+ * The admin's home page: user counts from GET /v1/admin/users, then the trading activity widgets,
+ * which share one AnalyticsStore provided here. The full user list is on the users page.
  */
 @Component({
   selector: 'app-admin-dashboard',
-  imports: [RouterLink, AnalyticsCardComponent],
+  imports: [RouterLink, AnalyticsFiltersComponent, AnalyticsOverviewComponent],
+  providers: [AnalyticsStore],
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['../../shared/admin-page.css', './admin-dashboard.component.css'],
 })

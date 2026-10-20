@@ -1,5 +1,5 @@
-import { DatePipe, DOCUMENT } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, map, of, startWith, switchMap } from 'rxjs';
@@ -20,31 +20,22 @@ import {
   PERIODS,
   SIDES,
 } from './analytics';
-import { ChipOption, FilterChipComponent } from './filter-chip.component';
-import { AnalyticsChartComponent } from './analytics-chart.component';
-import { MetricTabsComponent } from './metric-tabs.component';
 
-/** Where the latest request is; only one of these at a time, so the template can't show two. */
-type LoadState = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: AdminAnalyticsResponse };
+/** Where the latest request is; only one of these at a time, so a widget can't show two. */
+export type LoadState = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: AdminAnalyticsResponse };
 
-/** Trading activity across all accounts, on the admin home page. Data from GET /v1/admin/analytics. */
-@Component({
-  selector: 'app-analytics-card',
-  imports: [DatePipe, AnalyticsChartComponent, FilterChipComponent, MetricTabsComponent],
-  templateUrl: './analytics-card.component.html',
-  styleUrls: ['../../../shared/admin-page.css', './analytics-card.component.css'],
-})
-export class AnalyticsCardComponent {
+/**
+ * The admin analytics' shared state: the filters (kept in the URL), the metric being charted, and one
+ * GET /v1/admin/analytics response that every widget reads. Provide it on the page that shows the
+ * widgets, as AdminDashboardComponent does, so they share one copy and one request per filter change.
+ */
+@Injectable()
+export class AnalyticsStore {
   private readonly api = inject(AdminAnalyticsControllerService);
   private readonly adminUsers = inject(AdminUserControllerService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly document = inject(DOCUMENT);
-
-  readonly periods = PERIODS;
-  readonly assetClasses = ASSET_CLASSES;
-  readonly sides = SIDES;
-  readonly orderTypes = ORDER_TYPES;
 
   // The URL is the only place the filters live, so reloading or sharing the link keeps the view
   private readonly query = toSignal(this.route.queryParamMap, { requireSync: true });
@@ -65,13 +56,14 @@ export class AnalyticsCardComponent {
     return !!(assetClass || side || orderType || trader);
   });
 
-  // Bumped by "Try again", so the same filters load again
+  // Bumped by retry(), so the same filters load again
   private readonly revision = signal(0);
   private readonly request = computed(() => ({ filters: this.filters(), revision: this.revision() }));
 
   readonly state = signal<LoadState>({ status: 'loading' });
-  // The last good response, kept while the next one loads so the card doesn't flash empty
+  // The last good response, kept while the next one loads so widgets don't flash empty
   readonly data = signal<AdminAnalyticsResponse | null>(null);
+  readonly loading = computed(() => this.state().status === 'loading');
 
   // Usernames for the trader filter; an empty list if they can't load, as the filter is optional
   readonly traders = toSignal(
@@ -86,13 +78,10 @@ export class AnalyticsCardComponent {
     ),
     { initialValue: [] },
   );
-  readonly traderOptions = computed<ChipOption[]>(() =>
-    this.traders().map((trader) => ({ value: trader, label: trader })),
-  );
 
   // Which figure the chart shows; picked with the metric tabs
   readonly metric = signal<MetricKey>('tradedValue');
-  readonly metricLabel = computed(() => METRICS.find((m) => m.key === this.metric())?.label ?? '');
+  readonly metricLabel = computed(() => METRICS.find((metric) => metric.key === this.metric())?.label ?? '');
 
   readonly exporting = signal(false);
   readonly exportError = signal(false);

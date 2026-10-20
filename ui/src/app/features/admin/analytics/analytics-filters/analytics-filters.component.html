@@ -1,0 +1,61 @@
+<header class="head">
+  <div>
+    <h2 id="analytics-heading">Trading activity</h2>
+    @if (store.data(); as data) {
+      <p class="range">{{ data.from | date: 'd MMM' }} – {{ data.to | date: 'd MMM' }}</p>
+    }
+  </div>
+
+  <div class="periods" role="group" aria-label="Period">
+    @for (option of periods; track option.value) {
+      <button
+        type="button"
+        [attr.aria-pressed]="store.filters().period === option.value"
+        (click)="store.setFilter('period', option.value)"
+      >
+        {{ option.label }}
+      </button>
+    }
+  </div>
+</header>
+
+<div class="filters" role="group" aria-label="Filters">
+  <app-filter-chip
+    label="Asset class"
+    [options]="assetClasses"
+    [value]="store.filters().assetClass"
+    (valueChange)="store.setFilter('assetClass', $event)"
+  />
+  <app-filter-chip
+    label="Side"
+    allLabel="Buy and sell"
+    [options]="sides"
+    [value]="store.filters().side"
+    (valueChange)="store.setFilter('side', $event)"
+  />
+  <app-filter-chip
+    label="Order type"
+    allLabel="Market and limit"
+    [options]="orderTypes"
+    [value]="store.filters().orderType"
+    (valueChange)="store.setFilter('orderType', $event)"
+  />
+  <app-filter-chip
+    label="Trader"
+    [options]="traderOptions()"
+    [value]="store.filters().trader"
+    [searchable]="true"
+    (valueChange)="store.setFilter('trader', $event)"
+  />
+
+  @if (store.hasFilters()) {
+    <button type="button" class="clear" (click)="store.clearFilters()">Clear filters</button>
+  }
+  <button type="button" class="export" [disabled]="store.exporting()" (click)="store.exportCsv()">
+    {{ store.exporting() ? 'Exporting…' : 'Export CSV' }}
+  </button>
+</div>
+
+@if (store.exportError()) {
+  <p class="load-error" role="alert">Couldn't export the data. Try again.</p>
+}

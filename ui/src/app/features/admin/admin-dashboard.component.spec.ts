@@ -6,11 +6,16 @@ import { Observable, Subject, of, throwError } from 'rxjs';
 import { AdminUserControllerService, AdminUserResponse } from '../../generated/trading-api-client';
 import { AuthService } from '../../services/auth.service';
 import { AdminDashboardComponent } from './admin-dashboard.component';
-import { AnalyticsCardComponent } from './analytics/analytics-card.component';
+import { AnalyticsFiltersComponent } from './analytics/analytics-filters/analytics-filters.component';
+import { AnalyticsOverviewComponent } from './analytics/analytics-overview/analytics-overview.component';
+import { AnalyticsStore } from './analytics/analytics.store';
 
-// Stands in for the analytics card, which has its own spec and services
-@Component({ selector: 'app-analytics-card', template: '' })
-class AnalyticsCardStub {}
+// Stand in for the analytics widgets and their store, which have their own specs
+@Component({ selector: 'app-analytics-filters', template: '' })
+class AnalyticsFiltersStub {}
+
+@Component({ selector: 'app-analytics-overview', template: '' })
+class AnalyticsOverviewStub {}
 
 const USERS: AdminUserResponse[] = [
   { username: 'test_admin', email: 'test_admin@technova.local', roles: ['ADMIN'], createdAt: '2026-10-19T09:25:14Z' },
@@ -45,9 +50,10 @@ describe('AdminDashboardComponent', () => {
       ],
     });
     TestBed.overrideComponent(AdminDashboardComponent, {
-      remove: { imports: [AnalyticsCardComponent] },
-      add: { imports: [AnalyticsCardStub] },
+      remove: { imports: [AnalyticsFiltersComponent, AnalyticsOverviewComponent] },
+      add: { imports: [AnalyticsFiltersStub, AnalyticsOverviewStub] },
     });
+    TestBed.overrideProvider(AnalyticsStore, { useValue: {} });
     fixture = TestBed.createComponent(AdminDashboardComponent);
     fixture.detectChanges();
     return fixture.nativeElement;

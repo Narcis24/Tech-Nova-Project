@@ -1,0 +1,24 @@
+/* Loading and error styles come from shared/admin-page.css */
+:host {
+  display: block;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/*
+ * The tabs run edge to edge across the panel's side padding; --panel-padding is set by the panel
+ * the overview sits in (24px by default)
+ */
+.metric-tabs {
+  display: block;
+  margin: 0 calc(-1 * var(--panel-padding, 24px));
+}
+
+/* Old numbers stay visible, dimmed, while new ones load */
+.stale {
+  opacity: 0.55;
+}
