@@ -1,0 +1,208 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.head,
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--secondary-text-color);
+}
+
+.legend li,
+.row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.dash {
+  width: 16px;
+  border-top: 2px dashed var(--secondary-text-color);
+}
+
+/* The same segmented look as the period buttons */
+.split {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--muted-background-color);
+}
+
+.split button,
+.link {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.split button {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--secondary-text-color);
+}
+
+.split button[aria-pressed='true'] {
+  background: var(--elevated-background-color);
+  box-shadow: var(--card-shadow);
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.link {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.plot {
+  position: relative;
+}
+
+svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+.grid {
+  stroke: var(--subtle-border-color);
+}
+
+.grid.base {
+  stroke: var(--strong-border-color);
+}
+
+.axis {
+  font-size: 11px;
+  fill: var(--secondary-text-color);
+}
+
+.line,
+.previous {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.previous {
+  stroke: var(--secondary-text-color);
+  stroke-width: 2;
+  stroke-dasharray: 4 4;
+  opacity: 0.7;
+}
+
+.end {
+  stroke: var(--elevated-background-color);
+  stroke-width: 2;
+}
+
+.cursor {
+  stroke: var(--strong-border-color);
+}
+
+.tooltip {
+  position: absolute;
+  top: 4px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 196px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: var(--elevated-background-color);
+  box-shadow: var(--dropdown-shadow);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--secondary-text-color);
+}
+
+.row b {
+  color: var(--text-color);
+}
+
+.sum {
+  padding-top: 4px;
+  border-top: 1px solid var(--subtle-border-color);
+}
+
+.muted,
+.empty {
+  color: var(--secondary-text-color);
+}
+
+.empty {
+  margin: 0;
+  padding: 48px 0;
+  text-align: center;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th,
+td {
+  padding: 8px;
+  border-bottom: 1px solid var(--subtle-border-color);
+  text-align: left;
+  white-space: nowrap;
+}
+
+thead th {
+  font-size: 12px;
+  color: var(--secondary-text-color);
+}
+
+.num {
+  text-align: right;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -57,13 +57,12 @@ export function oneOf<T extends string>(value: string | null, options: readonly 
 
 export type MetricKey = 'tradedValue' | 'orders' | 'fillRate' | 'activeTraders';
 
-/** The four headline figures, as AnalyticsTotals holds them; fillRate is null while no order has finished. */
-export type Totals = Record<MetricKey, number | null | undefined>;
-
 const MONEY = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
   notation: 'compact',
+  // Currencies default to two decimals, which would show $200.00 next to $7.59M
+  minimumFractionDigits: 0,
   maximumFractionDigits: 2,
 });
 const COUNT = new Intl.NumberFormat('en-US');

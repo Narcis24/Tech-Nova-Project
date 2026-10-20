@@ -75,11 +75,13 @@
         panelId="analytics-chart"
         (selectedChange)="metric.set($event)"
       />
-      <!-- Temporary; step 20 replaces it with the chart, which gets id="analytics-chart" -->
-      <p class="note" id="analytics-chart">
-        Chart of {{ metricLabel() }} · {{ data.buckets.length }} points · {{ data.topTradedInstruments.length }} top
-        instruments
-      </p>
+      <app-analytics-chart
+        id="analytics-chart"
+        role="tabpanel"
+        [attr.aria-label]="metricLabel()"
+        [data]="data"
+        [metricKey]="metric()"
+      />
     </div>
   } @else {
     <p class="loading">Loading trading activity…</p>

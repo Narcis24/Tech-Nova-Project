@@ -21,6 +21,7 @@ import {
   SIDES,
 } from './analytics';
 import { ChipOption, FilterChipComponent } from './filter-chip.component';
+import { AnalyticsChartComponent } from './analytics-chart.component';
 import { MetricTabsComponent } from './metric-tabs.component';
 
 /** Where the latest request is; only one of these at a time, so the template can't show two. */
@@ -29,7 +30,7 @@ type LoadState = { status: 'loading' } | { status: 'error' } | { status: 'ready'
 /** Trading activity across all accounts, on the admin home page. Data from GET /v1/admin/analytics. */
 @Component({
   selector: 'app-analytics-card',
-  imports: [DatePipe, FilterChipComponent, MetricTabsComponent],
+  imports: [DatePipe, AnalyticsChartComponent, FilterChipComponent, MetricTabsComponent],
   templateUrl: './analytics-card.component.html',
   styleUrls: ['../../../shared/admin-page.css', './analytics-card.component.css'],
 })
