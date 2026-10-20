@@ -49,18 +49,32 @@
 }
 
 /*
- * The analytics widgets on a two-column grid, wide then narrow; a widget with .full-row takes the whole
- * row instead. The widgets don't decide their own width, so the layout is changed here alone.
+ * The analytics widgets on a six-column grid, so both layouts fill their rows:
+ *   chart full width:  chart                         |  Live · Top traded · Asset mix, a third each
+ *   chart narrower:    chart (two thirds) · Live      |  Top traded · Asset mix, half each
+ * The widgets don't decide their own width, so the layout is changed here alone.
  */
 .analytics {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 16px;
   margin-top: 32px;
 }
 
-.full-row {
+.analytics > .panel {
+  grid-column: span 2;
+}
+
+.analytics > .main {
   grid-column: 1 / -1;
+}
+
+.chart-narrow > .main {
+  grid-column: span 4;
+}
+
+.chart-narrow > .side-by-side {
+  grid-column: span 3;
 }
 
 /* Toggles the chart between the whole row and the wide column, with Live beside it */
@@ -83,8 +97,10 @@
 
 /* Too narrow for two columns: everything stacks, so there's nothing for the size button to change */
 @media (max-width: 1000px) {
-  .analytics {
-    grid-template-columns: minmax(0, 1fr);
+  .analytics > .panel,
+  .chart-narrow > .main,
+  .chart-narrow > .side-by-side {
+    grid-column: 1 / -1;
   }
 
   .size {

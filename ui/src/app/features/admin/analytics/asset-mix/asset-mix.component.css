@@ -1,0 +1,91 @@
+/* Loading and empty styles come from shared/admin-page.css */
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.note {
+  font-size: 13px;
+  color: var(--secondary-text-color);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* One bar, a segment per class, a 2px gap between them like the dashboard's allocation strip */
+.bar {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.segment {
+  min-width: 3px;
+}
+
+.empty-bar {
+  background: var(--muted-background-color);
+}
+
+.legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+
+.legend li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--secondary-text-color);
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+b {
+  font-weight: 600;
+}
+
+/* Outside the asset class filter: kept in place, but faded */
+.dimmed {
+  opacity: 0.4;
+}
+
+.stale {
+  opacity: 0.55;
+}

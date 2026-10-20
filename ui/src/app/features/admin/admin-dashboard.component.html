@@ -24,11 +24,11 @@
 }
 
 <!--
-  Outside the users block, so it loads and fails on its own. Each widget reads the AnalyticsStore.
-  full-row makes a widget take the whole row; the chart's size button turns it on and off for the chart.
+  Outside the users block, so it loads and fails on its own. Each widget reads the AnalyticsStore, and
+  the grid in the CSS places them; the chart's size button switches the grid between its two layouts.
 -->
-<div class="analytics">
-  <section class="panel" [class.full-row]="chartFullWidth()" aria-labelledby="analytics-heading">
+<div class="analytics" [class.chart-narrow]="!chartFullWidth()">
+  <section class="panel main" aria-labelledby="analytics-heading">
     <app-analytics-filters>
       <button
         type="button"
@@ -64,4 +64,6 @@
     <app-analytics-overview />
   </section>
   <app-live-panel class="panel" role="region" aria-labelledby="live-heading" />
+  <app-top-traded-instruments class="panel side-by-side" role="region" aria-labelledby="top-traded-heading" />
+  <app-asset-mix class="panel side-by-side" role="region" aria-labelledby="asset-mix-heading" />
 </div>

@@ -7,7 +7,9 @@ import { AuthService } from '../../services/auth.service';
 import { AnalyticsFiltersComponent } from './analytics/analytics-filters/analytics-filters.component';
 import { AnalyticsOverviewComponent } from './analytics/analytics-overview/analytics-overview.component';
 import { AnalyticsStore } from './analytics/analytics.store';
+import { AssetMixComponent } from './analytics/asset-mix/asset-mix.component';
 import { LivePanelComponent } from './analytics/live-panel/live-panel.component';
+import { TopTradedInstrumentsComponent } from './analytics/top-traded-instruments/top-traded-instruments.component';
 
 // Remembers, in this browser, whether the admin made the chart narrower
 const CHART_WIDTH_KEY = 'technova-admin-chart-width';
@@ -18,7 +20,14 @@ const CHART_WIDTH_KEY = 'technova-admin-chart-width';
  */
 @Component({
   selector: 'app-admin-dashboard',
-  imports: [RouterLink, AnalyticsFiltersComponent, AnalyticsOverviewComponent, LivePanelComponent],
+  imports: [
+    RouterLink,
+    AnalyticsFiltersComponent,
+    AnalyticsOverviewComponent,
+    AssetMixComponent,
+    LivePanelComponent,
+    TopTradedInstrumentsComponent,
+  ],
   providers: [AnalyticsStore],
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['../../shared/admin-page.css', './admin-dashboard.component.css'],

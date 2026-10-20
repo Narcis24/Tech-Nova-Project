@@ -67,6 +67,11 @@ const MONEY = new Intl.NumberFormat('en-US', {
 });
 const COUNT = new Intl.NumberFormat('en-US');
 
+/** Money as the analytics show it everywhere: $200, $3.55K, $7.59M. */
+export function formatMoney(value: number): string {
+  return MONEY.format(value);
+}
+
 export interface Metric {
   key: MetricKey;
   label: string;
@@ -83,7 +88,7 @@ export const METRICS: readonly Metric[] = [
     key: 'tradedValue',
     label: 'Traded value',
     color: 'var(--metric-traded-value-color)',
-    format: (v) => MONEY.format(v),
+    format: formatMoney,
     isRate: false,
   },
   {

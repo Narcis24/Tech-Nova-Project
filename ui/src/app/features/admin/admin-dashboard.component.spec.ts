@@ -9,7 +9,9 @@ import { AdminDashboardComponent } from './admin-dashboard.component';
 import { AnalyticsFiltersComponent } from './analytics/analytics-filters/analytics-filters.component';
 import { AnalyticsOverviewComponent } from './analytics/analytics-overview/analytics-overview.component';
 import { AnalyticsStore } from './analytics/analytics.store';
+import { AssetMixComponent } from './analytics/asset-mix/asset-mix.component';
 import { LivePanelComponent } from './analytics/live-panel/live-panel.component';
+import { TopTradedInstrumentsComponent } from './analytics/top-traded-instruments/top-traded-instruments.component';
 
 // Stand in for the analytics widgets and their store, which have their own specs
 @Component({ selector: 'app-analytics-filters', template: '<ng-content />' })
@@ -20,6 +22,12 @@ class AnalyticsOverviewStub {}
 
 @Component({ selector: 'app-live-panel', template: '' })
 class LivePanelStub {}
+
+@Component({ selector: 'app-top-traded-instruments', template: '' })
+class TopTradedInstrumentsStub {}
+
+@Component({ selector: 'app-asset-mix', template: '' })
+class AssetMixStub {}
 
 const USERS: AdminUserResponse[] = [
   { username: 'test_admin', email: 'test_admin@technova.local', roles: ['ADMIN'], createdAt: '2026-10-19T09:25:14Z' },
@@ -54,8 +62,18 @@ describe('AdminDashboardComponent', () => {
       ],
     });
     TestBed.overrideComponent(AdminDashboardComponent, {
-      remove: { imports: [AnalyticsFiltersComponent, AnalyticsOverviewComponent, LivePanelComponent] },
-      add: { imports: [AnalyticsFiltersStub, AnalyticsOverviewStub, LivePanelStub] },
+      remove: {
+        imports: [
+          AnalyticsFiltersComponent,
+          AnalyticsOverviewComponent,
+          LivePanelComponent,
+          TopTradedInstrumentsComponent,
+          AssetMixComponent,
+        ],
+      },
+      add: {
+        imports: [AnalyticsFiltersStub, AnalyticsOverviewStub, LivePanelStub, TopTradedInstrumentsStub, AssetMixStub],
+      },
     });
     TestBed.overrideProvider(AnalyticsStore, { useValue: {} });
     fixture = TestBed.createComponent(AdminDashboardComponent);
@@ -130,15 +148,15 @@ describe('AdminDashboardComponent', () => {
   describe('chart size button', () => {
     afterEach(() => localStorage.removeItem('technova-admin-chart-width'));
 
-    function panel(page: HTMLElement): HTMLElement {
-      return page.querySelector('[aria-labelledby="analytics-heading"]') as HTMLElement;
+    function grid(page: HTMLElement): HTMLElement {
+      return page.querySelector('.analytics') as HTMLElement;
     }
 
     it('starts with the chart full width', () => {
       localStorage.removeItem('technova-admin-chart-width');
       const page = create(of(USERS));
 
-      expect(panel(page).classList).toContain('full-row');
+      expect(grid(page).classList).not.toContain('chart-narrow');
       expect(page.querySelector('.size')?.getAttribute('aria-pressed')).toBe('false');
     });
 
@@ -148,13 +166,13 @@ describe('AdminDashboardComponent', () => {
 
       size.click();
       fixture.detectChanges();
-      expect(panel(page).classList).not.toContain('full-row');
+      expect(grid(page).classList).toContain('chart-narrow');
       expect(size.getAttribute('aria-pressed')).toBe('true');
       expect(size.getAttribute('aria-label')).toContain('full width');
 
       size.click();
       fixture.detectChanges();
-      expect(panel(page).classList).toContain('full-row');
+      expect(grid(page).classList).not.toContain('chart-narrow');
     });
 
     it('remembers the choice in this browser', () => {
@@ -168,7 +186,7 @@ describe('AdminDashboardComponent', () => {
       localStorage.setItem('technova-admin-chart-width', 'narrow');
       const page = create(of(USERS));
 
-      expect(panel(page).classList).not.toContain('full-row');
+      expect(grid(page).classList).toContain('chart-narrow');
     });
   });
 });

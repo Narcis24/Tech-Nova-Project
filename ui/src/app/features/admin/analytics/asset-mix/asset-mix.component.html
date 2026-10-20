@@ -1,0 +1,42 @@
+<header class="head">
+  <h2 id="asset-mix-heading">Asset class mix</h2>
+  <span class="note">Share of traded value</span>
+</header>
+
+@if (store.data()) {
+  <div class="body" [class.stale]="store.loading()">
+    @if (segments().length) {
+      <div class="bar" role="img" [attr.aria-label]="summary()">
+        @for (entry of segments(); track entry.key) {
+          <span
+            class="segment"
+            [style.flex-grow]="entry.share"
+            [style.background]="entry.color"
+            [title]="entry.label + ': ' + entry.percent"
+          ></span>
+        }
+      </div>
+    } @else {
+      <div class="bar empty-bar" aria-hidden="true"></div>
+    }
+
+    <ul class="legend">
+      @for (entry of entries(); track entry.key) {
+        <li [class.dimmed]="entry.dimmed">
+          <span class="name"><span class="swatch" [style.background]="entry.color"></span>{{ entry.label }}</span>
+          <span
+            ><b>{{ entry.percent }}</b> <span class="note">{{ entry.value }}</span></span
+          >
+        </li>
+      }
+    </ul>
+
+    @if (!segments().length) {
+      <p class="empty">Nothing was traded in this period with these filters.</p>
+    }
+  </div>
+} @else if (store.state().status === 'error') {
+  <p class="empty">Couldn't load the asset mix.</p>
+} @else {
+  <p class="loading">Loading asset mix…</p>
+}
