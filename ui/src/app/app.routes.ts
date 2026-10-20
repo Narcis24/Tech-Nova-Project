@@ -5,6 +5,7 @@ import { NotFoundComponent } from './features/not-found/not-found.component';
 import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
 import { guestGuard } from './guards/guest.guard';
+import { traderGuard } from './guards/trader.guard';
 import { AuthService } from './services/auth.service';
 
 export const routes: Routes = [
@@ -45,29 +46,39 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./features/shell/shell.component').then((m) => m.ShellComponent),
     children: [
+      // The trading pages; admins are sent to /admin instead
       {
-        path: 'dashboard',
-        loadComponent: () => import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
-      },
-      {
-        path: 'trade',
-        loadComponent: () => import('./pages/order-ticket/order-ticket.component').then((m) => m.OrderTicketComponent),
-      },
-      {
-        path: 'orders/:orderId',
-        loadComponent: () => import('./pages/order-result/order-result.component').then((m) => m.OrderResultComponent),
-      },
-      {
-        path: 'orders',
-        loadComponent: () => import('./features/orders/orders.component').then((m) => m.OrdersComponent),
-      },
-      {
-        path: 'risk-limits',
-        loadComponent: () => import('./features/risk-limits/risk-limits.component').then((m) => m.RiskLimitsComponent),
-      },
-      {
-        path: 'accounts',
-        loadComponent: () => import('./features/accounts/accounts.component').then((m) => m.AccountsComponent),
+        path: '',
+        canActivateChild: [traderGuard],
+        children: [
+          {
+            path: 'dashboard',
+            loadComponent: () => import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+          },
+          {
+            path: 'trade',
+            loadComponent: () =>
+              import('./pages/order-ticket/order-ticket.component').then((m) => m.OrderTicketComponent),
+          },
+          {
+            path: 'orders/:orderId',
+            loadComponent: () =>
+              import('./pages/order-result/order-result.component').then((m) => m.OrderResultComponent),
+          },
+          {
+            path: 'orders',
+            loadComponent: () => import('./features/orders/orders.component').then((m) => m.OrdersComponent),
+          },
+          {
+            path: 'risk-limits',
+            loadComponent: () =>
+              import('./features/risk-limits/risk-limits.component').then((m) => m.RiskLimitsComponent),
+          },
+          {
+            path: 'accounts',
+            loadComponent: () => import('./features/accounts/accounts.component').then((m) => m.AccountsComponent),
+          },
+        ],
       },
       {
         path: 'admin',

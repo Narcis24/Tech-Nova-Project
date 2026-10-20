@@ -8,7 +8,20 @@ import { ThemeService } from '../../services/theme.service';
 interface NavTab {
   label: string;
   path: string;
+  /** Only active on this exact URL, so /admin isn't also highlighted on /admin/users */
+  exact?: boolean;
 }
+
+const TRADER_TABS: readonly NavTab[] = [
+  { label: 'Portfolio', path: '/dashboard' },
+  { label: 'Trade', path: '/trade' },
+  { label: 'Orders', path: '/orders' },
+];
+
+const ADMIN_TABS: readonly NavTab[] = [
+  { label: 'Overview', path: '/admin', exact: true },
+  { label: 'Users', path: '/admin/users' },
+];
 
 /**
  * Top bar of the signed-in app. The account pill opens a list for switching accounts.
@@ -29,13 +42,10 @@ export class NavBarComponent {
   readonly compactTrade = input(false);
   private readonly auth = inject(AuthService);
 
-  /** Admins also get an Admin tab; adminGuard and the API still decide what they may open */
-  readonly tabs = computed<readonly NavTab[]>(() => [
-    { label: 'Portfolio', path: '/dashboard' },
-    { label: 'Trade', path: '/trade' },
-    { label: 'Orders', path: '/orders' },
-    ...(this.auth.isAdmin() ? [{ label: 'Admin', path: '/admin' }] : []),
-  ]);
+  /** Admins see only the admin pages and traders only the trading ones; the guards and the API still decide */
+  readonly isAdmin = this.auth.isAdmin;
+  readonly tabs = computed(() => (this.isAdmin() ? ADMIN_TABS : TRADER_TABS));
+  readonly homeUrl = this.auth.homeUrl;
 
   private readonly accountService = inject(AccountService);
   readonly theme = inject(ThemeService);

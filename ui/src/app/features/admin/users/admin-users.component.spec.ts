@@ -1,7 +1,13 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Observable, Subject, of, throwError } from 'rxjs';
 
-import { AdminUserControllerService, AdminUserResponse } from '../../../generated/trading-api-client';
+import {
+  AdminUserControllerService,
+  AdminUserResponse,
+  CreateUserRequest,
+  CreateUserResponse,
+} from '../../../generated/trading-api-client';
 import { AdminUsersComponent } from './admin-users.component';
 
 const USERS: AdminUserResponse[] = [
@@ -26,12 +32,14 @@ describe('AdminUsersComponent', () => {
   let fixture: ComponentFixture<AdminUsersComponent>;
   let page: HTMLElement;
   let listUsers: jasmine.Spy<() => Observable<AdminUserResponse[]>>;
+  let createUser: jasmine.Spy<(request: CreateUserRequest) => Observable<CreateUserResponse>>;
 
   function create(result: Observable<AdminUserResponse[]>): void {
     listUsers = jasmine.createSpy('listUsers').and.returnValue(result);
+    createUser = jasmine.createSpy('createUser');
     TestBed.configureTestingModule({
       imports: [AdminUsersComponent],
-      providers: [{ provide: AdminUserControllerService, useValue: { listUsers } }],
+      providers: [{ provide: AdminUserControllerService, useValue: { listUsers, createUser } }],
     });
     fixture = TestBed.createComponent(AdminUsersComponent);
     fixture.detectChanges();
@@ -158,6 +166,198 @@ describe('AdminUsersComponent', () => {
 
       expect(usernames()).toHaveSize(4);
       expect(page.querySelector('.result-count')).toBeNull();
+    });
+  });
+
+  describe('create admin', () => {
+    const NEW_ADMIN: AdminUserResponse = {
+      username: 'new_admin',
+      email: 'new.admin@example.com',
+      roles: ['ADMIN'],
+      createdAt: '2026-10-19T12:00:00Z',
+      createdBy: 'test_admin',
+    };
+
+    beforeEach(() => create(of(USERS)));
+
+    function type(id: string, text: string): void {
+      const input = page.querySelector<HTMLInputElement>(`#${id}`)!;
+      input.value = text;
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    }
+
+    function roleBox(role: string): HTMLInputElement {
+      const label = Array.from(page.querySelectorAll('.role-option')).find((l) => l.textContent?.trim() === role)!;
+      return label.querySelector('input')!;
+    }
+
+    function fillValid(): void {
+      type('new-username', 'new_admin');
+      type('new-email', 'new.admin@example.com');
+    }
+
+    function submit(): void {
+      page.querySelector<HTMLFormElement>('.create-form')!.dispatchEvent(new Event('submit'));
+      fixture.detectChanges();
+    }
+
+    function conflict(message: string): HttpErrorResponse {
+      return new HttpErrorResponse({ status: 409, error: { errorCode: 'USER_ALREADY_EXISTS', message } });
+    }
+
+    it('shows a card with ADMIN picked and every other role offered', () => {
+      expect(page.querySelector('.create-form h2')?.textContent).toContain('Create admin');
+      expect(page.querySelector('label[for=new-username]')).not.toBeNull();
+      expect(page.querySelector('label[for=new-email]')).not.toBeNull();
+      expect(roleBox('ADMIN').checked).toBeTrue();
+      expect(roleBox('TRADER').checked).toBeFalse();
+    });
+
+    it('is there even when the users failed to load', () => {
+      TestBed.resetTestingModule();
+      create(throwError(() => new Error('500')));
+
+      expect(page.querySelector('.create-form')).not.toBeNull();
+    });
+
+    it('sends the username, email and ADMIN as a JSON array', () => {
+      createUser.and.returnValue(of({ user: NEW_ADMIN, inviteSent: true }));
+      fillValid();
+      submit();
+
+      expect(createUser).toHaveBeenCalledOnceWith({
+        username: 'new_admin',
+        email: 'new.admin@example.com',
+        roles: ['ADMIN'],
+      });
+      // A Set would serialise to {} and the API would reject it
+      expect(JSON.stringify(createUser.calls.mostRecent().args[0].roles)).toBe('["ADMIN"]');
+    });
+
+    it('sends only the role picked, as a list of one', () => {
+      createUser.and.returnValue(of({ user: { ...NEW_ADMIN, roles: ['TRADER'] }, inviteSent: true }));
+      fillValid();
+      roleBox('TRADER').click();
+      fixture.detectChanges();
+      submit();
+
+      expect(createUser.calls.mostRecent().args[0].roles).toEqual(['TRADER']);
+    });
+
+    it('allows only one role at a time', () => {
+      roleBox('TRADER').click();
+      fixture.detectChanges();
+
+      expect(roleBox('ADMIN').type).toBe('radio');
+      expect(roleBox('TRADER').checked).toBeTrue();
+      expect(roleBox('ADMIN').checked).toBeFalse();
+
+      roleBox('ADMIN').click();
+      fixture.detectChanges();
+
+      expect(roleBox('ADMIN').checked).toBeTrue();
+      expect(roleBox('TRADER').checked).toBeFalse();
+    });
+
+    it('shows field errors instead of submitting an invalid form', () => {
+      type('new-username', 'short');
+      type('new-email', 'john@example');
+      submit();
+
+      expect(createUser).not.toHaveBeenCalled();
+      const errors = Array.from(page.querySelectorAll('.field .field-error')).map((e) => e.textContent?.trim());
+      expect(errors).toEqual(['Username must be 8-16 characters', 'Enter a valid email address']);
+    });
+
+    it('adds the new user to the list in username order and confirms the email was sent', () => {
+      createUser.and.returnValue(of({ user: NEW_ADMIN, inviteSent: true }));
+      fillValid();
+      submit();
+
+      expect(usernames()).toEqual(['invited_01', 'new_admin', 'old_user1', 'test_admin', 'trader_one']);
+      expect(page.querySelector('output.create-result')?.textContent).toContain(
+        'Created new_admin. A set-password email is on its way.',
+      );
+    });
+
+    it('warns when the account was created but the email was not sent', () => {
+      createUser.and.returnValue(of({ user: NEW_ADMIN, inviteSent: false }));
+      fillValid();
+      submit();
+
+      const result = page.querySelector('output.create-warning');
+      expect(result?.textContent).toContain("the set-password email couldn't be sent");
+      expect(usernames()).toContain('new_admin');
+    });
+
+    it('disables the buttons while the request is in flight', () => {
+      const response = new Subject<CreateUserResponse>();
+      createUser.and.returnValue(response);
+      fillValid();
+      submit();
+
+      const submitButton = page.querySelector<HTMLButtonElement>('.create-form button[type=submit]')!;
+      expect(submitButton.disabled).toBeTrue();
+      expect(submitButton.textContent).toContain('Creating');
+
+      submit();
+      expect(createUser).toHaveBeenCalledTimes(1);
+
+      response.next({ user: NEW_ADMIN, inviteSent: true });
+      fixture.detectChanges();
+      expect(submitButton.disabled).toBeFalse();
+    });
+
+    it('shows what is taken when the username or email already exists, keeping the form open', () => {
+      createUser.and.returnValue(throwError(() => conflict('Username already taken: new_admin')));
+      fillValid();
+      submit();
+
+      expect(page.querySelector('.create-form [role=alert]')?.textContent).toContain(
+        'Username already taken: new_admin',
+      );
+      expect(page.querySelector<HTMLInputElement>('#new-username')?.value).toBe('new_admin');
+      expect(page.querySelector<HTMLButtonElement>('.create-form button[type=submit]')?.disabled).toBeFalse();
+    });
+
+    it('shows a generic error when the server fails', () => {
+      createUser.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+      fillValid();
+      submit();
+
+      expect(page.querySelector('.create-form [role=alert]')?.textContent).toContain(
+        "Couldn't create the account. Please try again.",
+      );
+    });
+
+    it('clears back to ADMIN after creating, ready for the next account', () => {
+      createUser.and.returnValue(of({ user: { ...NEW_ADMIN, roles: ['TRADER'] }, inviteSent: true }));
+      fillValid();
+      roleBox('TRADER').click();
+      fixture.detectChanges();
+      submit();
+
+      expect(page.querySelector<HTMLInputElement>('#new-username')?.value).toBe('');
+      expect(page.querySelector<HTMLInputElement>('#new-email')?.value).toBe('');
+      expect(roleBox('ADMIN').checked).toBeTrue();
+      expect(roleBox('TRADER').checked).toBeFalse();
+      // A cleared form is untouched again, so it shows no "required" errors
+      expect(page.querySelector('.create-form .field-error')).toBeNull();
+    });
+
+    it('hides the last confirmation when the next account is submitted', () => {
+      createUser.and.returnValue(of({ user: NEW_ADMIN, inviteSent: true }));
+      fillValid();
+      submit();
+      expect(page.querySelector('output.create-result')).not.toBeNull();
+
+      createUser.and.returnValue(throwError(() => conflict('Email already in use: new.admin@example.com')));
+      fillValid();
+      submit();
+
+      expect(page.querySelector('output.create-result')).toBeNull();
+      expect(page.querySelector('.create-form [role=alert]')?.textContent).toContain('Email already in use');
     });
   });
 });
