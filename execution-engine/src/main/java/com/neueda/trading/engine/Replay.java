@@ -15,10 +15,11 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
+import java.util.Set;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
@@ -73,7 +74,7 @@ public final class Replay {
 
         @Override
         public String toString() {
-            String where = recorded != null ? "seq " + seq : "after the last recorded decision";
+            String where = recorded != null ? "seq " + seq : "not recorded";
             return where + ": recorded " + (recorded != null ? recorded : "nothing")
                 + ", replay decided " + (replayed != null ? replayed : "nothing");
         }
@@ -276,19 +277,43 @@ public final class Replay {
             new CollectingJournal(mapper, replayed), clock, enforceHours);
     }
 
-    /** Pairs recorded and replayed decisions in order and keeps every mismatch with its context. */
+    /**
+     * Compares each order's decisions on their own: the 1st recorded decision for an order with its 1st
+     * replayed one, and so on (an order can have several, e.g. WAIT then FILL). Two orders decided in a
+     * different order, or one missing decision, then show as just that, not as a shift of everything after.
+     */
     private static List<Difference> compare(List<Decision> recorded, List<JsonNode[]> context, List<Decision> replayed) {
+        Map<String, List<Integer>> recordedByOrder = byOrder(recorded);
+        Map<String, List<Integer>> replayedByOrder = byOrder(replayed);
+        // Recorded orders in journal order, then any order only the replay decided
+        Set<String> orderIds = new LinkedHashSet<>(recordedByOrder.keySet());
+        orderIds.addAll(replayedByOrder.keySet());
+
         List<Difference> differences = new ArrayList<>();
-        for (int i = 0; i < Math.max(recorded.size(), replayed.size()); i++) {
-            Decision was = i < recorded.size() ? recorded.get(i) : null;
-            Decision now = i < replayed.size() ? replayed.get(i) : null;
-            if (was != null && now != null && was.sameAs(now)) {
-                continue;
+        for (String orderId : orderIds) {
+            List<Integer> was = recordedByOrder.getOrDefault(orderId, List.of());
+            List<Integer> now = replayedByOrder.getOrDefault(orderId, List.of());
+            for (int k = 0; k < Math.max(was.size(), now.size()); k++) {
+                Decision recordedDecision = k < was.size() ? recorded.get(was.get(k)) : null;
+                Decision replayedDecision = k < now.size() ? replayed.get(now.get(k)) : null;
+                if (recordedDecision != null && replayedDecision != null && recordedDecision.sameAs(replayedDecision)) {
+                    continue;
+                }
+                JsonNode[] around = recordedDecision != null ? context.get(was.get(k)) : new JsonNode[2];
+                differences.add(new Difference(recordedDecision != null ? recordedDecision.seq() : 0,
+                    recordedDecision, replayedDecision, around[0], around[1]));
             }
-            JsonNode[] around = was != null ? context.get(i) : new JsonNode[2];
-            differences.add(new Difference(was != null ? was.seq() : 0, was, now, around[0], around[1]));
         }
         return differences;
+    }
+
+    /** The positions of each order's decisions, orders in the order they were first decided. */
+    private static Map<String, List<Integer>> byOrder(List<Decision> decisions) {
+        Map<String, List<Integer>> byOrder = new LinkedHashMap<>();
+        for (int i = 0; i < decisions.size(); i++) {
+            byOrder.computeIfAbsent(decisions.get(i).orderId(), id -> new ArrayList<>()).add(i);
+        }
+        return byOrder;
     }
 
     private static void print(Path journal, Result result, PrintStream out) {
