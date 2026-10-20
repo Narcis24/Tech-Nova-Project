@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -82,7 +83,7 @@ class ReplayTest {
         assertEquals(2, result.quotes());
         assertEquals(List.of("REJECT", "FILL", "WAIT", "FILL"),
             result.recorded().stream().map(Replay.Decision::decision).toList());
-        assertTrue(result.matches(), () -> String.join("\n", result.differences()));
+        assertTrue(result.matches(), () -> result.differences().toString());
     }
 
     @Test
@@ -95,7 +96,7 @@ class ReplayTest {
         Replay.Result result = replay("2026-10-16");
 
         assertEquals("QUEUED_MARKET_CLOSED", result.recorded().getFirst().decision());
-        assertTrue(result.matches(), () -> String.join("\n", result.differences()));
+        assertTrue(result.matches(), () -> result.differences().toString());
     }
 
     @Test
@@ -110,7 +111,7 @@ class ReplayTest {
 
         assertEquals(2, result.runs());
         assertEquals("REJECT", result.recorded().getFirst().decision());
-        assertTrue(result.matches(), () -> String.join("\n", result.differences()));
+        assertTrue(result.matches(), () -> result.differences().toString());
     }
 
     @Test
@@ -123,7 +124,7 @@ class ReplayTest {
         Replay.Result result = replay("2026-10-16");
 
         assertEquals("FILL", result.recorded().getFirst().decision());
-        assertTrue(result.matches(), () -> String.join("\n", result.differences()));
+        assertTrue(result.matches(), () -> result.differences().toString());
     }
 
     @Test
@@ -164,5 +165,59 @@ class ReplayTest {
         assertEquals(1, Replay.execute(new String[] {dir.resolve("missing.jsonl").toString()}, new PrintStream(out)));
         assertEquals(1, Replay.execute(new String[] {}, new PrintStream(out)));
         assertTrue(out.toString().contains("Could not replay"), out.toString());
+    }
+
+    @Test
+    void writesAReportWithEachDifferenceItsOrderAndTheQuoteBehindIt() throws Exception {
+        ExecutionEngine engine = recordingEngine(true);
+        engine.accept(quote("99.50", "100.50", OPEN));
+        engine.handle(order("MARKET", null));
+        Path journal = dir.resolve("2026-10-14.jsonl");
+        Files.writeString(journal, Files.readString(journal).replace("\"price\":100.50", "\"price\":101.00"));
+        Path report = dir.resolve("shadow-gate/report.json");   // the folder does not exist yet
+
+        int exit = Replay.execute(new String[] {"--report", report.toString(), journal.toString()},
+            new PrintStream(new ByteArrayOutputStream()));
+
+        assertEquals(1, exit);
+        JsonNode content = mapper.readTree(Files.readString(report));
+        assertEquals(false, content.get("matches").asBoolean());
+        JsonNode entry = content.get("journals").get(0);
+        assertEquals(1, entry.get("decisions").asInt());
+        JsonNode difference = entry.get("differences").get(0);
+        assertTrue(difference.get("recorded").asString().endsWith("FILL 101.00"));
+        assertTrue(difference.get("replayed").asString().endsWith("FILL 100.50"));
+        assertEquals("MARKET", difference.get("order").get("orderType").asString());
+        assertEquals(0, new BigDecimal("100.50").compareTo(difference.get("lastQuote").get("ask").decimalValue()));
+    }
+
+    @Test
+    void replaysEveryJournalInAFolderAndFailsIfAnyChanged() throws Exception {
+        recordingEngine(true).handle(order("MARKET", null));            // 2026-10-14: rejected, unchanged
+        when(clock.instant()).thenReturn(CLOSED);
+        recordingEngine(true).handle(order("MARKET", null));            // 2026-10-16: queued
+        Path changed = dir.resolve("2026-10-16.jsonl");
+        Files.writeString(changed, Files.readString(changed).replace("QUEUED_MARKET_CLOSED", "WAIT"));
+        Path report = dir.resolve("report.json");
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        int exit = Replay.execute(new String[] {"--report", report.toString(), dir.toString()}, new PrintStream(out));
+
+        assertEquals(1, exit);
+        JsonNode journals = mapper.readTree(Files.readString(report)).get("journals");
+        assertEquals(2, journals.size());
+        assertEquals(0, journals.get(0).get("differences").size());
+        assertEquals(1, journals.get(1).get("differences").size());
+        assertTrue(out.toString().contains("all decisions match") && out.toString().contains("1 difference(s)"),
+            out.toString());
+    }
+
+    @Test
+    void aFolderWithoutJournalsIsAnErrorNotAPass() throws Exception {
+        Path empty = Files.createDirectory(dir.resolve("nothing-here"));
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        assertEquals(1, Replay.execute(new String[] {empty.toString()}, new PrintStream(out)));
+        assertTrue(out.toString().contains("no journals found"), out.toString());
     }
 }
