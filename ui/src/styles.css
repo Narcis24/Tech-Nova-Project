@@ -47,6 +47,21 @@
   --success-color: #176b45;
   --success-background-color: #e9f7ef;
 
+  /*
+   * Admin analytics: one colour per metric tab, and one per asset class for the chart's lines and the
+   * asset mix. Checked for colour-blind separation in this order, as neighbours in the legend; teal
+   * and gold are below 3:1 on white, so the chart always names values in its legend and tooltip too.
+   * Status colours (gain, loss) are left for meaning, not identity.
+   */
+  --metric-traded-value-color: #2a78d6;
+  --metric-orders-color: #eb6834;
+  --metric-fill-rate-color: #1baf7a;
+  --metric-active-traders-color: #6250d6;
+  --asset-equity-color: #2a78d6;
+  --asset-etf-color: #eb6834;
+  --asset-bond-color: #1baf7a;
+  --asset-commodity-color: #eda100;
+
   /* Shadows and dialog backdrops */
   --shadow-color: #14182b;
   --overlay-color: color-mix(in srgb, var(--shadow-color) 40%, transparent);
@@ -87,6 +102,15 @@
   --error-background-color: #482321;
   --success-color: #7ee2ae;
   --success-background-color: #173b2b;
+  /* The same hues, stepped for the dark card; all at least 3:1 on it */
+  --metric-traded-value-color: #3987e5;
+  --metric-orders-color: #d95926;
+  --metric-fill-rate-color: #199e70;
+  --metric-active-traders-color: #9085e9;
+  --asset-equity-color: #3987e5;
+  --asset-etf-color: #d95926;
+  --asset-bond-color: #199e70;
+  --asset-commodity-color: #c98500;
   --shadow-color: #000000;
 }
 
