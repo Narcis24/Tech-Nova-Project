@@ -1,0 +1,59 @@
+<header class="head">
+  <h2 class="badge" id="live-heading"><span class="dot" aria-hidden="true"></span>Live</h2>
+  <span class="note">
+    @if (updatedAt(); as time) {
+      Updated {{ time }} ·
+    }
+    Every minute
+  </span>
+</header>
+
+@if (failed()) {
+  <p class="load-error" role="status">Couldn't refresh. Trying again in a minute.</p>
+}
+
+@if (live(); as live) {
+  <div class="layout">
+    <div class="counts">
+      <p class="big">{{ live.ordersToday }} <span>orders today</span></p>
+      <p class="note">{{ live.ordersLastHour }} in the last hour · {{ live.openOrders }} open right now</p>
+    </div>
+
+    <figure class="hours">
+      <figcaption class="caption">Orders per hour</figcaption>
+      <div class="days" role="img" [attr.aria-label]="summary()">
+        @for (day of days(); track day.key) {
+          <div class="day" [class.today]="day.today">
+            <div class="bars">
+              @for (bar of day.bars; track bar.start) {
+                <span class="bar" [class.future]="bar.future" [style.height.%]="bar.height" [title]="bar.title"></span>
+              }
+            </div>
+            <span class="day-label">{{ day.label }}</span>
+          </div>
+        }
+      </div>
+    </figure>
+
+    <div class="top">
+      <h3 class="caption">Most ordered today</h3>
+      @if (top().length) {
+        <ol>
+          @for (instrument of top(); track instrument.symbol) {
+            <li>
+              <span class="tile" [style.--asset-color]="instrument.color" aria-hidden="true">{{
+                instrument.symbol.slice(0, 4)
+              }}</span>
+              <span class="symbol" [title]="instrument.name">{{ instrument.symbol }}</span>
+              <span class="count">{{ instrument.orders }}</span>
+            </li>
+          }
+        </ol>
+      } @else {
+        <p class="note">No orders yet today.</p>
+      }
+    </div>
+  </div>
+} @else if (!failed()) {
+  <p class="loading">Loading live activity…</p>
+}

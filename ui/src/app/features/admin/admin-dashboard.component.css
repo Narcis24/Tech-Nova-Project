@@ -48,9 +48,48 @@
   }
 }
 
-/* Space between the user counts and the analytics below them */
+/*
+ * The analytics widgets on a two-column grid, wide then narrow; a widget with .full-row takes the whole
+ * row instead. The widgets don't decide their own width, so the layout is changed here alone.
+ */
 .analytics {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+  gap: 16px;
   margin-top: 32px;
+}
+
+.full-row {
+  grid-column: 1 / -1;
+}
+
+/* Toggles the chart between the whole row and the wide column, with Live beside it */
+.size {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--elevated-background-color);
+  color: var(--secondary-text-color);
+  cursor: pointer;
+}
+
+.size:hover {
+  border-color: var(--hover-border-color);
+  color: var(--text-color);
+}
+
+/* Too narrow for two columns: everything stacks, so there's nothing for the size button to change */
+@media (max-width: 1000px) {
+  .analytics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .size {
+    display: none;
+  }
 }
 
 /* A card around analytics widgets; the overview's tabs reach its edges through --panel-padding */

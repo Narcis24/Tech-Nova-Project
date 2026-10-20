@@ -1,0 +1,161 @@
+/* Lays itself out by its own width, so the dashboard can give it a full row or a narrow column */
+:host {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--loss-color);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.note,
+.caption {
+  margin: 0;
+  font-size: 13px;
+  color: var(--secondary-text-color);
+}
+
+.caption {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.layout {
+  display: grid;
+  gap: 16px;
+}
+
+.big {
+  margin: 0 0 4px;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.big span {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.hours {
+  margin: 0;
+}
+
+.days {
+  display: flex;
+  gap: 8px;
+}
+
+.day {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 64px;
+}
+
+/* Earlier days paler, today full strength, hours still to come only outlined */
+.bar {
+  flex: 1;
+  border-radius: 2px 2px 0 0;
+  background: color-mix(in srgb, var(--metric-orders-color) 45%, var(--elevated-background-color));
+}
+
+.today .bar {
+  background: var(--metric-orders-color);
+}
+
+.bar.future,
+.today .bar.future {
+  background: var(--muted-background-color);
+}
+
+.day-label {
+  font-size: 11px;
+  color: var(--secondary-text-color);
+}
+
+.top ol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.top li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+/* Ticker tile in its asset class's colour, tinted so the text stays readable in either theme */
+.tile {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--asset-color) 16%, var(--elevated-background-color));
+  font-size: 9px;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--asset-color) 72%, var(--text-color));
+}
+
+.count {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+/* Given a full row: counts, hours and the top list side by side */
+@container (min-width: 720px) {
+  .layout {
+    grid-template-columns: minmax(160px, 1fr) minmax(0, 2fr) minmax(180px, 1fr);
+    align-items: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot {
+    animation: none;
+  }
+}

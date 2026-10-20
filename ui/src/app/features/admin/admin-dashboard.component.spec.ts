@@ -9,13 +9,17 @@ import { AdminDashboardComponent } from './admin-dashboard.component';
 import { AnalyticsFiltersComponent } from './analytics/analytics-filters/analytics-filters.component';
 import { AnalyticsOverviewComponent } from './analytics/analytics-overview/analytics-overview.component';
 import { AnalyticsStore } from './analytics/analytics.store';
+import { LivePanelComponent } from './analytics/live-panel/live-panel.component';
 
 // Stand in for the analytics widgets and their store, which have their own specs
-@Component({ selector: 'app-analytics-filters', template: '' })
+@Component({ selector: 'app-analytics-filters', template: '<ng-content />' })
 class AnalyticsFiltersStub {}
 
 @Component({ selector: 'app-analytics-overview', template: '' })
 class AnalyticsOverviewStub {}
+
+@Component({ selector: 'app-live-panel', template: '' })
+class LivePanelStub {}
 
 const USERS: AdminUserResponse[] = [
   { username: 'test_admin', email: 'test_admin@technova.local', roles: ['ADMIN'], createdAt: '2026-10-19T09:25:14Z' },
@@ -50,8 +54,8 @@ describe('AdminDashboardComponent', () => {
       ],
     });
     TestBed.overrideComponent(AdminDashboardComponent, {
-      remove: { imports: [AnalyticsFiltersComponent, AnalyticsOverviewComponent] },
-      add: { imports: [AnalyticsFiltersStub, AnalyticsOverviewStub] },
+      remove: { imports: [AnalyticsFiltersComponent, AnalyticsOverviewComponent, LivePanelComponent] },
+      add: { imports: [AnalyticsFiltersStub, AnalyticsOverviewStub, LivePanelStub] },
     });
     TestBed.overrideProvider(AnalyticsStore, { useValue: {} });
     fixture = TestBed.createComponent(AdminDashboardComponent);
@@ -121,5 +125,50 @@ describe('AdminDashboardComponent', () => {
 
     expect(page.querySelector('[role=alert]')).toBeNull();
     expect(texts(page, '.stat-value')).toEqual(['3', '2', '2', '1']);
+  });
+
+  describe('chart size button', () => {
+    afterEach(() => localStorage.removeItem('technova-admin-chart-width'));
+
+    function panel(page: HTMLElement): HTMLElement {
+      return page.querySelector('[aria-labelledby="analytics-heading"]') as HTMLElement;
+    }
+
+    it('starts with the chart full width', () => {
+      localStorage.removeItem('technova-admin-chart-width');
+      const page = create(of(USERS));
+
+      expect(panel(page).classList).toContain('full-row');
+      expect(page.querySelector('.size')?.getAttribute('aria-pressed')).toBe('false');
+    });
+
+    it('makes the chart narrower, so Live sits beside it, and back again', () => {
+      const page = create(of(USERS));
+      const size = page.querySelector('.size') as HTMLButtonElement;
+
+      size.click();
+      fixture.detectChanges();
+      expect(panel(page).classList).not.toContain('full-row');
+      expect(size.getAttribute('aria-pressed')).toBe('true');
+      expect(size.getAttribute('aria-label')).toContain('full width');
+
+      size.click();
+      fixture.detectChanges();
+      expect(panel(page).classList).toContain('full-row');
+    });
+
+    it('remembers the choice in this browser', () => {
+      const page = create(of(USERS));
+      (page.querySelector('.size') as HTMLButtonElement).click();
+
+      expect(localStorage.getItem('technova-admin-chart-width')).toBe('narrow');
+    });
+
+    it('opens narrower if that was the last choice', () => {
+      localStorage.setItem('technova-admin-chart-width', 'narrow');
+      const page = create(of(USERS));
+
+      expect(panel(page).classList).not.toContain('full-row');
+    });
   });
 });

@@ -6,16 +6,20 @@
     }
   </div>
 
-  <div class="periods" role="group" aria-label="Period">
-    @for (option of periods; track option.value) {
-      <button
-        type="button"
-        [attr.aria-pressed]="store.filters().period === option.value"
-        (click)="store.setFilter('period', option.value)"
-      >
-        {{ option.label }}
-      </button>
-    }
+  <div class="actions">
+    <div class="periods" role="group" aria-label="Period">
+      @for (option of periods; track option.value) {
+        <button
+          type="button"
+          [attr.aria-pressed]="store.filters().period === option.value"
+          (click)="store.setFilter('period', option.value)"
+        >
+          {{ option.label }}
+        </button>
+      }
+    </div>
+    <!-- Room for the page's own controls, such as the dashboard's chart size button -->
+    <ng-content />
   </div>
 </header>
 

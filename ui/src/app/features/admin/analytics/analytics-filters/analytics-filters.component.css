@@ -25,6 +25,12 @@ h2 {
   color: var(--secondary-text-color);
 }
 
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* Segmented control, like the price chart's range buttons */
 .periods {
   display: flex;

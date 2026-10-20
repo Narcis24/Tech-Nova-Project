@@ -23,8 +23,45 @@
   </ul>
 }
 
-<!-- Outside the users block, so it loads and fails on its own. Each widget reads the AnalyticsStore. -->
-<section class="analytics panel" aria-labelledby="analytics-heading">
-  <app-analytics-filters />
-  <app-analytics-overview />
-</section>
+<!--
+  Outside the users block, so it loads and fails on its own. Each widget reads the AnalyticsStore.
+  full-row makes a widget take the whole row; the chart's size button turns it on and off for the chart.
+-->
+<div class="analytics">
+  <section class="panel" [class.full-row]="chartFullWidth()" aria-labelledby="analytics-heading">
+    <app-analytics-filters>
+      <button
+        type="button"
+        class="size"
+        [attr.aria-pressed]="!chartFullWidth()"
+        [attr.aria-label]="
+          chartFullWidth()
+            ? 'Make the chart narrower, with Live beside it'
+            : 'Make the chart full width, with Live below it'
+        "
+        [title]="chartFullWidth() ? 'Make the chart narrower' : 'Make the chart full width'"
+        (click)="toggleChartWidth()"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          aria-hidden="true"
+        >
+          @if (chartFullWidth()) {
+            <!-- Arrows pointing in: make it smaller -->
+            <path d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4" />
+          } @else {
+            <!-- Arrows pointing out: make it bigger -->
+            <path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" />
+          }
+        </svg>
+      </button>
+    </app-analytics-filters>
+    <app-analytics-overview />
+  </section>
+  <app-live-panel class="panel" role="region" aria-labelledby="live-heading" />
+</div>

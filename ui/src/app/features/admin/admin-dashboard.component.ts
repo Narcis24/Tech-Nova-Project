@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
@@ -6,6 +7,10 @@ import { AuthService } from '../../services/auth.service';
 import { AnalyticsFiltersComponent } from './analytics/analytics-filters/analytics-filters.component';
 import { AnalyticsOverviewComponent } from './analytics/analytics-overview/analytics-overview.component';
 import { AnalyticsStore } from './analytics/analytics.store';
+import { LivePanelComponent } from './analytics/live-panel/live-panel.component';
+
+// Remembers, in this browser, whether the admin made the chart narrower
+const CHART_WIDTH_KEY = 'technova-admin-chart-width';
 
 /**
  * The admin's home page: user counts from GET /v1/admin/users, then the trading activity widgets,
@@ -13,13 +18,14 @@ import { AnalyticsStore } from './analytics/analytics.store';
  */
 @Component({
   selector: 'app-admin-dashboard',
-  imports: [RouterLink, AnalyticsFiltersComponent, AnalyticsOverviewComponent],
+  imports: [RouterLink, AnalyticsFiltersComponent, AnalyticsOverviewComponent, LivePanelComponent],
   providers: [AnalyticsStore],
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['../../shared/admin-page.css', './admin-dashboard.component.css'],
 })
 export class AdminDashboardComponent {
   private readonly adminUsers = inject(AdminUserControllerService);
+  private readonly document = inject(DOCUMENT);
 
   readonly username = inject(AuthService).username;
   readonly users = signal<AdminUserResponse[] | null>(null);
@@ -35,8 +41,28 @@ export class AdminDashboardComponent {
     ];
   });
 
+  // Full width puts Live below the chart; narrower puts it beside the chart
+  readonly chartFullWidth = signal(this.readChartWidth() !== 'narrow');
+
   constructor() {
     this.load();
+  }
+
+  toggleChartWidth(): void {
+    this.chartFullWidth.update((full) => !full);
+    try {
+      this.document.defaultView?.localStorage.setItem(CHART_WIDTH_KEY, this.chartFullWidth() ? 'full' : 'narrow');
+    } catch {
+      // Storage may be unavailable in privacy-restricted browser contexts; the choice then lasts the visit
+    }
+  }
+
+  private readChartWidth(): string | null {
+    try {
+      return this.document.defaultView?.localStorage.getItem(CHART_WIDTH_KEY) ?? null;
+    } catch {
+      return null;
+    }
   }
 
   load(): void {
