@@ -5,17 +5,14 @@ h2 {
   font-weight: 600;
 }
 
-/* To the users page; underlined only on hover, like the nav tabs */
+/* Dashboard navigation links */
 .manage-link {
-  display: inline-block;
-  margin-bottom: 20px;
+  display: block;
+  width: fit-content;
+  margin-bottom: 12px;
   color: var(--primary-color);
   font-weight: 600;
   text-decoration: none;
-}
-
-.manage-link:hover {
-  text-decoration: underline;
 }
 
 .stats {
