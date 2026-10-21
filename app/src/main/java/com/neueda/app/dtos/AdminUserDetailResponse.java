@@ -21,5 +21,5 @@ public class AdminUserDetailResponse {
     private Instant createdAt;
     private String createdBy;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-    private List<AccountResponse> accounts;
+    private List<AdminAccountResponse> accounts;
 }
