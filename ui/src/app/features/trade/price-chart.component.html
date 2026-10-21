@@ -11,6 +11,9 @@
             (normalizedSymbol() || (pendingSymbol() ? 'Pending instrument' : 'Select instrument'))
           "
         >
+          @if (normalizedSymbol()) {
+            <app-symbol-icon [symbol]="normalizedSymbol()" />
+          }
           {{ normalizedSymbol() || (pendingSymbol() ? '—' : 'Select instrument')
           }}<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4 3 3 3-3" /></svg>
         </button>

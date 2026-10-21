@@ -25,7 +25,9 @@
     <div class="summary">
       <div>
         <p class="eyebrow">{{ item.side | titlecase }} order · {{ item.orderType | titlecase }}</p>
-        <h2 id="order-summary">{{ item.quantity | number }} {{ item.symbol }}</h2>
+        <h2 id="order-summary">
+          <app-symbol-icon [symbol]="item.symbol" />{{ item.quantity | number }} {{ item.symbol }}
+        </h2>
       </div>
       <span class="status" [class.rejected]="item.status === 'REJECTED'" [class.filled]="item.status === 'FILLED'">{{
         item.status?.replaceAll('_', ' ') | titlecase

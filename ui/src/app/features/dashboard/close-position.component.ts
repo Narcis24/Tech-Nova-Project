@@ -5,9 +5,10 @@ import { Subject, exhaustMap, catchError, of } from 'rxjs';
 import { newUuid } from '../../core/uuid';
 import { isRejection, orderError } from '../trade/order-error';
 import { OrderControllerService, PositionResponse } from '../../generated/trading-api-client';
+import { SymbolIconComponent } from '../../components/symbol-icon/symbol-icon.component';
 @Component({
   selector: 'app-close-position',
-  imports: [CurrencyPipe],
+  imports: [CurrencyPipe, SymbolIconComponent],
   templateUrl: './close-position.component.html',
   styleUrl: './close-position.component.css',
 })
