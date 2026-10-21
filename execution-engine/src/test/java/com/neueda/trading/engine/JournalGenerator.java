@@ -196,6 +196,8 @@ public final class JournalGenerator {
         }
     }
 
+    // nextLong(bound) would draw different numbers and the seed would no longer re-create the golden journal
+    @SuppressWarnings("java:S2140")
     private Instant between(Instant from, Instant to) {
         return from.plusSeconds((long) (random.nextDouble() * Duration.between(from, to).getSeconds()));
     }
@@ -215,8 +217,8 @@ public final class JournalGenerator {
         }
 
         @Override
-        public synchronized void record(Instant time, String type, Map<String, Object> fields) {
-            super.record(time, type, fields);
+        public synchronized void write(Instant time, String type, Map<String, Object> fields) {
+            super.write(time, type, fields);
             Object decision = fields.get("decision");
             if (JournalTypes.FILL.equals(decision) || JournalTypes.REJECT.equals(decision)) {
                 pending.remove((UUID) fields.get("orderId"));
