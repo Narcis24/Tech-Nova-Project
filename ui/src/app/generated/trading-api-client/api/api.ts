@@ -20,4 +20,4 @@ export * from './riskController.service';
 import { RiskControllerService } from './riskController.service';
 export * from './riskLimitController.service';
 import { RiskLimitControllerService } from './riskLimitController.service';
-export const APIS = [AccountControllerService, AdminAnalyticsControllerService, AdminUserControllerService, DashboardControllerService, InstrumentControllerService, OrderControllerService, PortfolioControllerService, PositionControllerService, PriceControllerService, RiskControllerService, RiskLimitControllerService];
+export const APIS = [AccountControllerService, AdminAnalyticsControllerService, AdminJournalControllerService, AdminUserControllerService, DashboardControllerService, InstrumentControllerService, OrderControllerService, PortfolioControllerService, PositionControllerService, PriceControllerService, RiskControllerService, RiskLimitControllerService];

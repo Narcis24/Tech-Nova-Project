@@ -2,6 +2,7 @@ api.base.service.ts
 api.module.ts
 api/accountController.service.ts
 api/adminAnalyticsController.service.ts
+api/adminJournalController.service.ts
 api/adminUserController.service.ts
 api/api.ts
 api/dashboardController.service.ts
@@ -17,7 +18,6 @@ encoder.ts
 index.ts
 model/accountResponse.ts
 model/adminAnalyticsResponse.ts
-model/adminLiveResponse.ts
 model/adminUserResponse.ts
 model/analyticsBucket.ts
 model/analyticsTotals.ts
@@ -27,8 +27,15 @@ model/cashAmountRequest.ts
 model/createUserRequest.ts
 model/createUserResponse.ts
 model/instrumentResponse.ts
-model/liveHour.ts
-model/liveInstrument.ts
+model/journalDay.ts
+model/journalDaySummary.ts
+model/journalDifference.ts
+model/journalOrder.ts
+model/journalOrderRow.ts
+model/journalQuote.ts
+model/journalReasonCount.ts
+model/journalTimelineEntry.ts
+model/journalVerifyResult.ts
 model/marketAssetResponse.ts
 model/models.ts
 model/openAccountRequest.ts

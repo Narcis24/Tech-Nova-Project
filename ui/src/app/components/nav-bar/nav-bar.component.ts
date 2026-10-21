@@ -21,6 +21,7 @@ const TRADER_TABS: readonly NavTab[] = [
 const ADMIN_TABS: readonly NavTab[] = [
   { label: 'Overview', path: '/admin', exact: true },
   { label: 'Users', path: '/admin/users' },
+  { label: 'Journal', path: '/admin/journal' },
 ];
 
 /**
