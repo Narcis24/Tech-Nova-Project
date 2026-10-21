@@ -151,7 +151,7 @@
                   <td>
                     <div class="user">
                       <span class="avatar" aria-hidden="true">{{ user.username.charAt(0) }}</span>
-                      <span class="username">{{ user.username }}</span>
+                      <a class="username" [href]="'/admin/users/' + user.username">{{ user.username }}</a>
                     </div>
                   </td>
                   <td class="email">{{ user.email ?? '—' }}</td>
