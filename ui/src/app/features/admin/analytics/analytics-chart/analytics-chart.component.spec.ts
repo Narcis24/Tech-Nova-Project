@@ -145,14 +145,67 @@ describe('AnalyticsChartComponent', () => {
     expect(tooltip).toContain('$150');
   });
 
-  it('lists every point in the table view', () => {
-    const page = create();
+  function showBars(page: HTMLElement): void {
     (page.querySelector('.link') as HTMLButtonElement).click();
     fixture.detectChanges();
+  }
 
-    const rows = Array.from(page.querySelectorAll('tbody tr')).map((tr) => tr.textContent?.replace(/\s+/g, ' ').trim());
-    expect(rows).toEqual(['Fri 16 Oct $100 $50', 'Mon 19 Oct $200 $150', 'Tue 20 Oct $300 $200']);
-    expect((page.querySelector('.plot') as HTMLElement).hidden).toBeTrue();
+  it('switches to a bar chart, one bar per drawn point, and back', () => {
+    const page = create();
+    showBars(page);
+
+    expect(page.querySelectorAll('.bar')).toHaveSize(3); // Fri, Mon, Tue; Saturday left out
+    expect(page.querySelector('.line')).toBeNull();
+    expect(points(page.querySelector('.previous'))).toBe(3);
+    expect(page.querySelector('.link')?.textContent?.trim()).toBe('Show as line chart');
+
+    showBars(page);
+    expect(page.querySelector('.bar')).toBeNull();
+    expect(page.querySelectorAll('.line')).toHaveSize(1);
+  });
+
+  it('draws taller bars for bigger values, standing on the zero line', () => {
+    const page = create();
+    showBars(page);
+
+    const bars = Array.from(page.querySelectorAll('.bar')).map((bar) => ({
+      height: Number(bar.getAttribute('height')),
+      bottom: Number(bar.getAttribute('y')) + Number(bar.getAttribute('height')),
+    }));
+    expect(bars[0].height).toBeLessThan(bars[1].height);
+    expect(bars[1].height).toBeLessThan(bars[2].height);
+    expect(new Set(bars.map((bar) => bar.bottom.toFixed(3))).size).toBe(1);
+  });
+
+  it('puts the split groups side by side in their colours', () => {
+    const page = create({
+      ...RESPONSE,
+      buckets: RESPONSE.buckets.map((b) => ({ ...b, bySide: { BUY: b.totals, SELL: b.totals } })),
+    });
+    clickSplit(page, 'Side');
+    showBars(page);
+
+    const bars = Array.from(page.querySelectorAll<SVGRectElement>('.bar'));
+    expect(bars).toHaveSize(6);
+    expect(bars[0].style.fill).toBe('var(--primary-color)');
+    expect(bars[3].style.fill).toBe('var(--sell-color)');
+    // Buy's first bar ends before Sell's first bar starts
+    expect(Number(bars[0].getAttribute('x')) + Number(bars[0].getAttribute('width'))).toBeLessThanOrEqual(
+      Number(bars[3].getAttribute('x')),
+    );
+  });
+
+  it('shades the slot picked with the keyboard and shows its tooltip', () => {
+    const page = create();
+    showBars(page);
+    const slider = page.querySelector('input[type="range"]') as HTMLInputElement;
+
+    slider.value = '2';
+    slider.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(page.querySelector('.slot')).not.toBeNull();
+    expect(page.querySelector('.tooltip')?.textContent).toContain('Tue 20 Oct');
   });
 });
 

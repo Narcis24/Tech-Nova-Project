@@ -14,6 +14,7 @@ import { AdminAnalyticsResponse, AnalyticsBucket, AnalyticsTotals } from '../../
 import { ASSET_CLASSES, drawnBuckets, MetricKey, METRICS } from '../analytics';
 
 export type Split = 'total' | 'assetClass' | 'side';
+export type ChartType = 'line' | 'bar';
 
 /** One line on the chart: a value per drawn point, null where there's nothing to draw. */
 export interface Series {
@@ -38,6 +39,9 @@ const SIDE_GROUPS = [
 const HEIGHT = 260;
 // Room for the value labels on the left and the date labels underneath
 const PAD = { top: 12, right: 12, bottom: 28, left: 60 };
+// Bars take this much of their point's slot, and are no wider than the cap each
+const BAR_FILL = 0.7;
+const MAX_BAR_WIDTH = 28;
 
 const NY = 'America/New_York';
 const LABELS = {
@@ -47,9 +51,10 @@ const LABELS = {
 };
 
 /**
- * The analytics line chart: the metric picked in the tabs over the period, as one line or split by
- * asset class or side, with the previous period dashed behind the total. Hover, or the arrow keys on
- * the focused chart, show a point's values; "Show as table" lists them all.
+ * The analytics chart: the metric picked in the tabs over the period, as one line or split by asset
+ * class or side, with the previous period dashed behind the total. Hover, or the arrow keys on the
+ * focused chart, show a point's values; "Show as bar chart" draws the same values as bars, one per
+ * line side by side at each point.
  */
 @Component({
   selector: 'app-analytics-chart',
@@ -62,7 +67,8 @@ export class AnalyticsChartComponent {
 
   readonly splits = SPLITS;
   readonly split = signal<Split>('total');
-  readonly showTable = signal(false);
+  readonly chartType = signal<ChartType>('line');
+  readonly bars = computed(() => this.chartType() === 'bar');
   // The point under the pointer, or the one picked with the keyboard
   readonly hovered = signal<number | null>(null);
   readonly height = HEIGHT;
@@ -148,6 +154,35 @@ export class AnalyticsChartComponent {
       };
     }),
   );
+  // The bar chart: each point's slot holds one bar per series, side by side, centred on the point
+  readonly barGroups = computed(() => {
+    const series = this.series();
+    const slot = this.slotWidth();
+    const group = Math.min(slot * BAR_FILL, MAX_BAR_WIDTH * series.length);
+    const width = group / Math.max(1, series.length);
+    // A 1px gap between bars that share a slot
+    const gap = series.length > 1 ? 1 : 0;
+    return series.map((s, position) => ({
+      key: s.key,
+      color: s.color,
+      rects: s.values.flatMap((value, index) => {
+        if (value === null) {
+          return [];
+        }
+        const top = this.y(value);
+        return [
+          {
+            index,
+            x: this.x(index) - group / 2 + position * width,
+            y: top,
+            width: Math.max(1, width - gap),
+            height: this.y(0) - top,
+          },
+        ];
+      }),
+    }));
+  });
+
   readonly previousPath = computed(() => {
     const previous = this.previous();
     return previous ? this.path(previous) : null;
@@ -174,6 +209,9 @@ export class AnalyticsChartComponent {
     const x = this.x(index);
     return {
       x,
+      // The hovered point's slot, shaded behind its bars
+      slotX: x - this.slotWidth() / 2,
+      slotWidth: this.slotWidth(),
       // Flip to the left of the line near the right edge, so it stays inside the card
       left: x > this.width() - 220 ? x - 210 : x + 14,
       title: this.longLabel(bucket.start),
@@ -193,18 +231,6 @@ export class AnalyticsChartComponent {
     };
   });
 
-  // The table view, for reading exact values and when colours are hard to tell apart
-  readonly rows = computed(() =>
-    this.points()
-      .map((bucket, index) => ({ bucket, index }))
-      .filter(({ bucket }) => !bucket.future)
-      .map(({ bucket, index }) => ({
-        label: this.longLabel(bucket.start),
-        values: this.series().map((series) => this.formatValue(series.values[index])),
-        previous: this.previous() ? this.formatValue(this.previous()?.[index] ?? null) : null,
-      })),
-  );
-
   chooseSplit(split: Split): void {
     this.split.set(split);
     this.hovered.set(null);
@@ -219,13 +245,23 @@ export class AnalyticsChartComponent {
     }
     const plotWidth = this.width() - PAD.left - PAD.right;
     const offset = ((event.clientX - rect.left) / rect.width) * this.width() - PAD.left;
-    this.hovered.set(n === 1 ? 0 : Math.max(0, Math.min(n - 1, Math.round((offset / plotWidth) * (n - 1)))));
+    // Bars: the slot the pointer is in; lines: the nearest point
+    const index = this.bars() ? Math.floor((offset / plotWidth) * n) : Math.round((offset / plotWidth) * (n - 1));
+    this.hovered.set(n === 1 ? 0 : Math.max(0, Math.min(n - 1, index)));
   }
 
+  // Lines run from edge to edge; bars sit in the middle of equal slots, so the end ones fit inside
   x(index: number): number {
     const n = this.points().length;
     const plotWidth = this.width() - PAD.left - PAD.right;
+    if (this.bars()) {
+      return PAD.left + (index + 0.5) * this.slotWidth();
+    }
     return PAD.left + (n <= 1 ? plotWidth / 2 : (index / (n - 1)) * plotWidth);
+  }
+
+  private slotWidth(): number {
+    return (this.width() - PAD.left - PAD.right) / Math.max(1, this.points().length);
   }
 
   y(value: number): number {
@@ -249,10 +285,6 @@ export class AnalyticsChartComponent {
       penDown = true;
     });
     return path.trim();
-  }
-
-  private formatValue(value: number | null | undefined): string {
-    return value == null ? '–' : this.metric().format(value);
   }
 
   private shortLabel(start: string): string {

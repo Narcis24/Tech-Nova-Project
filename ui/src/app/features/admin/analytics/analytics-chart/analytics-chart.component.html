@@ -16,13 +16,13 @@
         </button>
       }
     </div>
-    <button type="button" class="link" [attr.aria-pressed]="showTable()" (click)="showTable.set(!showTable())">
-      {{ showTable() ? 'Show as chart' : 'Show as table' }}
+    <button type="button" class="link" [attr.aria-pressed]="bars()" (click)="chartType.set(bars() ? 'line' : 'bar')">
+      {{ bars() ? 'Show as line chart' : 'Show as bar chart' }}
     </button>
   </div>
 </div>
 
-<div #plot class="plot" [hidden]="showTable()">
+<div #plot class="plot">
   @if (empty()) {
     <p class="empty">No orders match these filters in this period.</p>
   } @else {
@@ -63,26 +63,61 @@
           class="axis"
           [attr.x]="label.x"
           [attr.y]="height - 8"
-          [attr.text-anchor]="label.index === 0 ? 'start' : 'middle'"
+          [attr.text-anchor]="label.index === 0 && !bars() ? 'start' : 'middle'"
         >
           {{ label.label }}
         </text>
       }
 
-      @if (previousPath(); as path) {
-        <path class="previous" [attr.d]="path" />
-      }
-      @for (line of lines(); track line.key) {
-        <path class="line" [attr.d]="line.path" [style.stroke]="line.color" />
-        @if (line.end; as end) {
-          <circle class="end" [attr.cx]="end.x" [attr.cy]="end.y" r="4" [style.fill]="line.color" />
+      @if (bars()) {
+        @if (tooltip(); as tip) {
+          <rect
+            class="slot"
+            [attr.x]="tip.slotX"
+            [attr.y]="pad.top"
+            [attr.width]="tip.slotWidth"
+            [attr.height]="height - pad.top - pad.bottom"
+          />
         }
-      }
+        @for (group of barGroups(); track group.key) {
+          @for (bar of group.rects; track bar.index) {
+            <rect
+              class="bar"
+              [attr.x]="bar.x"
+              [attr.y]="bar.y"
+              [attr.width]="bar.width"
+              [attr.height]="bar.height"
+              rx="2"
+              [style.fill]="group.color"
+            />
+          }
+        }
+        <!-- Over the bars, so the previous period still reads where they're taller -->
+        @if (previousPath(); as path) {
+          <path class="previous" [attr.d]="path" />
+        }
+      } @else {
+        @if (previousPath(); as path) {
+          <path class="previous" [attr.d]="path" />
+        }
+        @for (line of lines(); track line.key) {
+          <path class="line" [attr.d]="line.path" [style.stroke]="line.color" />
+          @if (line.end; as end) {
+            <circle class="end" [attr.cx]="end.x" [attr.cy]="end.y" r="4" [style.fill]="line.color" />
+          }
+        }
 
-      @if (tooltip(); as tip) {
-        <line class="cursor" [attr.x1]="tip.x" [attr.x2]="tip.x" [attr.y1]="pad.top" [attr.y2]="height - pad.bottom" />
-        @for (dot of tip.dots; track $index) {
-          <circle class="end" [attr.cx]="tip.x" [attr.cy]="dot.y" r="4.5" [style.fill]="dot.color" />
+        @if (tooltip(); as tip) {
+          <line
+            class="cursor"
+            [attr.x1]="tip.x"
+            [attr.x2]="tip.x"
+            [attr.y1]="pad.top"
+            [attr.y2]="height - pad.bottom"
+          />
+          @for (dot of tip.dots; track $index) {
+            <circle class="end" [attr.cx]="tip.x" [attr.cy]="dot.y" r="4.5" [style.fill]="dot.color" />
+          }
         }
       }
     </svg>
@@ -115,34 +150,3 @@
     }
   }
 </div>
-
-@if (showTable()) {
-  <div class="table-scroll">
-    <table>
-      <thead>
-        <tr>
-          <th scope="col">When</th>
-          @for (series of series(); track series.key) {
-            <th scope="col" class="num">{{ series.label }}</th>
-          }
-          @if (previous()) {
-            <th scope="col" class="num">Previous period</th>
-          }
-        </tr>
-      </thead>
-      <tbody>
-        @for (row of rows(); track row.label) {
-          <tr>
-            <th scope="row">{{ row.label }}</th>
-            @for (value of row.values; track $index) {
-              <td class="num">{{ value }}</td>
-            }
-            @if (row.previous !== null) {
-              <td class="num">{{ row.previous }}</td>
-            }
-          </tr>
-        }
-      </tbody>
-    </table>
-  </div>
-}
