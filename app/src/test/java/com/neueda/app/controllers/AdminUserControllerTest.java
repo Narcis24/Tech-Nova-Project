@@ -4,6 +4,7 @@ import com.neueda.app.configs.SecurityConfig;
 import com.neueda.app.dtos.AdminUserResponse;
 import com.neueda.app.dtos.AdminUserDetailResponse;
 import com.neueda.app.dtos.AccountResponse;
+import com.neueda.app.dtos.AdminAccountResponse;
 import com.neueda.app.dtos.CreateUserRequest;
 import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.enums.Role;
@@ -109,14 +110,15 @@ class AdminUserControllerTest {
         when(adminUserService.getUser("trader_one")).thenReturn(new AdminUserDetailResponse(
             "trader_one", "trader_one@example.com", List.of(Role.TRADER),
             Instant.parse("2026-10-19T09:25:31Z"), null,
-            List.of(new AccountResponse("ACC-1234", "Trader One", java.math.BigDecimal.valueOf(1250),
-                AccountStatus.ACTIVE))));
+            List.of(new AdminAccountResponse("ACC-1234", "Trader One", java.math.BigDecimal.valueOf(1250),
+                AccountStatus.ACTIVE, com.neueda.app.enums.RiskBand.LOW))));
 
         mockMvc.perform(get("/v1/admin/users/trader_one").header("Authorization", "Bearer admin-token"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.username").value("trader_one"))
             .andExpect(jsonPath("$.accounts[0].accountId").value("ACC-1234"))
-            .andExpect(jsonPath("$.accounts[0].status").value("ACTIVE"));
+            .andExpect(jsonPath("$.accounts[0].status").value("ACTIVE"))
+            .andExpect(jsonPath("$.accounts[0].riskBand").value("LOW"));
     }
 
     @Test
