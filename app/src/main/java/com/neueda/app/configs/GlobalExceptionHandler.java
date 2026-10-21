@@ -19,6 +19,7 @@ import com.neueda.app.dtos.ErrorResponse;
 import com.neueda.app.exceptions.JournalException;
 import com.neueda.app.exceptions.AccountAccessDeniedException;
 import com.neueda.app.exceptions.AccountNotActiveException;
+import com.neueda.app.exceptions.AccountStatusChangeNotAllowedException;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.DuplicateOrderException;
 import com.neueda.app.exceptions.InstrumentNotFoundException;
@@ -157,6 +158,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAccountNotActive(AccountNotActiveException ex) {
         ErrorResponse error = new ErrorResponse("ACCOUNT_NOT_ACTIVE", ex.getMessage(), 400);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(AccountStatusChangeNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleAccountStatusChangeNotAllowed(AccountStatusChangeNotAllowedException ex) {
+        ErrorResponse error = new ErrorResponse("ACCOUNT_STATUS_CHANGE_NOT_ALLOWED", ex.getMessage(), 409);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     /**
