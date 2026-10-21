@@ -38,7 +38,8 @@
               <th scope="col">Account ID</th>
               <th scope="col">Balance</th>
               <th scope="col">Status</th>
-              <th scope="col"><span class="visually-hidden">Action</span></th>
+              <th scope="col">Risk</th>
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -48,6 +49,11 @@
                 <td>{{ account.cashBalance | number: '1.2-2' }}</td>
                 <td>
                   <span class="status" [class.suspended]="account.status === 'SUSPENDED'">{{ account.status }}</span>
+                </td>
+                <td>
+                  <span class="risk-band" [class]="'risk-' + account.riskBand.toLowerCase()">{{
+                    account.riskBand
+                  }}</span>
                 </td>
                 <td>
                   @if (account.status === 'ACTIVE' || account.status === 'SUSPENDED') {
