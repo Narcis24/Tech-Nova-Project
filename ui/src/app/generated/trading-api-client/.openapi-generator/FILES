@@ -18,6 +18,7 @@ encoder.ts
 index.ts
 model/accountResponse.ts
 model/adminAnalyticsResponse.ts
+model/adminLiveResponse.ts
 model/adminUserResponse.ts
 model/analyticsBucket.ts
 model/analyticsTotals.ts
@@ -36,6 +37,8 @@ model/journalQuote.ts
 model/journalReasonCount.ts
 model/journalTimelineEntry.ts
 model/journalVerifyResult.ts
+model/liveHour.ts
+model/liveInstrument.ts
 model/marketAssetResponse.ts
 model/models.ts
 model/openAccountRequest.ts

@@ -1,5 +1,6 @@
 export * from './accountResponse';
 export * from './adminAnalyticsResponse';
+export * from './adminLiveResponse';
 export * from './adminUserResponse';
 export * from './analyticsBucket';
 export * from './analyticsTotals';
@@ -18,6 +19,8 @@ export * from './journalQuote';
 export * from './journalReasonCount';
 export * from './journalTimelineEntry';
 export * from './journalVerifyResult';
+export * from './liveHour';
+export * from './liveInstrument';
 export * from './marketAssetResponse';
 export * from './openAccountRequest';
 export * from './orderResponse';

@@ -2,6 +2,8 @@ export * from './accountController.service';
 import { AccountControllerService } from './accountController.service';
 export * from './adminAnalyticsController.service';
 import { AdminAnalyticsControllerService } from './adminAnalyticsController.service';
+export * from './adminJournalController.service';
+import { AdminJournalControllerService } from './adminJournalController.service';
 export * from './adminUserController.service';
 import { AdminUserControllerService } from './adminUserController.service';
 export * from './dashboardController.service';
