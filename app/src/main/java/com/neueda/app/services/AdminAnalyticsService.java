@@ -52,6 +52,7 @@ public class AdminAnalyticsService {
 
     // Days and hours are New York time, like MarketHours.java in the engine and market-hours.ts in the UI
     static final ZoneId MARKET_ZONE = ZoneId.of("America/New_York");
+    private static final Set<DayOfWeek> WEEKEND = EnumSet.of(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
     private static final int TOP_TRADED = 6;
     private static final int RATE_SCALE = 4;
     private static final int LIVE_TRADING_DAYS = 3;
@@ -82,6 +83,12 @@ public class AdminAnalyticsService {
     @Transactional(readOnly = true)
     public AdminAnalyticsResponse analytics(AnalyticsPeriod period, AssetClass assetClass,
                                             OrderSide side, OrderType orderType, String trader) {
+        return buildAnalytics(period, assetClass, side, orderType, trader);
+    }
+
+    // Shared by analytics and exportCsv, so neither calls the other's @Transactional method through 'this'
+    private AdminAnalyticsResponse buildAnalytics(AnalyticsPeriod period, AssetClass assetClass,
+                                                  OrderSide side, OrderType orderType, String trader) {
         ZonedDateTime now = ZonedDateTime.now(clock).withZoneSameInstant(MARKET_ZONE);
         Window current = Window.of(period, now);
         Window previous = current.previous();
@@ -119,7 +126,7 @@ public class AdminAnalyticsService {
     public String exportCsv(AnalyticsPeriod period, AssetClass assetClass,
                             OrderSide side, OrderType orderType, String trader) {
         StringBuilder csv = new StringBuilder(CSV_HEADER).append('\n');
-        for (AnalyticsBucket bucket : analytics(period, assetClass, side, orderType, trader).buckets()) {
+        for (AnalyticsBucket bucket : buildAnalytics(period, assetClass, side, orderType, trader).buckets()) {
             if (bucket.future()) {
                 continue;
             }
@@ -176,7 +183,7 @@ public class AdminAnalyticsService {
     private static List<LocalDate> lastTradingDays(LocalDate day, int count) {
         List<LocalDate> days = new ArrayList<>();
         for (LocalDate d = day; days.size() < count; d = d.minusDays(1)) {
-            if (d.getDayOfWeek() != DayOfWeek.SATURDAY && d.getDayOfWeek() != DayOfWeek.SUNDAY) {
+            if (!WEEKEND.contains(d.getDayOfWeek())) {
                 days.add(0, d);
             }
         }
