@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -82,7 +83,7 @@ class ReplayTest {
         assertEquals(2, result.quotes());
         assertEquals(List.of("REJECT", "FILL", "WAIT", "FILL"),
             result.recorded().stream().map(Replay.Decision::decision).toList());
-        assertTrue(result.matches(), () -> String.join("\n", result.differences()));
+        assertTrue(result.matches(), () -> result.differences().toString());
     }
 
     @Test
@@ -95,7 +96,7 @@ class ReplayTest {
         Replay.Result result = replay("2026-10-16");
 
         assertEquals("QUEUED_MARKET_CLOSED", result.recorded().getFirst().decision());
-        assertTrue(result.matches(), () -> String.join("\n", result.differences()));
+        assertTrue(result.matches(), () -> result.differences().toString());
     }
 
     @Test
@@ -110,7 +111,7 @@ class ReplayTest {
 
         assertEquals(2, result.runs());
         assertEquals("REJECT", result.recorded().getFirst().decision());
-        assertTrue(result.matches(), () -> String.join("\n", result.differences()));
+        assertTrue(result.matches(), () -> result.differences().toString());
     }
 
     @Test
@@ -123,7 +124,7 @@ class ReplayTest {
         Replay.Result result = replay("2026-10-16");
 
         assertEquals("FILL", result.recorded().getFirst().decision());
-        assertTrue(result.matches(), () -> String.join("\n", result.differences()));
+        assertTrue(result.matches(), () -> result.differences().toString());
     }
 
     @Test
@@ -164,5 +165,137 @@ class ReplayTest {
         assertEquals(1, Replay.execute(new String[] {dir.resolve("missing.jsonl").toString()}, new PrintStream(out)));
         assertEquals(1, Replay.execute(new String[] {}, new PrintStream(out)));
         assertTrue(out.toString().contains("Could not replay"), out.toString());
+    }
+
+    @Test
+    void writesAReportWithEachDifferenceItsOrderAndTheQuoteBehindIt() throws Exception {
+        ExecutionEngine engine = recordingEngine(true);
+        engine.accept(quote("99.50", "100.50", OPEN));
+        engine.handle(order("MARKET", null));
+        Path journal = dir.resolve("2026-10-14.jsonl");
+        Files.writeString(journal, Files.readString(journal).replace("\"price\":100.50", "\"price\":101.00"));
+        Path report = dir.resolve("shadow-gate/report.json");   // the folder does not exist yet
+
+        int exit = Replay.execute(new String[] {"--report", report.toString(), journal.toString()},
+            new PrintStream(new ByteArrayOutputStream()));
+
+        assertEquals(1, exit);
+        JsonNode content = mapper.readTree(Files.readString(report));
+        assertEquals(false, content.get("matches").asBoolean());
+        JsonNode entry = content.get("journals").get(0);
+        assertEquals(1, entry.get("decisions").asInt());
+        JsonNode difference = entry.get("differences").get(0);
+        assertTrue(difference.get("recorded").asString().endsWith("FILL 101.00"));
+        assertTrue(difference.get("replayed").asString().endsWith("FILL 100.50"));
+        assertEquals("MARKET", difference.get("order").get("orderType").asString());
+        assertEquals(0, new BigDecimal("100.50").compareTo(difference.get("lastQuote").get("ask").decimalValue()));
+    }
+
+    @Test
+    void replaysEveryJournalInAFolderAndFailsIfAnyChanged() throws Exception {
+        recordingEngine(true).handle(order("MARKET", null));            // 2026-10-14: rejected, unchanged
+        when(clock.instant()).thenReturn(CLOSED);
+        recordingEngine(true).handle(order("MARKET", null));            // 2026-10-16: queued
+        Path changed = dir.resolve("2026-10-16.jsonl");
+        Files.writeString(changed, Files.readString(changed).replace("QUEUED_MARKET_CLOSED", "WAIT"));
+        Path report = dir.resolve("report.json");
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        int exit = Replay.execute(new String[] {"--report", report.toString(), dir.toString()}, new PrintStream(out));
+
+        assertEquals(1, exit);
+        JsonNode journals = mapper.readTree(Files.readString(report)).get("journals");
+        assertEquals(2, journals.size());
+        assertEquals(0, journals.get(0).get("differences").size());
+        assertEquals(1, journals.get(1).get("differences").size());
+        assertTrue(out.toString().contains("all decisions match") && out.toString().contains("1 difference(s)"),
+            out.toString());
+    }
+
+    @Test
+    void aFolderWithoutJournalsIsAnErrorNotAPass() throws Exception {
+        Path empty = Files.createDirectory(dir.resolve("nothing-here"));
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        assertEquals(1, Replay.execute(new String[] {empty.toString()}, new PrintStream(out)));
+        assertTrue(out.toString().contains("no journals found"), out.toString());
+    }
+
+    /** Rewrites the journal's lines; for simulating journals that differ from what the engine decides. */
+    private void editJournal(String day, java.util.function.UnaryOperator<List<String>> edit) throws Exception {
+        Path journal = dir.resolve(day + ".jsonl");
+        Files.write(journal, edit.apply(new java.util.ArrayList<>(Files.readAllLines(journal))));
+    }
+
+    @Test
+    void decisionsOfDifferentOrdersInAnotherOrderStillMatch() throws Exception {
+        ExecutionEngine engine = recordingEngine(true);
+        engine.handle(order("MARKET", null));                       // REJECT (no quote)
+        engine.handle(order("LIMIT", "90.00"));                     // WAIT
+        // Swap the two decision lines, as a race between two orders could
+        editJournal("2026-10-14", lines -> {
+            int reject = indexOf(lines, "\"REJECT\"");
+            int wait = indexOf(lines, "\"WAIT\"");
+            String first = lines.get(reject);
+            lines.set(reject, lines.get(wait));
+            lines.set(wait, first);
+            return lines;
+        });
+
+        Replay.Result result = replay("2026-10-14");
+
+        assertTrue(result.matches(), () -> result.differences().toString());
+    }
+
+    @Test
+    void aMissingDecisionOnlyAffectsItsOwnOrder() throws Exception {
+        ExecutionEngine engine = recordingEngine(true);
+        OrderPlacedEvent limit = order("LIMIT", "90.00");
+        engine.handle(limit);                                       // WAIT
+        for (int i = 0; i < 5; i++) {
+            engine.handle(order("MARKET", null));                   // 5 x REJECT, after the WAIT
+        }
+        editJournal("2026-10-14", lines -> {
+            lines.remove(indexOf(lines, "\"WAIT\""));
+            return lines;
+        });
+
+        Replay.Result result = replay("2026-10-14");
+
+        // Compared by position, all 5 later rejections would also have shown as different
+        assertEquals(1, result.differences().size(), () -> result.differences().toString());
+        Replay.Difference missing = result.differences().getFirst();
+        assertEquals(null, missing.recorded());
+        assertEquals(limit.orderId().toString(), missing.replayed().orderId());
+        assertTrue(missing.toString().startsWith("not recorded"), missing.toString());
+    }
+
+    private static int indexOf(List<String> lines, String text) {
+        for (int i = 0; i < lines.size(); i++) {
+            if (lines.get(i).contains(text)) {
+                return i;
+            }
+        }
+        throw new AssertionError("no journal line contains " + text);
+    }
+
+    @Test
+    void aCancelInTheJournalIsReplayedSoTheOrderDoesNotFill() throws Exception {
+        ExecutionEngine engine = recordingEngine(true);
+        OrderPlacedEvent limit = order("LIMIT", "90.00");
+        engine.handle(limit);                                        // WAIT
+        engine.cancel(limit.orderId());
+        engine.accept(quote("88.50", "89.00", OPEN));                // crosses, but the order was cancelled
+
+        Replay.Result result = replay("2026-10-14");
+        assertTrue(result.matches(), () -> result.differences().toString());
+        assertEquals(List.of("WAIT"), result.recorded().stream().map(Replay.Decision::decision).toList());
+
+        // Without the cancel line, the replay engine would fill it: proof the cancel is fed, not skipped
+        Path journal = dir.resolve("2026-10-14.jsonl");
+        Files.write(journal, Files.readAllLines(journal).stream().filter(l -> !l.contains("ORDER_CANCELLED")).toList());
+        Replay.Result withoutCancel = replay("2026-10-14");
+        assertEquals(1, withoutCancel.differences().size(), () -> withoutCancel.differences().toString());
+        assertEquals("FILL", withoutCancel.differences().getFirst().replayed().decision());
     }
 }

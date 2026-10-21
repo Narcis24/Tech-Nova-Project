@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { safeReturnUrl } from '../../core/return-url';
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 
 const INVALID_CREDENTIALS = 'Invalid username or password';
 
@@ -16,6 +17,7 @@ const INVALID_CREDENTIALS = 'Invalid username or password';
 })
 export class LoginComponent {
   private readonly auth = inject(AuthService);
+  readonly theme = inject(ThemeService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 

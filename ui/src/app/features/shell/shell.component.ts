@@ -5,6 +5,7 @@ import { filter, map, startWith } from 'rxjs';
 
 import { NavBarComponent } from '../../components/nav-bar/nav-bar.component';
 import { AccountService } from '../../services/account.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-shell',
@@ -22,6 +23,9 @@ export class ShellComponent {
     ),
   );
   constructor() {
-    inject(AccountService).loadAccounts().subscribe();
+    // Admins have no trading accounts, so don't ask the API for them
+    if (!inject(AuthService).isAdmin()) {
+      inject(AccountService).loadAccounts().subscribe();
+    }
   }
 }

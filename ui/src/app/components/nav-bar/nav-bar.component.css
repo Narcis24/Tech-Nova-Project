@@ -150,22 +150,6 @@
   font-weight: 600;
 }
 
-/* Sign out sits beside the avatar on desktop; on phones it moves into the avatar menu */
-.sign-out {
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: 15px;
-  color: var(--secondary-text-color);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.sign-out:hover {
-  color: var(--text-color);
-}
-
 /* The avatar and name are one button that opens the user menu, on every screen size */
 .menu-button {
   display: flex;
@@ -200,20 +184,6 @@
   box-shadow: var(--dropdown-shadow);
 }
 
-.menu-name,
-.menu-account {
-  margin: 0;
-  font-size: 15px;
-}
-
-.menu-name {
-  font-weight: 600;
-}
-
-.menu-account {
-  color: var(--secondary-text-color);
-}
-
 .menu-change-account {
   display: flex;
   align-items: center;
@@ -232,15 +202,19 @@
 }
 
 .menu-sign-out {
-  display: none;
+  display: block;
   min-height: 44px;
   border: 0;
   border-radius: 10px;
-  background: var(--muted-background-color);
+  background: transparent;
   font: inherit;
   font-weight: 600;
   color: var(--text-color);
   cursor: pointer;
+}
+
+.menu-sign-out:hover {
+  background: var(--muted-background-color);
 }
 
 @media (max-width: 767.98px) {
@@ -269,13 +243,8 @@
 
   /* The right side shrinks to just the avatar */
   .account-switcher,
-  .menu-button .username,
-  .sign-out {
+  .menu-button .username {
     display: none;
-  }
-
-  .menu-sign-out {
-    display: block;
   }
 
   .menu-button {

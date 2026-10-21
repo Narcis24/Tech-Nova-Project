@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import { AdminUserControllerService, AdminUserResponse } from '../../generated/trading-api-client';
 import { AuthService } from '../../services/auth.service';
@@ -9,9 +10,9 @@ const RECENT_USERS = 5;
 /** The admin's home page: who uses TechNova, at a glance. Data from GET /v1/admin/users. */
 @Component({
   selector: 'app-admin-dashboard',
-  imports: [DatePipe],
+  imports: [RouterLink, DatePipe],
   templateUrl: './admin-dashboard.component.html',
-  styleUrl: './admin-dashboard.component.css',
+  styleUrls: ['../../shared/admin-page.css', './admin-dashboard.component.css'],
 })
 export class AdminDashboardComponent {
   private readonly adminUsers = inject(AdminUserControllerService);
