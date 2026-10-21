@@ -37,6 +37,15 @@ export class AssetMixComponent {
 
   readonly segments = computed(() => this.entries().filter((entry) => entry.share > 0));
 
+  // The bar chart on wider screens: the biggest share fills the height and the others are scaled to it
+  readonly columns = computed(() => {
+    const biggest = Math.max(...this.entries().map((entry) => entry.share));
+    return this.entries().map((entry) => ({
+      ...entry,
+      height: biggest > 0 ? Math.round((entry.share / biggest) * 1000) / 10 : 0,
+    }));
+  });
+
   readonly summary = computed(() =>
     this.segments()
       .map((entry) => `${entry.label} ${entry.percent}`)

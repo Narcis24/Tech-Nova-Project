@@ -50,8 +50,8 @@ export class AdminDashboardComponent {
     ];
   });
 
-  // Full width puts Live below the chart; narrower puts it beside the chart
-  readonly chartFullWidth = signal(this.readChartWidth() !== 'narrow');
+  // Small (the default) puts Live beside the chart; full width puts Live in its own row below
+  readonly chartFullWidth = signal(this.readChartWidth() === 'full');
 
   constructor() {
     this.load();

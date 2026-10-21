@@ -101,6 +101,49 @@ describe('AssetMixComponent', () => {
     expect(legend(page)[0]).toBe('Equity 0% $0');
   });
 
+  describe('bar chart, for wider screens', () => {
+    function columns(page: HTMLElement): HTMLElement[] {
+      return Array.from(page.querySelectorAll<HTMLElement>('.columns li'));
+    }
+
+    it('has a column per class in the legend order, with share and value above and name below', () => {
+      const page = create(withMix(MIX));
+
+      expect(columns(page).map((li) => li.querySelector('.column-label')?.textContent?.trim())).toEqual([
+        'Equity',
+        'ETF',
+        'Bond',
+        'Commodity',
+      ]);
+      expect(columns(page)[0].querySelector('.column-value')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('66%$5M');
+    });
+
+    it('scales the columns to the biggest share, in each class colour', () => {
+      const page = create(withMix(MIX));
+      const bars = columns(page).map((li) => li.querySelector('.column-bar') as HTMLElement);
+
+      expect(bars.map((bar) => bar.style.height)).toEqual(['100%', '33.3%', '9.1%', '9.1%']);
+      expect(bars[1].style.background).toContain('var(--asset-etf-color)');
+    });
+
+    it('dims the columns the asset class filter leaves out', () => {
+      const page = create(withMix(MIX), { ...FILTERS, assetClass: 'ETF' });
+
+      expect(columns(page).map((li) => li.classList.contains('dimmed'))).toEqual([true, false, true, true]);
+    });
+
+    it('draws flat columns when nothing was traded', () => {
+      const page = create(withMix(MIX.map((entry) => ({ ...entry, tradedValue: 0, share: 0 }))));
+
+      expect(columns(page).map((li) => (li.querySelector('.column-bar') as HTMLElement).style.height)).toEqual([
+        '0%',
+        '0%',
+        '0%',
+        '0%',
+      ]);
+    });
+  });
+
   it('shows loading until the first response, and an error if it fails', () => {
     const page = create(null);
     expect(page.textContent).toContain('Loading asset mix');

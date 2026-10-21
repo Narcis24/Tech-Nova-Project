@@ -10,8 +10,8 @@
 }
 
 /*
- * The tabs run edge to edge across the panel's side padding; --panel-padding is set by the panel
- * the overview sits in (24px by default)
+ * The tabs run edge to edge across the card's side padding; --panel-padding comes from the card class
+ * the page draws the overview with (24px if there's none)
  */
 .metric-tabs {
   display: block;

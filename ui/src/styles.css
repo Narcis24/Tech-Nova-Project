@@ -61,6 +61,8 @@
   --asset-etf-color: #eb6834;
   --asset-bond-color: #1baf7a;
   --asset-commodity-color: #eda100;
+  /* The Live panel's bars and tint: the blue-violet of the mockup's Realtime box */
+  --analytics-live-color: #6250d6;
 
   /* Shadows and dialog backdrops */
   --shadow-color: #14182b;
@@ -111,6 +113,7 @@
   --asset-etf-color: #d95926;
   --asset-bond-color: #199e70;
   --asset-commodity-color: #c98500;
+  --analytics-live-color: #9085e9;
   --shadow-color: #000000;
 }
 

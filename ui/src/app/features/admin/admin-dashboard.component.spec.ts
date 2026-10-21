@@ -145,48 +145,61 @@ describe('AdminDashboardComponent', () => {
     expect(texts(page, '.stat-value')).toEqual(['3', '2', '2', '1']);
   });
 
-  describe('chart size button', () => {
+  describe('layout and chart size button', () => {
     afterEach(() => localStorage.removeItem('technova-admin-chart-width'));
 
     function grid(page: HTMLElement): HTMLElement {
       return page.querySelector('.analytics') as HTMLElement;
     }
 
-    it('starts with the chart full width', () => {
+    it('puts the filters first, then the chart, Live, top traded and asset mix, each its own card', () => {
+      const page = create(of(USERS));
+
+      expect(Array.from(grid(page).children).map((card) => card.tagName.toLowerCase())).toEqual([
+        'app-analytics-filters',
+        'app-analytics-overview',
+        'app-live-panel',
+        'app-top-traded-instruments',
+        'app-asset-mix',
+      ]);
+      expect(Array.from(grid(page).children).every((card) => card.classList.contains('panel'))).toBeTrue();
+    });
+
+    it('starts with the chart small and Live beside it', () => {
       localStorage.removeItem('technova-admin-chart-width');
       const page = create(of(USERS));
 
-      expect(grid(page).classList).not.toContain('chart-narrow');
+      expect(grid(page).classList).toContain('chart-narrow');
       expect(page.querySelector('.size')?.getAttribute('aria-pressed')).toBe('false');
     });
 
-    it('makes the chart narrower, so Live sits beside it, and back again', () => {
+    it('makes the chart full width, so Live moves below it, and back again', () => {
       const page = create(of(USERS));
       const size = page.querySelector('.size') as HTMLButtonElement;
 
       size.click();
       fixture.detectChanges();
-      expect(grid(page).classList).toContain('chart-narrow');
+      expect(grid(page).classList).not.toContain('chart-narrow');
       expect(size.getAttribute('aria-pressed')).toBe('true');
-      expect(size.getAttribute('aria-label')).toContain('full width');
+      expect(size.getAttribute('aria-label')).toContain('smaller, with Live beside it');
 
       size.click();
       fixture.detectChanges();
-      expect(grid(page).classList).not.toContain('chart-narrow');
+      expect(grid(page).classList).toContain('chart-narrow');
     });
 
     it('remembers the choice in this browser', () => {
       const page = create(of(USERS));
       (page.querySelector('.size') as HTMLButtonElement).click();
 
-      expect(localStorage.getItem('technova-admin-chart-width')).toBe('narrow');
+      expect(localStorage.getItem('technova-admin-chart-width')).toBe('full');
     });
 
-    it('opens narrower if that was the last choice', () => {
-      localStorage.setItem('technova-admin-chart-width', 'narrow');
+    it('opens full width if that was the last choice', () => {
+      localStorage.setItem('technova-admin-chart-width', 'full');
       const page = create(of(USERS));
 
-      expect(grid(page).classList).toContain('chart-narrow');
+      expect(grid(page).classList).not.toContain('chart-narrow');
     });
   });
 });

@@ -24,46 +24,44 @@
 }
 
 <!--
-  Outside the users block, so it loads and fails on its own. Each widget reads the AnalyticsStore, and
-  the grid in the CSS places them; the chart's size button switches the grid between its two layouts.
+  Outside the users block, so it loads and fails on its own. Each widget is its own card, reads the
+  AnalyticsStore, and is placed by the grid in the CSS; the size button switches between its two layouts.
 -->
 <div class="analytics" [class.chart-narrow]="!chartFullWidth()">
-  <section class="panel main" aria-labelledby="analytics-heading">
-    <app-analytics-filters>
-      <button
-        type="button"
-        class="size"
-        [attr.aria-pressed]="!chartFullWidth()"
-        [attr.aria-label]="
-          chartFullWidth()
-            ? 'Make the chart narrower, with Live beside it'
-            : 'Make the chart full width, with Live below it'
-        "
-        [title]="chartFullWidth() ? 'Make the chart narrower' : 'Make the chart full width'"
-        (click)="toggleChartWidth()"
+  <app-analytics-filters class="panel" role="region" aria-labelledby="analytics-heading">
+    <button
+      type="button"
+      class="size"
+      [attr.aria-pressed]="chartFullWidth()"
+      [attr.aria-label]="
+        chartFullWidth()
+          ? 'Make the chart smaller, with Live beside it'
+          : 'Make the chart full width, with Live below it'
+      "
+      [title]="chartFullWidth() ? 'Make the chart smaller' : 'Make the chart full width'"
+      (click)="toggleChartWidth()"
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        aria-hidden="true"
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.6"
-          aria-hidden="true"
-        >
-          @if (chartFullWidth()) {
-            <!-- Arrows pointing in: make it smaller -->
-            <path d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4" />
-          } @else {
-            <!-- Arrows pointing out: make it bigger -->
-            <path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" />
-          }
-        </svg>
-      </button>
-    </app-analytics-filters>
-    <app-analytics-overview />
-  </section>
-  <app-live-panel class="panel" role="region" aria-labelledby="live-heading" />
-  <app-top-traded-instruments class="panel side-by-side" role="region" aria-labelledby="top-traded-heading" />
-  <app-asset-mix class="panel side-by-side" role="region" aria-labelledby="asset-mix-heading" />
+        @if (chartFullWidth()) {
+          <!-- Arrows pointing in: make it smaller -->
+          <path d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4" />
+        } @else {
+          <!-- Arrows pointing out: make it bigger -->
+          <path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" />
+        }
+      </svg>
+    </button>
+  </app-analytics-filters>
+  <app-analytics-overview class="panel main" role="region" aria-label="Trading activity chart" />
+  <app-live-panel class="panel live" role="region" aria-labelledby="live-heading" />
+  <app-top-traded-instruments class="panel half" role="region" aria-labelledby="top-traded-heading" />
+  <app-asset-mix class="panel half" role="region" aria-labelledby="asset-mix-heading" />
 </div>

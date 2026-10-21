@@ -15,12 +15,12 @@
 @if (live(); as live) {
   <div class="layout">
     <div class="counts">
-      <p class="big">{{ live.ordersToday }} <span>orders today</span></p>
-      <p class="note">{{ live.ordersLastHour }} in the last hour · {{ live.openOrders }} open right now</p>
+      <p class="big">{{ live.ordersToday }} orders today</p>
+      <p class="sub">{{ live.ordersLastHour }} in the last hour · {{ live.openOrders }} open right now</p>
     </div>
 
     <figure class="hours">
-      <figcaption class="caption">Orders per hour</figcaption>
+      <figcaption class="caption">Orders per hour · last {{ days().length }} trading days</figcaption>
       <div class="days" role="img" [attr.aria-label]="summary()">
         @for (day of days(); track day.key) {
           <div class="day" [class.today]="day.today">

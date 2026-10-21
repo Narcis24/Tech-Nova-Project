@@ -1,9 +1,18 @@
-/* Lays itself out by its own width, so the dashboard can give it a full row or a narrow column */
+/*
+ * Styled like the mockup's Realtime box: a faint blue-violet tint fading down the card, a red
+ * pulsing LIVE badge, a big count, and small uppercase section labels. Lays itself out by its own width,
+ * so the dashboard can give it a column beside the chart or a whole row.
+ */
 :host {
   container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--analytics-live-color) 7%, var(--elevated-background-color)),
+    var(--elevated-background-color) 70%
+  );
 }
 
 .head {
@@ -25,56 +34,68 @@
   color: var(--loss-color);
 }
 
+/* A ring that spreads out from the dot and fades, every two seconds */
 .dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: currentColor;
+  box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 50%, transparent);
   animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
-  50% {
-    opacity: 0.35;
+  70% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 transparent;
   }
 }
 
-.note,
-.caption {
+.note {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--secondary-text-color);
 }
 
 .caption {
-  margin-bottom: 8px;
+  margin: 0 0 8px;
+  font-size: 12px;
   font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
 }
 
 .layout {
   display: grid;
-  gap: 16px;
+  gap: 14px;
 }
 
 .big {
-  margin: 0 0 4px;
+  margin: 0;
   font-size: 32px;
   font-weight: 600;
-  line-height: 1.1;
+  letter-spacing: -0.01em;
+  line-height: 1;
 }
 
-.big span {
-  font-size: 16px;
-  font-weight: 500;
+.sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--secondary-text-color);
 }
 
 .hours {
   margin: 0;
 }
 
+/* One strip of bars, a 6px gap between days */
 .days {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .day {
@@ -91,15 +112,16 @@
   height: 64px;
 }
 
-/* Earlier days paler, today full strength, hours still to come only outlined */
+/* Earlier days paler, today full strength, hours still to come greyed */
 .bar {
   flex: 1;
+  min-height: 2px;
   border-radius: 2px 2px 0 0;
-  background: color-mix(in srgb, var(--metric-orders-color) 45%, var(--elevated-background-color));
+  background: color-mix(in srgb, var(--analytics-live-color) 45%, var(--elevated-background-color));
 }
 
 .today .bar {
-  background: var(--metric-orders-color);
+  background: var(--analytics-live-color);
 }
 
 .bar.future,
@@ -110,6 +132,12 @@
 .day-label {
   font-size: 11px;
   color: var(--secondary-text-color);
+}
+
+/* Most ordered today, set off by a line as in the mockup */
+.top {
+  padding-top: 12px;
+  border-top: 1px solid var(--subtle-border-color);
 }
 
 .top ol {
@@ -146,11 +174,18 @@
   font-weight: 600;
 }
 
-/* Given a full row: counts, hours and the top list side by side */
+/* Given a whole row: counts, hours and the top list side by side, the line moving to the left */
 @container (min-width: 720px) {
   .layout {
     grid-template-columns: minmax(160px, 1fr) minmax(0, 2fr) minmax(180px, 1fr);
     align-items: start;
+    gap: 24px;
+  }
+
+  .top {
+    padding: 0 0 0 24px;
+    border-top: 0;
+    border-left: 1px solid var(--subtle-border-color);
   }
 }
 

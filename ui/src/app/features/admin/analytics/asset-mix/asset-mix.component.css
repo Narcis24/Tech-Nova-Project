@@ -1,5 +1,6 @@
 /* Loading and empty styles come from shared/admin-page.css */
 :host {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -24,7 +25,8 @@ h2 {
   color: var(--secondary-text-color);
 }
 
-.body {
+.body,
+.compact {
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -49,18 +51,30 @@ h2 {
 
 .legend {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 8px 16px;
+  gap: 8px 24px;
   margin: 0;
   padding: 0;
   list-style: none;
   font-size: 14px;
 }
 
+/* Name, share and value in fixed columns, so the numbers line up from row to row */
 .legend li {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3.5em 4.5em;
+  align-items: center;
   gap: 8px;
+}
+
+.percent,
+.value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.value {
+  font-size: 13px;
+  color: var(--secondary-text-color);
 }
 
 .name {
@@ -79,6 +93,67 @@ h2 {
 
 b {
   font-weight: 600;
+}
+
+/* The bar chart, shown instead of the single bar and legend once the widget is wide enough */
+.columns {
+  display: none;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.columns li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.column-value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.column-value small {
+  font-size: 12px;
+  color: var(--secondary-text-color);
+}
+
+.column-track {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 140px;
+  border-bottom: 1px solid var(--strong-border-color);
+}
+
+/* Rounded top, square base on the axis line */
+.column-bar {
+  width: min(100%, 56px);
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+}
+
+.column-label {
+  font-size: 13px;
+  color: var(--secondary-text-color);
+}
+
+@container (min-width: 480px) {
+  .compact {
+    display: none;
+  }
+
+  .columns {
+    display: grid;
+  }
 }
 
 /* Outside the asset class filter: kept in place, but faded */
