@@ -13,6 +13,7 @@ import com.neueda.app.exceptions.DuplicateOrderException;
 import com.neueda.app.exceptions.InvalidOrderStateException;
 import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.exceptions.InsufficientHoldingsException;
+import com.neueda.app.exceptions.InvalidOrderStateException;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Order;
@@ -157,25 +158,30 @@ class OrderServiceTest {
     }
 
     @Test
-    void cancellingAPendingOrderAnnouncesItResolved() {
+    void cancellingAPendingOrderTellsTheEngineAndAnnouncesItResolved() {
         Order order = new Order(UUID.randomUUID(), activeAccount(), aapl(), OrderSide.BUY, OrderType.LIMIT, 10,
-            new BigDecimal("150.00"), "key-a", LocalDateTime.now());
+            new BigDecimal("150.00"), "key-c", LocalDateTime.of(2026, 10, 20, 14, 0));
         when(orderRepository.changeStatus(order.getId(), OrderStatus.PENDING, OrderStatus.CANCELLED)).thenReturn(1);
         when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
 
         orderService.cancelOrder(order.getId());
 
+        verify(eventProducerService).publishEvent(
+            eq("order-request"), eq(order.getId().toString()), eq("ORDER_CANCELLED"), anyString(), any());
         verify(events).publishEvent(new OrderResolved(order.getId(), OrderStatus.CANCELLED));
     }
 
     @Test
-    void cancellingAnOrderThatIsNotPendingAnnouncesNothing() {
+    void aRefusedCancelTellsNoOne() {
         Order order = new Order(UUID.randomUUID(), activeAccount(), aapl(), OrderSide.BUY, OrderType.LIMIT, 10,
-            new BigDecimal("150.00"), "key-a", LocalDateTime.now());
+            new BigDecimal("150.00"), "key-d", LocalDateTime.of(2026, 10, 20, 14, 0));
+        // already filled: the guarded update moves no row
         when(orderRepository.changeStatus(order.getId(), OrderStatus.PENDING, OrderStatus.CANCELLED)).thenReturn(0);
         when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
 
         assertThrows(InvalidOrderStateException.class, () -> orderService.cancelOrder(order.getId()));
+
+        verifyNoInteractions(eventProducerService);
         verifyNoInteractions(events);
     }
 

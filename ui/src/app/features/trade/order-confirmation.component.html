@@ -53,22 +53,17 @@
   </dl>
   @if (!result() && warnings().length) {
     <section class="warnings" aria-labelledby="order-warnings-title">
-      <h3 id="order-warnings-title">This order goes past your risk limits</h3>
+      <h3 id="order-warnings-title">Review your risk limits</h3>
+      <p class="warnings-intro">This order would exceed the following limits:</p>
       <ul>
         @for (warning of warnings(); track warning.rule + (warning.subject ?? '')) {
           <li>
             <p>{{ warning.message }}</p>
-            @if (warning.resultingPct != null && warning.limitPct != null) {
-              <p class="figures">
-                {{ warning.resultingPct | number: '1.0-1' }}% after this order ·
-                {{ warning.limitSource === 'CUSTOM' ? 'your limit' : 'limit' }}
-                {{ warning.limitPct | number: '1.0-1' }}%
-              </p>
-            }
           </li>
         }
       </ul>
-      <p class="hint">You can still place it. <a routerLink="/risk-limits">Change your limits</a></p>
+      <p class="hint">You can still place this order.</p>
+      <a class="limits-link" routerLink="/risk-limits">Adjust risk limits</a>
     </section>
   }
   @if (!result() && !marketOpen) {
