@@ -13,6 +13,7 @@ api/pieController.service.ts
 api/portfolioController.service.ts
 api/positionController.service.ts
 api/priceController.service.ts
+api/rebalanceController.service.ts
 api/riskController.service.ts
 api/riskLimitController.service.ts
 configuration.ts
@@ -58,7 +59,9 @@ model/positionResponse.ts
 model/previewLeg.ts
 model/priceHistoryPoint.ts
 model/priceResponse.ts
+model/rebalanceLegResponse.ts
 model/rebalancePreviewResponse.ts
+model/rebalanceRunResponse.ts
 model/riskLimitResponse.ts
 model/riskWarning.ts
 model/savePieRequest.ts

@@ -1,6 +1,8 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Subject, of, throwError } from 'rxjs';
+import { provideRouter } from '@angular/router';
+import { AccountPieControllerService } from '../../generated/trading-api-client';
 
 import { Account, AccountService } from '../../services/account.service';
 import { AccountsComponent } from './accounts.component';
@@ -33,7 +35,11 @@ describe('AccountsComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [AccountsComponent],
-      providers: [{ provide: AccountService, useValue: accountService }],
+      providers: [
+        provideRouter([]),
+        { provide: AccountService, useValue: accountService },
+        { provide: AccountPieControllerService, useValue: { getAccountPie: () => of(null) } },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(AccountsComponent);

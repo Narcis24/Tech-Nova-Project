@@ -32,6 +32,15 @@ public class RebalanceCalculator {
 
     public RebalancePlan plan(Map<String, Integer> quantities, Map<String, BigDecimal> prices,
                               BigDecimal cash, Map<String, BigDecimal> targets) {
+        return plan(quantities, prices, cash, targets, true);
+    }
+
+    /**
+     * With {@code sellsFundBuys} off, the buys are sized from the cash on hand alone. A run uses that
+     * once its sells are done, so a sell that failed doesn't lend money the account never received.
+     */
+    public RebalancePlan plan(Map<String, Integer> quantities, Map<String, BigDecimal> prices,
+                              BigDecimal cash, Map<String, BigDecimal> targets, boolean sellsFundBuys) {
         BigDecimal total = cash;
         for (Map.Entry<String, Integer> entry : quantities.entrySet()) {
             total = total.add(prices.get(entry.getKey()).multiply(BigDecimal.valueOf(entry.getValue())));
@@ -71,7 +80,7 @@ public class RebalanceCalculator {
             PlannedLeg leg = new PlannedLeg(symbol, inPie, held, price, currentValue, currentPct,
                 targetPct, targetValue, action, quantity);
             legs.put(symbol, leg);
-            if (action == PlannedAction.SELL) {
+            if (action == PlannedAction.SELL && sellsFundBuys) {
                 sellProceeds = sellProceeds.add(price.multiply(BigDecimal.valueOf(quantity)));
             }
         }

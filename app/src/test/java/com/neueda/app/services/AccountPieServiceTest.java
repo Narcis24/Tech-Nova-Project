@@ -9,10 +9,15 @@ import com.neueda.app.dtos.RiskWarning;
 import com.neueda.app.exceptions.PieNotFoundException;
 import com.neueda.app.exceptions.PieNotLinkedException;
 import com.neueda.app.exceptions.PriceNotFoundException;
+import com.neueda.app.enums.RebalanceStatus;
+import com.neueda.app.exceptions.RebalanceConflictException;
+import com.neueda.app.models.Account;
 import com.neueda.app.models.AccountPie;
 import com.neueda.app.models.Pie;
 import com.neueda.app.repositories.AccountPieRepository;
+import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.PieRepository;
+import com.neueda.app.repositories.RebalanceRunRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -40,6 +45,8 @@ class AccountPieServiceTest {
     private PortfolioService portfolioService;
     private PriceService priceService;
     private RiskService riskService;
+    private AccountRepository accountRepository;
+    private RebalanceRunRepository rebalanceRunRepository;
     private AccountPieService service;
 
     @BeforeEach
@@ -50,9 +57,13 @@ class AccountPieServiceTest {
         portfolioService = mock(PortfolioService.class);
         priceService = mock(PriceService.class);
         riskService = mock(RiskService.class);
-        service = new AccountPieService(accountPieRepository, pieRepository, pieService, portfolioService,
-            priceService, new RebalanceCalculator(new BigDecimal("10"), new BigDecimal("0.5"), BigDecimal.ONE),
-            riskService);
+        accountRepository = mock(AccountRepository.class);
+        rebalanceRunRepository = mock(RebalanceRunRepository.class);
+        when(accountRepository.findByIdForUpdate(ACCOUNT)).thenReturn(Optional.of(mock(Account.class)));
+        service = new AccountPieService(accountPieRepository, pieRepository, pieService,
+            new RebalancePlanner(portfolioService, priceService,
+                new RebalanceCalculator(new BigDecimal("10"), new BigDecimal("0.5"), BigDecimal.ONE)),
+            riskService, accountRepository, rebalanceRunRepository);
 
         Pie pie = mock(Pie.class);
         when(pie.getPieId()).thenReturn(PIE_ID);
@@ -112,6 +123,17 @@ class AccountPieServiceTest {
 
         assertThrows(PieNotFoundException.class, () -> service.link(ACCOUNT, "mallory", PIE_ID));
         verify(accountPieRepository, never()).save(any());
+    }
+
+    @Test
+    void linkAndUnlink_whileRunActive_conflictAndNothingChanges() {
+        linked();
+        when(rebalanceRunRepository.existsByAccountIdAndStatusIn(ACCOUNT, RebalanceStatus.ACTIVE)).thenReturn(true);
+
+        assertThrows(RebalanceConflictException.class, () -> service.link(ACCOUNT, "jay", PIE_ID));
+        assertThrows(RebalanceConflictException.class, () -> service.unlink(ACCOUNT));
+        verify(accountPieRepository, never()).save(any());
+        verify(accountPieRepository, never()).delete(any());
     }
 
     @Test

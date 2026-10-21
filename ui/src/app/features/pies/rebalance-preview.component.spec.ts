@@ -1,8 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { Observable, of, Subject, throwError } from 'rxjs';
-import { AccountPieControllerService, RebalancePreviewResponse } from '../../generated/trading-api-client';
+import {
+  AccountPieControllerService,
+  RebalanceControllerService,
+  RebalancePreviewResponse,
+} from '../../generated/trading-api-client';
 import { RebalancePreviewComponent } from './rebalance-preview.component';
 
 const PREVIEW: RebalancePreviewResponse = {
@@ -31,15 +35,18 @@ const PREVIEW: RebalancePreviewResponse = {
 
 describe('RebalancePreviewComponent', () => {
   let api: jasmine.SpyObj<{ previewRebalance: (id: string) => Observable<RebalancePreviewResponse> }>;
+  let start: jasmine.Spy;
 
   beforeEach(() => {
     api = jasmine.createSpyObj('accountPies', ['previewRebalance']);
     api.previewRebalance.and.returnValue(of(PREVIEW));
+    start = jasmine.createSpy('startRebalance').and.returnValue(of({ runId: 'run1' }));
     TestBed.configureTestingModule({
       imports: [RebalancePreviewComponent],
       providers: [
         provideRouter([]),
         { provide: AccountPieControllerService, useValue: api },
+        { provide: RebalanceControllerService, useValue: { startRebalance: start } },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'acc1' } } } },
       ],
     });
@@ -127,5 +134,28 @@ describe('RebalancePreviewComponent', () => {
   it('shows a useful error for other failures', () => {
     api.previewRebalance.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
     expect(render().querySelector('[role="alert"]')?.textContent).toContain("Couldn't load");
+  });
+
+  it('places nothing until confirmed, then starts once and opens the run', () => {
+    const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    const root = render();
+    expect(start).not.toHaveBeenCalled();
+    root.querySelector<HTMLButtonElement>('button')!.click();
+    root.querySelector<HTMLButtonElement>('button')!.click();
+    expect(start).toHaveBeenCalledOnceWith('acc1');
+    expect(navigate).toHaveBeenCalledWith(['/rebalance-runs', 'run1']);
+  });
+
+  it('shows a start conflict and allows retrying', () => {
+    start.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 409, error: { message: 'An active run already exists' } })),
+    );
+    const fixture = TestBed.createComponent(RebalancePreviewComponent);
+    fixture.detectChanges();
+    const root: HTMLElement = fixture.nativeElement;
+    root.querySelector<HTMLButtonElement>('button')!.click();
+    fixture.detectChanges();
+    expect(root.querySelector('[role="alert"]')?.textContent).toContain('An active run already exists');
+    expect(root.querySelector<HTMLButtonElement>('button')!.disabled).toBeFalse();
   });
 });

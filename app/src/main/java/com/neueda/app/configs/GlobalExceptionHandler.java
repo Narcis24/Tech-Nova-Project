@@ -33,6 +33,8 @@ import com.neueda.app.exceptions.PieNotFoundException;
 import com.neueda.app.exceptions.PieNotLinkedException;
 import com.neueda.app.exceptions.PositionNotFoundException;
 import com.neueda.app.exceptions.PriceNotFoundException;
+import com.neueda.app.exceptions.RebalanceConflictException;
+import com.neueda.app.exceptions.RebalanceRunNotFoundException;
 import com.neueda.app.exceptions.RoleChangeNotAllowedException;
 import com.neueda.app.exceptions.TradingException;
 import com.neueda.app.exceptions.UserAlreadyExistsException;
@@ -71,6 +73,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handlePieNotLinked(PieNotLinkedException ex) {
         ErrorResponse error = new ErrorResponse("PIE_NOT_LINKED", ex.getMessage(), 404);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(RebalanceRunNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleRebalanceRunNotFound(RebalanceRunNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse("REBALANCE_RUN_NOT_FOUND", ex.getMessage(), 404);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(RebalanceConflictException.class)
+    public ResponseEntity<ErrorResponse> handleRebalanceConflict(RebalanceConflictException ex) {
+        ErrorResponse error = new ErrorResponse("REBALANCE_CONFLICT", ex.getMessage(), 409);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(InvalidPieException.class)

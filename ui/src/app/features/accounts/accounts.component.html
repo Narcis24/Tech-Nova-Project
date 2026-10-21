@@ -13,6 +13,7 @@
           <span class="account-id">{{ account.accountId }}</span>
           <span class="holder">{{ account.holderName }}</span>
         </button>
+        <app-account-pie-summary [accountId]="account.accountId" />
       </li>
     }
   </ul>

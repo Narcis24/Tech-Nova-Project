@@ -39,6 +39,20 @@ class RebalanceCalculatorTest {
     }
 
     @Test
+    void sellsFundBuys_unlessTurnedOff() {
+        Map<String, Integer> held = Map.of("TSLA", 50);
+        Map<String, BigDecimal> prices = Map.of("TSLA", decimal("100"), "AAPL", decimal("100"));
+        Map<String, BigDecimal> targets = Map.of("AAPL", decimal("100"));
+
+        RebalancePlan funded = calculator.plan(held, prices, decimal("5000"), targets);
+        RebalancePlan cashOnly = calculator.plan(held, prices, decimal("5000"), targets, false);
+
+        assertLeg(funded, "AAPL", PlannedAction.BUY, 99);
+        assertLeg(cashOnly, "AAPL", PlannedAction.BUY, 49);
+        assertAmount("100", cashOnly.cashAfter());
+    }
+
+    @Test
     void overweight_sellsFloor() {
         RebalancePlan result = plan(Map.of("AAPL", 100), Map.of("AAPL", decimal("100")),
             "0", Map.of("AAPL", decimal("50")));

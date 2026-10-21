@@ -2,8 +2,12 @@ import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { AccountPieControllerService, RebalancePreviewResponse } from '../../generated/trading-api-client';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import {
+  AccountPieControllerService,
+  RebalanceControllerService,
+  RebalancePreviewResponse,
+} from '../../generated/trading-api-client';
 
 @Component({
   selector: 'app-rebalance-preview',
@@ -12,14 +16,18 @@ import { AccountPieControllerService, RebalancePreviewResponse } from '../../gen
   styleUrls: ['./pies-shared.css', './rebalance-preview.component.css'],
 })
 export class RebalancePreviewComponent {
+  private readonly runs = inject(RebalanceControllerService);
+  private readonly router = inject(Router);
+  readonly accountId = inject(ActivatedRoute).snapshot.paramMap.get('accountId')!;
   readonly preview = signal<RebalancePreviewResponse | null>(null);
   readonly hasTrades = computed(() => !!this.preview()?.legs?.some((leg) => leg.action !== 'NONE'));
   readonly error = signal<string | null>(null);
+  readonly starting = signal(false);
+  readonly startError = signal<string | null>(null);
 
   constructor() {
-    const accountId = inject(ActivatedRoute).snapshot.paramMap.get('accountId')!;
     inject(AccountPieControllerService)
-      .previewRebalance(accountId)
+      .previewRebalance(this.accountId)
       .pipe(takeUntilDestroyed())
       .subscribe({
         next: (preview) => this.preview.set(preview),
@@ -37,5 +45,22 @@ export class RebalancePreviewComponent {
           this.error.set("Couldn't load the rebalance preview. Reload the page to try again.");
         },
       });
+  }
+
+  start(): void {
+    if (this.starting() || !this.preview()) return;
+    this.starting.set(true);
+    this.startError.set(null);
+    this.runs.startRebalance(this.accountId).subscribe({
+      next: (run) => this.router.navigate(['/rebalance-runs', run.runId]),
+      error: (error: unknown) => {
+        this.starting.set(false);
+        this.startError.set(
+          error instanceof HttpErrorResponse && typeof error.error?.message === 'string'
+            ? error.error.message
+            : "Couldn't start the rebalance. Try again.",
+        );
+      },
+    });
   }
 }

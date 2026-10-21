@@ -39,6 +39,10 @@ public class AccountPie {
     @Column(name = "linked_at")
     private LocalDateTime linkedAt;
 
+    public void applyVersion(int version) {
+        this.appliedVersion = version;
+    }
+
     public static AccountPie own(String accountId, UUID pieId) {
         AccountPie link = new AccountPie();
         link.accountId = accountId;

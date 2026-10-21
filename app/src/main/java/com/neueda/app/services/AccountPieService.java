@@ -1,18 +1,21 @@
 package com.neueda.app.services;
 
 import com.neueda.app.dtos.AccountPieResponse;
-import com.neueda.app.dtos.PortfolioSnapshotResponse;
-import com.neueda.app.dtos.PositionResponse;
 import com.neueda.app.dtos.PreviewLeg;
 import com.neueda.app.dtos.RebalancePreviewResponse;
 import com.neueda.app.dtos.SliceDrift;
+import com.neueda.app.enums.RebalanceStatus;
+import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.PieNotFoundException;
 import com.neueda.app.exceptions.PieNotLinkedException;
 import com.neueda.app.exceptions.PriceNotFoundException;
+import com.neueda.app.exceptions.RebalanceConflictException;
 import com.neueda.app.models.AccountPie;
 import com.neueda.app.models.Pie;
 import com.neueda.app.repositories.AccountPieRepository;
+import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.PieRepository;
+import com.neueda.app.repositories.RebalanceRunRepository;
 import com.neueda.app.services.RebalanceCalculator.PlannedLeg;
 import com.neueda.app.services.RebalanceCalculator.RebalancePlan;
 import java.math.BigDecimal;
@@ -21,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Which pie an account follows, how far it has drifted, and the trades that would fix it. */
 @Service
@@ -31,25 +35,26 @@ public class AccountPieService {
     private final AccountPieRepository accountPieRepository;
     private final PieRepository pieRepository;
     private final PieService pieService;
-    private final PortfolioService portfolioService;
-    private final PriceService priceService;
-    private final RebalanceCalculator rebalanceCalculator;
+    private final RebalancePlanner planner;
     private final RiskService riskService;
+    private final AccountRepository accountRepository;
+    private final RebalanceRunRepository rebalanceRunRepository;
 
     public AccountPieService(AccountPieRepository accountPieRepository, PieRepository pieRepository,
-                             PieService pieService, PortfolioService portfolioService,
-                             PriceService priceService, RebalanceCalculator rebalanceCalculator,
-                             RiskService riskService) {
+                             PieService pieService, RebalancePlanner planner, RiskService riskService,
+                             AccountRepository accountRepository, RebalanceRunRepository rebalanceRunRepository) {
         this.accountPieRepository = accountPieRepository;
         this.pieRepository = pieRepository;
         this.pieService = pieService;
-        this.portfolioService = portfolioService;
-        this.priceService = priceService;
-        this.rebalanceCalculator = rebalanceCalculator;
+        this.planner = planner;
         this.riskService = riskService;
+        this.accountRepository = accountRepository;
+        this.rebalanceRunRepository = rebalanceRunRepository;
     }
 
+    @Transactional
     public AccountPieResponse link(String accountId, String owner, UUID pieId) {
+        requireNoActiveRun(accountId);
         pieService.requireOwned(pieId, owner);
         AccountPie link = AccountPie.own(accountId, pieId);
         AccountPieResponse response = toResponse(link, false);
@@ -57,7 +62,9 @@ public class AccountPieService {
         return response;
     }
 
+    @Transactional
     public void unlink(String accountId) {
+        requireNoActiveRun(accountId);
         accountPieRepository.delete(requireLink(accountId));
     }
 
@@ -69,8 +76,7 @@ public class AccountPieService {
         AccountPie link = requireLink(accountId);
         Pie pie = requirePie(link.getPieId());
         Map<String, BigDecimal> targets = pieService.latestWeights(pie.getPieId());
-        PortfolioSnapshotResponse snapshot = portfolioService.getPortfolioSnapshot(accountId);
-        RebalancePlan plan = plan(snapshot, targets);
+        RebalancePlan plan = planner.plan(accountId, targets);
 
         Map<String, BigDecimal> valuesAfter = new HashMap<>();
         List<PreviewLeg> legs = plan.legs().stream().map(leg -> {
@@ -102,7 +108,7 @@ public class AccountPieService {
         List<SliceDrift> drift = List.of();
         BigDecimal maxDrift = null;
         try {
-            RebalancePlan plan = plan(portfolioService.getPortfolioSnapshot(link.getAccountId()), targets);
+            RebalancePlan plan = planner.plan(link.getAccountId(), targets);
             drift = plan.legs().stream()
                 .filter(PlannedLeg::inPie)
                 .map(leg -> new SliceDrift(leg.symbol(), leg.targetPct(), leg.currentPct(), leg.driftPct()))
@@ -117,36 +123,13 @@ public class AccountPieService {
             link.getAppliedVersion(), pie.getLatestVersion(), drift, maxDrift);
     }
 
-    /** Prices every held and target symbol, then plans. Fails if any of them has no price. */
-    private RebalancePlan plan(PortfolioSnapshotResponse snapshot, Map<String, BigDecimal> targets) {
-        Map<String, Integer> quantities = new HashMap<>();
-        Map<String, BigDecimal> prices = new HashMap<>();
-        for (PositionResponse position : snapshot.getPositions()) {
-            requirePrice(position.getSymbol(), position.getCurrentPrice());
-            quantities.put(position.getSymbol(), position.getQuantity());
-            prices.put(position.getSymbol(), position.getCurrentPrice());
-        }
-        for (String symbol : targets.keySet()) {
-            if (!prices.containsKey(symbol)) {
-                BigDecimal price = currentPrice(symbol);
-                requirePrice(symbol, price);
-                prices.put(symbol, price);
-            }
-        }
-        return rebalanceCalculator.plan(quantities, prices, snapshot.getCashBalance(), targets);
-    }
-
-    private BigDecimal currentPrice(String symbol) {
-        try {
-            return priceService.getCurrentPrice(symbol);
-        } catch (PriceNotFoundException e) {
-            return null;
-        }
-    }
-
-    private static void requirePrice(String symbol, BigDecimal price) {
-        if (price == null || price.signum() <= 0) {
-            throw new PriceNotFoundException("No price for " + symbol + ", so the rebalance can't be planned");
+    /** Under the account's row lock, the same one a run starts under, so a run can't start mid-change. */
+    private void requireNoActiveRun(String accountId) {
+        accountRepository.findByIdForUpdate(accountId)
+            .orElseThrow(() -> new AccountNotFoundException("Account not found: " + accountId));
+        if (rebalanceRunRepository.existsByAccountIdAndStatusIn(accountId, RebalanceStatus.ACTIVE)) {
+            throw new RebalanceConflictException("A rebalance is running for account " + accountId
+                + ", so its pie can't be changed");
         }
     }
 

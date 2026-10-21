@@ -8,7 +8,9 @@ import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.enums.OrderType;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.exceptions.PriceNotFoundException;
+import com.neueda.app.events.OrderResolved;
 import com.neueda.app.exceptions.DuplicateOrderException;
+import com.neueda.app.exceptions.InvalidOrderStateException;
 import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.exceptions.InsufficientHoldingsException;
 import com.neueda.app.exceptions.InvalidOrderStateException;
@@ -21,6 +23,7 @@ import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -40,6 +43,7 @@ class OrderServiceTest {
     private InstrumentRepository instrumentRepository;
     private PriceService priceService;
     private EventProducerService eventProducerService;
+    private ApplicationEventPublisher events;
 
     private OrderService orderService;
 
@@ -52,12 +56,14 @@ class OrderServiceTest {
         instrumentRepository = mock(InstrumentRepository.class);
         priceService = mock(PriceService.class);
         eventProducerService = mock(EventProducerService.class);
+        events = mock(ApplicationEventPublisher.class);
 
         // Real validator over the mocked repositories, so these tests still cover every placement check
         orderService = new OrderService(
             orderRepository,
             new OrderValidator(accountRepository, positionRepository, instrumentRepository, priceService),
-            eventProducerService
+            eventProducerService,
+            events
         );
     }
 
@@ -152,7 +158,7 @@ class OrderServiceTest {
     }
 
     @Test
-    void aCancelTellsTheEngineKeyedByTheOrderId() {
+    void cancellingAPendingOrderTellsTheEngineAndAnnouncesItResolved() {
         Order order = new Order(UUID.randomUUID(), activeAccount(), aapl(), OrderSide.BUY, OrderType.LIMIT, 10,
             new BigDecimal("150.00"), "key-c", LocalDateTime.of(2026, 10, 20, 14, 0));
         when(orderRepository.changeStatus(order.getId(), OrderStatus.PENDING, OrderStatus.CANCELLED)).thenReturn(1);
@@ -162,10 +168,11 @@ class OrderServiceTest {
 
         verify(eventProducerService).publishEvent(
             eq("order-request"), eq(order.getId().toString()), eq("ORDER_CANCELLED"), anyString(), any());
+        verify(events).publishEvent(new OrderResolved(order.getId(), OrderStatus.CANCELLED));
     }
 
     @Test
-    void aRefusedCancelTellsTheEngineNothing() {
+    void aRefusedCancelTellsNoOne() {
         Order order = new Order(UUID.randomUUID(), activeAccount(), aapl(), OrderSide.BUY, OrderType.LIMIT, 10,
             new BigDecimal("150.00"), "key-d", LocalDateTime.of(2026, 10, 20, 14, 0));
         // already filled: the guarded update moves no row
@@ -175,6 +182,7 @@ class OrderServiceTest {
         assertThrows(InvalidOrderStateException.class, () -> orderService.cancelOrder(order.getId()));
 
         verifyNoInteractions(eventProducerService);
+        verifyNoInteractions(events);
     }
 
     @Test
