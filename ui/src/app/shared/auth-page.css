@@ -1,17 +1,18 @@
 /* Shared by the sign-in, forgot password and reset password pages. Colours taken from the design PDF. */
 :host {
-  --auth-text-color: #13182b;
+  --auth-text-color: var(--text-color);
   --auth-brand-background-color: #13182b;
-  --auth-button-background-color: #13182b;
-  --auth-secondary-text-color: #6b7083;
-  --auth-input-background-color: #f3f4f8;
-  --auth-link-color: #2d44e0;
-  --auth-tagline-color: #b9bed1;
-  --auth-error-color: #b42318;
-  --auth-error-background-color: #fdecea;
+  --auth-button-background-color: var(--primary-color);
+  --auth-secondary-text-color: var(--secondary-text-color);
+  --auth-input-background-color: var(--control-background-color);
+  --auth-link-color: var(--primary-color);
+  --auth-tagline-color: var(--secondary-text-color);
+  --auth-error-color: var(--error-color);
+  --auth-error-background-color: var(--error-background-color);
 }
 
 .page {
+  position: relative;
   display: flex;
   min-height: 100vh;
   padding: 20px;
@@ -26,9 +27,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--auth-brand-background-color);
+  background:
+    linear-gradient(var(--auth-brand-background-color), var(--auth-brand-background-color)) padding-box,
+    linear-gradient(135deg, var(--primary-color), var(--strong-border-color)) border-box;
+  border: 1px solid transparent;
   border-radius: 24px;
-  color: #fff;
+  color: var(--text-on-primary-color);
   text-align: center;
   padding: 24px;
 }
@@ -176,7 +180,7 @@ input::-ms-clear {
   border: 0;
   border-radius: 12px;
   background: var(--auth-button-background-color);
-  color: #fff;
+  color: var(--text-on-primary-color);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -200,8 +204,8 @@ a:focus-visible {
 .spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-top-color: #fff;
+  border: 2px solid color-mix(in srgb, var(--text-on-primary-color) 40%, transparent);
+  border-top-color: var(--text-on-primary-color);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

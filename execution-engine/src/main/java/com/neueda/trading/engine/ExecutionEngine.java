@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import com.neueda.events.EventEnvelope;
+import com.neueda.events.OrderCancelledEvent;
 import com.neueda.events.OrderPlacedEvent;
 import com.neueda.events.OrderExecutedEvent;
 import com.neueda.events.OrderRejectedEvent;
@@ -132,8 +133,20 @@ public class ExecutionEngine {
         }
 
         /*
-         * This consumer only handles ORDER_PLACED events.
+         * This consumer handles ORDER_PLACED, and ORDER_CANCELLED for orders still waiting here.
          */
+        if (EventTypes.ORDER_CANCELLED.equals(envelope.eventType())) {
+            OrderCancelledEvent cancelled;
+            try {
+                cancelled = objectMapper.convertValue(envelope.payload(), OrderCancelledEvent.class);
+            } catch (JacksonException e) {
+                log.error("Failed to convert payload into OrderCancelledEvent: {}", envelope.payload(), e);
+                throw new EventProcessingException("Failed to deserialize OrderCancelledEvent", e);
+            }
+            cancel(cancelled.orderId());
+            return;
+        }
+
         if (!EventTypes.ORDER_PLACED.equals(envelope.eventType())) {
 
             log.debug(
@@ -200,6 +213,17 @@ public class ExecutionEngine {
         journal(JournalTypes.QUOTE_RECEIVED, Map.of("quote", quote));
         quoteCache.put(quote);
         recheckResting(quote);
+    }
+
+    /**
+     * The holder cancelled the order: stop waiting on it, so no later quote can fill it. Journalled even
+     * when the order is not waiting here (already filled, or unknown), since it is an input a replay needs.
+     */
+    synchronized void cancel(UUID orderId) {
+        journal(JournalTypes.ORDER_CANCELLED, Map.of("orderId", orderId));
+        if (resting.remove(orderId) != null) {
+            log.info("Cancelled order no longer waits: orderId={}", orderId);
+        }
     }
 
     /**

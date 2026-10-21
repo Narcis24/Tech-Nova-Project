@@ -211,6 +211,21 @@ describe('app routes', () => {
       expect(harness.routeNativeElement?.textContent).toContain('Admin');
       expect(harness.fixture.nativeElement.querySelector('app-shell')).not.toBeNull();
     });
+
+    it('shows the users page', async () => {
+      await harness.navigateByUrl('/admin/users');
+
+      expect(router.url).toBe('/admin/users');
+      expect(harness.routeNativeElement?.textContent).toContain('Create admin');
+    });
+
+    for (const url of ['/dashboard', '/trade', '/orders', '/orders/ORD-1', '/accounts', '/risk-limits']) {
+      it(`sends the trading page ${url} to /admin`, async () => {
+        await harness.navigateByUrl(url);
+
+        expect(router.url).toBe('/admin');
+      });
+    }
   });
 
   it('sends /admin to /login when logged out', async () => {
