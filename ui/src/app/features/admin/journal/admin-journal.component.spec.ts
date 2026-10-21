@@ -115,12 +115,12 @@ describe('AdminJournalComponent', () => {
 
     expect(api.day).toHaveBeenCalledWith('2026-10-14');
     const select = root.querySelector<HTMLSelectElement>('#journal-day')!;
-    expect(select.options.length).toBe(2);
+    expect(select.options).toHaveSize(2);
     expect(select.options[0].textContent).toContain('4.2 MB');
     expect(root.querySelector('.tiles')?.textContent).toContain('780');
     expect(root.querySelector('.reasons')?.textContent).toContain('No fresh quote for TSLA');
     const rows = root.querySelectorAll('.orders tbody tr');
-    expect(rows.length).toBe(2);
+    expect(rows).toHaveSize(2);
     expect(rows[0].textContent).toContain('Filled');
     expect(rows[0].textContent).toContain('at 339.95');
     expect(rows[0].textContent).toContain('resent 1× after restarts');
@@ -144,7 +144,7 @@ describe('AdminJournalComponent', () => {
 
     expect(api.timeline).toHaveBeenCalledWith('2026-10-14', 'o-1');
     const events = root.querySelectorAll('.timeline li');
-    expect(events.length).toBe(3);
+    expect(events).toHaveSize(3);
     expect(events[0].textContent).toContain('Order received');
     expect(events[0].textContent).toContain('limit 340.00');
     expect(events[1].textContent).toContain('Waiting for its price');
