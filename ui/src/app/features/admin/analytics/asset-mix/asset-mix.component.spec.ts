@@ -85,7 +85,9 @@ describe('AssetMixComponent', () => {
     expect(segments).toHaveSize(4);
     expect(segments[0].style.flexGrow).toBe('0.66');
     expect(segments[0].style.background).toContain('var(--asset-equity-color)');
-    expect(page.querySelector('.bar')?.getAttribute('aria-label')).toBe('Equity 66%, ETF 22%, Bond 6%, Commodity 6%');
+    expect(page.querySelector('.compact .visually-hidden')?.textContent?.trim()).toBe(
+      'Equity 66%, ETF 22%, Bond 6%, Commodity 6%',
+    );
   });
 
   it('dims the classes the asset class filter leaves out, keeping them in place', () => {

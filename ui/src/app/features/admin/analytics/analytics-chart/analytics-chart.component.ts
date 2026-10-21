@@ -308,7 +308,7 @@ export class AnalyticsChartComponent {
           (index, i) => `${i ? 'L' : 'M'}${this.x(index).toFixed(1)} ${this.y(values[index] ?? 0).toFixed(1)}`,
         );
         const first = this.x(run[0]).toFixed(1);
-        const last = this.x(run[run.length - 1]).toFixed(1);
+        const last = this.x(run.at(-1)!).toFixed(1);
         return `${top.join(' ')} L${last} ${base} L${first} ${base} Z`;
       })
       .join(' ');

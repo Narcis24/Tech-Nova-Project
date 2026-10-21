@@ -31,6 +31,14 @@ h2 {
   gap: 8px;
 }
 
+/* Fieldsets for grouping only: drop the browser's frame */
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
 /* Segmented control, like the price chart's range buttons */
 .periods {
   display: flex;

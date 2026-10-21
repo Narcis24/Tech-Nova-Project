@@ -8,7 +8,8 @@
     <!-- Narrow (phones): one bar split by share, with a legend underneath -->
     <div class="compact">
       @if (segments().length) {
-        <div class="bar" role="img" [attr.aria-label]="summary()">
+        <p class="visually-hidden">{{ summary() }}</p>
+        <div class="bar" aria-hidden="true">
           @for (entry of segments(); track entry.key) {
             <span
               class="segment"
