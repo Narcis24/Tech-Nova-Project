@@ -22,6 +22,8 @@ export * from './journalQuote';
 export * from './journalReasonCount';
 export * from './journalTimelineEntry';
 export * from './journalVerifyResult';
+export * from './liveHour';
+export * from './liveInstrument';
 export * from './marketAssetResponse';
 export * from './openAccountRequest';
 export * from './orderResponse';
