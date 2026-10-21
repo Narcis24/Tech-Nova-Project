@@ -197,7 +197,7 @@ public final class JournalGenerator {
     }
 
     private Instant between(Instant from, Instant to) {
-        return from.plusSeconds((long) (random.nextDouble() * Duration.between(from, to).getSeconds()));
+        return from.plusSeconds(random.nextLong(Duration.between(from, to).getSeconds()));
     }
 
     private static BigDecimal money(double value) {
@@ -215,8 +215,8 @@ public final class JournalGenerator {
         }
 
         @Override
-        public synchronized void record(Instant time, String type, Map<String, Object> fields) {
-            super.record(time, type, fields);
+        public synchronized void append(Instant time, String type, Map<String, Object> fields) {
+            super.append(time, type, fields);
             Object decision = fields.get("decision");
             if (JournalTypes.FILL.equals(decision) || JournalTypes.REJECT.equals(decision)) {
                 pending.remove((UUID) fields.get("orderId"));

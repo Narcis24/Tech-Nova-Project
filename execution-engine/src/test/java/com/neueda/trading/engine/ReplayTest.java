@@ -146,7 +146,7 @@ class ReplayTest {
     }
 
     @Test
-    void exitsWithZeroAndSaysSoWhenEverythingMatches() throws Exception {
+    void exitsWithZeroAndSaysSoWhenEverythingMatches() {
         recordingEngine(true).handle(order("MARKET", null));
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();

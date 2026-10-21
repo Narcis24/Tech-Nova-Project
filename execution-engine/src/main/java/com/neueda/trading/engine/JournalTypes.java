@@ -11,7 +11,8 @@ public final class JournalTypes {
 
     public static final String FILL = "FILL";
     public static final String REJECT = "REJECT";
-    public static final String WAIT = "WAIT";
+    // not WAIT, which clashes with Object.wait(); the journal value stays "WAIT" so recorded days still replay
+    public static final String WAITING = "WAIT";
     public static final String QUEUED_MARKET_CLOSED = "QUEUED_MARKET_CLOSED";
 
     private JournalTypes() {

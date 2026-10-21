@@ -168,11 +168,12 @@ class OrderServiceTest {
     void aRefusedCancelTellsTheEngineNothing() {
         Order order = new Order(UUID.randomUUID(), activeAccount(), aapl(), OrderSide.BUY, OrderType.LIMIT, 10,
             new BigDecimal("150.00"), "key-d", LocalDateTime.of(2026, 10, 20, 14, 0));
+        UUID orderId = order.getId();
         // already filled: the guarded update moves no row
-        when(orderRepository.changeStatus(order.getId(), OrderStatus.PENDING, OrderStatus.CANCELLED)).thenReturn(0);
-        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+        when(orderRepository.changeStatus(orderId, OrderStatus.PENDING, OrderStatus.CANCELLED)).thenReturn(0);
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
 
-        assertThrows(InvalidOrderStateException.class, () -> orderService.cancelOrder(order.getId()));
+        assertThrows(InvalidOrderStateException.class, () -> orderService.cancelOrder(orderId));
 
         verifyNoInteractions(eventProducerService);
     }
