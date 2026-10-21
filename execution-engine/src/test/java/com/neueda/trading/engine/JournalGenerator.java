@@ -207,7 +207,7 @@ public final class JournalGenerator {
     }
 
     /** Writes the real journal, and forgets an order once it is filled or rejected, as the app would. */
-    private static final class TrackingJournal extends DecisionJournal {
+    static final class TrackingJournal extends DecisionJournal {
 
         private final Map<UUID, OrderPlacedEvent> pending;
 
@@ -226,7 +226,7 @@ public final class JournalGenerator {
         }
     }
 
-    private static final class SilentProducer extends EventProducerService {
+    static final class SilentProducer extends EventProducerService {
 
         SilentProducer(ObjectMapper mapper) {
             super(null, mapper);
@@ -238,7 +238,7 @@ public final class JournalGenerator {
         }
     }
 
-    private static final class MovableClock extends Clock {
+    static final class MovableClock extends Clock {
 
         private Instant now = Instant.EPOCH;
 

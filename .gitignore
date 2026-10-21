@@ -11,3 +11,6 @@ __pycache__/
 # OpenAPI specs downloaded from the running services (npm run fetch:specs in ui/)
 contracts/trading-api.json
 contracts/auth-api.json
+
+# Realistic trading days for the Shadow Gate (BrokerDayGenerator); too big for git, never real customer data
+shadow-journals/
