@@ -42,6 +42,8 @@ model/journalQuote.ts
 model/journalReasonCount.ts
 model/journalTimelineEntry.ts
 model/journalVerifyResult.ts
+model/liveHour.ts
+model/liveInstrument.ts
 model/marketAssetResponse.ts
 model/models.ts
 model/openAccountRequest.ts
