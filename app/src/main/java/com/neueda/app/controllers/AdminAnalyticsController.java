@@ -1,6 +1,7 @@
 package com.neueda.app.controllers;
 
 import com.neueda.app.dtos.AdminAnalyticsResponse;
+import com.neueda.app.dtos.AdminLiveResponse;
 import com.neueda.app.enums.AnalyticsPeriod;
 import com.neueda.app.enums.AssetClass;
 import com.neueda.app.enums.OrderSide;
@@ -59,5 +60,16 @@ public class AdminAnalyticsController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(filename).build().toString())
                 .contentType(CSV)
                 .body(adminAnalyticsService.exportCsv(period, assetClass, side, orderType, trader));
+    }
+
+    /** What's happening right now, for the Live panel. Takes the same filters as analytics, but no period. */
+    @GetMapping("/live")
+    public ResponseEntity<AdminLiveResponse> live(
+        @RequestParam(required = false) AssetClass assetClass,
+        @RequestParam(required = false) OrderSide side,
+        @RequestParam(required = false) OrderType orderType,
+        @RequestParam(required = false) String trader) {
+
+            return ResponseEntity.ok(adminAnalyticsService.live(assetClass, side, orderType, trader));
     }
 }
