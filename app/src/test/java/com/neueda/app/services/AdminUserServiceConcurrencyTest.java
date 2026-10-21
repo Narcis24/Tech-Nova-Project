@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +51,9 @@ class AdminUserServiceConcurrencyTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @MockitoBean
+    private AccountRiskBandService accountRiskBandService;
 
     @BeforeEach
     void setUp() {
