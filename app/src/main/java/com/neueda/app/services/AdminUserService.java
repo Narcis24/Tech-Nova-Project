@@ -3,6 +3,7 @@ package com.neueda.app.services;
 import com.neueda.app.dtos.AdminUserResponse;
 import com.neueda.app.dtos.AdminUserDetailResponse;
 import com.neueda.app.dtos.AccountResponse;
+import com.neueda.app.dtos.AdminAccountResponse;
 import com.neueda.app.dtos.CreateUserRequest;
 import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.enums.Role;
@@ -27,11 +28,14 @@ public class AdminUserService {
 
     private final UserRepository userRepository;
     private final AccountRepository accountRepository;
+    private final AccountRiskBandService accountRiskBandService;
 
     @Autowired
-    public AdminUserService(UserRepository userRepository, AccountRepository accountRepository) {
+    public AdminUserService(UserRepository userRepository, AccountRepository accountRepository,
+                            AccountRiskBandService accountRiskBandService) {
         this.userRepository = userRepository;
         this.accountRepository = accountRepository;
+        this.accountRiskBandService = accountRiskBandService;
     }
 
     /** Every user with their roles, by username. */
@@ -46,8 +50,8 @@ public class AdminUserService {
     public AdminUserDetailResponse getUser(String username) {
         User user = userRepository.findById(username)
             .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
-        List<AccountResponse> accounts = accountRepository.findByOwnerUsernameOrderByAccountId(username).stream()
-            .map(AccountResponse::new)
+        List<AdminAccountResponse> accounts = accountRepository.findByOwnerUsernameOrderByAccountId(username).stream()
+            .map(accountRiskBandService::classify)
             .toList();
         return new AdminUserDetailResponse(
             user.getUsername(), user.getEmail(), user.getRoles().stream().sorted().toList(),
