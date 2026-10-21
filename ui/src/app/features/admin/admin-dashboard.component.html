@@ -15,9 +15,44 @@
 } @else {
   <ul class="stats" aria-label="Users at a glance">
     @for (stat of stats(); track stat.label) {
-      <li class="stat">
+      <li class="stat" [style.--stat-color]="stat.color">
+        <span class="stat-head">
+          <span class="stat-label">{{ stat.label }}</span>
+          <span class="stat-icon" aria-hidden="true">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              @switch (stat.icon) {
+                @case ('users') {
+                  <circle cx="6" cy="5.5" r="2.5" />
+                  <path
+                    d="M1.5 14c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5M10.5 3.2a2.5 2.5 0 0 1 0 4.6M12 9.8c1.5.6 2.5 2.2 2.5 4.2"
+                  />
+                }
+                @case ('admin') {
+                  <path d="M8 1.5l5.5 2v4c0 3.4-2.3 6-5.5 7-3.2-1-5.5-3.6-5.5-7v-4z" />
+                  <path d="M5.5 8l1.8 1.8 3.2-3.3" />
+                }
+                @case ('trader') {
+                  <path d="M1.5 12l4-4 3 3 5.5-6M10 5h4v4" />
+                }
+                @case ('created') {
+                  <circle cx="6.5" cy="5.5" r="2.5" />
+                  <path d="M2 14c0-2.5 2-4.5 4.5-4.5 1.2 0 2.3.5 3.1 1.2M12.5 9.5v5M10 12h5" />
+                }
+              }
+            </svg>
+          </span>
+        </span>
         <span class="stat-value">{{ stat.value }}</span>
-        <span class="stat-label">{{ stat.label }}</span>
+        <span class="stat-note">{{ stat.note }}</span>
       </li>
     }
   </ul>

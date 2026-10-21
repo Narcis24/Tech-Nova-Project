@@ -40,13 +40,36 @@ export class AdminDashboardComponent {
   readonly users = signal<AdminUserResponse[] | null>(null);
   readonly error = signal(false);
 
+  // Each tile has its own icon and colour; all but the first say what share of the users they are
   readonly stats = computed(() => {
     const users = this.users() ?? [];
+    const share = (count: number) => `${users.length ? Math.round((count / users.length) * 100) : 0}% of users`;
+    const admins = users.filter((user) => user.roles.includes('ADMIN')).length;
+    const traders = users.filter((user) => user.roles.includes('TRADER')).length;
+    const created = users.filter((user) => user.createdBy).length;
     return [
-      { label: 'Users', value: users.length },
-      { label: 'Admins', value: users.filter((user) => user.roles.includes('ADMIN')).length },
-      { label: 'Traders', value: users.filter((user) => user.roles.includes('TRADER')).length },
-      { label: 'Created by admins', value: users.filter((user) => user.createdBy).length },
+      { icon: 'users', label: 'Users', value: users.length, note: 'All accounts', color: 'var(--primary-color)' },
+      {
+        icon: 'admin',
+        label: 'Admins',
+        value: admins,
+        note: share(admins),
+        color: 'var(--metric-active-traders-color)',
+      },
+      {
+        icon: 'trader',
+        label: 'Traders',
+        value: traders,
+        note: share(traders),
+        color: 'var(--metric-fill-rate-color)',
+      },
+      {
+        icon: 'created',
+        label: 'Created by admins',
+        value: created,
+        note: share(created),
+        color: 'var(--metric-orders-color)',
+      },
     ];
   });
 

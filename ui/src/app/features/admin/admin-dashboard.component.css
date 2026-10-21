@@ -13,10 +13,11 @@
   text-decoration: underline;
 }
 
+/* User count tiles, drawn as the same cards as the analytics widgets below, each in its own colour */
 .stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -25,26 +26,67 @@
 .stat {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 16px;
-  border-radius: 14px;
-  background: var(--card-background-color);
+  gap: 6px;
+  min-width: 0;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--elevated-background-color);
+  box-shadow: var(--card-shadow);
 }
 
-.stat-value {
-  font-size: 28px;
-  font-weight: 600;
+/* The label, with the icon in a tinted square to its right */
+.stat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .stat-label {
-  font-size: 14px;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--secondary-text-color);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stat-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--stat-color) 12%, var(--elevated-background-color));
+  color: var(--stat-color);
+}
+
+.stat-value {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-note {
+  font-size: 13px;
   color: var(--secondary-text-color);
 }
 
 /* Phones: two tiles per row */
 @media (max-width: 640px) {
   .stats {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .stat {
+    padding: 14px 16px;
+  }
+
+  .stat-value {
+    font-size: 24px;
   }
 }
 

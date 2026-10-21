@@ -104,6 +104,7 @@ describe('AdminDashboardComponent', () => {
 
     expect(texts(page, '.stat-label')).toEqual(['Users', 'Admins', 'Traders', 'Created by admins']);
     expect(texts(page, '.stat-value')).toEqual(['3', '2', '2', '1']);
+    expect(texts(page, '.stat-note')).toEqual(['All accounts', '67% of users', '67% of users', '33% of users']);
   });
 
   it("doesn't list individual users; that's the users page", () => {
@@ -130,6 +131,7 @@ describe('AdminDashboardComponent', () => {
     const page = create(of([]));
 
     expect(texts(page, '.stat-value')).toEqual(['0', '0', '0', '0']);
+    expect(texts(page, '.stat-note')).toEqual(['All accounts', '0% of users', '0% of users', '0% of users']);
   });
 
   it('shows an error that can be retried', () => {
