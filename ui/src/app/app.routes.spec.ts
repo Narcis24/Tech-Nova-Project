@@ -3,10 +3,11 @@ import { Location } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { of } from 'rxjs';
+import { NEVER, of } from 'rxjs';
 
 import {
   AccountControllerService,
+  AdminAnalyticsControllerService,
   AdminUserControllerService,
   DashboardControllerService,
   OrderControllerService,
@@ -54,6 +55,8 @@ describe('app routes', () => {
         { provide: AccountControllerService, useValue: { getAccountOrders: () => of([]) } },
         { provide: InstrumentControllerService, useValue: { getInstruments: () => of([]) } },
         { provide: AdminUserControllerService, useValue: { listUsers: () => of([]) } },
+        // The admin page's analytics never answer here, so its widgets just stay loading
+        { provide: AdminAnalyticsControllerService, useValue: { analytics: () => NEVER, live: () => NEVER } },
         { provide: AuthService, useValue: auth },
         { provide: AccountService, useValue: accounts },
       ],

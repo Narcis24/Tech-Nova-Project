@@ -130,12 +130,12 @@ describe('LivePanelComponent', () => {
     create();
 
     filters.set({ ...FILTERS, period: 'TODAY' });
-    TestBed.flushEffects();
+    fixture.detectChanges();
     tick(0);
     expect(liveApi).toHaveBeenCalledTimes(1);
 
     filters.set({ ...FILTERS, period: 'TODAY', side: 'BUY' });
-    TestBed.flushEffects();
+    fixture.detectChanges();
     tick(0);
     expect(liveApi).toHaveBeenCalledTimes(2);
     expect(liveApi.calls.mostRecent().args).toEqual([undefined, 'BUY', undefined, undefined]);
@@ -173,7 +173,10 @@ describe('LivePanelComponent', () => {
 
   it('lists the most ordered instruments today, or says there are none', fakeAsync(() => {
     const page = create();
-    const rows = Array.from(page.querySelectorAll('.top li')).map((li) => li.textContent?.replace(/\s+/g, ' ').trim());
+    // Each cell on its own, as Angular drops the whitespace between the spans
+    const rows = Array.from(page.querySelectorAll('.top li')).map((li) =>
+      Array.from(li.children, (cell) => cell.textContent?.trim()).join(' '),
+    );
     expect(rows).toEqual(['NVDA NVDA 4', 'GLD GLD 2']);
 
     liveApi.and.returnValue(of({ ...live(0), topToday: [] }));
