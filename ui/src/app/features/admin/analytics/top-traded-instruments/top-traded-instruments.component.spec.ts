@@ -88,7 +88,7 @@ describe('TopTradedInstrumentsComponent', () => {
 
     expect((first.querySelector('.buy') as HTMLElement).style.width).toBe('67%');
     expect((first.querySelector('.sell') as HTMLElement).style.width).toBe('33%');
-    expect(first.querySelector('.track')?.getAttribute('aria-label')).toBe('67% buy, 33% sell');
+    expect(first.querySelector('.visually-hidden')?.textContent).toBe('67% buy, 33% sell');
     // Half the top instrument's value, and sells only, so no buy part at all
     expect(second.querySelector('.buy')).toBeNull();
     expect((second.querySelector('.sell') as HTMLElement).style.width).toBe('50%');

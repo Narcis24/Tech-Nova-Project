@@ -17,7 +17,8 @@
             <span class="symbol">{{ row.symbol }}</span>
             <small>{{ row.name }} · {{ row.orders }} orders · {{ row.traders }} traders</small>
           </span>
-          <span class="track" role="img" [attr.aria-label]="row.split" [title]="row.split">
+          <span class="visually-hidden">{{ row.split }}</span>
+          <span class="track" aria-hidden="true" [title]="row.split">
             @if (row.buyWidth) {
               <span class="part buy" [style.width.%]="row.buyWidth"></span>
             }
