@@ -67,12 +67,37 @@ th {
   font-size: 13px;
 }
 
+th:last-child,
+td:last-child {
+  text-align: center;
+}
+
 .status {
   font-weight: 600;
 }
 
 .status.suspended {
   color: var(--warning-color);
+}
+
+.risk-band {
+  font-weight: 600;
+}
+
+.risk-low {
+  color: var(--success-color);
+}
+
+.risk-medium {
+  color: var(--warning-color);
+}
+
+.risk-high {
+  color: var(--loss-color);
+}
+
+.risk-unknown {
+  color: var(--secondary-text-color);
 }
 
 .status-action,
