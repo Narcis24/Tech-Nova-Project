@@ -110,14 +110,16 @@
   }
 }
 
-/* A card around analytics widgets; the overview's tabs reach its edges through --panel-padding */
+/* A card around analytics widgets; the overview's tabs reach its edges through these variables */
 .panel {
   --panel-padding: 24px;
+  --panel-padding-top: 20px;
+  --panel-radius: 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 20px var(--panel-padding) 24px;
-  border-radius: 16px;
+  padding: var(--panel-padding-top) var(--panel-padding) 24px;
+  border-radius: var(--panel-radius);
   /* The colour only, so a widget can add its own tint on top, as Live does */
   background-color: var(--elevated-background-color);
   box-shadow: var(--card-shadow);
@@ -126,7 +128,7 @@
 @media (max-width: 640px) {
   .panel {
     --panel-padding: 16px;
-    padding-top: 16px;
+    --panel-padding-top: 16px;
     padding-bottom: 16px;
   }
 }

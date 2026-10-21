@@ -63,9 +63,12 @@ describe('AssetMixComponent', () => {
     return fixture.nativeElement;
   }
 
+  // Each row's name, share and value cells, joined by a space
   function legend(page: HTMLElement): string[] {
-    return Array.from(page.querySelectorAll('.legend li')).map(
-      (li) => li.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+    return Array.from(page.querySelectorAll('.legend li')).map((li) =>
+      Array.from(li.children)
+        .map((cell) => cell.textContent?.trim())
+        .join(' '),
     );
   }
 

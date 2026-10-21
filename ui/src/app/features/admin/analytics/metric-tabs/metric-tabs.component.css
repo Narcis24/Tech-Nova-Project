@@ -1,8 +1,7 @@
-/* Four tabs in a row, split by hairlines; the chosen one tinted in its metric's colour */
+/* Four tabs in a row along the top of the card, split by hairlines; the chosen one tinted in its metric's colour */
 .tabs {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  border-top: 1px solid var(--subtle-border-color);
   border-bottom: 1px solid var(--subtle-border-color);
 }
 
@@ -37,9 +36,8 @@
 .tab[aria-selected='true']::after {
   content: '';
   position: absolute;
-  inset: -1px 0 auto;
+  inset: 0 0 auto;
   height: 4px;
-  border-radius: 0 0 3px 3px;
   background: var(--metric-color);
 }
 

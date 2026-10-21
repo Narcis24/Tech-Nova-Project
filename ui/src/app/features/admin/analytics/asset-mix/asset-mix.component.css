@@ -1,6 +1,5 @@
 /* Loading and empty styles come from shared/admin-page.css */
 :host {
-  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -23,6 +22,12 @@ h2 {
 .note {
   font-size: 13px;
   color: var(--secondary-text-color);
+}
+
+/* Fills the rest of the card, so the chart sits in its middle when Top traded beside it is taller */
+.body {
+  flex: 1;
+  justify-content: center;
 }
 
 .body,
@@ -95,12 +100,14 @@ b {
   font-weight: 600;
 }
 
-/* The bar chart, shown instead of the single bar and legend once the widget is wide enough */
+/* The bar chart, centred and kept narrow enough that its columns stay together on a wide card */
 .columns {
-  display: none;
+  display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
-  margin: 0;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
   padding: 0;
   list-style: none;
 }
@@ -146,13 +153,18 @@ b {
   color: var(--secondary-text-color);
 }
 
-@container (min-width: 480px) {
+/* Phones: the single bar and legend instead of the bar chart */
+.compact {
+  display: none;
+}
+
+@media (max-width: 640px) {
   .compact {
-    display: none;
+    display: flex;
   }
 
   .columns {
-    display: grid;
+    display: none;
   }
 }
 

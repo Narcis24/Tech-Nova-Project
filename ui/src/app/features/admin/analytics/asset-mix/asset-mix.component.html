@@ -33,7 +33,7 @@
       </ul>
     </div>
 
-    <!-- Wider: a bar chart, one column per class, share and value above it and its name below -->
+    <!-- Everywhere else: a bar chart, one column per class, share and value above it and its name below -->
     <ul class="columns" aria-label="Share of traded value by asset class">
       @for (column of columns(); track column.key) {
         <li [class.dimmed]="column.dimmed">
