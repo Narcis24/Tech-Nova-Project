@@ -12,7 +12,9 @@ import {
   OrderControllerService,
   PriceControllerService,
   InstrumentControllerService,
+  PieControllerService,
   PortfolioControllerService,
+  PublicPieControllerService,
   RiskControllerService,
   RiskLimitControllerService,
 } from './generated/trading-api-client';
@@ -53,6 +55,14 @@ describe('app routes', () => {
         },
         { provide: AccountControllerService, useValue: { getAccountOrders: () => of([]) } },
         { provide: InstrumentControllerService, useValue: { getInstruments: () => of([]) } },
+        { provide: PieControllerService, useValue: { get: () => of({ pieId: 'p1', name: 'Tech Growth' }) } },
+        {
+          provide: PublicPieControllerService,
+          useValue: {
+            listPublicPies: () => of([]),
+            getPublicPie: () => of({ pieId: 'p1', name: 'Public Growth', authorUsername: 'ada' }),
+          },
+        },
         { provide: AdminUserControllerService, useValue: { listUsers: () => of([]) } },
         { provide: AuthService, useValue: auth },
         { provide: AccountService, useValue: accounts },
@@ -164,6 +174,30 @@ describe('app routes', () => {
 
       expect(router.url).toBe('/risk-limits');
       expect(harness.routeNativeElement?.textContent).toContain('Risk limits');
+    });
+
+    it('opens the new pie editor, not the pie detail', async () => {
+      await harness.navigateByUrl('/pies/new');
+
+      expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('New pie');
+    });
+
+    it('shows one of my pies', async () => {
+      await harness.navigateByUrl('/pies/p1');
+
+      expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('Tech Growth');
+    });
+
+    it('shows public templates in Discover', async () => {
+      await harness.navigateByUrl('/discover');
+
+      expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('Discover');
+    });
+
+    it('shows a public pie', async () => {
+      await harness.navigateByUrl('/discover/p1');
+
+      expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('Public Growth');
     });
 
     it('sends / to /dashboard for a trader', async () => {

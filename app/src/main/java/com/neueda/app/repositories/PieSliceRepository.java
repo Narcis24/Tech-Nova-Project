@@ -10,4 +10,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PieSliceRepository extends JpaRepository<PieSlice, PieSliceKey> {
     List<PieSlice> findByPieIdAndVersionOrderByWeightPctDescSymbolAsc(UUID pieId, int version);
+
+    int countByPieIdAndVersion(UUID pieId, int version);
 }

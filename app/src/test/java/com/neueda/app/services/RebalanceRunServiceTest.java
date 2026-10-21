@@ -122,6 +122,7 @@ class RebalanceRunServiceTest {
     @BeforeEach
     void setUp() {
         when(clock.instant()).thenReturn(MARKET_OPEN);
+        when(clock.getZone()).thenReturn(java.time.ZoneOffset.UTC);
         for (String symbol : List.of("AAPL", "MSFT", "GOOG", "TSLA")) {
             instrumentRepository.save(new Instrument(symbol, symbol + " Inc.", AssetClass.EQUITY, "USD", true));
             priceRepository.save(new Price(symbol, LocalDate.now(), new BigDecimal("100.00")));

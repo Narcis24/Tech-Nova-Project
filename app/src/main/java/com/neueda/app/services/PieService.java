@@ -4,6 +4,7 @@ import com.neueda.app.dtos.PieResponse;
 import com.neueda.app.dtos.PieSliceRequest;
 import com.neueda.app.dtos.PieSliceResponse;
 import com.neueda.app.dtos.SavePieRequest;
+import com.neueda.app.enums.PieVisibility;
 import com.neueda.app.exceptions.InvalidPieException;
 import com.neueda.app.exceptions.PieInUseException;
 import com.neueda.app.exceptions.PieNotFoundException;
@@ -20,18 +21,23 @@ import com.neueda.app.repositories.PieRepository;
 import com.neueda.app.repositories.PieSliceRepository;
 import com.neueda.app.repositories.PieVersionRepository;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Pies and their versioned target weights. A new version is made only when the weights change. */
+/**
+ * Pies and their versioned target weights. A new version is made only when the weights change, and
+ * changes lock the pie row, so they happen one at a time.
+ */
 @Service
 public class PieService {
 
@@ -43,28 +49,52 @@ public class PieService {
     private final AccountPieRepository accountPieRepository;
     private final AccountRepository accountRepository;
     private final InstrumentRepository instrumentRepository;
+    private final Clock clock;
 
     public PieService(PieRepository pieRepository, PieVersionRepository pieVersionRepository,
                       PieSliceRepository pieSliceRepository, AccountPieRepository accountPieRepository,
-                      AccountRepository accountRepository, InstrumentRepository instrumentRepository) {
+                      AccountRepository accountRepository, InstrumentRepository instrumentRepository,
+                      Clock clock) {
         this.pieRepository = pieRepository;
         this.pieVersionRepository = pieVersionRepository;
         this.pieSliceRepository = pieSliceRepository;
         this.accountPieRepository = accountPieRepository;
         this.accountRepository = accountRepository;
         this.instrumentRepository = instrumentRepository;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
     public List<PieResponse> listMine(String owner) {
+        Set<String> ownAccounts = ownAccountIds(owner);
         return pieRepository.findByOwnerUsernameAndDeletedAtIsNullOrderByCreatedAt(owner).stream()
-            .map(pie -> toResponse(pie, latestSlices(pie)))
+            .map(pie -> toResponse(pie, latestSlices(pie), ownAccounts))
             .toList();
     }
 
     @Transactional(readOnly = true)
     public PieResponse get(UUID pieId, String owner) {
         Pie pie = requireOwned(pieId, owner);
+        return toResponse(pie, latestSlices(pie));
+    }
+
+    /** Makes the pie public. Publishing a public pie changes nothing. */
+    @Transactional
+    public PieResponse publish(UUID pieId, String owner) {
+        Pie pie = requireOwnedForUpdate(pieId, owner);
+        if (pie.getVisibility() != PieVisibility.PUBLIC) {
+            LocalDateTime now = now();
+            pie.publish(now);
+            pieRepository.save(pie);
+        }
+        return toResponse(pie, latestSlices(pie));
+    }
+
+    /** Makes the pie private again. */
+    @Transactional
+    public PieResponse unpublish(UUID pieId, String owner) {
+        Pie pie = requireOwnedForUpdate(pieId, owner);
+        makePrivate(pie);
         return toResponse(pie, latestSlices(pie));
     }
 
@@ -78,29 +108,30 @@ public class PieService {
 
     @Transactional
     public PieResponse update(UUID pieId, String owner, SavePieRequest req) {
-        Pie pie = requireOwned(pieId, owner);
+        Pie pie = requireOwnedForUpdate(pieId, owner);
         Map<String, BigDecimal> weights = validate(req);
-        pie.setName(req.getName());
-        pie.setDescription(req.getDescription());
 
         List<PieSlice> slices = latestSlices(pie);
         if (!normalised(weights).equals(normalised(toWeights(slices)))) {
             pie.setLatestVersion(pie.getLatestVersion() + 1);
             slices = saveVersion(pieId, pie.getLatestVersion(), weights);
         }
+        pie.setName(req.getName());
+        pie.setDescription(req.getDescription());
         return toResponse(pieRepository.save(pie), slices);
     }
 
     @Transactional
     public void delete(UUID pieId, String owner) {
-        Pie pie = requireOwned(pieId, owner);
+        Pie pie = requireOwnedForUpdate(pieId, owner);
         List<String> accountIds = accountRepository.findByOwnerUsernameOrderByAccountId(owner).stream()
             .map(Account::getAccountId)
             .toList();
         if (accountPieRepository.existsByPieIdAndAccountIdIn(pieId, accountIds)) {
             throw new PieInUseException("Pie is followed by one of your accounts: " + pieId);
         }
-        pie.setDeletedAt(LocalDateTime.now(ZoneOffset.UTC));
+        makePrivate(pie);
+        pie.setDeletedAt(now());
         pieRepository.save(pie);
     }
 
@@ -121,6 +152,22 @@ public class PieService {
     public Pie requireOwned(UUID pieId, String owner) {
         return pieRepository.findByPieIdAndOwnerUsernameAndDeletedAtIsNull(pieId, owner)
             .orElseThrow(() -> new PieNotFoundException("Pie not found: " + pieId));
+    }
+
+    private Pie requireOwnedForUpdate(UUID pieId, String owner) {
+        return pieRepository.lockOwned(pieId, owner)
+            .orElseThrow(() -> new PieNotFoundException("Pie not found: " + pieId));
+    }
+
+    private void makePrivate(Pie pie) {
+        if (pie.getVisibility() == PieVisibility.PUBLIC) {
+            pie.unpublish();
+            pieRepository.save(pie);
+        }
+    }
+
+    private LocalDateTime now() {
+        return LocalDateTime.now(clock);
     }
 
     /** Checks the request and returns its weights keyed by trimmed, upper-cased symbol. */
@@ -150,7 +197,7 @@ public class PieService {
     }
 
     private List<PieSlice> saveVersion(UUID pieId, int version, Map<String, BigDecimal> weights) {
-        pieVersionRepository.save(new PieVersion(pieId, version, LocalDateTime.now(ZoneOffset.UTC)));
+        pieVersionRepository.save(new PieVersion(pieId, version, now()));
         List<PieSlice> slices = weights.entrySet().stream()
             .map(e -> new PieSlice(pieId, version, e.getKey(), e.getValue()))
             .sorted(Comparator.comparing(PieSlice::getWeightPct).reversed()
@@ -160,7 +207,7 @@ public class PieService {
         return slices;
     }
 
-    private List<PieSlice> latestSlices(Pie pie) {
+    List<PieSlice> latestSlices(Pie pie) {
         return pieSliceRepository.findByPieIdAndVersionOrderByWeightPctDescSymbolAsc(pie.getPieId(), pie.getLatestVersion());
     }
 
@@ -177,17 +224,35 @@ public class PieService {
         return result;
     }
 
-    private PieResponse toResponse(Pie pie, List<PieSlice> slices) {
-        List<PieSliceResponse> sliceResponses = slices.stream()
+    List<PieSliceResponse> sliceResponses(List<PieSlice> slices) {
+        return slices.stream()
             .map(s -> new PieSliceResponse(s.getSymbol(), instrumentRepository.findBySymbol(s.getSymbol())
                 .map(Instrument::getName).orElse(s.getSymbol()), s.getWeightPct()))
             .toList();
-        BigDecimal cashPct = HUNDRED.subtract(slices.stream().map(PieSlice::getWeightPct)
-            .reduce(BigDecimal.ZERO, BigDecimal::add));
+    }
+
+    static BigDecimal cashPct(List<PieSlice> slices) {
+        return HUNDRED.subtract(slices.stream().map(PieSlice::getWeightPct).reduce(BigDecimal.ZERO, BigDecimal::add));
+    }
+
+    private Set<String> ownAccountIds(String owner) {
+        return accountRepository.findByOwnerUsernameOrderByAccountId(owner).stream()
+            .map(Account::getAccountId)
+            .collect(Collectors.toSet());
+    }
+
+    private PieResponse toResponse(Pie pie, List<PieSlice> slices) {
+        return toResponse(pie, slices, ownAccountIds(pie.getOwnerUsername()));
+    }
+
+    /** Only the owner's own accounts are listed as linked; accounts of other users copying a public pie stay private. */
+    private PieResponse toResponse(Pie pie, List<PieSlice> slices, Set<String> ownAccounts) {
         List<String> linked = accountPieRepository.findByPieId(pie.getPieId()).stream()
             .map(AccountPie::getAccountId)
+            .filter(ownAccounts::contains)
             .toList();
         return new PieResponse(pie.getPieId(), pie.getName(), pie.getDescription(), pie.getVisibility().name(),
-            pie.getLatestVersion(), sliceResponses, cashPct, linked, pie.getCreatedAt());
+            pie.getLatestVersion(), sliceResponses(slices), cashPct(slices), linked, pie.getCreatedAt(),
+            pie.getPublishedAt());
     }
 }

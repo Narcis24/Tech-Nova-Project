@@ -126,6 +126,22 @@ describe('PiesComponent', () => {
     expect(navigate).toHaveBeenCalledWith('/accounts/ACC001/rebalance');
   });
 
+  it('links each pie name to its details, and the tabs to Discover', () => {
+    create();
+    expect(root.querySelector('.pie-card h2 a')!.getAttribute('href')).toBe('/pies/p1');
+    expect(root.querySelector('.pie-card .public')).toBeNull();
+    expect(Array.from(root.querySelectorAll('app-pie-tabs a')).map((a) => a.getAttribute('href'))).toEqual([
+      '/pies',
+      '/discover',
+    ]);
+  });
+
+  it('marks published pies', () => {
+    pies.listMine.and.returnValue(of([{ ...PIE, publishedAt: '2026-03-02T09:00:00Z' }]));
+    create();
+    expect(root.querySelector('.pie-card .public')!.textContent).toBe('Public');
+  });
+
   it('links to new and edit', () => {
     create();
     expect(root.querySelector('a.new')!.getAttribute('href')).toBe('/pies/new');

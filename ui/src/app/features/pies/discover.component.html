@@ -1,0 +1,43 @@
+<div class="top">
+  <h1>Discover</h1>
+</div>
+<app-pie-tabs />
+
+<p class="intro">Browse public pies and their target allocations.</p>
+
+@if (loading()) {
+  <output class="empty">Loading public pies…</output>
+} @else if (loadError()) {
+  <div class="load-error" role="alert">
+    <p>Couldn't load public pies.</p>
+    <button type="button" class="secondary" (click)="retry()">Try again</button>
+  </div>
+} @else if (!pies().length) {
+  <p class="empty">No public pies yet.</p>
+} @else {
+  <ul class="board">
+    @for (pie of pies(); track pie.pieId) {
+      <li class="entry">
+        <div class="identity">
+          <h2>
+            <a [routerLink]="['/discover', pie.pieId]">{{ pie.name }}</a>
+            @if (pie.demo) {
+              <span class="tag">Demo</span>
+            }
+          </h2>
+          <p class="author">by {{ pie.authorUsername }}</p>
+        </div>
+        <dl class="metrics">
+          <div class="metric">
+            <dt>Followers</dt>
+            <dd>{{ pie.followers | number }}</dd>
+          </div>
+          <div class="metric">
+            <dt>Slices</dt>
+            <dd>{{ pie.sliceCount }}</dd>
+          </div>
+        </dl>
+      </li>
+    }
+  </ul>
+}

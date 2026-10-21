@@ -73,7 +73,7 @@ class PieControllerTest {
     private PieResponse response() {
         return new PieResponse(PIE_ID, "Tech", "desc", "PRIVATE", 1,
             List.of(new PieSliceResponse("AAPL", "Apple Inc.", new BigDecimal("60"))),
-            new BigDecimal("40"), List.of(), LocalDateTime.now());
+            new BigDecimal("40"), List.of(), LocalDateTime.now(), null);
     }
 
     @Test
@@ -128,4 +128,36 @@ class PieControllerTest {
 
         verify(pieService).delete(PIE_ID, "jay");
     }
+
+    @Test
+    void publish_returnsPieWithPublishTime() throws Exception {
+        PieResponse published = new PieResponse(PIE_ID, "Tech", "desc", "PUBLIC", 1, List.of(), new BigDecimal("100"),
+            List.of(), LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2026, 1, 2, 3, 4));
+        when(pieService.publish(PIE_ID, "jay")).thenReturn(published);
+
+        mockMvc.perform(post("/v1/pies/" + PIE_ID + "/publish"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.visibility").value("PUBLIC"))
+            .andExpect(jsonPath("$.publishedAt").exists());
+    }
+
+    @Test
+    void publish_unknown_404() throws Exception {
+        when(pieService.publish(PIE_ID, "jay")).thenThrow(new PieNotFoundException("Pie not found: " + PIE_ID));
+
+        mockMvc.perform(post("/v1/pies/" + PIE_ID + "/publish"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.errorCode").value("PIE_NOT_FOUND"));
+    }
+
+    @Test
+    void unpublish_returnsPrivatePie() throws Exception {
+        when(pieService.unpublish(PIE_ID, "jay")).thenReturn(response());
+
+        mockMvc.perform(post("/v1/pies/" + PIE_ID + "/unpublish"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.visibility").value("PRIVATE"))
+            .andExpect(jsonPath("$.publishedAt").doesNotExist());
+    }
+
 }

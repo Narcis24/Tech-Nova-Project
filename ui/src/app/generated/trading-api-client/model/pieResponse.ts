@@ -20,5 +20,6 @@ export interface PieResponse {
     cashPct?: number;
     linkedAccountIds?: Array<string>;
     createdAt?: string;
+    publishedAt?: string;
 }
 

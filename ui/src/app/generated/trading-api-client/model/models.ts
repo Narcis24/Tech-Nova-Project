@@ -37,6 +37,8 @@ export * from './positionResponse';
 export * from './previewLeg';
 export * from './priceHistoryPoint';
 export * from './priceResponse';
+export * from './publicPieResponse';
+export * from './publicPieSummary';
 export * from './rebalanceLegResponse';
 export * from './rebalancePreviewResponse';
 export * from './rebalanceRunResponse';

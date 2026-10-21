@@ -61,11 +61,3 @@ CREATE TABLE rebalance_legs (
     quantity  INT         NOT NULL CHECK (quantity > 0),
     PRIMARY KEY (run_id, order_id)
 );
-
--- Used from #222: daily strategy index of a public pie, 100 on its publish date
-CREATE TABLE pie_index_points (
-    pie_id  UUID          NOT NULL REFERENCES pies(pie_id),
-    day     DATE          NOT NULL,
-    value   NUMERIC(18,6) NOT NULL,
-    PRIMARY KEY (pie_id, day)
-);
