@@ -18,12 +18,14 @@ import { OpenApiHttpParams, QueryParamStyle } from '../query.params';
 
 // @ts-ignore
 import { AdminUserResponse } from '../model/adminUserResponse';
+import { AdminUserDetailResponse } from '../model/adminUserDetailResponse';
 // @ts-ignore
 import { CreateUserRequest } from '../model/createUserRequest';
 // @ts-ignore
 import { CreateUserResponse } from '../model/createUserResponse';
 // @ts-ignore
 import { UpdateRolesRequest } from '../model/updateRolesRequest';
+import { UpdateAccountStatusRequest } from '../model/updateAccountStatusRequest';
 
 // @ts-ignore
 import { BASE_PATH, COLLECTION_FORMATS }                     from '../variables';
@@ -161,6 +163,42 @@ export class AdminUserControllerService extends BaseService {
                 reportProgress: reportProgress
             }
         );
+    }
+
+    public getUser(username: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdminUserDetailResponse>;
+    public getUser(username: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdminUserDetailResponse>>;
+    public getUser(username: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdminUserDetailResponse>>;
+    public getUser(username: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (username === null || username === undefined) throw new Error('Required parameter username was null or undefined when calling getUser.');
+        let headers = this.defaultHeaders;
+        headers = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', headers, 'Bearer ');
+        const accept = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept(['application/json']);
+        if (accept !== undefined) headers = headers.set('Accept', accept);
+        const path = `/v1/admin/users/${this.configuration.encodeParam({name: 'username', value: username, in: 'path', style: 'simple', explode: false, dataType: 'string', dataFormat: undefined})}`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdminUserDetailResponse>('get', `${basePath}${path}`, {
+            context: options?.context ?? new HttpContext(), responseType: <any>(accept?.startsWith('text') ? 'text' : 'json'),
+            ...(withCredentials ? { withCredentials } : {}), headers, observe,
+            ...(options?.transferCache !== undefined ? { transferCache: options.transferCache } : {}), reportProgress
+        });
+    }
+
+    public updateAccountStatus(username: string, accountId: string, request: UpdateAccountStatusRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<import('../model/accountResponse').AccountResponse>;
+    public updateAccountStatus(username: string, accountId: string, request: UpdateAccountStatusRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<import('../model/accountResponse').AccountResponse>>;
+    public updateAccountStatus(username: string, accountId: string, request: UpdateAccountStatusRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (username === null || username === undefined || accountId === null || accountId === undefined || request === null || request === undefined) throw new Error('Required parameter was null or undefined when calling updateAccountStatus.');
+        let headers = this.defaultHeaders;
+        headers = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', headers, 'Bearer ');
+        const accept = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept(['application/json']);
+        if (accept !== undefined) headers = headers.set('Accept', accept);
+        headers = headers.set('Content-Type', 'application/json');
+        const path = `/v1/admin/users/${this.configuration.encodeParam({name: 'username', value: username, in: 'path', style: 'simple', explode: false, dataType: 'string', dataFormat: undefined})}/accounts/${this.configuration.encodeParam({name: 'accountId', value: accountId, in: 'path', style: 'simple', explode: false, dataType: 'string', dataFormat: undefined})}/status`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request('put', `${basePath}${path}`, {
+            context: options?.context ?? new HttpContext(), body: request, responseType: <any>(accept?.startsWith('text') ? 'text' : 'json'),
+            ...(withCredentials ? { withCredentials } : {}), headers, observe,
+            ...(options?.transferCache !== undefined ? { transferCache: options.transferCache } : {}), reportProgress
+        });
     }
 
     /**
