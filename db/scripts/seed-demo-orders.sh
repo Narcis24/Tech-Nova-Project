@@ -10,8 +10,9 @@
 # Every demo row is marked (usernames demo_trader_*, accounts DEMO-*, idempotency keys DEMO_*), so
 # running it again replaces the demo data and --remove takes it all out; real data is never touched.
 # The orders are written straight to the database: no events are sent, and cash and positions are
-# not changed. Orders still open are PUBLISHED, not PENDING, because the app sends every PENDING
-# order to the engine again when the engine restarts, which would fill them.
+# not changed. Every demo order is already closed (filled, cancelled, expired or rejected): the engine
+# never hears of them, so one left open would stay open for good, and a PENDING one would be sent to
+# the engine when it restarts and filled.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
@@ -122,9 +123,6 @@ FROM (
                         ORDER BY pd.trade_date DESC LIMIT 1) p
 ) o
 CROSS JOIN LATERAL (SELECT CASE
-    -- Limit orders from the last two hours are mostly still waiting
-    WHEN o.order_type = 'LIMIT' AND o.created_on > (now() AT TIME ZONE 'UTC') - interval '2 hours' AND o.pick_status < 0.7
-        THEN 'PUBLISHED'
     WHEN o.order_type = 'MARKET' THEN
         CASE WHEN o.pick_status < 0.91 THEN 'FILLED' WHEN o.pick_status < 0.97 THEN 'REJECTED' ELSE 'CANCELLED' END
     ELSE
@@ -141,6 +139,6 @@ SELECT count(*) AS demo_orders,
        min(created_on)::date AS first_day,
        max(created_on) AS last_order_utc,
        count(*) FILTER (WHERE status = 'FILLED') AS filled,
-       count(*) FILTER (WHERE status = 'PUBLISHED') AS still_open
+       count(*) FILTER (WHERE status IN ('PENDING', 'PUBLISHED')) AS still_open
 FROM orders WHERE idempotency_key LIKE 'DEMO\_%';
 SQL

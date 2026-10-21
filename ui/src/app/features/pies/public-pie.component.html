@@ -39,7 +39,7 @@
           <ul>
             @for (slice of pie.slices; track slice.symbol) {
               <li>
-                <span class="symbol">{{ slice.symbol }}</span>
+                <span class="symbol"><app-symbol-icon [symbol]="slice.symbol" />{{ slice.symbol }}</span>
                 <span class="name">{{ slice.name }}</span>
                 <span class="weight">{{ slice.weightPct | number: '1.0-2' }}%</span>
               </li>

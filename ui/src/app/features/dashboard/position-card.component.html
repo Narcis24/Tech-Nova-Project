@@ -1,5 +1,5 @@
 <div class="heading">
-  <strong>{{ position().symbol }}</strong
+  <app-symbol-icon [symbol]="position().symbol" /><strong>{{ position().symbol }}</strong
   ><span>{{ assetClass() === 'ETF' ? 'ETF' : (assetClass() | titlecase) }}</span>
 </div>
 <p class="value">{{ position().marketValue | currency: 'USD' : 'symbol' : '1.0-0' }}</p>

@@ -4,10 +4,11 @@ import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, EMPTY, switchMap, takeWhile, timer } from 'rxjs';
 import { RebalanceControllerService, RebalanceRunResponse } from '../../generated/trading-api-client';
+import { SymbolIconComponent } from '../../components/symbol-icon/symbol-icon.component';
 
 @Component({
   selector: 'app-rebalance-run',
-  imports: [RouterLink],
+  imports: [RouterLink, SymbolIconComponent],
   templateUrl: './rebalance-run.component.html',
   styleUrls: ['./pies-shared.css', './rebalance-run.component.css'],
 })

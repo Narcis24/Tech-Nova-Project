@@ -31,10 +31,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class AdminAnalyticsServiceTest {
@@ -61,7 +60,7 @@ class AdminAnalyticsServiceTest {
     }
 
     @Test
-    void todayIsComparedWithYesterday() {
+    void todayOnATuesdayIsComparedWithMonday() {
         AdminAnalyticsResponse response = analytics(AnalyticsPeriod.TODAY);
 
         assertEquals(Instant.parse("2026-10-19T04:00:00Z"), response.previousFrom());
@@ -144,13 +143,94 @@ class AdminAnalyticsServiceTest {
     @Test
     void ordersAreSplitIntoPeriodsAtNewYorkMidnight() {
         orders(
-            filled("2026-10-14T03:59:00", "AAPL", 1, "100"),    // 23:59 on 13 Oct in New York: previous period
+            filled("2026-10-13T14:00:00", "AAPL", 1, "100"),    // 10:00 on 13 Oct in New York: previous period
+            filled("2026-10-14T03:59:00", "AAPL", 1, "50"),     // 23:59 on 13 Oct: previous, but after "so far"
             filled("2026-10-14T04:00:00", "AAPL", 1, "200"));   // 00:00 on 14 Oct: current period
 
         AdminAnalyticsResponse response = analytics(AnalyticsPeriod.LAST_7_DAYS);
 
         assertMoney("200", response.totals().tradedValue());
         assertMoney("100", response.previousTotals().tradedValue());
+        // Both previous orders are on the chart's dashed line, which shows the whole previous period
+        assertEquals(2, response.previousBuckets().stream().mapToLong(bucket -> bucket.totals().orders()).sum());
+    }
+
+    @Test
+    void todayIsComparedWithYesterdayUpToTheSameTime() {
+        orders(
+            filled("2026-10-19T13:00:00", "AAPL", 1, "100"),    // yesterday 09:00 in New York
+            filled("2026-10-19T18:29:00", "AAPL", 1, "10"),     // yesterday 14:29, just before now's time of day
+            filled("2026-10-19T18:31:00", "AAPL", 1, "1000"),   // yesterday 14:31, after it
+            filled("2026-10-19T20:00:00", "AAPL", 1, "1000"),   // yesterday 16:00
+            filled("2026-10-20T14:00:00", "AAPL", 1, "300"));   // today 10:00
+
+        AdminAnalyticsResponse response = analytics(AnalyticsPeriod.TODAY);
+
+        assertMoney("300", response.totals().tradedValue());
+        // Today until 14:30 against yesterday until 14:30, not against all of yesterday
+        assertMoney("110", response.previousTotals().tradedValue());
+        assertEquals(2, response.previousTotals().orders());
+        // The dashed line still has all of yesterday
+        assertEquals(4, response.previousBuckets().stream().mapToLong(bucket -> bucket.totals().orders()).sum());
+    }
+
+    @Test
+    void todayOnAMondayIsComparedWithFridayUpToTheSameTime() {
+        // Monday 19 Oct 2026, 14:30 in New York
+        AdminAnalyticsService monday = new AdminAnalyticsService(orderRepository,
+            Clock.fixed(Instant.parse("2026-10-19T18:30:00Z"), ZoneOffset.UTC));
+        orders(
+            filled("2026-10-16T18:29:00", "AAPL", 1, "10"),     // Friday 14:29, just before now's time of day
+            filled("2026-10-16T18:31:00", "AAPL", 1, "1000"),   // Friday 14:31, after it
+            filled("2026-10-17T15:00:00", "AAPL", 1, "1000"),   // Saturday: not part of either day
+            filled("2026-10-19T14:00:00", "AAPL", 1, "300"));   // Monday 10:00
+
+        AdminAnalyticsResponse response = monday.analytics(AnalyticsPeriod.TODAY, null, null, null, null);
+
+        assertEquals(Instant.parse("2026-10-16T04:00:00Z"), response.previousFrom());
+        assertEquals(Instant.parse("2026-10-17T04:00:00Z"), response.previousTo());
+        assertMoney("300", response.totals().tradedValue());
+        assertMoney("10", response.previousTotals().tradedValue());
+        // The dashed line is all of Friday, hour by hour, and nothing from the weekend
+        assertEquals(24, response.previousBuckets().size());
+        assertEquals(2, response.previousBuckets().stream().mapToLong(bucket -> bucket.totals().orders()).sum());
+    }
+
+    @Test
+    void todayAtTheWeekendIsComparedWithFriday() {
+        // Sunday 18 Oct 2026, noon in New York
+        AdminAnalyticsService sunday = new AdminAnalyticsService(orderRepository,
+            Clock.fixed(Instant.parse("2026-10-18T16:00:00Z"), ZoneOffset.UTC));
+
+        AdminAnalyticsResponse response = sunday.analytics(AnalyticsPeriod.TODAY, null, null, null, null);
+
+        assertEquals(Instant.parse("2026-10-16T04:00:00Z"), response.previousFrom());
+        assertEquals(Instant.parse("2026-10-17T04:00:00Z"), response.previousTo());
+    }
+
+    @Test
+    void longerPeriodsAreComparedUpToTheSameTimeTheSameNumberOfDaysEarlier() {
+        orders(
+            filled("2026-10-13T18:29:00", "AAPL", 1, "10"),     // 13 Oct 14:29: 7 days before now, just inside
+            filled("2026-10-13T18:31:00", "AAPL", 1, "1000"));  // 13 Oct 14:31: just after
+
+        AdminAnalyticsResponse response = analytics(AnalyticsPeriod.LAST_7_DAYS);
+
+        assertMoney("10", response.previousTotals().tradedValue());
+    }
+
+    @Test
+    void theComparisonKeepsTheClockTimeAcrossAClockChange() {
+        // Wednesday 4 Nov 2026, noon in New York (EST); 7 days earlier, 28 Oct, was still EDT
+        AdminAnalyticsService afterClockChange = new AdminAnalyticsService(orderRepository,
+            Clock.fixed(Instant.parse("2026-11-04T17:00:00Z"), ZoneOffset.UTC));
+        orders(
+            filled("2026-10-28T15:59:00", "AAPL", 1, "10"),     // 28 Oct 11:59 EDT: before noon, included
+            filled("2026-10-28T16:01:00", "AAPL", 1, "1000"));  // 28 Oct 12:01 EDT: after noon, left out
+
+        AdminAnalyticsResponse response = afterClockChange.analytics(AnalyticsPeriod.LAST_7_DAYS, null, null, null, null);
+
+        assertMoney("10", response.previousTotals().tradedValue());
     }
 
     @Test
@@ -359,9 +439,7 @@ class AdminAnalyticsServiceTest {
 
         verify(orderRepository).findActivity(LocalDateTime.of(2026, 10, 16, 4, 0), LocalDateTime.of(2026, 10, 21, 4, 0),
             AssetClass.ETF, OrderSide.SELL, OrderType.LIMIT, "alice");
-        verify(orderRepository).countWithStatus(argThat(statuses -> statuses.size() == 2
-                && statuses.containsAll(List.of(OrderStatus.PENDING, OrderStatus.PUBLISHED))),
-            eq(AssetClass.ETF), eq(OrderSide.SELL), eq(OrderType.LIMIT), eq("alice"));
+        verifyNoMoreInteractions(orderRepository);   // one query a refresh
     }
 
     @Test
@@ -396,13 +474,6 @@ class AdminAnalyticsServiceTest {
     }
 
     @Test
-    void liveOpenOrdersComeFromTheStatusCount() {
-        when(orderRepository.countWithStatus(any(), any(), any(), any(), any())).thenReturn(4L);
-
-        assertEquals(4, live().openOrders());
-    }
-
-    @Test
     void liveTopTodayCountsEveryOrderTodayAndKeepsTheTopThree() {
         orders(
             filled("2026-10-19T15:00:00", "NVDA", 1, "1"),    // yesterday: not counted
@@ -430,7 +501,6 @@ class AdminAnalyticsServiceTest {
 
         assertEquals(0, live.ordersToday());
         assertEquals(0, live.ordersLastHour());
-        assertEquals(0, live.openOrders());
         assertTrue(live.hourly().stream().allMatch(hour -> hour.orders() == 0));
         assertTrue(live.topToday().isEmpty());
     }

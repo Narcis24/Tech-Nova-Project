@@ -8,10 +8,11 @@ import {
   RebalanceControllerService,
   RebalancePreviewResponse,
 } from '../../generated/trading-api-client';
+import { SymbolIconComponent } from '../../components/symbol-icon/symbol-icon.component';
 
 @Component({
   selector: 'app-rebalance-preview',
-  imports: [CurrencyPipe, DecimalPipe, RouterLink],
+  imports: [CurrencyPipe, DecimalPipe, RouterLink, SymbolIconComponent],
   templateUrl: './rebalance-preview.component.html',
   styleUrls: ['./pies-shared.css', './rebalance-preview.component.css'],
 })

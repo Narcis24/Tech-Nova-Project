@@ -1,0 +1,61 @@
+<header class="head">
+  <h2 id="asset-mix-heading">Asset class mix</h2>
+  <span class="note">Share of traded value</span>
+</header>
+
+@if (store.data()) {
+  <div class="body" [class.stale]="store.loading()">
+    <!-- Narrow (phones): one bar split by share, with a legend underneath -->
+    <div class="compact">
+      @if (segments().length) {
+        <p class="visually-hidden">{{ summary() }}</p>
+        <div class="bar" aria-hidden="true">
+          @for (entry of segments(); track entry.key) {
+            <span
+              class="segment"
+              [style.flex-grow]="entry.share"
+              [style.background]="entry.color"
+              [title]="entry.label + ': ' + entry.percent"
+            ></span>
+          }
+        </div>
+      } @else {
+        <div class="bar empty-bar" aria-hidden="true"></div>
+      }
+
+      <ul class="legend">
+        @for (entry of entries(); track entry.key) {
+          <li [class.dimmed]="entry.dimmed">
+            <span class="name"><span class="swatch" [style.background]="entry.color"></span>{{ entry.label }}</span>
+            <b class="percent">{{ entry.percent }}</b>
+            <span class="value">{{ entry.value }}</span>
+          </li>
+        }
+      </ul>
+    </div>
+
+    <!-- Everywhere else: a bar chart, one column per class, share and value above it and its name below -->
+    <ul class="columns" aria-label="Share of traded value by asset class">
+      @for (column of columns(); track column.key) {
+        <li [class.dimmed]="column.dimmed">
+          <span class="column-value"
+            ><b>{{ column.percent }}</b
+            ><small>{{ column.value }}</small></span
+          >
+          <span class="column-track" aria-hidden="true">
+            <span class="column-bar" [style.height.%]="column.height" [style.background]="column.color"></span>
+          </span>
+          <span class="column-label">{{ column.label }}</span>
+        </li>
+      }
+    </ul>
+
+    @if (!segments().length) {
+      <p class="empty">Nothing was traded in this period with these filters.</p>
+    }
+  </div>
+} @else if (store.state().status === 'error') {
+  <p class="empty">Couldn't load the asset mix.</p>
+} @else {
+  <p class="loading">Loading asset mix…</p>
+}

@@ -52,6 +52,7 @@ public class AdminAnalyticsService {
 
     // Days and hours are New York time, like MarketHours.java in the engine and market-hours.ts in the UI
     static final ZoneId MARKET_ZONE = ZoneId.of("America/New_York");
+    private static final Set<DayOfWeek> WEEKEND = EnumSet.of(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
     private static final int TOP_TRADED = 6;
     private static final int RATE_SCALE = 4;
     private static final int LIVE_TRADING_DAYS = 3;
@@ -59,8 +60,6 @@ public class AdminAnalyticsService {
     // The hours the Live bars cover: 9:00 (the 9:30 open falls in it) to the 15:00 hour, before the 16:00 close
     private static final int MARKET_FIRST_HOUR = 9;
     private static final int MARKET_LAST_HOUR = 15;
-    // Statuses an order is still waiting in
-    private static final Set<OrderStatus> OPEN = EnumSet.of(OrderStatus.PENDING, OrderStatus.PUBLISHED);
     // A plain local time, which spreadsheets read as a date without any setup
     private static final DateTimeFormatter CSV_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final String CSV_HEADER = "start_new_york,traded_value,orders,fill_rate,active_traders,"
@@ -82,6 +81,12 @@ public class AdminAnalyticsService {
     @Transactional(readOnly = true)
     public AdminAnalyticsResponse analytics(AnalyticsPeriod period, AssetClass assetClass,
                                             OrderSide side, OrderType orderType, String trader) {
+        return buildAnalytics(period, assetClass, side, orderType, trader);
+    }
+
+    // Shared by analytics and exportCsv, so neither calls the other's @Transactional method through 'this'
+    private AdminAnalyticsResponse buildAnalytics(AnalyticsPeriod period, AssetClass assetClass,
+                                                  OrderSide side, OrderType orderType, String trader) {
         ZonedDateTime now = ZonedDateTime.now(clock).withZoneSameInstant(MARKET_ZONE);
         Window current = Window.of(period, now);
         Window previous = current.previous();
@@ -94,6 +99,18 @@ public class AdminAnalyticsService {
             .collect(Collectors.partitioningBy(row -> market(row.createdOn()).isBefore(current.from())));
         List<OrderActivity> currentRows = beforeCurrent.get(false);
         List<OrderActivity> previousRows = beforeCurrent.get(true);
+        // The current period only has data up to now, so compare it with the previous one up to the same
+        // point: today until 10:50 against yesterday until 10:50, not all of yesterday. The same clock time,
+        // N days earlier, so a daylight-saving change in between doesn't shift it by an hour. For TODAY on a
+        // Monday that's Friday 10:50, which also leaves out anything placed over the weekend.
+        List<OrderActivity> previousSoFar = List.of();
+        if (previous != null) {
+            ZonedDateTime previousCutoff =
+                now.minusDays(ChronoUnit.DAYS.between(previous.from().toLocalDate(), current.from().toLocalDate()));
+            previousSoFar = previousRows.stream()
+                .filter(row -> market(row.createdOn()).isBefore(previousCutoff))
+                .toList();
+        }
 
         AnalyticsBucketSize size = period.bucketSize();
         return new AdminAnalyticsResponse(
@@ -104,7 +121,8 @@ public class AdminAnalyticsService {
             previous == null ? null : previous.from().toInstant(),
             previous == null ? null : previous.to().toInstant(),
             totals(currentRows),
-            previous == null ? null : totals(previousRows),
+            previous == null ? null : totals(previousSoFar),
+            // The whole previous period, so the chart's dashed line shows how it ended
             buckets(current, size, currentRows, now),
             previous == null ? List.of() : buckets(previous, size, previousRows, now),
             topTraded(currentRows),
@@ -119,7 +137,7 @@ public class AdminAnalyticsService {
     public String exportCsv(AnalyticsPeriod period, AssetClass assetClass,
                             OrderSide side, OrderType orderType, String trader) {
         StringBuilder csv = new StringBuilder(CSV_HEADER).append('\n');
-        for (AnalyticsBucket bucket : analytics(period, assetClass, side, orderType, trader).buckets()) {
+        for (AnalyticsBucket bucket : buildAnalytics(period, assetClass, side, orderType, trader).buckets()) {
             if (bucket.future()) {
                 continue;
             }
@@ -145,8 +163,8 @@ public class AdminAnalyticsService {
 
     /**
      * What's happening right now for the Live panel, with the card's filters but not its period:
-     * counts for today and the last hour, open orders, and orders per market hour over the last
-     * three trading days.
+     * counts for today and the last hour, and orders per market hour over the last three trading
+     * days. One query: everything is worked out from the same rows.
      */
     @Transactional(readOnly = true)
     public AdminLiveResponse live(AssetClass assetClass, OrderSide side, OrderType orderType, String trader) {
@@ -165,9 +183,8 @@ public class AdminAnalyticsService {
         long lastHour = todayRows.stream()
             .filter(row -> market(row.createdOn()).isAfter(hourAgo) && !market(row.createdOn()).isAfter(now))
             .count();
-        long open = orderRepository.countWithStatus(OPEN, assetClass, side, orderType, trader);
 
-        return new AdminLiveResponse(now.toInstant(), todayRows.size(), lastHour, open,
+        return new AdminLiveResponse(now.toInstant(), todayRows.size(), lastHour,
             liveHours(tradingDays, rows, now), topToday(todayRows));
     }
 
@@ -176,7 +193,7 @@ public class AdminAnalyticsService {
     private static List<LocalDate> lastTradingDays(LocalDate day, int count) {
         List<LocalDate> days = new ArrayList<>();
         for (LocalDate d = day; days.size() < count; d = d.minusDays(1)) {
-            if (d.getDayOfWeek() != DayOfWeek.SATURDAY && d.getDayOfWeek() != DayOfWeek.SUNDAY) {
+            if (!WEEKEND.contains(d.getDayOfWeek())) {
                 days.add(0, d);
             }
         }
@@ -228,10 +245,18 @@ public class AdminAnalyticsService {
             return new Window(period, from, today.plusDays(1));
         }
 
-        /** The same number of days just before this one; null for YEAR_TO_DATE, which isn't compared. */
+        /**
+         * The same number of days just before this one; null for YEAR_TO_DATE, which isn't compared.
+         * TODAY is compared with the last trading day before it, so a Monday is compared with Friday
+         * rather than with an empty Sunday.
+         */
         Window previous() {
             if (period == AnalyticsPeriod.YEAR_TO_DATE) {
                 return null;
+            }
+            if (period == AnalyticsPeriod.TODAY) {
+                ZonedDateTime day = lastTradingDays(from.toLocalDate().minusDays(1), 1).get(0).atStartOfDay(MARKET_ZONE);
+                return new Window(period, day, day.plusDays(1));
             }
             // Calendar days rather than hours, so a daylight-saving change doesn't shift the window
             long days = ChronoUnit.DAYS.between(from.toLocalDate(), to.toLocalDate());

@@ -112,37 +112,6 @@ class OrderRepositoryActivityTest {
         assertNull(findAll().get(0).trader());
     }
 
-    // --- countWithStatus
-
-    @Test
-    void countWithStatusCountsOnlyThoseStatusesWheneverPlaced() {
-        save(order(alice, apple, OrderSide.BUY, OrderType.LIMIT, 1, "1", LocalDateTime.of(2020, 1, 1, 10, 0)));   // still PENDING
-        Order published = order(alice, apple, OrderSide.BUY, OrderType.LIMIT, 1, "1", FROM.plusHours(10));
-        published.setStatus(OrderStatus.PUBLISHED);
-        save(published);
-        Order filled = order(alice, apple, OrderSide.BUY, OrderType.MARKET, 1, "1", FROM.plusHours(11));
-        filled.execute();
-        save(filled);
-
-        assertEquals(2, orderRepository.countWithStatus(List.of(OrderStatus.PENDING, OrderStatus.PUBLISHED),
-            null, null, null, null));
-        assertEquals(1, orderRepository.countWithStatus(List.of(OrderStatus.FILLED), null, null, null, null));
-    }
-
-    @Test
-    void countWithStatusAppliesTheFilters() {
-        save(order(alice, apple, OrderSide.BUY, OrderType.LIMIT, 1, "1", FROM.plusHours(10)));
-        save(order(alice, gold, OrderSide.SELL, OrderType.LIMIT, 1, "1", FROM.plusHours(11)));
-        save(order(unclaimed, apple, OrderSide.BUY, OrderType.MARKET, 1, "1", FROM.plusHours(12)));
-        List<OrderStatus> pending = List.of(OrderStatus.PENDING);
-
-        assertEquals(3, orderRepository.countWithStatus(pending, null, null, null, null));
-        assertEquals(1, orderRepository.countWithStatus(pending, AssetClass.COMMODITY, null, null, null));
-        assertEquals(1, orderRepository.countWithStatus(pending, null, OrderSide.SELL, null, null));
-        assertEquals(1, orderRepository.countWithStatus(pending, null, null, OrderType.MARKET, null));
-        assertEquals(2, orderRepository.countWithStatus(pending, null, null, null, "alice"));
-    }
-
     private List<OrderActivity> findAll() {
         return orderRepository.findActivity(FROM, TO, null, null, null, null);
     }

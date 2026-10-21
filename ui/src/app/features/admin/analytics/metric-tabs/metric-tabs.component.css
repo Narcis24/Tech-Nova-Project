@@ -1,0 +1,155 @@
+/* Four tabs in a row along the top of the card, split by hairlines; the chosen one tinted in its metric's colour */
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid var(--subtle-border-color);
+}
+
+.tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 14px 20px 12px;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: var(--text-color);
+  cursor: pointer;
+}
+
+.tab + .tab {
+  border-left: 1px solid var(--subtle-border-color);
+}
+
+.tab:hover {
+  background: color-mix(in srgb, var(--metric-color) 5%, var(--elevated-background-color));
+}
+
+.tab[aria-selected='true'] {
+  background: color-mix(in srgb, var(--metric-color) 10%, var(--elevated-background-color));
+}
+
+/* A bar along the top of the chosen tab */
+.tab[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: var(--metric-color);
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--secondary-text-color);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.label::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--metric-color);
+}
+
+.tab[aria-selected='true'] .label {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+
+.value {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.change {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--control-background-color);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--secondary-text-color);
+}
+
+.change[data-direction='up'] {
+  background: var(--gain-background-color);
+  color: var(--gain-color);
+}
+
+.change[data-direction='down'] {
+  background: var(--loss-background-color);
+  color: var(--loss-color);
+}
+
+.trend {
+  display: block;
+  width: 100%;
+  height: 28px;
+  margin-top: 4px;
+}
+
+.trend .area {
+  fill: var(--metric-color);
+  opacity: 0.14;
+}
+
+.trend .line {
+  fill: none;
+  stroke: var(--metric-color);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Two tabs a row on phones, with the hairlines redrawn to match */
+@media (max-width: 640px) {
+  .tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tab {
+    padding: 12px 14px;
+  }
+
+  .tab + .tab {
+    border-left: 0;
+  }
+
+  .tab:nth-child(even) {
+    border-left: 1px solid var(--subtle-border-color);
+  }
+
+  .tab:nth-child(n + 3) {
+    border-top: 1px solid var(--subtle-border-color);
+  }
+
+  .value {
+    font-size: 20px;
+  }
+}

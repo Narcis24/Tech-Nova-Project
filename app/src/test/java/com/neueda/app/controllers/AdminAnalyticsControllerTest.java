@@ -205,7 +205,7 @@ class AdminAnalyticsControllerTest {
     @Test
     void live_Admin_ReturnsTheServicesResponse() throws Exception {
         when(adminAnalyticsService.live(any(), any(), any(), any())).thenReturn(new AdminLiveResponse(
-            Instant.parse("2026-10-20T18:30:00Z"), 37, 6, 4,
+            Instant.parse("2026-10-20T18:30:00Z"), 37, 6,
             List.of(new LiveHour(Instant.parse("2026-10-20T13:00:00Z"), 5, false)),
             List.of(new LiveInstrument("NVDA", "NVIDIA Corporation", AssetClass.EQUITY, 7))));
 
@@ -213,7 +213,7 @@ class AdminAnalyticsControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.ordersToday").value(37))
             .andExpect(jsonPath("$.ordersLastHour").value(6))
-            .andExpect(jsonPath("$.openOrders").value(4))
+            .andExpect(jsonPath("$.openOrders").doesNotExist())
             .andExpect(jsonPath("$.hourly[0].orders").value(5))
             .andExpect(jsonPath("$.hourly[0].future").value(false))
             .andExpect(jsonPath("$.topToday[0].symbol").value("NVDA"));

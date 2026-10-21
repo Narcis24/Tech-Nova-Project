@@ -18,6 +18,8 @@ module.exports = function (config) {
       subdir: '.',
       reporters: [{ type: 'html' }, { type: 'lcovonly' }, { type: 'text-summary' }],
     },
+    // In the 8000-8100 range the EC2 box opens; KARMA_PORT picks another if 8090 is taken
+    port: Number(process.env.KARMA_PORT) || 8090,
     singleRun: false,
   });
 };

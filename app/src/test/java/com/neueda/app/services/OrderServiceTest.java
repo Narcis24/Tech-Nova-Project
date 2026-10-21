@@ -179,7 +179,8 @@ class OrderServiceTest {
         when(orderRepository.changeStatus(order.getId(), OrderStatus.PENDING, OrderStatus.CANCELLED)).thenReturn(0);
         when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
 
-        assertThrows(InvalidOrderStateException.class, () -> orderService.cancelOrder(order.getId()));
+        UUID orderId = order.getId();
+        assertThrows(InvalidOrderStateException.class, () -> orderService.cancelOrder(orderId));
 
         verifyNoInteractions(eventProducerService);
         verifyNoInteractions(events);

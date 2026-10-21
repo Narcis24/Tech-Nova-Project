@@ -15,7 +15,6 @@ export interface AdminLiveResponse {
     asOf: string;
     ordersToday: number;
     ordersLastHour: number;
-    openOrders: number;
     hourly: Array<LiveHour>;
     topToday: Array<LiveInstrument>;
 }

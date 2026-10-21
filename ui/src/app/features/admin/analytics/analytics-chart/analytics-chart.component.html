@@ -1,0 +1,165 @@
+<div class="head">
+  <ul class="legend" aria-label="Lines">
+    @for (series of series(); track series.key) {
+      <li><span class="swatch" [style.background]="series.color"></span>{{ series.label }}</li>
+    }
+    @if (previousPath()) {
+      <li><span class="dash"></span>Previous period</li>
+    }
+  </ul>
+
+  <div class="controls">
+    <fieldset class="split">
+      <legend class="visually-hidden">Split the chart by</legend>
+      @for (option of splits; track option.value) {
+        <button type="button" [attr.aria-pressed]="split() === option.value" (click)="chooseSplit(option.value)">
+          {{ option.label }}
+        </button>
+      }
+    </fieldset>
+    <button type="button" class="link" [attr.aria-pressed]="bars()" (click)="chartType.set(bars() ? 'line' : 'bar')">
+      {{ bars() ? 'Show as line chart' : 'Show as bar chart' }}
+    </button>
+  </div>
+</div>
+
+<div #plot class="plot">
+  @if (empty()) {
+    <p class="empty">No orders match these filters in this period.</p>
+  } @else {
+    <!-- The keyboard way in: arrow keys step through the points, and the tooltip follows -->
+    <input
+      class="visually-hidden"
+      type="range"
+      min="0"
+      [max]="points().length - 1"
+      [value]="hovered() ?? points().length - 1"
+      [attr.aria-label]="metric().label + ' by point'"
+      [attr.aria-valuetext]="tooltip() ? tooltip()!.title + ': ' + (tooltip()!.rows[0]?.text ?? '') : null"
+      (input)="hovered.set($any($event.target).valueAsNumber)"
+      (focus)="hovered.set(hovered() ?? points().length - 1)"
+      (blur)="hovered.set(null)"
+    />
+    <svg
+      [attr.viewBox]="'0 0 ' + width() + ' ' + height"
+      [attr.height]="height"
+      role="img"
+      [attr.aria-label]="metric().label + ' over the period'"
+      (pointermove)="pointAt($event)"
+      (pointerleave)="hovered.set(null)"
+    >
+      @for (tick of scale().ticks; track tick.value) {
+        <line
+          class="grid"
+          [class.base]="tick.value === 0"
+          [attr.x1]="pad.left"
+          [attr.x2]="width() - pad.right"
+          [attr.y1]="tick.y"
+          [attr.y2]="tick.y"
+        />
+        <text class="axis" [attr.x]="pad.left - 8" [attr.y]="tick.y + 4" text-anchor="end">{{ tick.label }}</text>
+      }
+      @for (label of xLabels(); track label.index) {
+        <text
+          class="axis"
+          [attr.x]="label.x"
+          [attr.y]="height - 8"
+          [attr.text-anchor]="label.index === 0 && !bars() ? 'start' : 'middle'"
+        >
+          {{ label.label }}
+        </text>
+      }
+
+      @if (bars()) {
+        @if (tooltip(); as tip) {
+          <rect
+            class="slot"
+            [attr.x]="tip.slotX"
+            [attr.y]="pad.top"
+            [attr.width]="tip.slotWidth"
+            [attr.height]="height - pad.top - pad.bottom"
+          />
+        }
+        @for (group of barGroups(); track group.key) {
+          @for (bar of group.rects; track bar.index) {
+            <rect
+              class="bar"
+              [attr.x]="bar.x"
+              [attr.y]="bar.y"
+              [attr.width]="bar.width"
+              [attr.height]="bar.height"
+              rx="2"
+              [style.fill]="group.color"
+            />
+          }
+        }
+        <!-- Over the bars, so the previous period still reads where they're taller -->
+        @if (previousPath(); as path) {
+          <path class="previous" [attr.d]="path" />
+        }
+      } @else {
+        <!-- Under each line, its colour fading to nothing at the zero line -->
+        <defs>
+          @for (line of lines(); track line.key) {
+            <linearGradient [attr.id]="line.gradientId" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" [style.stop-color]="line.color" [attr.stop-opacity]="fadeOpacity()" />
+              <stop offset="1" [style.stop-color]="line.color" stop-opacity="0" />
+            </linearGradient>
+          }
+        </defs>
+        @for (line of lines(); track line.key) {
+          <path class="area" [attr.d]="line.area" [attr.fill]="'url(#' + line.gradientId + ')'" />
+        }
+        @if (previousPath(); as path) {
+          <path class="previous" [attr.d]="path" />
+        }
+        @for (line of lines(); track line.key) {
+          <path class="line" [attr.d]="line.path" [style.stroke]="line.color" />
+          @if (line.end; as end) {
+            <circle class="end" [attr.cx]="end.x" [attr.cy]="end.y" r="4" [style.fill]="line.color" />
+          }
+        }
+
+        @if (tooltip(); as tip) {
+          <line
+            class="cursor"
+            [attr.x1]="tip.x"
+            [attr.x2]="tip.x"
+            [attr.y1]="pad.top"
+            [attr.y2]="height - pad.bottom"
+          />
+          @for (dot of tip.dots; track $index) {
+            <circle class="end" [attr.cx]="tip.x" [attr.cy]="dot.y" r="4.5" [style.fill]="dot.color" />
+          }
+        }
+      }
+    </svg>
+
+    @if (tooltip(); as tip) {
+      <div class="tooltip" [style.left.px]="tip.left" aria-hidden="true">
+        <strong>{{ tip.title }}</strong>
+        @if (tip.future) {
+          <span class="muted">Not yet</span>
+        } @else {
+          @for (row of tip.rows; track row.label) {
+            <span class="row"
+              ><span><span class="swatch" [style.background]="row.color"></span>{{ row.label }}</span
+              ><b>{{ row.text }}</b></span
+            >
+          }
+          @if (tip.total) {
+            <span class="row sum"
+              ><span>Total</span><b>{{ tip.total }}</b></span
+            >
+          }
+        }
+        @if (tip.previous; as previous) {
+          <span class="row"
+            ><span><span class="dash"></span>{{ previous.label }}</span
+            ><b>{{ previous.text }}</b></span
+          >
+        }
+      </div>
+    }
+  }
+</div>

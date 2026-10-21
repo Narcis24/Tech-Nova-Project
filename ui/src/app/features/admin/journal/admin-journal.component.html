@@ -39,12 +39,12 @@
   }
   @if (verifyResult(); as v) {
     @if (v.matches) {
-      <div class="verify good" role="status">
+      <div class="verify good" aria-live="polite">
         All {{ v.decisions | number }} decisions match: replaying {{ v.orders | number }} orders and
         {{ v.quotes | number }} quotes with the running engine gave the same result.
       </div>
     } @else {
-      <div class="verify bad" role="status">
+      <div class="verify bad" aria-live="polite">
         <p>{{ v.differences.length }} decision(s) came out differently when replayed with the running engine.</p>
         <ul>
           @for (d of v.differences; track $index) {

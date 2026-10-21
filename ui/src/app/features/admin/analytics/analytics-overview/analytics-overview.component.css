@@ -1,0 +1,26 @@
+/* Loading and error styles come from shared/admin-page.css */
+:host {
+  display: block;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/*
+ * The tabs fill the top of the card, across its top and side padding, rounded to its corners; the
+ * --panel-* variables come from the card class the page draws the overview with (defaults if there's none)
+ */
+.metric-tabs {
+  display: block;
+  margin: calc(-1 * var(--panel-padding-top, 20px)) calc(-1 * var(--panel-padding, 24px)) 0;
+  overflow: hidden;
+  border-radius: var(--panel-radius, 16px) var(--panel-radius, 16px) 0 0;
+}
+
+/* Old numbers stay visible, dimmed, while new ones load */
+.stale {
+  opacity: 0.55;
+}

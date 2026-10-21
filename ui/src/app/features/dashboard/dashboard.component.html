@@ -109,7 +109,8 @@
                   }}</span>
                 }
                 <span
-                  >{{ order.side | titlecase }} {{ order.quantity | number }} {{ order.symbol }}
+                  ><app-symbol-icon [symbol]="order.symbol" />{{ order.side | titlecase }} {{ order.quantity | number }}
+                  {{ order.symbol }}
                   @if (order.price != null) {
                     at {{ order.price | number: '1.2-2' }}
                   }

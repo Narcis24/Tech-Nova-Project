@@ -1,8 +1,29 @@
 /* Dashboard-only styles; headings, role badges and errors are in shared/admin-page.css */
-h2 {
-  margin: 0 0 12px;
-  font-size: 18px;
+
+/* The greeting on the left, the button to the users page on the right; wraps on narrow screens */
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-bottom: 24px;
+}
+
+.greeting {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.greeting h1 {
+  margin: 0;
+  font-size: 30px;
   font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
 }
 
 /* Dashboard navigation links */
@@ -11,15 +32,66 @@ h2 {
   width: fit-content;
   margin-bottom: 12px;
   color: var(--primary-color);
-  font-weight: 600;
-  text-decoration: none;
 }
 
+.today {
+  margin: 0;
+  font-size: 14px;
+  color: var(--secondary-text-color);
+}
+
+/* To the users page; a card-coloured button like the chart's size button */
+.head-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.manage-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--elevated-background-color);
+  box-shadow: var(--card-shadow);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.manage-link svg {
+  color: var(--primary-color);
+}
+
+.manage-link:hover {
+  border-color: var(--hover-border-color);
+  color: var(--primary-color);
+}
+
+.manage-link:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .greeting h1 {
+    font-size: 24px;
+  }
+}
+
+/* User count tiles, drawn as the same cards as the analytics widgets below, each in its own colour */
 .stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin: 0 0 32px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -27,75 +99,151 @@ h2 {
 .stat {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 16px;
-  border-radius: 14px;
-  background: var(--card-background-color);
+  gap: 6px;
+  min-width: 0;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--elevated-background-color);
+  box-shadow: var(--card-shadow);
 }
 
-.stat-value {
-  font-size: 28px;
-  font-weight: 600;
+/* The label, with the icon in a tinted square to its right */
+.stat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .stat-label {
-  font-size: 14px;
-  color: var(--secondary-text-color);
-}
-
-.users {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.user {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  align-items: center;
-  gap: 16px;
-  min-height: 64px;
-  padding: 12px 16px;
-  box-sizing: border-box;
-  border-radius: 14px;
-  background: var(--card-background-color);
-}
-
-.user-main {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.user-name {
-  font-size: 17px;
+  overflow: hidden;
+  font-size: 13px;
   font-weight: 600;
-}
-
-.user-email,
-.user-created {
-  font-size: 14px;
   color: var(--secondary-text-color);
-  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.user-roles {
-  display: flex;
-  gap: 6px;
+.stat-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--stat-color) 12%, var(--elevated-background-color));
+  color: var(--stat-color);
 }
 
-/* Phones: two tiles per row, and each user stacks */
+.stat-value {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-note {
+  font-size: 13px;
+  color: var(--secondary-text-color);
+}
+
+/* Phones: two tiles per row */
 @media (max-width: 640px) {
   .stats {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 
-  .user {
-    grid-template-columns: 1fr;
-    gap: 8px;
+  .stat {
+    padding: 14px 16px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+}
+
+/*
+ * The analytics widgets, each its own card, on a six-column grid. The filters always come first,
+ * across the whole row; the size button switches the chart between its two layouts:
+ *   chart small:  filters | chart (two thirds) · Live | Top traded · Asset mix
+ *   chart big:    filters | chart | Live | Top traded · Asset mix
+ * The widgets don't decide their own width, so the layout is changed here alone.
+ */
+.analytics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 32px;
+}
+
+/* Filters, the big chart and Live below it take the whole row */
+.analytics > .panel {
+  grid-column: 1 / -1;
+}
+
+.analytics > .half {
+  grid-column: span 3;
+}
+
+.chart-narrow > .main {
+  grid-column: span 4;
+}
+
+.chart-narrow > .live {
+  grid-column: span 2;
+}
+
+/* Switches the chart between big and small, with Live beside it */
+.size {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--elevated-background-color);
+  color: var(--secondary-text-color);
+  cursor: pointer;
+}
+
+.size:hover {
+  border-color: var(--hover-border-color);
+  color: var(--text-color);
+}
+
+/* Too narrow for side by side: everything stacks, so there's nothing for the size button to change */
+@media (max-width: 1000px) {
+  .analytics > .half,
+  .chart-narrow > .main,
+  .chart-narrow > .live {
+    grid-column: 1 / -1;
+  }
+
+  .size {
+    display: none;
+  }
+}
+
+/* A card around analytics widgets; the overview's tabs reach its edges through these variables */
+.panel {
+  --panel-padding: 24px;
+  --panel-padding-top: 20px;
+  --panel-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: var(--panel-padding-top) var(--panel-padding) 24px;
+  border-radius: var(--panel-radius);
+  /* The colour only, so a widget can add its own tint on top, as Live does */
+  background-color: var(--elevated-background-color);
+  box-shadow: var(--card-shadow);
+}
+
+@media (max-width: 640px) {
+  .panel {
+    --panel-padding: 16px;
+    --panel-padding-top: 16px;
+    padding-bottom: 16px;
   }
 }

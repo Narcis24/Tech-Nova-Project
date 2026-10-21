@@ -14,7 +14,6 @@ import java.util.List;
  *   "asOf": "2026-10-20T18:30:00Z",
  *   "ordersToday": 37,
  *   "ordersLastHour": 6,
- *   "openOrders": 4,
  *   "hourly": [
  *     { "start": "2026-10-16T13:00:00Z", "orders": 3, "future": false },
  *     ... 7 market hours (9:00 to 15:00) for each of the last 3 trading days
@@ -31,8 +30,6 @@ public record AdminLiveResponse(
     // Since midnight in New York, whatever happened to them
     @Schema(requiredMode = RequiredMode.REQUIRED) long ordersToday,
     @Schema(requiredMode = RequiredMode.REQUIRED) long ordersLastHour,
-    // PENDING or PUBLISHED now, whenever placed, so limit orders waiting since an earlier day count
-    @Schema(requiredMode = RequiredMode.REQUIRED) long openOrders,
     // Market hours of the last 3 trading days, oldest first; weekends are skipped
     @Schema(requiredMode = RequiredMode.REQUIRED) List<LiveHour> hourly,
     // Most orders first, at most 3

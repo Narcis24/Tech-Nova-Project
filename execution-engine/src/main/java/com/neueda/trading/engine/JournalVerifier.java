@@ -1,5 +1,6 @@
 package com.neueda.trading.engine;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -48,7 +49,7 @@ public class JournalVerifier {
         return thread;
     });
 
-    VerifyResult verify(String day, Path journal) throws Exception {
+    VerifyResult verify(String day, Path journal) throws IOException, TimeoutException, InterruptedException {
         if (!oneAtATime.tryAcquire()) {
             throw new BusyException();
         }
@@ -70,14 +71,22 @@ public class JournalVerifier {
         }
     }
 
-    private static Replay.Result waitFor(Future<Replay.Result> run) throws Exception {
+    private static Replay.Result waitFor(Future<Replay.Result> run)
+            throws IOException, TimeoutException, InterruptedException {
         try {
             return run.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
             run.cancel(true);
             throw e;
         } catch (ExecutionException e) {
-            throw e.getCause() instanceof Exception cause ? cause : e;
+            Throwable cause = e.getCause();
+            if (cause instanceof IOException io) {
+                throw io;
+            }
+            if (cause instanceof RuntimeException runtime) {
+                throw runtime;
+            }
+            throw new IllegalStateException("The replay failed", cause);
         }
     }
 
