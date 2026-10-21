@@ -2,6 +2,7 @@ export * from './accountPieResponse';
 export * from './accountResponse';
 export * from './adminAnalyticsResponse';
 export * from './adminLiveResponse';
+export * from './adminAccountResponse';
 export * from './adminUserResponse';
 export * from './analyticsBucket';
 export * from './analyticsTotals';
