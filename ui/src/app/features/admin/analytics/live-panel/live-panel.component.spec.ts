@@ -21,7 +21,6 @@ function live(ordersToday = 18): AdminLiveResponse {
     asOf: '2026-10-20T14:50:00Z', // Tuesday, 10:50 in New York
     ordersToday,
     ordersLastHour: 6,
-    openOrders: 4,
     hourly: [
       ...day('2026-10-16', [3, 5, 8, 4, 6, 9, 7]),
       ...day('2026-10-19', [2, 9, 3, 6, 8, 3, 8]),
