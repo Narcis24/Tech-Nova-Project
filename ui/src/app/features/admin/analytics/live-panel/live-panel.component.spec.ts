@@ -85,7 +85,8 @@ describe('LivePanelComponent', () => {
 
     expect(liveApi).toHaveBeenCalledOnceWith('ETF', undefined, undefined, 'alice');
     expect(text(page)).toContain('18 orders today');
-    expect(text(page)).toContain('6 in the last hour · 4 open right now');
+    expect(text(page)).toContain('6 in the last hour');
+    expect(text(page)).not.toContain('open right now');
     expect(text(page)).toContain('Updated 10:50');
     discardPeriodicTasks();
   }));

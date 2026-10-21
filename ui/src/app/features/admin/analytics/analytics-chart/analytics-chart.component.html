@@ -97,6 +97,18 @@
           <path class="previous" [attr.d]="path" />
         }
       } @else {
+        <!-- Under each line, its colour fading to nothing at the zero line -->
+        <defs>
+          @for (line of lines(); track line.key) {
+            <linearGradient [attr.id]="line.gradientId" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" [style.stop-color]="line.color" [attr.stop-opacity]="fadeOpacity()" />
+              <stop offset="1" [style.stop-color]="line.color" stop-opacity="0" />
+            </linearGradient>
+          }
+        </defs>
+        @for (line of lines(); track line.key) {
+          <path class="area" [attr.d]="line.area" [attr.fill]="'url(#' + line.gradientId + ')'" />
+        }
         @if (previousPath(); as path) {
           <path class="previous" [attr.d]="path" />
         }

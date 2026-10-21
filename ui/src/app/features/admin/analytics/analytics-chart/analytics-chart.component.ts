@@ -43,6 +43,9 @@ const PAD = { top: 12, right: 12, bottom: 28, left: 60 };
 const BAR_FILL = 0.7;
 const MAX_BAR_WIDTH = 28;
 
+// Gives each chart its own gradient ids, since ids are shared by the whole page
+let nextChartId = 0;
+
 const NY = 'America/New_York';
 const LABELS = {
   HOUR: new Intl.DateTimeFormat('en-US', { timeZone: NY, hour: 'numeric' }),
@@ -73,6 +76,7 @@ export class AnalyticsChartComponent {
   readonly hovered = signal<number | null>(null);
   readonly height = HEIGHT;
   readonly pad = PAD;
+  private readonly chartId = nextChartId++;
 
   // Drawn at its real width, so text and dots aren't stretched
   readonly width = signal(640);
@@ -150,6 +154,8 @@ export class AnalyticsChartComponent {
       return {
         ...series,
         path: this.path(series.values),
+        area: this.area(series.values),
+        gradientId: `analytics-fade-${this.chartId}-${series.key}`,
         end: last === null ? null : { x: this.x(last), y: this.y(series.values[last] ?? 0) },
       };
     }),
@@ -182,6 +188,9 @@ export class AnalyticsChartComponent {
       }),
     }));
   });
+
+  // The fill under the lines starts this strong under the line; fainter when several lines overlap
+  readonly fadeOpacity = computed(() => (this.split() === 'total' ? 0.28 : 0.14));
 
   readonly previousPath = computed(() => {
     const previous = this.previous();
@@ -285,6 +294,24 @@ export class AnalyticsChartComponent {
       penDown = true;
     });
     return path.trim();
+  }
+
+  // The shape under each unbroken run of the line, down to the zero line; a lone point has none
+  private area(values: (number | null)[]): string {
+    const runs: number[][] = [[]];
+    values.forEach((value, index) => (value === null ? runs.push([]) : runs[runs.length - 1].push(index)));
+    const base = this.y(0).toFixed(1);
+    return runs
+      .filter((run) => run.length > 1)
+      .map((run) => {
+        const top = run.map(
+          (index, i) => `${i ? 'L' : 'M'}${this.x(index).toFixed(1)} ${this.y(values[index] ?? 0).toFixed(1)}`,
+        );
+        const first = this.x(run[0]).toFixed(1);
+        const last = this.x(run[run.length - 1]).toFixed(1);
+        return `${top.join(' ')} L${last} ${base} L${first} ${base} Z`;
+      })
+      .join(' ');
   }
 
   private shortLabel(start: string): string {

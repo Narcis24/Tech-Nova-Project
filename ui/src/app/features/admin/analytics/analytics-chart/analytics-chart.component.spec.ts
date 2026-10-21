@@ -81,6 +81,19 @@ describe('AnalyticsChartComponent', () => {
     expect(legend(page)).toEqual(['Traded value', 'Previous period']);
   });
 
+  it('fills under the line with its colour, fading out at the zero line', () => {
+    const page = create();
+    const area = page.querySelector('.area') as SVGPathElement;
+    const stops = Array.from(page.querySelectorAll<SVGStopElement>('linearGradient stop'));
+
+    // One shape over Fri, Mon and Tue, closed along the zero line
+    expect(area.getAttribute('d')?.match(/[ML]/g)).toHaveSize(5);
+    expect(area.getAttribute('d')).toMatch(/Z$/);
+    expect(area.getAttribute('fill')).toBe(`url(#${page.querySelector('linearGradient')?.id})`);
+    expect(stops.map((stop) => stop.getAttribute('stop-opacity'))).toEqual(['0.28', '0']);
+    expect(stops[0].style.stopColor).toBe('var(--metric-traded-value-color)');
+  });
+
   it('splits by asset class, leaving out classes with nothing in them', () => {
     const page = create();
     clickSplit(page, 'Asset class');

@@ -30,8 +30,8 @@ const TIME = new Intl.DateTimeFormat('en-US', { timeZone: NY, hour: 'numeric', m
 
 /**
  * What's happening right now, YouTube Studio's "Realtime" for trading: orders today and in the last
- * hour, open orders, orders per market hour over the last three trading days, and the most ordered
- * instruments today. Uses the card's filters but not its period, refreshes every minute, and pauses
+ * hour, orders per market hour over the last three trading days, and the most ordered instruments
+ * today. Uses the card's filters but not its period, refreshes every minute, and pauses
  * while the browser tab is hidden. Needs an AnalyticsStore provided above it.
  */
 @Component({
