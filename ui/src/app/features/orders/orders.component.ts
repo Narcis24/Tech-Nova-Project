@@ -12,6 +12,7 @@ import {
   OrderResponse,
 } from '../../generated/trading-api-client';
 import { AccountService } from '../../services/account.service';
+import { SymbolIconComponent } from '../../components/symbol-icon/symbol-icon.component';
 
 type Filter = 'ALL' | 'OPEN' | 'FILLED' | 'CANCELLED' | 'REJECTED';
 
@@ -39,7 +40,7 @@ const REFRESH_MS = 5000;
 /** The selected account's order history: totals, filters, orders grouped by day, and cancelling open orders. */
 @Component({
   selector: 'app-orders',
-  imports: [CurrencyPipe, DatePipe, DecimalPipe, TitleCasePipe, RouterLink],
+  imports: [CurrencyPipe, DatePipe, DecimalPipe, TitleCasePipe, RouterLink, SymbolIconComponent],
   templateUrl: './orders.component.html',
   styleUrl: './orders.component.css',
 })

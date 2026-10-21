@@ -77,7 +77,7 @@
           <li class="order" [class.sell]="order.side === 'SELL'">
             <span class="side">{{ order.side | titlecase }}</span>
             <a class="instrument" [routerLink]="['/orders', order.orderId]">
-              <span class="symbol">{{ order.symbol }}</span>
+              <span class="symbol"><app-symbol-icon [symbol]="order.symbol" />{{ order.symbol }}</span>
               <span class="name">{{ names()[order.symbol ?? ''] }}</span>
             </a>
             <span class="detail">{{ order.quantity | number }} shares · {{ order.orderType | titlecase }}</span>

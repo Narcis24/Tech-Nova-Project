@@ -2,9 +2,10 @@ import { CurrencyPipe, DecimalPipe, PercentPipe, TitleCasePipe } from '@angular/
 import { Component, input, output } from '@angular/core';
 import { PositionResponse } from '../../generated/trading-api-client';
 import { ActionButtonsComponent } from './action-buttons.component';
+import { SymbolIconComponent } from '../../components/symbol-icon/symbol-icon.component';
 @Component({
   selector: 'app-position-card',
-  imports: [CurrencyPipe, DecimalPipe, PercentPipe, TitleCasePipe, ActionButtonsComponent],
+  imports: [CurrencyPipe, DecimalPipe, PercentPipe, TitleCasePipe, ActionButtonsComponent, SymbolIconComponent],
   templateUrl: './position-card.component.html',
   styleUrl: './position-card.component.css',
 })
