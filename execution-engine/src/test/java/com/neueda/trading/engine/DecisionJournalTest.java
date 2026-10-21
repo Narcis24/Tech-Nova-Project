@@ -74,4 +74,40 @@ class DecisionJournalTest {
 
         assertDoesNotThrow(() -> journal.record(Instant.parse("2026-10-14T15:00:00Z"), "ENGINE_STARTED", Map.of()));
     }
+
+    @Test
+    void eachLineIsInTheFileAsSoonAsItIsRecorded() throws Exception {
+        DecisionJournal journal = new DecisionJournal(mapper, dir.toString(), true);
+
+        journal.record(Instant.parse("2026-10-14T15:00:00Z"), "ENGINE_STARTED", Map.of());
+
+        // no close(): the line was flushed, so a crash right now would not lose it
+        assertEquals(1, lines("2026-10-14").size());
+    }
+
+    @Test
+    void aRestartAppendsToTodaysFileInsteadOfReplacingIt() throws Exception {
+        DecisionJournal before = new DecisionJournal(mapper, dir.toString(), true);
+        before.record(Instant.parse("2026-10-14T15:00:00Z"), "ENGINE_STARTED", Map.of());
+        before.close();
+
+        DecisionJournal after = new DecisionJournal(mapper, dir.toString(), true);
+        after.record(Instant.parse("2026-10-14T15:05:00Z"), "ENGINE_STARTED", Map.of());
+
+        assertEquals(2, lines("2026-10-14").size());
+    }
+
+    @Test
+    void movesToTheNextDaysFileAtMidnightAndKeepsWriting() throws Exception {
+        DecisionJournal journal = new DecisionJournal(mapper, dir.toString(), true);
+
+        for (int i = 0; i < 3; i++) {
+            journal.record(Instant.parse("2026-10-14T23:59:5" + i + "Z"), "DECISION", Map.of("decision", "WAIT"));
+        }
+        journal.record(Instant.parse("2026-10-15T00:00:01Z"), "DECISION", Map.of("decision", "WAIT"));
+        journal.record(Instant.parse("2026-10-15T00:00:02Z"), "DECISION", Map.of("decision", "WAIT"));
+
+        assertEquals(3, lines("2026-10-14").size());
+        assertEquals(2, lines("2026-10-15").size());
+    }
 }

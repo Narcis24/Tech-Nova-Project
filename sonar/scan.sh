@@ -18,7 +18,7 @@ for m in app execution-engine; do
 done
 
 # auth needs its coverage report first; the local Node may be too old, so use a Node 24 container
-docker run --rm -u "$(id -u):$(id -g)" -e npm_config_cache=/tmp/.npm -v "$PWD/auth":/app -w /app \
+docker run --rm --memory 1g -u "$(id -u):$(id -g)" -e npm_config_cache=/tmp/.npm -v "$PWD/auth":/app -w /app \
     node:24-alpine sh -c "npm ci && npm run test:cov" || failed+=("auth tests")
 
 # UI coverage is produced by npm run test:ci before scanning (Jenkins: UI Checks).
@@ -30,7 +30,7 @@ fi
 # auth / data-pipeline / ui: settings in their sonar-project.properties; the image's own
 # /tmp/.scannerwork is writable only by its uid 1000, so use a fresh work dir
 for m in auth data-pipeline ui; do
-    docker run --rm --network host -u "$(id -u):$(id -g)" -e SONAR_HOST_URL="$HOST" -e SONAR_TOKEN \
+    docker run --rm --memory 1g --network host -u "$(id -u):$(id -g)" -e SONAR_HOST_URL="$HOST" -e SONAR_TOKEN \
         -e SONAR_USER_HOME=/tmp/.sonar -e SCANNER_WORKDIR_PATH=/tmp/scannerwork -v "$PWD/$m":/usr/src \
         sonarsource/sonar-scanner-cli -Dsonar.qualitygate.wait=true || failed+=("$m")
 done

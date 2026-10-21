@@ -10,7 +10,7 @@
 
 
 export interface UpdateRolesRequest { 
-    roles: Set<UpdateRolesRequest.RolesEnum>;
+    roles: Array<UpdateRolesRequest.RolesEnum>;
 }
 export namespace UpdateRolesRequest {
     export const RolesEnum = {

@@ -31,7 +31,7 @@ class GoldenJournalTest {
             Replay.Result result = new Replay(
                 JsonMapper.builder().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS).build()).run(journal);
             assertTrue(result.matches(), () -> result.differences().size() + " decision(s) changed in "
-                + journal.getFileName() + ":\n  " + String.join("\n  ", result.differences()));
+                + journal.getFileName() + ":\n  " + String.join("\n  ", result.differences().stream().map(Object::toString).toList()));
         }));
     }
 

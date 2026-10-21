@@ -11,7 +11,7 @@
     "fetch:trading-spec": "curl --fail --silent --show-error http://localhost:8081/api/v3/api-docs --output ../contracts/trading-api.json",
     "fetch:auth-spec": "curl --fail --silent --show-error http://localhost:8082/auth/docs-json --output ../contracts/auth-api.json",
     "fetch:specs": "npm run fetch:trading-spec && npm run fetch:auth-spec",
-    "generate:trading-client": "openapi-generator-cli generate -i ../contracts/trading-api.json -g typescript-angular -o src/app/generated/trading-api-client --additional-properties=ngVersion=19.2.0,providedInRoot=true",
+    "generate:trading-client": "openapi-generator-cli generate -i ../contracts/trading-api.json -g typescript-angular -o src/app/generated/trading-api-client --additional-properties=ngVersion=19.2.0,providedInRoot=true --type-mappings=set=Array",
     "generate:auth-client": "openapi-generator-cli generate -i ../contracts/auth-api.json -g typescript-angular -o src/app/generated/auth-api-client --additional-properties=ngVersion=19.2.0,providedInRoot=true,serviceSuffix=Api",
     "generate:clients": "npm run generate:trading-client && npm run generate:auth-client",
     "lint": "eslint src e2e --max-warnings=0",

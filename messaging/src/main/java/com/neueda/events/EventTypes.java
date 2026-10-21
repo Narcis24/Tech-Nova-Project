@@ -2,6 +2,8 @@ package com.neueda.events;
 
 public final class EventTypes {
     public static final String ORDER_PLACED = "ORDER_PLACED";
+    // App -> engine on order-request, keyed by order id like ORDER_PLACED, so it always arrives after it
+    public static final String ORDER_CANCELLED = "ORDER_CANCELLED";
     public static final String ORDER_EXECUTED = "ORDER_EXECUTED";
     public static final String ORDER_REJECTED = "ORDER_REJECTED";
     // The execution engine has (re)started and holds no waiting orders; the app sends them again

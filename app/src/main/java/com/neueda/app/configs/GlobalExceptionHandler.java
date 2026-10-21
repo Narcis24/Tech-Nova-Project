@@ -16,6 +16,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 
 import com.neueda.app.dtos.ErrorResponse;
+import com.neueda.app.exceptions.JournalException;
 import com.neueda.app.exceptions.AccountAccessDeniedException;
 import com.neueda.app.exceptions.AccountNotActiveException;
 import com.neueda.app.exceptions.AccountNotFoundException;
@@ -308,6 +309,19 @@ public class GlobalExceptionHandler {
      * @param ex the IllegalArgumentException thrown from the service layer
      * @return ResponseEntity containing ErrorResponse with 400 status
      */
+    /**
+     * Handles JournalException when the admin journal page cannot be served (engine down, unknown day,
+     * replay busy); the exception carries the status and code.
+     *
+     * @param ex the JournalException thrown by EngineClient
+     * @return ResponseEntity containing ErrorResponse with the exception's status
+     */
+    @ExceptionHandler(JournalException.class)
+    public ResponseEntity<ErrorResponse> handleJournal(JournalException ex) {
+        ErrorResponse error = new ErrorResponse(ex.getErrorCode(), ex.getMessage(), ex.getStatus().value());
+        return ResponseEntity.status(ex.getStatus()).body(error);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
         ErrorResponse error = new ErrorResponse("INVALID_ARGUMENT", ex.getMessage(), 400);

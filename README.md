@@ -174,7 +174,26 @@ docker cp tech-nova-project-execution-engine-1:/data/journal/2026-10-19.jsonl .
 mvn -q -pl execution-engine exec:java -Dexec.args=2026-10-19.jsonl
 ```
 
-Journals can also be gzipped (`.jsonl.gz`); the replay reads both.
+Journals can also be gzipped (`.jsonl.gz`); the replay reads both. It also takes several files or
+folders (every journal in a folder) and `--report <file>`, which saves every difference with the order
+and the last quote behind it as JSON:
+
+```bash
+mvn -q -pl execution-engine exec:java \
+  -Dexec.args="--report shadow-report.json execution-engine/src/test/resources/journals"
+```
+
+### Journal page for admins
+
+Admins can explore the journals in the UI under **Journal** (`/admin/journal`): pick a day, see its
+totals and reject reasons, open any order's timeline with the quote behind each decision, download the
+day gzipped, or **Verify this day** (a replay with the running engine). The page goes through the app
+(`/api/v1/admin/journal/**`, ADMIN only) to the engine's internal API, which only answers with the
+shared `INTERNAL_API_TOKEN` from `.env` (generate one with `openssl rand -hex 32`). Without it the page
+says the journal is unavailable.
+
+For a local admin login, set `TEST_ADMIN_PASSWORD` in `.env` before creating the database (user
+`test_admin`).
 
 ### Golden journals
 
@@ -238,6 +257,13 @@ SonarQube needs about 2 GB of memory; stop it when you are done:
 ## CI (Jenkins)
 
 The `Jenkinsfile` runs, in order: GitLeaks secret scan, image builds, UI checks, Java and auth
-unit tests, a data-pipeline smoke test, the e2e tests, SonarQube and a Trivy vulnerability scan
-of every image. Jenkins needs a "Secret text" credential `sonar-token`. A full run is heavy; on a
-small VM run the stages above by hand instead.
+unit tests, the shadow gate, a data-pipeline smoke test, the e2e tests, SonarQube and a Trivy
+vulnerability scan of every image. Jenkins needs a "Secret text" credential `sonar-token`. A full run
+is heavy; on a small VM run the stages above by hand instead.
+
+**Shadow gate** (only on `develop` and `sprint-*`, the branches that get released): the candidate
+engine replays the golden journals and any real days kept on the Jenkins machine in
+`/var/lib/jenkins/shadow-journals` (not in git). One changed decision fails the build. The report,
+`execution-engine/target/shadow-gate/report.json`, is archived with every build; open it from the
+build page to see each changed decision with its order and quote. It needs no running services and
+takes a few seconds.

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.neueda.events.EventTypes;
+import com.neueda.events.OrderCancelledEvent;
 import com.neueda.events.OrderPlacedEvent;
 import com.neueda.events.Topics;
 import com.neueda.app.dtos.OrderResponse;
@@ -94,6 +95,15 @@ public class OrderService {
             throw new InvalidOrderStateException(
                 "Operation not allowed. Only PENDING orders can be modified. Order is " + order.getStatus());
         }
+        // Tell the engine, or it keeps waiting on the order and may later decide to fill it.
+        // Same key as ORDER_PLACED, so Kafka delivers the cancel after the order itself.
+        eventProducerService.publishEvent(
+            Topics.ORDER_REQUEST,
+            orderId.toString(),
+            EventTypes.ORDER_CANCELLED,
+            "OrderService",
+            new OrderCancelledEvent(orderId)
+        );
         events.publishEvent(new OrderResolved(orderId, OrderStatus.CANCELLED));
         return new OrderResponse(order);
     }
