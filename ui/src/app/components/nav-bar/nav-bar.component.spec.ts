@@ -85,7 +85,7 @@ describe('NavBarComponent', () => {
       isAdmin.set(true);
       fixture.detectChanges();
 
-      expect(tabs()).toEqual(['Overview', 'Users']);
+      expect(tabs()).toEqual(['Overview', 'Users', 'Journal']);
     });
 
     it('marks only Users as current on /admin/users, not Overview too', async () => {
