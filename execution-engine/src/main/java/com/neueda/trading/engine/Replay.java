@@ -59,6 +59,7 @@ public final class Replay {
     private static final String QUOTE = "quote";
     private static final String PRICE = "price";
     private static final String REASON = "reason";
+    private static final String QUANTITY = "quantity";
 
     /** One decision; seq is the journal line it was recorded on (0 for a replayed one). */
     record Decision(long seq, String orderId, String decision, BigDecimal price, String reason) {
@@ -81,6 +82,26 @@ public final class Replay {
     /** A recorded decision that came out differently, with the order and the last quote for its symbol before it. */
     record Difference(long seq, Decision recorded, Decision replayed, JsonNode order, JsonNode lastQuote) {
 
+        /**
+         * What a changed fill price is worth: the price difference times the shares, positive when the replayed
+         * engine gives money away (a buy filled cheaper or a sell dearer than recorded), negative when customers
+         * would pay more. Null unless both decisions are fills at a price and the order is known.
+         */
+        BigDecimal priceImpact() {
+            if (!isFill(recorded) || !isFill(replayed) || order == null || !order.path(QUANTITY).isNumber()) {
+                return null;
+            }
+            BigDecimal perShare = recorded.price().subtract(replayed.price());
+            if ("SELL".equals(order.path("side").asString())) {
+                perShare = perShare.negate();
+            }
+            return perShare.multiply(BigDecimal.valueOf(order.path(QUANTITY).asLong()));
+        }
+
+        private static boolean isFill(Decision decision) {
+            return decision != null && JournalTypes.FILL.equals(decision.decision()) && decision.price() != null;
+        }
+
         @Override
         public String toString() {
             String where = recorded != null ? "seq " + seq : "not recorded";
@@ -94,6 +115,26 @@ public final class Replay {
         boolean matches() {
             return differences.isEmpty();
         }
+
+        /** The changed fills' price impacts: given away (positive), charged (negative) and how many fills. */
+        PriceImpact priceImpact() {
+            BigDecimal givenAway = BigDecimal.ZERO;
+            BigDecimal charged = BigDecimal.ZERO;
+            int fills = 0;
+            for (Difference difference : differences) {
+                BigDecimal impact = difference.priceImpact();
+                if (impact != null) {
+                    fills++;
+                    givenAway = impact.signum() > 0 ? givenAway.add(impact) : givenAway;
+                    charged = impact.signum() < 0 ? charged.add(impact.negate()) : charged;
+                }
+            }
+            return new PriceImpact(fills, givenAway, charged);
+        }
+    }
+
+    /** Money at stake in fills whose price changed: what customers would gain (givenAway) or pay (charged). */
+    record PriceImpact(int fills, BigDecimal givenAway, BigDecimal charged) {
     }
 
     private final ObjectMapper mapper;
@@ -146,6 +187,7 @@ public final class Replay {
                 entry.put("orders", result.orders());
                 entry.put("quotes", result.quotes());
                 entry.put("decisions", result.recorded().size());
+                entry.put("priceImpact", result.priceImpact());
                 entry.put("differences", result.differences().stream().map(Replay::reportEntry).toList());
             } catch (IOException | JacksonException | IllegalArgumentException e) {
                 out.println("Could not replay " + journal + ": " + e.getMessage());
@@ -189,6 +231,7 @@ public final class Replay {
         entry.put("replayed", d.replayed() != null ? d.replayed().toString() : null);
         entry.put(ORDER, d.order());
         entry.put("lastQuote", d.lastQuote());
+        entry.put("priceImpact", d.priceImpact());
         return entry;
     }
 
@@ -356,6 +399,11 @@ public final class Replay {
         }
         out.println("  " + result.differences().size() + " difference(s):");
         result.differences().forEach(d -> out.println("    " + d));
+        PriceImpact impact = result.priceImpact();
+        if (impact.fills() > 0) {
+            out.printf("  price impact of %,d changed fill(s): $%,.2f given away to customers, $%,.2f more charged%n",
+                impact.fills(), impact.givenAway(), impact.charged());
+        }
     }
 
     /** The engine's sender during a replay: decisions are collected by the journal, nothing is sent. */
