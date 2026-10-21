@@ -290,6 +290,17 @@ public final class Replay {
             }
             return engine;
         }
+
+        private ExecutionEngine freshEngine(JsonNode line) {
+            int maxQuoteAge = line.has("maxQuoteAgeSeconds")
+                ? line.get("maxQuoteAgeSeconds").asInt() : DEFAULT_MAX_QUOTE_AGE_SECONDS;
+            boolean enforceHours = line.has("enforceMarketHours")
+                ? line.get("enforceMarketHours").asBoolean() : DEFAULT_ENFORCE_MARKET_HOURS;
+            MarketDataProperties props = new MarketDataProperties(
+                List.of("REPLAY"), 120, 25, 2000, maxQuoteAge, "http://replay", "", "");
+            return new ExecutionEngine(mapper, new SilentProducer(mapper), new QuoteCache(), props,
+                new CollectingJournal(mapper, replayed), clock, enforceHours);
+        }
     }
 
     /** The journal's lines; a {@code .gz} journal is unzipped while it is read. */
@@ -301,17 +312,6 @@ public final class Replay {
                 new GZIPInputStream(Files.newInputStream(journal)), StandardCharsets.UTF_8))) {
             return reader.lines().toList();
         }
-    }
-
-    private ExecutionEngine freshEngine(JsonNode line) {
-        int maxQuoteAge = line.has("maxQuoteAgeSeconds")
-            ? line.get("maxQuoteAgeSeconds").asInt() : DEFAULT_MAX_QUOTE_AGE_SECONDS;
-        boolean enforceHours = line.has("enforceMarketHours")
-            ? line.get("enforceMarketHours").asBoolean() : DEFAULT_ENFORCE_MARKET_HOURS;
-        MarketDataProperties props = new MarketDataProperties(
-            List.of("REPLAY"), 120, 25, 2000, maxQuoteAge, "http://replay", "", "");
-        return new ExecutionEngine(mapper, new SilentProducer(mapper), new QuoteCache(), props,
-            new CollectingJournal(mapper, replayed), clock, enforceHours);
     }
 
     /**
