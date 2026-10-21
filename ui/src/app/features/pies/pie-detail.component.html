@@ -1,0 +1,54 @@
+<a class="back" routerLink="/pies">Back to pies</a>
+
+@if (loading()) {
+  <output class="empty">Loading your pie…</output>
+} @else if (loadError()) {
+  <p class="error" role="alert">Couldn't load this pie.</p>
+} @else if (pie(); as pie) {
+  <div class="top">
+    <h1>{{ pie.name }}</h1>
+    <a class="edit" [routerLink]="['/pies', pie.pieId, 'edit']">Edit</a>
+  </div>
+  @if (pie.description) {
+    <p class="description">{{ pie.description }}</p>
+  }
+
+  <section class="panel publishing" aria-labelledby="publishing-heading">
+    <div class="status">
+      <h2 id="publishing-heading">{{ published() ? 'Public' : 'Private' }}</h2>
+      @if (published()) {
+        <p>On Discover since {{ pie.publishedAt | date: 'mediumDate' }}.</p>
+        <a [routerLink]="['/discover', pie.pieId]">View public page</a>
+      } @else {
+        <p>Publish to show this pie's stocks and weights on Discover. Your accounts and balances stay private.</p>
+      }
+    </div>
+    <button type="button" [class.secondary]="published()" [disabled]="working()" (click)="togglePublished()">
+      {{ published() ? 'Unpublish' : 'Publish' }}
+    </button>
+  </section>
+  @if (actionError()) {
+    <p class="error" role="alert">{{ actionError() }}</p>
+  }
+
+  <section class="panel holdings" aria-labelledby="holdings-heading">
+    <app-donut-chart [segments]="segments()" [size]="140" />
+    <div class="list">
+      <h2 id="holdings-heading">Slices</h2>
+      <ul>
+        @for (slice of pie.slices; track slice.symbol) {
+          <li>
+            <span class="symbol"><app-symbol-icon [symbol]="slice.symbol" />{{ slice.symbol }}</span>
+            <span class="name">{{ slice.name }}</span>
+            <span class="weight">{{ slice.weightPct | number: '1.0-2' }}%</span>
+          </li>
+        }
+        <li class="cash">
+          <span class="symbol">Cash</span>
+          <span class="name"></span>
+          <span class="weight">{{ pie.cashPct | number: '1.0-2' }}%</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+}

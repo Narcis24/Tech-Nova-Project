@@ -13,9 +13,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -51,17 +49,17 @@ import com.neueda.events.OrderPlacedEvent;
  */
 public final class Replay {
 
-    // journal and report field names
-    private static final String ORDER_ID = "orderId";
-    private static final String ORDER = "order";
-    private static final String QUOTE = "quote";
-    private static final String PRICE = "price";
-    private static final String REASON = "reason";
-    private static final Pattern JOURNAL_FILE = Pattern.compile(".*\\.jsonl(\\.gz)?");
-
     // Defaults for journals written before ENGINE_STARTED carried the settings
     private static final int DEFAULT_MAX_QUOTE_AGE_SECONDS = 600;
     private static final boolean DEFAULT_ENFORCE_MARKET_HOURS = true;
+    private static final Pattern JOURNAL_FILE = Pattern.compile(".*\\.jsonl(\\.gz)?");
+    // Field names in a journal line
+    private static final String ORDER = "order";
+    private static final String ORDER_ID = "orderId";
+    private static final String QUOTE = "quote";
+    private static final String PRICE = "price";
+    private static final String REASON = "reason";
+    private static final String QUANTITY = "quantity";
 
     /** One decision; seq is the journal line it was recorded on (0 for a replayed one). */
     record Decision(long seq, String orderId, String decision, BigDecimal price, String reason) {
@@ -84,6 +82,26 @@ public final class Replay {
     /** A recorded decision that came out differently, with the order and the last quote for its symbol before it. */
     record Difference(long seq, Decision recorded, Decision replayed, JsonNode order, JsonNode lastQuote) {
 
+        /**
+         * What a changed fill price is worth: the price difference times the shares, positive when the replayed
+         * engine gives money away (a buy filled cheaper or a sell dearer than recorded), negative when customers
+         * would pay more. Null unless both decisions are fills at a price and the order is known.
+         */
+        BigDecimal priceImpact() {
+            if (!isFill(recorded) || !isFill(replayed) || order == null || !order.path(QUANTITY).isNumber()) {
+                return null;
+            }
+            BigDecimal perShare = recorded.price().subtract(replayed.price());
+            if ("SELL".equals(order.path("side").asString())) {
+                perShare = perShare.negate();
+            }
+            return perShare.multiply(BigDecimal.valueOf(order.path(QUANTITY).asLong()));
+        }
+
+        private static boolean isFill(Decision decision) {
+            return decision != null && JournalTypes.FILL.equals(decision.decision()) && decision.price() != null;
+        }
+
         @Override
         public String toString() {
             String where = recorded != null ? "seq " + seq : "not recorded";
@@ -97,6 +115,26 @@ public final class Replay {
         boolean matches() {
             return differences.isEmpty();
         }
+
+        /** The changed fills' price impacts: given away (positive), charged (negative) and how many fills. */
+        PriceImpact priceImpact() {
+            BigDecimal givenAway = BigDecimal.ZERO;
+            BigDecimal charged = BigDecimal.ZERO;
+            int fills = 0;
+            for (Difference difference : differences) {
+                BigDecimal impact = difference.priceImpact();
+                if (impact != null) {
+                    fills++;
+                    givenAway = impact.signum() > 0 ? givenAway.add(impact) : givenAway;
+                    charged = impact.signum() < 0 ? charged.add(impact.negate()) : charged;
+                }
+            }
+            return new PriceImpact(fills, givenAway, charged);
+        }
+    }
+
+    /** Money at stake in fills whose price changed: what customers would gain (givenAway) or pay (charged). */
+    record PriceImpact(int fills, BigDecimal givenAway, BigDecimal charged) {
     }
 
     private final ObjectMapper mapper;
@@ -107,7 +145,7 @@ public final class Replay {
         this.mapper = mapper;
     }
 
-    // A command-line tool: the console is its output, and execute() turns logging down to warnings
+    // A command-line tool: what it prints is its result, not a log
     @SuppressWarnings("java:S106")
     public static void main(String[] args) {
         System.exit(execute(args, System.out));
@@ -117,13 +155,14 @@ public final class Replay {
     static int execute(String[] args, PrintStream out) {
         Path report = null;
         List<Path> inputs = new ArrayList<>();
-        Iterator<String> arg = Arrays.asList(args).iterator();
-        while (arg.hasNext()) {
-            String next = arg.next();
-            if ("--report".equals(next) && arg.hasNext()) {
-                report = Path.of(arg.next());
+        int i = 0;
+        while (i < args.length) {
+            if ("--report".equals(args[i]) && i + 1 < args.length) {
+                report = Path.of(args[i + 1]);
+                i += 2;
             } else {
-                inputs.add(Path.of(next));
+                inputs.add(Path.of(args[i]));
+                i++;
             }
         }
         if (inputs.isEmpty()) {
@@ -148,6 +187,7 @@ public final class Replay {
                 entry.put("orders", result.orders());
                 entry.put("quotes", result.quotes());
                 entry.put("decisions", result.recorded().size());
+                entry.put("priceImpact", result.priceImpact());
                 entry.put("differences", result.differences().stream().map(Replay::reportEntry).toList());
             } catch (IOException | JacksonException | IllegalArgumentException e) {
                 out.println("Could not replay " + journal + ": " + e.getMessage());
@@ -175,8 +215,7 @@ public final class Replay {
                 continue;
             }
             try (Stream<Path> files = Files.list(input)) {
-                files.filter(f -> JOURNAL_FILE.matcher(f.getFileName().toString()).matches())
-                    .sorted().forEach(journals::add);
+                files.filter(f -> JOURNAL_FILE.matcher(f.getFileName().toString()).matches()).sorted().forEach(journals::add);
             } catch (IOException e) {
                 out.println("Could not list " + input + ": " + e.getMessage());
             }
@@ -192,6 +231,7 @@ public final class Replay {
         entry.put("replayed", d.replayed() != null ? d.replayed().toString() : null);
         entry.put(ORDER, d.order());
         entry.put("lastQuote", d.lastQuote());
+        entry.put("priceImpact", d.priceImpact());
         return entry;
     }
 
@@ -223,11 +263,10 @@ public final class Replay {
         if (run.runs == 0 && run.orders == 0 && run.quotes == 0) {
             throw new IllegalArgumentException("the journal has no engine runs, orders or quotes");
         }
-        return new Result(run.runs, run.orders, run.quotes, run.recorded,
-            compare(run.recorded, run.context, replayed));
+        return new Result(run.runs, run.orders, run.quotes, run.recorded, compare(run.recorded, run.context, replayed));
     }
 
-    /** Feeds one journal's lines to the engine, keeping what the recorded run decided. */
+    /** One journal's replay, line by line: feeds the engine and keeps the recorded decisions to compare. */
     private final class JournalRun {
 
         private final List<Decision> recorded = new ArrayList<>();
@@ -248,42 +287,23 @@ public final class Replay {
                     engine = freshEngine(line);
                     runs++;
                 }
-                case JournalTypes.ORDER_RECEIVED -> orderReceived(line);
-                case JournalTypes.QUOTE_RECEIVED -> quoteReceived(line);
+                case JournalTypes.ORDER_RECEIVED -> {
+                    engine(line).handle(mapper.treeToValue(line.get(ORDER), OrderPlacedEvent.class));
+                    ordersById.put(line.get(ORDER).get(ORDER_ID).asString(), line.get(ORDER));
+                    orders++;
+                }
+                case JournalTypes.QUOTE_RECEIVED -> {
+                    engine(line).accept(mapper.treeToValue(line.get(QUOTE), Quote.class));
+                    lastQuotes.put(line.get(QUOTE).get("symbol").asString(), line.get(QUOTE));
+                    quotes++;
+                }
                 case JournalTypes.ORDER_CANCELLED -> engine(line).cancel(UUID.fromString(line.get(ORDER_ID).asString()));
-                case JournalTypes.DECISION -> decision(line);
+                case JournalTypes.DECISION -> recordDecision(line);
                 default -> throw new IllegalArgumentException("Unknown journal line type: " + line.get("type"));
             }
         }
 
-        private void orderReceived(JsonNode line) {
-            JsonNode order = line.get(ORDER);
-            engine(line).handle(mapper.treeToValue(order, OrderPlacedEvent.class));
-            ordersById.put(order.get(ORDER_ID).asString(), order);
-            orders++;
-        }
-
-        private void quoteReceived(JsonNode line) {
-            JsonNode quote = line.get(QUOTE);
-            engine(line).accept(mapper.treeToValue(quote, Quote.class));
-            lastQuotes.put(quote.get("symbol").asString(), quote);
-            quotes++;
-        }
-
-        private void decision(JsonNode line) {
-            String orderId = line.get(ORDER_ID).asString();
-            recorded.add(new Decision(
-                line.get("seq").asLong(),
-                orderId,
-                line.get("decision").asString(),
-                line.has(PRICE) ? line.get(PRICE).decimalValue() : null,
-                line.has(REASON) ? line.get(REASON).asString() : null));
-            JsonNode order = ordersById.get(orderId);
-            context.add(new JsonNode[] {order,
-                order != null ? lastQuotes.get(order.get("symbol").asString()) : null});
-        }
-
-        /** The running engine; a journal that starts mid-run gets one from its first line. */
+        /** The running engine; a journal that starts mid-run gets one at its first line. */
         private ExecutionEngine engine(JsonNode line) {
             if (engine == null) {
                 engine = freshEngine(line);
@@ -300,6 +320,18 @@ public final class Replay {
                 List.of("REPLAY"), 120, 25, 2000, maxQuoteAge, "http://replay", "", "");
             return new ExecutionEngine(mapper, new SilentProducer(mapper), new QuoteCache(), props,
                 new CollectingJournal(mapper, replayed), clock, enforceHours);
+        }
+
+        private void recordDecision(JsonNode line) {
+            String orderId = line.get(ORDER_ID).asString();
+            recorded.add(new Decision(
+                line.get("seq").asLong(),
+                orderId,
+                line.get("decision").asString(),
+                line.has(PRICE) ? line.get(PRICE).decimalValue() : null,
+                line.has(REASON) ? line.get(REASON).asString() : null));
+            JsonNode order = ordersById.get(orderId);
+            context.add(new JsonNode[] {order, order != null ? lastQuotes.get(order.get("symbol").asString()) : null});
         }
     }
 
@@ -328,33 +360,24 @@ public final class Replay {
 
         List<Difference> differences = new ArrayList<>();
         for (String orderId : orderIds) {
-            List<Integer> was = recordedByOrder.getOrDefault(orderId, List.of());
-            List<Integer> now = replayedByOrder.getOrDefault(orderId, List.of());
-            for (int k = 0; k < Math.max(was.size(), now.size()); k++) {
-                Integer recordedAt = k < was.size() ? was.get(k) : null;
-                Integer replayedAt = k < now.size() ? now.get(k) : null;
-                Difference difference = differenceBetween(recordedAt, replayedAt, recorded, context, replayed);
-                if (difference != null) {
-                    differences.add(difference);
-                }
-            }
+            compareOrder(recordedByOrder.getOrDefault(orderId, List.of()),
+                replayedByOrder.getOrDefault(orderId, List.of()), recorded, context, replayed, differences);
         }
         return differences;
     }
 
-    /** The difference between the recorded and replayed decision at these positions, or null if they agree. */
-    private static Difference differenceBetween(Integer recordedAt, Integer replayedAt, List<Decision> recorded,
-            List<JsonNode[]> context, List<Decision> replayed) {
-        Decision recordedDecision = recordedAt != null ? recorded.get(recordedAt) : null;
-        Decision replayedDecision = replayedAt != null ? replayed.get(replayedAt) : null;
-        if (recordedDecision == null) {
-            return new Difference(0, null, replayedDecision, null, null);
+    /** One order's k-th recorded decision against its k-th replayed one; was and now are positions in the lists. */
+    private static void compareOrder(List<Integer> was, List<Integer> now, List<Decision> recorded,
+            List<JsonNode[]> context, List<Decision> replayed, List<Difference> differences) {
+        for (int k = 0; k < Math.max(was.size(), now.size()); k++) {
+            Decision recordedDecision = k < was.size() ? recorded.get(was.get(k)) : null;
+            Decision replayedDecision = k < now.size() ? replayed.get(now.get(k)) : null;
+            if (recordedDecision == null || replayedDecision == null || !recordedDecision.sameAs(replayedDecision)) {
+                JsonNode[] around = recordedDecision != null ? context.get(was.get(k)) : new JsonNode[2];
+                differences.add(new Difference(recordedDecision != null ? recordedDecision.seq() : 0,
+                    recordedDecision, replayedDecision, around[0], around[1]));
+            }
         }
-        if (replayedDecision != null && recordedDecision.sameAs(replayedDecision)) {
-            return null;
-        }
-        JsonNode[] around = context.get(recordedAt);
-        return new Difference(recordedDecision.seq(), recordedDecision, replayedDecision, around[0], around[1]);
     }
 
     /** The positions of each order's decisions, orders in the order they were first decided. */
@@ -376,6 +399,11 @@ public final class Replay {
         }
         out.println("  " + result.differences().size() + " difference(s):");
         result.differences().forEach(d -> out.println("    " + d));
+        PriceImpact impact = result.priceImpact();
+        if (impact.fills() > 0) {
+            out.printf("  price impact of %,d changed fill(s): $%,.2f given away to customers, $%,.2f more charged%n",
+                impact.fills(), impact.givenAway(), impact.charged());
+        }
     }
 
     /** The engine's sender during a replay: decisions are collected by the journal, nothing is sent. */
@@ -402,7 +430,7 @@ public final class Replay {
         }
 
         @Override
-        public synchronized void append(Instant time, String type, Map<String, Object> fields) {
+        public synchronized void write(Instant time, String type, Map<String, Object> fields) {
             if (JournalTypes.DECISION.equals(type)) {
                 decisions.add(new Decision(0,
                     String.valueOf(fields.get(ORDER_ID)),
@@ -413,7 +441,8 @@ public final class Replay {
         }
     }
 
-    /** A clock the replay moves to each journal line's time. */
+    /** A clock the replay moves to each journal line's time. Never compared, so Clock's equals is enough. */
+    @SuppressWarnings("java:S2160")
     private static final class ReplayClock extends Clock {
 
         private Instant now = Instant.EPOCH;
@@ -435,16 +464,6 @@ public final class Replay {
         @Override
         public Clock withZone(ZoneId zone) {
             return this;
-        }
-
-        @Override
-        public boolean equals(Object other) {
-            return other instanceof ReplayClock clock && now.equals(clock.now);
-        }
-
-        @Override
-        public int hashCode() {
-            return now.hashCode();
         }
     }
 }

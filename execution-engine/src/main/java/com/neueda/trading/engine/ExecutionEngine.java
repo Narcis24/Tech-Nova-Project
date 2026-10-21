@@ -258,7 +258,7 @@ public class ExecutionEngine {
                 publishReject(event, reason);
             }
             case FillRule.Wait() -> {
-                journalDecision(event, JournalTypes.WAITING, null, null);
+                journalDecision(event, JournalTypes.WAIT, null, null);
                 resting.put(event.orderId(), event);
                 log.info("Resting LIMIT order: orderId={}, symbol={}", event.orderId(), event.symbol());
             }
@@ -294,7 +294,7 @@ public class ExecutionEngine {
     }
 
     private void journal(String type, Map<String, Object> fields) {
-        journal.append(clock.instant(), type, fields);
+        journal.write(clock.instant(), type, fields);
     }
 
     private void journalDecision(OrderPlacedEvent order, String decision, BigDecimal price, String reason) {

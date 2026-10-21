@@ -34,4 +34,5 @@ public interface PriceRepository extends JpaRepository<Price, PriceKey> {
           and p.tradeDate = (select max(p2.tradeDate) from Price p2 where p2.symbol = p.symbol)
         """)
     List<Price> findLatestBySymbols(@Param("symbols") Collection<String> symbols);
+
 }

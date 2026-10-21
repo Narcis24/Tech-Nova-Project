@@ -15,7 +15,7 @@ p {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  align-items: baseline;
+  align-items: center;
 }
 .heading strong {
   font-size: 17px;

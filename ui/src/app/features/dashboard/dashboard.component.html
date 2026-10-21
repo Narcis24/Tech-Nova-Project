@@ -17,6 +17,7 @@
     <a routerLink="/accounts">Manage accounts</a>
   </div>
 } @else {
+  <app-account-pie-summary [accountId]="account()!.accountId" />
   @if (store.state().error) {
     <div class="notice" role="alert">
       <p>Couldn't update your portfolio. Any displayed values are from the last successful refresh.</p>
@@ -108,7 +109,8 @@
                   }}</span>
                 }
                 <span
-                  >{{ order.side | titlecase }} {{ order.quantity | number }} {{ order.symbol }}
+                  ><app-symbol-icon [symbol]="order.symbol" />{{ order.side | titlecase }} {{ order.quantity | number }}
+                  {{ order.symbol }}
                   @if (order.price != null) {
                     at {{ order.price | number: '1.2-2' }}
                   }

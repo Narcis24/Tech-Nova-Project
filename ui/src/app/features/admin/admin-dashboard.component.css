@@ -37,6 +37,12 @@
 }
 
 /* To the users page; a card-coloured button like the chart's size button */
+.head-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .manage-link {
   display: inline-flex;
   align-items: center;

@@ -1,0 +1,100 @@
+<div class="top">
+  <h1>Pies</h1>
+  <a class="new" routerLink="/pies/new">New pie</a>
+</div>
+<app-pie-tabs />
+
+@if (accountId()) {
+  <div class="header">
+    @switch (header().state) {
+      @case ('linked') {
+        @if (linked(); as link) {
+          <div class="summary">
+            <p>
+              This account {{ link.mode === 'COPY' ? 'copies' : 'follows' }} <strong>{{ link.pieName }}</strong
+              >{{ link.maxDriftPct == null ? '' : ', max drift ' + link.maxDriftPct + '%' }}
+            </p>
+            @if (link.mode === 'COPY') {
+              @if (!link.published) {
+                <span class="status muted">No longer published</span>
+              } @else if (link.updateAvailable && !link.activeRunId) {
+                <span class="status">Update available</span>
+              }
+            }
+          </div>
+          <div class="header-actions">
+            @if (link.activeRunId) {
+              <a [routerLink]="['/rebalance-runs', link.activeRunId]">View rebalance</a>
+            } @else {
+              <a [routerLink]="['/accounts', accountId(), 'rebalance']">{{
+                link.mode === 'COPY' && link.updateAvailable ? 'Review' : 'Preview rebalance'
+              }}</a>
+            }
+            @if (link.mode === 'COPY') {
+              <button
+                type="button"
+                class="secondary"
+                [disabled]="!!link.activeRunId || link.appliedVersion == null"
+                (click)="makeMine()"
+              >
+                Make it mine
+              </button>
+              <button type="button" class="secondary" (click)="stopCopying(link)">Stop copying</button>
+            } @else {
+              <button type="button" class="secondary" (click)="unlink()">Unlink</button>
+            }
+          </div>
+        }
+      }
+      @case ('none') {
+        <p>No pie on this account yet</p>
+      }
+      @case ('error') {
+        <p class="error">Couldn't load this account's pie.</p>
+      }
+      @default {
+        <output>Loading…</output>
+      }
+    }
+  </div>
+}
+
+@if (actionError()) {
+  <p class="error" role="alert">{{ actionError() }}</p>
+}
+
+@if (loading()) {
+  <output class="empty">Loading your pies…</output>
+} @else if (loadError()) {
+  <div class="load-error" role="alert">
+    <p>Couldn't load your pies.</p>
+    <button type="button" class="secondary" (click)="retry()">Try again</button>
+  </div>
+} @else if (!pies().length) {
+  <p class="empty">Build your first pie: pick stocks and weights, and we'll work out the trades.</p>
+} @else {
+  <ul class="grid">
+    @for (pie of pies(); track pie.pieId) {
+      <li class="pie-card">
+        <app-donut-chart [segments]="segments(pie)" [size]="120" />
+        <h2>
+          <a [routerLink]="['/pies', pie.pieId]">{{ pie.name }}</a>
+        </h2>
+        @if (pie.publishedAt) {
+          <span class="public">Public</span>
+        }
+        <ul class="slices">
+          @for (slice of topSlices(pie); track slice.symbol) {
+            <li>{{ slice.symbol }} {{ slice.weightPct }}%</li>
+          }
+        </ul>
+        <p class="cash">Cash {{ pie.cashPct }}%</p>
+        <div class="actions">
+          <button type="button" (click)="use(pie)" [disabled]="!accountId()">Use for this account</button>
+          <a class="edit" [routerLink]="['/pies', pie.pieId, 'edit']">Edit</a>
+          <button type="button" class="secondary danger" (click)="remove(pie)">Delete</button>
+        </div>
+      </li>
+    }
+  </ul>
+}

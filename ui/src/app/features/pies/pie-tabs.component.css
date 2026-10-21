@@ -1,0 +1,37 @@
+:host {
+  display: block;
+  margin-bottom: 24px;
+}
+
+nav {
+  display: inline-flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--muted-background-color);
+}
+
+a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 0 16px;
+  border-radius: 9px;
+  color: var(--secondary-text-color);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+a:hover {
+  background: var(--control-background-color);
+  color: var(--text-color);
+}
+
+a.active {
+  background: var(--elevated-background-color);
+  box-shadow: var(--card-shadow);
+  color: var(--text-color);
+  font-weight: 600;
+}

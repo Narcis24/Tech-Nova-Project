@@ -56,3 +56,8 @@ execution-engine:
   journal:
     enabled: true
     dir: ${EXECUTION_ENGINE_JOURNAL_DIR:journal}
+
+# Shared secret the app sends to /internal/** (admin journal page); empty refuses every internal call
+internal:
+  api:
+    token: ${INTERNAL_API_TOKEN:}

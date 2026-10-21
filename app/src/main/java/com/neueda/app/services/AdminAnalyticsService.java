@@ -52,6 +52,7 @@ public class AdminAnalyticsService {
 
     // Days and hours are New York time, like MarketHours.java in the engine and market-hours.ts in the UI
     static final ZoneId MARKET_ZONE = ZoneId.of("America/New_York");
+    private static final Set<DayOfWeek> WEEKEND = EnumSet.of(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
     private static final int TOP_TRADED = 6;
     private static final int RATE_SCALE = 4;
     private static final int LIVE_TRADING_DAYS = 3;
@@ -67,7 +68,6 @@ public class AdminAnalyticsService {
     // Statuses an order can't leave; the fill rate is taken over these
     private static final Set<OrderStatus> FINISHED =
         EnumSet.of(OrderStatus.FILLED, OrderStatus.CANCELLED, OrderStatus.REJECTED, OrderStatus.EXPIRED);
-    private static final Set<DayOfWeek> WEEKEND = EnumSet.of(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
 
     private final OrderRepository orderRepository;
     private final Clock clock;
@@ -84,7 +84,7 @@ public class AdminAnalyticsService {
         return buildAnalytics(period, assetClass, side, orderType, trader);
     }
 
-    // Shared by analytics() and exportCsv() so neither calls a @Transactional method via 'this'
+    // Shared by analytics and exportCsv, so neither calls the other's @Transactional method through 'this'
     private AdminAnalyticsResponse buildAnalytics(AnalyticsPeriod period, AssetClass assetClass,
                                                   OrderSide side, OrderType orderType, String trader) {
         ZonedDateTime now = ZonedDateTime.now(clock).withZoneSameInstant(MARKET_ZONE);

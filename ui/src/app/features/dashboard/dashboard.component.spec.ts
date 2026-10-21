@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import {
   AccountControllerService,
+  AccountPieControllerService,
   DashboardControllerService,
   InstrumentControllerService,
   PortfolioControllerService,
@@ -21,6 +22,7 @@ describe('DashboardComponent', () => {
       imports: [DashboardComponent],
       providers: [
         provideRouter([]),
+        { provide: AccountPieControllerService, useValue: { getAccountPie: () => of(null) } },
         { provide: DashboardControllerService, useValue: { getMarketOverview: () => of([]) } },
         {
           provide: AccountService,

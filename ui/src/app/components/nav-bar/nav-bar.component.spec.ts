@@ -78,14 +78,14 @@ describe('NavBarComponent', () => {
       Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('.tab')).map((tab) => tab.textContent?.trim());
 
     it('shows the trading tabs to traders', () => {
-      expect(tabs()).toEqual(['Portfolio', 'Trade', 'Orders']);
+      expect(tabs()).toEqual(['Portfolio', 'Trade', 'Pies', 'Orders']);
     });
 
     it('shows only the admin tabs, no trading ones', () => {
       isAdmin.set(true);
       fixture.detectChanges();
 
-      expect(tabs()).toEqual(['Overview', 'Users']);
+      expect(tabs()).toEqual(['Overview', 'Users', 'Journal']);
     });
 
     it('marks only Users as current on /admin/users, not Overview too', async () => {

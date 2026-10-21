@@ -15,12 +15,14 @@ interface NavTab {
 const TRADER_TABS: readonly NavTab[] = [
   { label: 'Portfolio', path: '/dashboard' },
   { label: 'Trade', path: '/trade' },
+  { label: 'Pies', path: '/pies' },
   { label: 'Orders', path: '/orders' },
 ];
 
 const ADMIN_TABS: readonly NavTab[] = [
   { label: 'Overview', path: '/admin', exact: true },
   { label: 'Users', path: '/admin/users' },
+  { label: 'Journal', path: '/admin/journal' },
 ];
 
 /**

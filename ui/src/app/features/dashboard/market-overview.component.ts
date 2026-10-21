@@ -3,10 +3,11 @@ import { CurrencyPipe, DatePipe, PercentPipe } from '@angular/common';
 import { Component, computed, effect, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MarketAssetResponse } from '../../generated/trading-api-client';
+import { SymbolIconComponent } from '../../components/symbol-icon/symbol-icon.component';
 
 @Component({
   selector: 'app-market-overview',
-  imports: [CurrencyPipe, DatePipe, PercentPipe, RouterLink],
+  imports: [CurrencyPipe, DatePipe, PercentPipe, RouterLink, SymbolIconComponent],
   templateUrl: './market-overview.component.html',
   styleUrl: './market-overview.component.css',
 })

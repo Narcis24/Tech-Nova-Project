@@ -183,6 +183,18 @@ mvn -q -pl execution-engine exec:java \
   -Dexec.args="--report shadow-report.json execution-engine/src/test/resources/journals"
 ```
 
+### Journal page for admins
+
+Admins can explore the journals in the UI under **Journal** (`/admin/journal`): pick a day, see its
+totals and reject reasons, open any order's timeline with the quote behind each decision, download the
+day gzipped, or **Verify this day** (a replay with the running engine). The page goes through the app
+(`/api/v1/admin/journal/**`, ADMIN only) to the engine's internal API, which only answers with the
+shared `INTERNAL_API_TOKEN` from `.env` (generate one with `openssl rand -hex 32`). Without it the page
+says the journal is unavailable.
+
+For a local admin login, set `TEST_ADMIN_PASSWORD` in `.env` before creating the database (user
+`test_admin`).
+
 ### Golden journals
 
 `execution-engine/src/test/resources/journals/` holds recorded days that `mvn test` replays

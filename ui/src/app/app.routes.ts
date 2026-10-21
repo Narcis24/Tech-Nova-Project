@@ -70,6 +70,39 @@ export const routes: Routes = [
             loadComponent: () => import('./features/orders/orders.component').then((m) => m.OrdersComponent),
           },
           {
+            path: 'pies/new',
+            loadComponent: () => import('./features/pies/pie-editor.component').then((m) => m.PieEditorComponent),
+          },
+          {
+            path: 'pies/:pieId/edit',
+            loadComponent: () => import('./features/pies/pie-editor.component').then((m) => m.PieEditorComponent),
+          },
+          {
+            path: 'pies/:pieId',
+            loadComponent: () => import('./features/pies/pie-detail.component').then((m) => m.PieDetailComponent),
+          },
+          {
+            path: 'pies',
+            loadComponent: () => import('./features/pies/pies.component').then((m) => m.PiesComponent),
+          },
+          {
+            path: 'accounts/:accountId/rebalance',
+            loadComponent: () =>
+              import('./features/pies/rebalance-preview.component').then((m) => m.RebalancePreviewComponent),
+          },
+          {
+            path: 'discover/:pieId',
+            loadComponent: () => import('./features/pies/public-pie.component').then((m) => m.PublicPieComponent),
+          },
+          {
+            path: 'discover',
+            loadComponent: () => import('./features/pies/discover.component').then((m) => m.DiscoverComponent),
+          },
+          {
+            path: 'rebalance-runs/:runId',
+            loadComponent: () => import('./features/pies/rebalance-run.component').then((m) => m.RebalanceRunComponent),
+          },
+          {
             path: 'risk-limits',
             loadComponent: () =>
               import('./features/risk-limits/risk-limits.component').then((m) => m.RiskLimitsComponent),
@@ -85,6 +118,12 @@ export const routes: Routes = [
         canActivate: [adminGuard],
         loadComponent: () =>
           import('./features/admin/admin-dashboard.component').then((m) => m.AdminDashboardComponent),
+      },
+      {
+        path: 'admin/journal',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/admin/journal/admin-journal.component').then((m) => m.AdminJournalComponent),
       },
       {
         path: 'admin/users',

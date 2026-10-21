@@ -12,7 +12,10 @@
       {{ result() ? 'Order ' + (result()!.status?.replaceAll('_', ' ') | titlecase) : 'Review your order' }}
     </h2>
   </div>
-  <p class="instrument">{{ order().side | titlecase }} {{ order().quantity | number }} {{ order().symbol }}</p>
+  <p class="instrument">
+    <app-symbol-icon [symbol]="order().symbol" />{{ order().side | titlecase }} {{ order().quantity | number }}
+    {{ order().symbol }}
+  </p>
   <dl>
     <div>
       <dt>Account</dt>

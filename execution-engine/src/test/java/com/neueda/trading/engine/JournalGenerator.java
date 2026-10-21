@@ -196,8 +196,10 @@ public final class JournalGenerator {
         }
     }
 
+    // nextLong(bound) would draw different numbers and the seed would no longer re-create the golden journal
+    @SuppressWarnings("java:S2140")
     private Instant between(Instant from, Instant to) {
-        return from.plusSeconds(random.nextLong(Duration.between(from, to).getSeconds()));
+        return from.plusSeconds((long) (random.nextDouble() * Duration.between(from, to).getSeconds()));
     }
 
     private static BigDecimal money(double value) {
@@ -205,7 +207,7 @@ public final class JournalGenerator {
     }
 
     /** Writes the real journal, and forgets an order once it is filled or rejected, as the app would. */
-    private static final class TrackingJournal extends DecisionJournal {
+    static final class TrackingJournal extends DecisionJournal {
 
         private final Map<UUID, OrderPlacedEvent> pending;
 
@@ -215,8 +217,8 @@ public final class JournalGenerator {
         }
 
         @Override
-        public synchronized void append(Instant time, String type, Map<String, Object> fields) {
-            super.append(time, type, fields);
+        public synchronized void write(Instant time, String type, Map<String, Object> fields) {
+            super.write(time, type, fields);
             Object decision = fields.get("decision");
             if (JournalTypes.FILL.equals(decision) || JournalTypes.REJECT.equals(decision)) {
                 pending.remove((UUID) fields.get("orderId"));
@@ -224,7 +226,7 @@ public final class JournalGenerator {
         }
     }
 
-    private static final class SilentProducer extends EventProducerService {
+    static final class SilentProducer extends EventProducerService {
 
         SilentProducer(ObjectMapper mapper) {
             super(null, mapper);
@@ -236,7 +238,7 @@ public final class JournalGenerator {
         }
     }
 
-    private static final class MovableClock extends Clock {
+    static final class MovableClock extends Clock {
 
         private Instant now = Instant.EPOCH;
 

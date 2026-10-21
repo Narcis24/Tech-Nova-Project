@@ -21,6 +21,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Order> findByStatusAndOrderType(OrderStatus status, OrderType orderType);
     List<Order> findByStatus(OrderStatus status);
     boolean existsByIdempotencyKey(String idempotencyKey);
+    boolean existsByAccountIdAndStatus(String accountId, OrderStatus status);
 
     /**
      * Orders placed in [from, to) across all accounts, for the admin analytics. Each filter is

@@ -16,6 +16,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 
 import com.neueda.app.dtos.ErrorResponse;
+import com.neueda.app.exceptions.JournalException;
 import com.neueda.app.exceptions.AccountAccessDeniedException;
 import com.neueda.app.exceptions.AccountNotActiveException;
 import com.neueda.app.exceptions.AccountNotFoundException;
@@ -24,10 +25,16 @@ import com.neueda.app.exceptions.InstrumentNotFoundException;
 import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.exceptions.InsufficientHoldingsException;
 import com.neueda.app.exceptions.InvalidOrderStateException;
+import com.neueda.app.exceptions.InvalidPieException;
 import com.neueda.app.exceptions.OrderNotFoundException;
 import com.neueda.app.exceptions.OrderNotTriggeredException;
+import com.neueda.app.exceptions.PieInUseException;
+import com.neueda.app.exceptions.PieNotFoundException;
+import com.neueda.app.exceptions.PieNotLinkedException;
 import com.neueda.app.exceptions.PositionNotFoundException;
 import com.neueda.app.exceptions.PriceNotFoundException;
+import com.neueda.app.exceptions.RebalanceConflictException;
+import com.neueda.app.exceptions.RebalanceRunNotFoundException;
 import com.neueda.app.exceptions.RoleChangeNotAllowedException;
 import com.neueda.app.exceptions.TradingException;
 import com.neueda.app.exceptions.UserAlreadyExistsException;
@@ -56,6 +63,42 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
     
+    @ExceptionHandler(PieNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlePieNotFound(PieNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse("PIE_NOT_FOUND", ex.getMessage(), 404);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(PieNotLinkedException.class)
+    public ResponseEntity<ErrorResponse> handlePieNotLinked(PieNotLinkedException ex) {
+        ErrorResponse error = new ErrorResponse("PIE_NOT_LINKED", ex.getMessage(), 404);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(RebalanceRunNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleRebalanceRunNotFound(RebalanceRunNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse("REBALANCE_RUN_NOT_FOUND", ex.getMessage(), 404);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(RebalanceConflictException.class)
+    public ResponseEntity<ErrorResponse> handleRebalanceConflict(RebalanceConflictException ex) {
+        ErrorResponse error = new ErrorResponse("REBALANCE_CONFLICT", ex.getMessage(), 409);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(InvalidPieException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidPie(InvalidPieException ex) {
+        ErrorResponse error = new ErrorResponse("INVALID_PIE", ex.getMessage(), 422);
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    @ExceptionHandler(PieInUseException.class)
+    public ResponseEntity<ErrorResponse> handlePieInUse(PieInUseException ex) {
+        ErrorResponse error = new ErrorResponse("PIE_IN_USE", ex.getMessage(), 409);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     /**
      * Handles UserNotFoundException when an admin acts on a username that does not exist.
      *
@@ -266,6 +309,19 @@ public class GlobalExceptionHandler {
      * @param ex the IllegalArgumentException thrown from the service layer
      * @return ResponseEntity containing ErrorResponse with 400 status
      */
+    /**
+     * Handles JournalException when the admin journal page cannot be served (engine down, unknown day,
+     * replay busy); the exception carries the status and code.
+     *
+     * @param ex the JournalException thrown by EngineClient
+     * @return ResponseEntity containing ErrorResponse with the exception's status
+     */
+    @ExceptionHandler(JournalException.class)
+    public ResponseEntity<ErrorResponse> handleJournal(JournalException ex) {
+        ErrorResponse error = new ErrorResponse(ex.getErrorCode(), ex.getMessage(), ex.getStatus().value());
+        return ResponseEntity.status(ex.getStatus()).body(error);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
         ErrorResponse error = new ErrorResponse("INVALID_ARGUMENT", ex.getMessage(), 400);

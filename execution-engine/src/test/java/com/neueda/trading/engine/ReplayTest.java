@@ -143,6 +143,24 @@ class ReplayTest {
         String report = out.toString();
         assertTrue(report.contains("1 difference(s)"), report);
         assertTrue(report.contains("FILL 101.00") && report.contains("FILL 100.50"), report);
+        // 10 shares bought 0.50 cheaper than recorded: 5.00 given away
+        assertTrue(report.contains("price impact of 1 changed fill(s): $5.00 given away to customers, $0.00 more charged"),
+            report);
+    }
+
+    @Test
+    void aSellFilledLowerThanRecordedChargesTheCustomer() throws Exception {
+        ExecutionEngine engine = recordingEngine(true);
+        engine.accept(quote("99.50", "100.50", OPEN));
+        engine.handle(new OrderPlacedEvent(UUID.randomUUID(), "ACC1", "AAPL", "SELL", "MARKET", 20, null, "key"));
+        Path journal = dir.resolve("2026-10-14.jsonl");
+        Files.writeString(journal, Files.readString(journal).replace("\"price\":99.50", "\"price\":99.75"));
+
+        Replay.PriceImpact impact = replay("2026-10-14").priceImpact();
+
+        assertEquals(1, impact.fills());
+        assertEquals(0, impact.givenAway().signum());
+        assertEquals(0, new BigDecimal("5.00").compareTo(impact.charged()));   // 20 shares × 0.25
     }
 
     @Test

@@ -18,7 +18,8 @@
         @for (p of positions(); track p.symbol) {
           <tr>
             <th scope="row">
-              <a routerLink="/trade" [queryParams]="{ symbol: p.symbol, side: 'BUY' }">{{ p.symbol }}</a
+              <a routerLink="/trade" [queryParams]="{ symbol: p.symbol, side: 'BUY' }"
+                ><app-symbol-icon [symbol]="p.symbol" />{{ p.symbol }}</a
               ><span class="name">{{ instruments().get(p.symbol ?? '')?.name }}</span>
             </th>
             <td>{{ p.quantity | number }}</td>

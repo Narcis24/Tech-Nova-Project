@@ -69,7 +69,8 @@
     @for (asset of visible(); track asset.symbol) {
       <article>
         <div class="asset-heading">
-          <a routerLink="/trade" [queryParams]="{ symbol: asset.symbol, side: 'BUY' }">{{ asset.symbol }}</a
+          <a routerLink="/trade" [queryParams]="{ symbol: asset.symbol, side: 'BUY' }"
+            ><app-symbol-icon [symbol]="asset.symbol" />{{ asset.symbol }}</a
           ><button
             type="button"
             [attr.aria-pressed]="watchlist().includes(asset.symbol ?? '')"

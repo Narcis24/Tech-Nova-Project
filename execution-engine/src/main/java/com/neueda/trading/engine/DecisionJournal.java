@@ -48,7 +48,7 @@ public class DecisionJournal {
         this.enabled = enabled;
     }
 
-    public synchronized void append(Instant time, String type, Map<String, Object> fields) {
+    public synchronized void write(Instant time, String type, Map<String, Object> fields) {
         if (!enabled) {
             return;
         }
