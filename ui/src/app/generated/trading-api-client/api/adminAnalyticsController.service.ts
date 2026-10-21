@@ -18,6 +18,8 @@ import { OpenApiHttpParams, QueryParamStyle } from '../query.params';
 
 // @ts-ignore
 import { AdminAnalyticsResponse } from '../model/adminAnalyticsResponse';
+// @ts-ignore
+import { AdminLiveResponse } from '../model/adminLiveResponse';
 
 // @ts-ignore
 import { BASE_PATH, COLLECTION_FORMATS }                     from '../variables';
