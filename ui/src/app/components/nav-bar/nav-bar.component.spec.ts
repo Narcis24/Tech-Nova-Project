@@ -78,7 +78,7 @@ describe('NavBarComponent', () => {
       Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('.tab')).map((tab) => tab.textContent?.trim());
 
     it('shows the trading tabs to traders', () => {
-      expect(tabs()).toEqual(['Portfolio', 'Trade', 'Orders']);
+      expect(tabs()).toEqual(['Portfolio', 'Trade', 'Pies', 'Orders']);
     });
 
     it('shows only the admin tabs, no trading ones', () => {

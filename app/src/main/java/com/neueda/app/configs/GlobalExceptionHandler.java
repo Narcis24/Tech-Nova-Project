@@ -25,8 +25,12 @@ import com.neueda.app.exceptions.InstrumentNotFoundException;
 import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.exceptions.InsufficientHoldingsException;
 import com.neueda.app.exceptions.InvalidOrderStateException;
+import com.neueda.app.exceptions.InvalidPieException;
 import com.neueda.app.exceptions.OrderNotFoundException;
 import com.neueda.app.exceptions.OrderNotTriggeredException;
+import com.neueda.app.exceptions.PieInUseException;
+import com.neueda.app.exceptions.PieNotFoundException;
+import com.neueda.app.exceptions.PieNotLinkedException;
 import com.neueda.app.exceptions.PositionNotFoundException;
 import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.exceptions.RoleChangeNotAllowedException;
@@ -57,6 +61,30 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
     
+    @ExceptionHandler(PieNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlePieNotFound(PieNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse("PIE_NOT_FOUND", ex.getMessage(), 404);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(PieNotLinkedException.class)
+    public ResponseEntity<ErrorResponse> handlePieNotLinked(PieNotLinkedException ex) {
+        ErrorResponse error = new ErrorResponse("PIE_NOT_LINKED", ex.getMessage(), 404);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(InvalidPieException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidPie(InvalidPieException ex) {
+        ErrorResponse error = new ErrorResponse("INVALID_PIE", ex.getMessage(), 422);
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    @ExceptionHandler(PieInUseException.class)
+    public ResponseEntity<ErrorResponse> handlePieInUse(PieInUseException ex) {
+        ErrorResponse error = new ErrorResponse("PIE_IN_USE", ex.getMessage(), 409);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     /**
      * Handles UserNotFoundException when an admin acts on a username that does not exist.
      *

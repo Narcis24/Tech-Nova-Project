@@ -1,0 +1,104 @@
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--card-background-color);
+}
+
+.header p {
+  margin: 0;
+  flex: 1;
+  line-height: 1.6;
+  min-width: 200px;
+}
+
+.empty {
+  margin: 1em 0;
+  color: var(--secondary-text-color);
+}
+
+.error,
+.load-error p {
+  margin: 0;
+  color: var(--loss-color);
+}
+
+.load-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pie-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 20px;
+  border: 1px solid var(--subtle-border-color);
+  border-radius: 16px;
+  background: var(--card-background-color);
+}
+
+.pie-card h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.slices {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  text-align: center;
+  line-height: 1.8;
+}
+
+.cash {
+  margin: 0;
+  font-size: 13px;
+  color: var(--secondary-text-color);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 8px;
+  width: 100%;
+}
+
+.actions > button:first-child {
+  grid-column: 1 / -1;
+}

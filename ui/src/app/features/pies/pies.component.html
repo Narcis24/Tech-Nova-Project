@@ -1,0 +1,63 @@
+<div class="top">
+  <h1>Pies</h1>
+  <a class="new" routerLink="/pies/new">New pie</a>
+</div>
+
+@if (accountId()) {
+  <div class="header">
+    @switch (header().state) {
+      @case ('linked') {
+        <p>
+          This account follows <strong>{{ linked()?.pieName }}</strong
+          >{{ linked()?.maxDriftPct == null ? '' : ', max drift ' + linked()?.maxDriftPct + '%' }}
+        </p>
+        <a [routerLink]="['/accounts', accountId(), 'rebalance']">Preview rebalance</a>
+        <button type="button" class="secondary" (click)="unlink()">Unlink</button>
+      }
+      @case ('none') {
+        <p>No pie on this account yet</p>
+      }
+      @case ('error') {
+        <p class="error">Couldn't load this account's pie.</p>
+      }
+      @default {
+        <output>Loading…</output>
+      }
+    }
+  </div>
+}
+
+@if (actionError()) {
+  <p class="error" role="alert">{{ actionError() }}</p>
+}
+
+@if (loading()) {
+  <output class="empty">Loading your pies…</output>
+} @else if (loadError()) {
+  <div class="load-error" role="alert">
+    <p>Couldn't load your pies.</p>
+    <button type="button" class="secondary" (click)="retry()">Try again</button>
+  </div>
+} @else if (!pies().length) {
+  <p class="empty">Build your first pie: pick stocks and weights, and we'll work out the trades.</p>
+} @else {
+  <ul class="grid">
+    @for (pie of pies(); track pie.pieId) {
+      <li class="pie-card">
+        <app-donut-chart [segments]="segments(pie)" [size]="120" />
+        <h2>{{ pie.name }}</h2>
+        <ul class="slices">
+          @for (slice of topSlices(pie); track slice.symbol) {
+            <li>{{ slice.symbol }} {{ slice.weightPct }}%</li>
+          }
+        </ul>
+        <p class="cash">Cash {{ pie.cashPct }}%</p>
+        <div class="actions">
+          <button type="button" (click)="use(pie)" [disabled]="!accountId()">Use for this account</button>
+          <a class="edit" [routerLink]="['/pies', pie.pieId, 'edit']">Edit</a>
+          <button type="button" class="secondary danger" (click)="remove(pie)">Delete</button>
+        </div>
+      </li>
+    }
+  </ul>
+}
