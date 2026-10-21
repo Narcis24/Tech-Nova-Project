@@ -34,12 +34,20 @@ const PREVIEW: RebalancePreviewResponse = {
 };
 
 describe('RebalancePreviewComponent', () => {
-  let api: jasmine.SpyObj<{ previewRebalance: (id: string) => Observable<RebalancePreviewResponse> }>;
+  let api: jasmine.SpyObj<{
+    previewRebalance: (id: string) => Observable<RebalancePreviewResponse>;
+    previewCopy: (id: string, body: { pieId: string }) => Observable<RebalancePreviewResponse>;
+    copyPie: (id: string, body: { pieId: string }) => Observable<{ runId: string }>;
+  }>;
   let start: jasmine.Spy;
+  let copyParam: string | null;
 
   beforeEach(() => {
-    api = jasmine.createSpyObj('accountPies', ['previewRebalance']);
+    copyParam = null;
+    api = jasmine.createSpyObj('accountPies', ['previewRebalance', 'previewCopy', 'copyPie']);
     api.previewRebalance.and.returnValue(of(PREVIEW));
+    api.previewCopy.and.returnValue(of(PREVIEW));
+    api.copyPie.and.returnValue(of({ runId: 'run2' }));
     start = jasmine.createSpy('startRebalance').and.returnValue(of({ runId: 'run1' }));
     TestBed.configureTestingModule({
       imports: [RebalancePreviewComponent],
@@ -47,7 +55,10 @@ describe('RebalancePreviewComponent', () => {
         provideRouter([]),
         { provide: AccountPieControllerService, useValue: api },
         { provide: RebalanceControllerService, useValue: { startRebalance: start } },
-        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'acc1' } } } },
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { paramMap: { get: () => 'acc1' }, queryParamMap: { get: () => copyParam } } },
+        },
       ],
     });
   });
@@ -126,6 +137,13 @@ describe('RebalancePreviewComponent', () => {
     expect(render().querySelector('[role="alert"]')?.textContent).toBe('No price for AAPL');
   });
 
+  it('does not describe a missing own pie as an unpublished copy', () => {
+    api.previewRebalance.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 404, error: { errorCode: 'PIE_NOT_FOUND' } })),
+    );
+    expect(render().querySelector('[role="alert"]')?.textContent).toContain("Couldn't load");
+  });
+
   it('shows loading while the request is pending', () => {
     api.previewRebalance.and.returnValue(new Subject<RebalancePreviewResponse>());
     expect(render().querySelector('output')?.textContent).toContain('Loading');
@@ -157,5 +175,50 @@ describe('RebalancePreviewComponent', () => {
     fixture.detectChanges();
     expect(root.querySelector('[role="alert"]')?.textContent).toContain('An active run already exists');
     expect(root.querySelector<HTMLButtonElement>('button')!.disabled).toBeFalse();
+  });
+
+  describe('copying a public pie', () => {
+    beforeEach(() => (copyParam = 'p9'));
+
+    it("previews the copy rather than the account's own pie", () => {
+      const root = render();
+      expect(api.previewCopy).toHaveBeenCalledOnceWith('acc1', { pieId: 'p9' });
+      expect(api.previewRebalance).not.toHaveBeenCalled();
+      expect(root.textContent).toContain('Later author updates need your review and confirmation');
+      expect(root.querySelector('a')?.textContent).toContain('Back to pie');
+    });
+
+    it('confirms by copying and opens the run', () => {
+      const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+      const root = render();
+      const confirm = Array.from(root.querySelectorAll('button')).find((b) => b.textContent?.includes('Confirm copy'))!;
+      confirm.click();
+      expect(api.copyPie).toHaveBeenCalledOnceWith('acc1', { pieId: 'p9' });
+      expect(start).not.toHaveBeenCalled();
+      expect(navigate).toHaveBeenCalledWith(['/rebalance-runs', 'run2']);
+    });
+
+    it("explains why a pie can't be copied", () => {
+      api.previewCopy.and.returnValue(
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 409,
+              error: {
+                errorCode: 'REBALANCE_CONFLICT',
+                message: "You can't copy your own pie. Link it to the account instead",
+              },
+            }),
+        ),
+      );
+      expect(render().querySelector('[role="alert"]')?.textContent).toContain("You can't copy your own pie");
+    });
+
+    it('says when the pie is no longer public', () => {
+      api.previewCopy.and.returnValue(
+        throwError(() => new HttpErrorResponse({ status: 404, error: { errorCode: 'PIE_NOT_FOUND' } })),
+      );
+      expect(render().querySelector('[role="alert"]')?.textContent).toContain("isn't public any more");
+    });
   });
 });

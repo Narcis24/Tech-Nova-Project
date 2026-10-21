@@ -54,6 +54,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -122,7 +123,7 @@ class RebalanceRunServiceTest {
     @BeforeEach
     void setUp() {
         when(clock.instant()).thenReturn(MARKET_OPEN);
-        when(clock.getZone()).thenReturn(java.time.ZoneOffset.UTC);
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
         for (String symbol : List.of("AAPL", "MSFT", "GOOG", "TSLA")) {
             instrumentRepository.save(new Instrument(symbol, symbol + " Inc.", AssetClass.EQUITY, "USD", true));
             priceRepository.save(new Price(symbol, LocalDate.now(), new BigDecimal("100.00")));

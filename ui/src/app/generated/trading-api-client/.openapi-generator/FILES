@@ -30,6 +30,7 @@ model/analyticsTotals.ts
 model/assetMixEntry.ts
 model/balanceResponse.ts
 model/cashAmountRequest.ts
+model/copyPieRequest.ts
 model/createUserRequest.ts
 model/createUserResponse.ts
 model/instrumentResponse.ts

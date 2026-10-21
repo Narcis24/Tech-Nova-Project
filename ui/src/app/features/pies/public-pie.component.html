@@ -14,6 +14,18 @@
         <p class="description">{{ pie.description }}</p>
       }
 
+      @if (copyTarget(); as account) {
+        <div class="copy">
+          <button type="button" (click)="copy()">Copy into account</button>
+          <p class="note">
+            Into account {{ account.accountId }}. Review and confirm the trades first. Later author updates also need
+            your review and confirmation.
+          </p>
+        </div>
+      } @else if (!ownPie()) {
+        <p class="note copy">Open an account to copy this pie.</p>
+      }
+
       <dl class="stats">
         <div>
           <dt>Followers</dt>

@@ -23,6 +23,16 @@ const PIE: PieResponse = {
   ],
 };
 const LINKED: AccountPieResponse = { accountId: 'ACC001', pieId: 'p1', pieName: 'Tech Growth', maxDriftPct: 3.5 };
+const COPY: AccountPieResponse = {
+  accountId: 'ACC001',
+  pieId: 'p9',
+  pieName: 'Steady Compounders',
+  mode: 'COPY',
+  appliedVersion: 1,
+  maxDriftPct: 1,
+  published: true,
+  updateAvailable: false,
+};
 
 const NOT_LINKED = new HttpErrorResponse({ status: 404, error: { errorCode: 'PIE_NOT_LINKED' } });
 
@@ -36,6 +46,7 @@ describe('PiesComponent', () => {
     getAccountPie: (id: string) => Observable<AccountPieResponse>;
     linkPie: (id: string, body: { pieId: string }) => Observable<AccountPieResponse>;
     unlinkPie: (id: string) => Observable<unknown>;
+    makePieMine: (id: string) => Observable<AccountPieResponse>;
   }>;
   let fixture: ComponentFixture<PiesComponent>;
   let root: HTMLElement;
@@ -52,7 +63,7 @@ describe('PiesComponent', () => {
   beforeEach(() => {
     currentAccountId.set('ACC001');
     pies = jasmine.createSpyObj('pies', ['listMine', 'deletePie']);
-    accountPies = jasmine.createSpyObj('accountPies', ['getAccountPie', 'linkPie', 'unlinkPie']);
+    accountPies = jasmine.createSpyObj('accountPies', ['getAccountPie', 'linkPie', 'unlinkPie', 'makePieMine']);
     pies.listMine.and.returnValue(of([PIE]));
     accountPies.getAccountPie.and.returnValue(of(LINKED));
     TestBed.configureTestingModule({
@@ -180,5 +191,89 @@ describe('PiesComponent', () => {
     pies.listMine.and.returnValue(of([] as PieResponse[]));
     create();
     expect(root.textContent).toContain("Build your first pie: pick stocks and weights, and we'll work out the trades.");
+  });
+
+  describe('a copied pie', () => {
+    const header = () => root.querySelector('.header')!;
+    const link = (text: string) =>
+      Array.from(header().querySelectorAll('a')).find((a) => a.textContent?.trim() === text) as HTMLAnchorElement;
+
+    it('says the account copies it, with copy controls instead of unlink', () => {
+      accountPies.getAccountPie.and.returnValue(of(COPY));
+      create();
+      expect(header().textContent).toContain('This account copies');
+      expect(header().querySelector('input[role="switch"]')).toBeNull();
+      expect(button('Make it mine')).toBeTruthy();
+      expect(button('Stop copying')).toBeTruthy();
+      expect(button('Unlink')).toBeUndefined();
+      expect(header().querySelector('.status')).toBeNull();
+    });
+
+    it('offers a review when an author update is available', () => {
+      accountPies.getAccountPie.and.returnValue(of({ ...COPY, updateAvailable: true }));
+      create();
+      expect(header().querySelector('.status')?.textContent).toContain('Update available');
+      expect(link('Review').getAttribute('href')).toBe('/accounts/ACC001/rebalance');
+    });
+
+    it('links to the active rebalance without offering another review', () => {
+      accountPies.getAccountPie.and.returnValue(of({ ...COPY, updateAvailable: true, activeRunId: 'run7' }));
+      create();
+      expect(header().querySelector('.status')).toBeNull();
+      expect(link('Review')).toBeUndefined();
+      expect(link('View rebalance').getAttribute('href')).toBe('/rebalance-runs/run7');
+      expect(button('Make it mine').disabled).toBeTrue();
+    });
+
+    it("can't be made the user's own before anything is applied", () => {
+      accountPies.getAccountPie.and.returnValue(of({ ...COPY, appliedVersion: undefined, updateAvailable: true }));
+      create();
+      expect(button('Make it mine').disabled).toBeTrue();
+    });
+
+    it('says when the author stopped publishing it', () => {
+      accountPies.getAccountPie.and.returnValue(of({ ...COPY, published: false }));
+      create();
+      expect(header().querySelector('.status')?.textContent).toContain('No longer published');
+    });
+
+    it("makes the pie the user's own and reloads", () => {
+      accountPies.getAccountPie.and.returnValue(of(COPY));
+      accountPies.makePieMine.and.returnValue(of({ ...COPY, mode: 'OWN' }));
+      create();
+      accountPies.getAccountPie.and.returnValue(of({ ...LINKED, pieName: 'Steady Compounders' }));
+      button('Make it mine').click();
+      fixture.detectChanges();
+      expect(accountPies.makePieMine).toHaveBeenCalledOnceWith('ACC001');
+      expect(pies.listMine).toHaveBeenCalledTimes(2);
+      expect(header().textContent).toContain('This account follows');
+    });
+
+    it("shows why the pie could not be made the user's own", () => {
+      accountPies.getAccountPie.and.returnValue(of(COPY));
+      accountPies.makePieMine.and.returnValue(
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 409,
+              error: { message: 'Nothing from the copied pie has been applied to this account yet' },
+            }),
+        ),
+      );
+      create();
+      button('Make it mine').click();
+      fixture.detectChanges();
+      expect(root.querySelector('[role="alert"]')?.textContent).toContain('Nothing from the copied pie');
+    });
+
+    it('stops copying after confirming, keeping holdings', () => {
+      accountPies.getAccountPie.and.returnValue(of(COPY));
+      accountPies.unlinkPie.and.returnValue(of(null));
+      const confirm = spyOn(window, 'confirm').and.returnValue(true);
+      create();
+      button('Stop copying').click();
+      expect(confirm.calls.mostRecent().args[0]).toContain('Your holdings stay as they are');
+      expect(accountPies.unlinkPie).toHaveBeenCalledOnceWith('ACC001');
+    });
   });
 });

@@ -87,7 +87,8 @@ public class RebalanceRunService {
     }
 
     /**
-     * Starts a run to the latest version of the pie the account follows and places its sells.
+     * Starts a run to the latest version of the pie the account follows, or to what a copy of a pie that is
+     * no longer public last applied, and places its sells.
      * Refused while the account has an active run, or orders still waiting that the run could not
      * tell apart from its own: they hold cash and shares the plan counts on.
      */
@@ -107,7 +108,12 @@ public class RebalanceRunService {
         Pie pie = pieRepository.findById(link.getPieId())
             .orElseThrow(() -> new PieNotFoundException("Pie not found: " + link.getPieId()));
 
-        RebalanceRun run = runRepository.save(RebalanceRun.start(accountId, pie.getPieId(), pie.getLatestVersion()));
+        Integer version = link.targetVersion(pie);
+        if (version == null) {
+            throw new PieNotFoundException("Pie not found: " + pie.getPieId());
+        }
+
+        RebalanceRun run = runRepository.save(RebalanceRun.start(accountId, pie.getPieId(), version));
         RebalancePlan plan = planner.plan(accountId, pieService.weightsAt(run.getPieId(), run.getTargetVersion()));
         place(run, plan, PlannedAction.SELL);
         step(run);
@@ -207,9 +213,7 @@ public class RebalanceRunService {
             }
         }
         run.finish();
-        accountPieRepository.findById(run.getAccountId())
-            .filter(link -> link.getPieId().equals(run.getPieId()))
-            .ifPresent(link -> link.applyVersion(run.getTargetVersion()));
+        accountPieRepository.applyVersion(run.getAccountId(), run.getPieId(), run.getTargetVersion());
         log.info("Rebalance run ended: runId={}, status={}", run.getRunId(), run.getStatus());
     }
 

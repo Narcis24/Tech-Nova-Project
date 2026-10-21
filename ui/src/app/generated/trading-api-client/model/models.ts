@@ -8,6 +8,7 @@ export * from './analyticsTotals';
 export * from './assetMixEntry';
 export * from './balanceResponse';
 export * from './cashAmountRequest';
+export * from './copyPieRequest';
 export * from './createUserRequest';
 export * from './createUserResponse';
 export * from './instrumentResponse';

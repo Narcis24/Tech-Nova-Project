@@ -33,14 +33,37 @@ public class AccountPie {
     @Column(name = "applied_version")
     private Integer appliedVersion;
 
-    @Column(name = "auto_sync")
-    private boolean autoSync;
-
     @Column(name = "linked_at")
     private LocalDateTime linkedAt;
 
     public void applyVersion(int version) {
         this.appliedVersion = version;
+    }
+
+    /**
+     * The version this link should be brought to: the pie's latest, except for a copy of a pie that is no longer
+     * public, which stays at what it last applied. Null if that is nothing yet.
+     */
+    public Integer targetVersion(Pie pie) {
+        return mode == PieLinkMode.COPY && !pie.isPublished() ? appliedVersion : Integer.valueOf(pie.getLatestVersion());
+    }
+
+    public boolean isBehind(Pie pie) {
+        return appliedVersion == null || appliedVersion < pie.getLatestVersion();
+    }
+
+    /** Keeps the holdings but follows a pie of the user's own from now on, one already at {@code appliedVersion}. */
+    public void makeOwn(UUID pieId, int appliedVersion) {
+        this.pieId = pieId;
+        this.mode = PieLinkMode.OWN;
+        this.appliedVersion = appliedVersion;
+        this.linkedAt = LocalDateTime.now(ZoneOffset.UTC);
+    }
+
+    public static AccountPie copy(String accountId, UUID pieId) {
+        AccountPie link = own(accountId, pieId);
+        link.mode = PieLinkMode.COPY;
+        return link;
     }
 
     public static AccountPie own(String accountId, UUID pieId) {

@@ -1,9 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import { signal } from '@angular/core';
+import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { Observable, Subject, of, throwError } from 'rxjs';
 
 import { PublicPieControllerService, PublicPieResponse } from '../../generated/trading-api-client';
+import { AccountService } from '../../services/account.service';
+import { AuthService } from '../../services/auth.service';
 import { PublicPieComponent } from './public-pie.component';
 
 const PIE: PublicPieResponse = {
@@ -31,6 +34,9 @@ const cells = (el: Element) =>
 
 describe('PublicPieComponent', () => {
   let api: jasmine.SpyObj<{ getPublicPie: (id: string) => Observable<PublicPieResponse> }>;
+  const username = signal<string | null>('grace');
+  const accounts = signal([{ accountId: 'acc1', holderName: 'Grace ISA' }]);
+  const currentAccountId = signal<string | null>('acc1');
   let fixture: ComponentFixture<PublicPieComponent>;
   let root: HTMLElement;
 
@@ -41,6 +47,8 @@ describe('PublicPieComponent', () => {
   }
 
   beforeEach(() => {
+    username.set('grace');
+    currentAccountId.set('acc1');
     api = jasmine.createSpyObj('publicPies', ['getPublicPie']);
     api.getPublicPie.and.returnValue(of(PIE));
     TestBed.configureTestingModule({
@@ -48,6 +56,8 @@ describe('PublicPieComponent', () => {
       providers: [
         provideRouter([]),
         { provide: PublicPieControllerService, useValue: api },
+        { provide: AuthService, useValue: { username } },
+        { provide: AccountService, useValue: { accounts, currentAccountId } },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'p1' } } } },
       ],
     });
@@ -78,8 +88,9 @@ describe('PublicPieComponent', () => {
     expect(root.querySelector('app-donut-chart')).not.toBeNull();
   });
 
-  it('does not show any account details', () => {
+  it("does not show any of the author's account details", () => {
     create();
+    root.querySelector('.copy')?.remove(); // names the viewer's own account
     expect(root.textContent).not.toMatch(/ACC|account|\$/i);
   });
 
@@ -104,5 +115,27 @@ describe('PublicPieComponent', () => {
     (root.querySelector('button') as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(root.querySelector('h1')!.textContent).toBe('Steady Compounders');
+  });
+
+  it('copies into the current account through the preview', () => {
+    const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    create();
+    expect(root.querySelector('.copy')?.textContent).toContain('Into account acc1');
+    expect(root.querySelector('.copy')?.textContent).toContain('your review and confirmation');
+    (root.querySelector('.copy button') as HTMLButtonElement).click();
+    expect(navigate).toHaveBeenCalledWith(['/accounts', 'acc1', 'rebalance'], { queryParams: { copy: 'p1' } });
+  });
+
+  it("doesn't offer to copy your own pie", () => {
+    username.set('ada');
+    create();
+    expect(root.querySelector('.copy')).toBeNull();
+  });
+
+  it('asks for an account before copying', () => {
+    currentAccountId.set(null);
+    create();
+    expect(root.querySelector('.copy button')).toBeNull();
+    expect(root.querySelector('.copy')?.textContent).toContain('Open an account');
   });
 });

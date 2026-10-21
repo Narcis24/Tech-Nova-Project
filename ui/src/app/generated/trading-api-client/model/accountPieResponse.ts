@@ -19,5 +19,8 @@ export interface AccountPieResponse {
     latestVersion?: number;
     drift?: Array<SliceDrift>;
     maxDriftPct?: number;
+    published?: boolean;
+    updateAvailable?: boolean;
+    activeRunId?: string;
 }
 

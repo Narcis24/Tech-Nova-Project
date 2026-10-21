@@ -35,7 +35,6 @@ CREATE TABLE account_pies (
     pie_id           UUID        NOT NULL REFERENCES pies(pie_id),
     mode             VARCHAR(5)  NOT NULL CHECK (mode IN ('OWN', 'COPY')),
     applied_version  INT,
-    auto_sync        BOOLEAN     NOT NULL DEFAULT FALSE,
     linked_at        TIMESTAMP   NOT NULL
 );
 CREATE INDEX idx_account_pies_pie ON account_pies(pie_id);

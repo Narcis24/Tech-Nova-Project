@@ -116,6 +116,23 @@ export class PiesComponent {
     });
   }
 
+  stopCopying(link: AccountPieResponse): void {
+    if (!window.confirm(`Stop copying ${link.pieName}? Your holdings stay as they are.`)) return;
+    this.unlink();
+  }
+
+  /** Makes a private pie from the last allocation applied to this account. */
+  makeMine(): void {
+    const id = this.accountId();
+    if (!id) return;
+    this.actionError.set(null);
+    this.accountPieApi.makePieMine(id).subscribe({
+      next: () => this.retry(),
+      error: (error: unknown) =>
+        this.actionError.set(conflictMessage(error) ?? "Couldn't make the pie yours. Try again."),
+    });
+  }
+
   remove(pie: PieResponse): void {
     if (!window.confirm(`Delete ${pie.name}?`)) return;
     this.actionError.set(null);
@@ -129,4 +146,10 @@ export class PiesComponent {
         ),
     });
   }
+}
+
+function conflictMessage(error: unknown): string | null {
+  if (!(error instanceof HttpErrorResponse) || error.status !== 409) return null;
+  const message = error.error?.message;
+  return typeof message === 'string' && message.trim() ? message : null;
 }

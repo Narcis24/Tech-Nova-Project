@@ -24,6 +24,21 @@ h1 {
   font-weight: 600;
 }
 
+.copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 16px 0 0;
+}
+
+.copy .note {
+  flex: 1;
+  min-width: 220px;
+  margin: 0;
+  line-height: 1.5;
+}
+
 .byline,
 .description {
   margin: 6px 0 0;

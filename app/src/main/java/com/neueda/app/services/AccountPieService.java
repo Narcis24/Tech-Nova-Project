@@ -3,18 +3,22 @@ package com.neueda.app.services;
 import com.neueda.app.dtos.AccountPieResponse;
 import com.neueda.app.dtos.PreviewLeg;
 import com.neueda.app.dtos.RebalancePreviewResponse;
+import com.neueda.app.dtos.RebalanceRunResponse;
 import com.neueda.app.dtos.SliceDrift;
+import com.neueda.app.enums.PieLinkMode;
 import com.neueda.app.enums.RebalanceStatus;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.PieNotFoundException;
 import com.neueda.app.exceptions.PieNotLinkedException;
 import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.exceptions.RebalanceConflictException;
+import com.neueda.app.models.Account;
 import com.neueda.app.models.AccountPie;
 import com.neueda.app.models.Pie;
 import com.neueda.app.repositories.AccountPieRepository;
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.PieRepository;
+import com.neueda.app.models.RebalanceRun;
 import com.neueda.app.repositories.RebalanceRunRepository;
 import com.neueda.app.services.RebalanceCalculator.PlannedLeg;
 import com.neueda.app.services.RebalanceCalculator.RebalancePlan;
@@ -26,7 +30,10 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Which pie an account follows, how far it has drifted, and the trades that would fix it. */
+/**
+ * Which pie an account follows, how far it has drifted, and the trades that would fix it. An account follows a pie
+ * of its owner's (OWN) or copies a public pie of someone else's (COPY), whose updates require explicit review and confirmation.
+ */
 @Service
 public class AccountPieService {
 
@@ -39,10 +46,12 @@ public class AccountPieService {
     private final RiskService riskService;
     private final AccountRepository accountRepository;
     private final RebalanceRunRepository rebalanceRunRepository;
+    private final RebalanceRunService rebalanceRunService;
 
     public AccountPieService(AccountPieRepository accountPieRepository, PieRepository pieRepository,
                              PieService pieService, RebalancePlanner planner, RiskService riskService,
-                             AccountRepository accountRepository, RebalanceRunRepository rebalanceRunRepository) {
+                             AccountRepository accountRepository, RebalanceRunRepository rebalanceRunRepository,
+                             RebalanceRunService rebalanceRunService) {
         this.accountPieRepository = accountPieRepository;
         this.pieRepository = pieRepository;
         this.pieService = pieService;
@@ -50,6 +59,7 @@ public class AccountPieService {
         this.riskService = riskService;
         this.accountRepository = accountRepository;
         this.rebalanceRunRepository = rebalanceRunRepository;
+        this.rebalanceRunService = rebalanceRunService;
     }
 
     @Transactional
@@ -75,7 +85,56 @@ public class AccountPieService {
     public RebalancePreviewResponse preview(String accountId) {
         AccountPie link = requireLink(accountId);
         Pie pie = requirePie(link.getPieId());
-        Map<String, BigDecimal> targets = pieService.latestWeights(pie.getPieId());
+        Integer version = link.targetVersion(pie);
+        if (version == null) {
+            throw new PieNotFoundException("Pie not found: " + pie.getPieId());
+        }
+        return preview(accountId, pie.getPieId(), version);
+    }
+
+    /** The preview of copying a public pie into the account. Nothing is linked or placed. */
+    public RebalancePreviewResponse previewCopy(String accountId, String owner, UUID pieId) {
+        accountRepository.findById(accountId)
+            .orElseThrow(() -> new AccountNotFoundException("Account not found: " + accountId))
+            .validateStatus();
+        Pie pie = requireCopyable(pieId, owner);
+        return preview(accountId, pieId, pie.getLatestVersion());
+    }
+
+    /**
+     * Links the account to the public pie as a COPY and starts the run to its latest version, in one transaction:
+     * if the run can't start, because one is active, orders are pending or the market can't be priced, there is no link.
+     */
+    @Transactional
+    public RebalanceRunResponse copy(String accountId, String owner, UUID pieId) {
+        lockAccount(accountId).validateStatus();
+        requireCopyable(pieId, owner);
+        if (accountPieRepository.findById(accountId)
+            .filter(link -> link.getMode() == PieLinkMode.COPY && link.getPieId().equals(pieId)).isPresent()) {
+            throw new RebalanceConflictException("This account already copies this pie");
+        }
+        accountPieRepository.save(AccountPie.copy(accountId, pieId));
+        return rebalanceRunService.start(accountId);
+    }
+
+    /**
+     * Gives the account a private pie of its own with the slices it last applied from the copied one, and follows that
+     * from now on. The holdings stay as they are, so no orders are placed.
+     */
+    @Transactional
+    public AccountPieResponse makeMine(String accountId, String owner) {
+        requireNoActiveRun(accountId);
+        AccountPie link = requireCopy(accountId);
+        if (link.getAppliedVersion() == null) {
+            throw new RebalanceConflictException("Nothing from the copied pie has been applied to this account yet");
+        }
+        Pie mine = pieService.duplicate(owner, requirePie(link.getPieId()), link.getAppliedVersion());
+        link.makeOwn(mine.getPieId(), 1);
+        return toResponse(link);
+    }
+
+    private RebalancePreviewResponse preview(String accountId, UUID pieId, int version) {
+        Map<String, BigDecimal> targets = pieService.weightsAt(pieId, version);
         RebalancePlan plan = planner.plan(accountId, targets);
 
         Map<String, BigDecimal> valuesAfter = new HashMap<>();
@@ -93,9 +152,13 @@ public class AccountPieService {
         }).toList();
 
         BigDecimal cashTargetPct = HUNDRED.subtract(targets.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add));
-        return new RebalancePreviewResponse(accountId, pie.getPieId(), pie.getLatestVersion(), plan.totalValue(),
+        return new RebalancePreviewResponse(accountId, pieId, version, plan.totalValue(),
             plan.cashBefore(), plan.cashAfter(), cashTargetPct, legs,
             riskService.checkHoldings(accountId, valuesAfter, plan.cashAfter()));
+    }
+
+    private AccountPieResponse toResponse(AccountPie link) {
+        return toResponse(link, true);
     }
 
     /**
@@ -104,33 +167,64 @@ public class AccountPieService {
      */
     private AccountPieResponse toResponse(AccountPie link, boolean tolerateMissingPrices) {
         Pie pie = requirePie(link.getPieId());
-        Map<String, BigDecimal> targets = pieService.latestWeights(pie.getPieId());
+        Integer version = link.targetVersion(pie);
         List<SliceDrift> drift = List.of();
         BigDecimal maxDrift = null;
         try {
-            RebalancePlan plan = planner.plan(link.getAccountId(), targets);
-            drift = plan.legs().stream()
-                .filter(PlannedLeg::inPie)
-                .map(leg -> new SliceDrift(leg.symbol(), leg.targetPct(), leg.currentPct(), leg.driftPct()))
-                .toList();
-            maxDrift = drift.stream().map(SliceDrift::getDriftPct).max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+            if (version != null) {
+                drift = planner.plan(link.getAccountId(), pieService.weightsAt(pie.getPieId(), version)).legs().stream()
+                    .filter(PlannedLeg::inPie)
+                    .map(leg -> new SliceDrift(leg.symbol(), leg.targetPct(), leg.currentPct(), leg.driftPct()))
+                    .toList();
+                maxDrift = drift.stream().map(SliceDrift::getDriftPct).max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+            }
         } catch (PriceNotFoundException e) {
             if (!tolerateMissingPrices) {
                 throw e;
             }
         }
+        boolean updateAvailable = link.getMode() == PieLinkMode.COPY && pie.isPublished() && link.isBehind(pie);
+        RebalanceRun activeRun = rebalanceRunRepository
+            .findFirstByAccountIdAndStatusIn(link.getAccountId(), RebalanceStatus.ACTIVE)
+            .orElse(null);
         return new AccountPieResponse(link.getAccountId(), pie.getPieId(), pie.getName(), link.getMode().name(),
-            link.getAppliedVersion(), pie.getLatestVersion(), drift, maxDrift);
+            link.getAppliedVersion(), version == null ? 0 : version, drift, maxDrift, pie.isPublished(),
+            updateAvailable, activeRun == null ? null : activeRun.getRunId());
     }
 
     /** Under the account's row lock, the same one a run starts under, so a run can't start mid-change. */
     private void requireNoActiveRun(String accountId) {
-        accountRepository.findByIdForUpdate(accountId)
-            .orElseThrow(() -> new AccountNotFoundException("Account not found: " + accountId));
+        lockAccount(accountId);
         if (rebalanceRunRepository.existsByAccountIdAndStatusIn(accountId, RebalanceStatus.ACTIVE)) {
-            throw new RebalanceConflictException("A rebalance is running for account " + accountId
-                + ", so its pie can't be changed");
+            throw new RebalanceConflictException(
+                "A rebalance is running on this account, so its pie can't change until it ends");
         }
+    }
+
+    private Account lockAccount(String accountId) {
+        return accountRepository.findByIdForUpdate(accountId)
+            .orElseThrow(() -> new AccountNotFoundException("Account not found: " + accountId));
+    }
+
+    /** A pie of someone else's that is public. Your own is a 409 whatever its visibility; a private one is a 404. */
+    private Pie requireCopyable(UUID pieId, String owner) {
+        Pie pie = pieRepository.findById(pieId).filter(found -> found.getDeletedAt() == null)
+            .orElseThrow(() -> new PieNotFoundException("Pie not found: " + pieId));
+        if (pie.getOwnerUsername().equals(owner)) {
+            throw new RebalanceConflictException("You can't copy your own pie. Link it to the account instead");
+        }
+        if (!pie.isPublished()) {
+            throw new PieNotFoundException("Pie not found: " + pieId);
+        }
+        return pie;
+    }
+
+    private AccountPie requireCopy(String accountId) {
+        AccountPie link = requireLink(accountId);
+        if (link.getMode() != PieLinkMode.COPY) {
+            throw new RebalanceConflictException("This account isn't copying a pie");
+        }
+        return link;
     }
 
     private AccountPie requireLink(String accountId) {

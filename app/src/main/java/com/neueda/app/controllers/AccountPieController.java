@@ -1,8 +1,10 @@
 package com.neueda.app.controllers;
 
 import com.neueda.app.dtos.AccountPieResponse;
+import com.neueda.app.dtos.CopyPieRequest;
 import com.neueda.app.dtos.LinkPieRequest;
 import com.neueda.app.dtos.RebalancePreviewResponse;
+import com.neueda.app.dtos.RebalanceRunResponse;
 import com.neueda.app.services.AccountAccess;
 import com.neueda.app.services.AccountPieService;
 import jakarta.validation.Valid;
@@ -52,5 +54,28 @@ public class AccountPieController {
     public ResponseEntity<RebalancePreviewResponse> previewRebalance(@PathVariable String accountId) {
         accountAccess.requireOwned(accountId);
         return ResponseEntity.ok(accountPieService.preview(accountId));
+    }
+
+    /** The preview of copying a public pie into the account. Nothing is linked or placed. */
+    @PostMapping("/copy-preview")
+    public ResponseEntity<RebalancePreviewResponse> previewCopy(@PathVariable String accountId,
+                                                                @Valid @RequestBody CopyPieRequest request) {
+        accountAccess.requireOwned(accountId);
+        return ResponseEntity.ok(accountPieService.previewCopy(accountId, accountAccess.currentUser(), request.getPieId()));
+    }
+
+    /** Confirms the copy: links the account as a COPY and starts the run to the pie's latest version. */
+    @PostMapping("/copy")
+    public ResponseEntity<RebalanceRunResponse> copyPie(@PathVariable String accountId,
+                                                        @Valid @RequestBody CopyPieRequest request) {
+        accountAccess.requireOwned(accountId);
+        return ResponseEntity.accepted()
+            .body(accountPieService.copy(accountId, accountAccess.currentUser(), request.getPieId()));
+    }
+
+    @PostMapping("/make-mine")
+    public ResponseEntity<AccountPieResponse> makePieMine(@PathVariable String accountId) {
+        accountAccess.requireOwned(accountId);
+        return ResponseEntity.ok(accountPieService.makeMine(accountId, accountAccess.currentUser()));
     }
 }
