@@ -2,7 +2,10 @@ package com.neueda.app.controllers;
 
 import com.neueda.app.configs.SecurityConfig;
 import com.neueda.app.dtos.AdminUserResponse;
+import com.neueda.app.dtos.AdminUserDetailResponse;
+import com.neueda.app.dtos.AccountResponse;
 import com.neueda.app.dtos.CreateUserRequest;
+import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.enums.Role;
 import com.neueda.app.exceptions.RoleChangeNotAllowedException;
 import com.neueda.app.exceptions.UserAlreadyExistsException;
@@ -99,6 +102,54 @@ class AdminUserControllerTest {
             .andExpect(jsonPath("$[1].username").value("trader_one"))
             .andExpect(jsonPath("$[1].roles[0]").value("TRADER"))
             .andExpect(jsonPath("$[0].passwordHash").doesNotExist());
+    }
+
+    @Test
+    void getUser_Admin_ReturnsDetailsAndAccounts() throws Exception {
+        when(adminUserService.getUser("trader_one")).thenReturn(new AdminUserDetailResponse(
+            "trader_one", "trader_one@example.com", List.of(Role.TRADER),
+            Instant.parse("2026-10-19T09:25:31Z"), null,
+            List.of(new AccountResponse("ACC-1234", "Trader One", java.math.BigDecimal.valueOf(1250),
+                AccountStatus.ACTIVE))));
+
+        mockMvc.perform(get("/v1/admin/users/trader_one").header("Authorization", "Bearer admin-token"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.username").value("trader_one"))
+            .andExpect(jsonPath("$.accounts[0].accountId").value("ACC-1234"))
+            .andExpect(jsonPath("$.accounts[0].status").value("ACTIVE"));
+    }
+
+    @Test
+    void getUser_Trader_Returns403() throws Exception {
+        mockMvc.perform(get("/v1/admin/users/trader_one").header("Authorization", "Bearer trader-token"))
+            .andExpect(status().isForbidden());
+        verifyNoInteractions(adminUserService);
+    }
+
+    @Test
+    void updateAccountStatus_AdminReturnsUpdatedAccount() throws Exception {
+        when(adminUserService.updateAccountStatus("trader_one", "ACC-1234", AccountStatus.SUSPENDED))
+            .thenReturn(new AccountResponse("ACC-1234", "Trader One", java.math.BigDecimal.valueOf(1250),
+                AccountStatus.SUSPENDED));
+
+        mockMvc.perform(put("/v1/admin/users/trader_one/accounts/ACC-1234/status")
+                .header("Authorization", "Bearer admin-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"SUSPENDED\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("SUSPENDED"));
+
+        verify(adminUserService).updateAccountStatus("trader_one", "ACC-1234", AccountStatus.SUSPENDED);
+    }
+
+    @Test
+    void updateAccountStatus_Trader_Returns403() throws Exception {
+        mockMvc.perform(put("/v1/admin/users/trader_one/accounts/ACC-1234/status")
+                .header("Authorization", "Bearer trader-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"SUSPENDED\"}"))
+            .andExpect(status().isForbidden());
+        verifyNoInteractions(adminUserService);
     }
 
     private org.springframework.test.web.servlet.ResultActions putRoles(String token, String username, String body)
