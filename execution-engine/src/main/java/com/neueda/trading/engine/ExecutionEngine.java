@@ -294,7 +294,7 @@ public class ExecutionEngine {
     }
 
     private void journal(String type, Map<String, Object> fields) {
-        journal.record(clock.instant(), type, fields);
+        journal.write(clock.instant(), type, fields);
     }
 
     private void journalDecision(OrderPlacedEvent order, String decision, BigDecimal price, String reason) {

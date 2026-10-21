@@ -11,6 +11,8 @@ public final class JournalTypes {
 
     public static final String FILL = "FILL";
     public static final String REJECT = "REJECT";
+    // Named like the value written in the journal; it never clashes with Object.wait()
+    @SuppressWarnings("java:S1845")
     public static final String WAIT = "WAIT";
     public static final String QUEUED_MARKET_CLOSED = "QUEUED_MARKET_CLOSED";
 

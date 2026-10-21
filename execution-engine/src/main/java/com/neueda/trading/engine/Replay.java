@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
@@ -51,6 +52,13 @@ public final class Replay {
     // Defaults for journals written before ENGINE_STARTED carried the settings
     private static final int DEFAULT_MAX_QUOTE_AGE_SECONDS = 600;
     private static final boolean DEFAULT_ENFORCE_MARKET_HOURS = true;
+    private static final Pattern JOURNAL_FILE = Pattern.compile(".*\\.jsonl(\\.gz)?");
+    // Field names in a journal line
+    private static final String ORDER = "order";
+    private static final String ORDER_ID = "orderId";
+    private static final String QUOTE = "quote";
+    private static final String PRICE = "price";
+    private static final String REASON = "reason";
 
     /** One decision; seq is the journal line it was recorded on (0 for a replayed one). */
     record Decision(long seq, String orderId, String decision, BigDecimal price, String reason) {
@@ -96,6 +104,8 @@ public final class Replay {
         this.mapper = mapper;
     }
 
+    // A command-line tool: what it prints is its result, not a log
+    @SuppressWarnings("java:S106")
     public static void main(String[] args) {
         System.exit(execute(args, System.out));
     }
@@ -104,11 +114,14 @@ public final class Replay {
     static int execute(String[] args, PrintStream out) {
         Path report = null;
         List<Path> inputs = new ArrayList<>();
-        for (int i = 0; i < args.length; i++) {
+        int i = 0;
+        while (i < args.length) {
             if ("--report".equals(args[i]) && i + 1 < args.length) {
-                report = Path.of(args[++i]);
+                report = Path.of(args[i + 1]);
+                i += 2;
             } else {
                 inputs.add(Path.of(args[i]));
+                i++;
             }
         }
         if (inputs.isEmpty()) {
@@ -160,7 +173,7 @@ public final class Replay {
                 continue;
             }
             try (Stream<Path> files = Files.list(input)) {
-                files.filter(f -> f.getFileName().toString().matches(".*\\.jsonl(\\.gz)?")).sorted().forEach(journals::add);
+                files.filter(f -> JOURNAL_FILE.matcher(f.getFileName().toString()).matches()).sorted().forEach(journals::add);
             } catch (IOException e) {
                 out.println("Could not list " + input + ": " + e.getMessage());
             }
@@ -171,10 +184,10 @@ public final class Replay {
     private static Map<String, Object> reportEntry(Difference d) {
         Map<String, Object> entry = new LinkedHashMap<>();
         entry.put("seq", d.recorded() != null ? d.seq() : null);
-        entry.put("orderId", d.recorded() != null ? d.recorded().orderId() : d.replayed().orderId());
+        entry.put(ORDER_ID, d.recorded() != null ? d.recorded().orderId() : d.replayed().orderId());
         entry.put("recorded", d.recorded() != null ? d.recorded().toString() : null);
         entry.put("replayed", d.replayed() != null ? d.replayed().toString() : null);
-        entry.put("order", d.order());
+        entry.put(ORDER, d.order());
         entry.put("lastQuote", d.lastQuote());
         return entry;
     }
@@ -198,20 +211,32 @@ public final class Replay {
     }
 
     Result run(Path journal) throws IOException {
-        List<Decision> recorded = new ArrayList<>();
-        // For the report: each recorded decision's order, and the last quote for its symbol before it
-        Map<String, JsonNode> ordersById = new HashMap<>();
-        Map<String, JsonNode> lastQuotes = new HashMap<>();
-        List<JsonNode[]> context = new ArrayList<>();
-        ExecutionEngine engine = null;
-        int runs = 0;
-        int orders = 0;
-        int quotes = 0;
+        JournalRun run = new JournalRun();
         for (String text : readLines(journal)) {
-            if (text.isBlank()) {
-                continue;
+            if (!text.isBlank()) {
+                run.apply(mapper.readTree(text));
             }
-            JsonNode line = mapper.readTree(text);
+        }
+        if (run.runs == 0 && run.orders == 0 && run.quotes == 0) {
+            throw new IllegalArgumentException("the journal has no engine runs, orders or quotes");
+        }
+        return new Result(run.runs, run.orders, run.quotes, run.recorded, compare(run.recorded, run.context, replayed));
+    }
+
+    /** One journal's replay, line by line: feeds the engine and keeps the recorded decisions to compare. */
+    private final class JournalRun {
+
+        private final List<Decision> recorded = new ArrayList<>();
+        // For the report: each recorded decision's order, and the last quote for its symbol before it
+        private final Map<String, JsonNode> ordersById = new HashMap<>();
+        private final Map<String, JsonNode> lastQuotes = new HashMap<>();
+        private final List<JsonNode[]> context = new ArrayList<>();
+        private ExecutionEngine engine;
+        private int runs;
+        private int orders;
+        private int quotes;
+
+        void apply(JsonNode line) {
             clock.set(Instant.parse(line.get("time").asString()));
             switch (line.get("type").asString()) {
                 case JournalTypes.ENGINE_STARTED -> {
@@ -220,40 +245,51 @@ public final class Replay {
                     runs++;
                 }
                 case JournalTypes.ORDER_RECEIVED -> {
-                    engine = engine != null ? engine : freshEngine(line);
-                    engine.handle(mapper.treeToValue(line.get("order"), OrderPlacedEvent.class));
-                    ordersById.put(line.get("order").get("orderId").asString(), line.get("order"));
+                    engine(line).handle(mapper.treeToValue(line.get(ORDER), OrderPlacedEvent.class));
+                    ordersById.put(line.get(ORDER).get(ORDER_ID).asString(), line.get(ORDER));
                     orders++;
                 }
                 case JournalTypes.QUOTE_RECEIVED -> {
-                    engine = engine != null ? engine : freshEngine(line);
-                    engine.accept(mapper.treeToValue(line.get("quote"), Quote.class));
-                    lastQuotes.put(line.get("quote").get("symbol").asString(), line.get("quote"));
+                    engine(line).accept(mapper.treeToValue(line.get(QUOTE), Quote.class));
+                    lastQuotes.put(line.get(QUOTE).get("symbol").asString(), line.get(QUOTE));
                     quotes++;
                 }
-                case JournalTypes.ORDER_CANCELLED -> {
-                    engine = engine != null ? engine : freshEngine(line);
-                    engine.cancel(UUID.fromString(line.get("orderId").asString()));
-                }
-                case JournalTypes.DECISION -> {
-                    String orderId = line.get("orderId").asString();
-                    recorded.add(new Decision(
-                        line.get("seq").asLong(),
-                        orderId,
-                        line.get("decision").asString(),
-                        line.has("price") ? line.get("price").decimalValue() : null,
-                        line.has("reason") ? line.get("reason").asString() : null));
-                    JsonNode order = ordersById.get(orderId);
-                    context.add(new JsonNode[] {order,
-                        order != null ? lastQuotes.get(order.get("symbol").asString()) : null});
-                }
+                case JournalTypes.ORDER_CANCELLED -> engine(line).cancel(UUID.fromString(line.get(ORDER_ID).asString()));
+                case JournalTypes.DECISION -> recordDecision(line);
                 default -> throw new IllegalArgumentException("Unknown journal line type: " + line.get("type"));
             }
         }
-        if (runs == 0 && orders == 0 && quotes == 0) {
-            throw new IllegalArgumentException("the journal has no engine runs, orders or quotes");
+
+        /** The running engine; a journal that starts mid-run gets one at its first line. */
+        private ExecutionEngine engine(JsonNode line) {
+            if (engine == null) {
+                engine = freshEngine(line);
+            }
+            return engine;
         }
-        return new Result(runs, orders, quotes, recorded, compare(recorded, context, replayed));
+
+        private ExecutionEngine freshEngine(JsonNode line) {
+            int maxQuoteAge = line.has("maxQuoteAgeSeconds")
+                ? line.get("maxQuoteAgeSeconds").asInt() : DEFAULT_MAX_QUOTE_AGE_SECONDS;
+            boolean enforceHours = line.has("enforceMarketHours")
+                ? line.get("enforceMarketHours").asBoolean() : DEFAULT_ENFORCE_MARKET_HOURS;
+            MarketDataProperties props = new MarketDataProperties(
+                List.of("REPLAY"), 120, 25, 2000, maxQuoteAge, "http://replay", "", "");
+            return new ExecutionEngine(mapper, new SilentProducer(mapper), new QuoteCache(), props,
+                new CollectingJournal(mapper, replayed), clock, enforceHours);
+        }
+
+        private void recordDecision(JsonNode line) {
+            String orderId = line.get(ORDER_ID).asString();
+            recorded.add(new Decision(
+                line.get("seq").asLong(),
+                orderId,
+                line.get("decision").asString(),
+                line.has(PRICE) ? line.get(PRICE).decimalValue() : null,
+                line.has(REASON) ? line.get(REASON).asString() : null));
+            JsonNode order = ordersById.get(orderId);
+            context.add(new JsonNode[] {order, order != null ? lastQuotes.get(order.get("symbol").asString()) : null});
+        }
     }
 
     /** The journal's lines; a {@code .gz} journal is unzipped while it is read. */
@@ -265,17 +301,6 @@ public final class Replay {
                 new GZIPInputStream(Files.newInputStream(journal)), StandardCharsets.UTF_8))) {
             return reader.lines().toList();
         }
-    }
-
-    private ExecutionEngine freshEngine(JsonNode line) {
-        int maxQuoteAge = line.has("maxQuoteAgeSeconds")
-            ? line.get("maxQuoteAgeSeconds").asInt() : DEFAULT_MAX_QUOTE_AGE_SECONDS;
-        boolean enforceHours = line.has("enforceMarketHours")
-            ? line.get("enforceMarketHours").asBoolean() : DEFAULT_ENFORCE_MARKET_HOURS;
-        MarketDataProperties props = new MarketDataProperties(
-            List.of("REPLAY"), 120, 25, 2000, maxQuoteAge, "http://replay", "", "");
-        return new ExecutionEngine(mapper, new SilentProducer(mapper), new QuoteCache(), props,
-            new CollectingJournal(mapper, replayed), clock, enforceHours);
     }
 
     /**
@@ -292,20 +317,24 @@ public final class Replay {
 
         List<Difference> differences = new ArrayList<>();
         for (String orderId : orderIds) {
-            List<Integer> was = recordedByOrder.getOrDefault(orderId, List.of());
-            List<Integer> now = replayedByOrder.getOrDefault(orderId, List.of());
-            for (int k = 0; k < Math.max(was.size(), now.size()); k++) {
-                Decision recordedDecision = k < was.size() ? recorded.get(was.get(k)) : null;
-                Decision replayedDecision = k < now.size() ? replayed.get(now.get(k)) : null;
-                if (recordedDecision != null && replayedDecision != null && recordedDecision.sameAs(replayedDecision)) {
-                    continue;
-                }
+            compareOrder(recordedByOrder.getOrDefault(orderId, List.of()),
+                replayedByOrder.getOrDefault(orderId, List.of()), recorded, context, replayed, differences);
+        }
+        return differences;
+    }
+
+    /** One order's k-th recorded decision against its k-th replayed one; was and now are positions in the lists. */
+    private static void compareOrder(List<Integer> was, List<Integer> now, List<Decision> recorded,
+            List<JsonNode[]> context, List<Decision> replayed, List<Difference> differences) {
+        for (int k = 0; k < Math.max(was.size(), now.size()); k++) {
+            Decision recordedDecision = k < was.size() ? recorded.get(was.get(k)) : null;
+            Decision replayedDecision = k < now.size() ? replayed.get(now.get(k)) : null;
+            if (recordedDecision == null || replayedDecision == null || !recordedDecision.sameAs(replayedDecision)) {
                 JsonNode[] around = recordedDecision != null ? context.get(was.get(k)) : new JsonNode[2];
                 differences.add(new Difference(recordedDecision != null ? recordedDecision.seq() : 0,
                     recordedDecision, replayedDecision, around[0], around[1]));
             }
         }
-        return differences;
     }
 
     /** The positions of each order's decisions, orders in the order they were first decided. */
@@ -353,18 +382,19 @@ public final class Replay {
         }
 
         @Override
-        public synchronized void record(Instant time, String type, Map<String, Object> fields) {
+        public synchronized void write(Instant time, String type, Map<String, Object> fields) {
             if (JournalTypes.DECISION.equals(type)) {
                 decisions.add(new Decision(0,
-                    String.valueOf(fields.get("orderId")),
+                    String.valueOf(fields.get(ORDER_ID)),
                     (String) fields.get("decision"),
-                    (BigDecimal) fields.get("price"),
-                    (String) fields.get("reason")));
+                    (BigDecimal) fields.get(PRICE),
+                    (String) fields.get(REASON)));
             }
         }
     }
 
-    /** A clock the replay moves to each journal line's time. */
+    /** A clock the replay moves to each journal line's time. Never compared, so Clock's equals is enough. */
+    @SuppressWarnings("java:S2160")
     private static final class ReplayClock extends Clock {
 
         private Instant now = Instant.EPOCH;

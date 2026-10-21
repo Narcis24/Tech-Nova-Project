@@ -30,6 +30,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/internal/journal")
 public class JournalController {
 
+    private static final String NO_JOURNAL = "No journal for ";
     private static final MediaType GZIP = MediaType.parseMediaType("application/gzip");
 
     private final JournalExplorer explorer;
@@ -47,7 +48,7 @@ public class JournalController {
 
     @GetMapping("/days/{day}")
     public JournalExplorer.DaySummary day(@PathVariable String day) throws IOException {
-        return explorer.summary(validDay(day)).orElseThrow(() -> notFound("No journal for " + day));
+        return explorer.summary(validDay(day)).orElseThrow(() -> notFound(NO_JOURNAL + day));
     }
 
     @GetMapping("/days/{day}/orders/{orderId}")
@@ -60,7 +61,7 @@ public class JournalController {
     /** The day's journal, gzipped, as a file to save. */
     @GetMapping("/days/{day}/download")
     public ResponseEntity<byte[]> download(@PathVariable String day) throws IOException {
-        Path file = explorer.file(validDay(day)).orElseThrow(() -> notFound("No journal for " + day));
+        Path file = explorer.file(validDay(day)).orElseThrow(() -> notFound(NO_JOURNAL + day));
         byte[] gzipped = file.getFileName().toString().endsWith(".gz") ? Files.readAllBytes(file) : gzip(file);
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION,
@@ -71,8 +72,9 @@ public class JournalController {
 
     /** Replays the day with this engine version: does it reach every recorded decision again? */
     @PostMapping("/days/{day}/verify")
-    public JournalVerifier.VerifyResult verify(@PathVariable String day) throws Exception {
-        Path file = explorer.file(validDay(day)).orElseThrow(() -> notFound("No journal for " + day));
+    public JournalVerifier.VerifyResult verify(@PathVariable String day)
+            throws IOException, TimeoutException, InterruptedException {
+        Path file = explorer.file(validDay(day)).orElseThrow(() -> notFound(NO_JOURNAL + day));
         return verifier.verify(day, file);
     }
 
