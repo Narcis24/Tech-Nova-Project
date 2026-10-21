@@ -72,7 +72,7 @@ describe('analytics helpers', () => {
 
       const kept = drawnBuckets(hours, 'HOUR');
 
-      expect(kept.length).toBe(7);
+      expect(kept).toHaveSize(7);
       expect(kept[0].start).toBe('2026-10-20T13:00:00.000Z'); // 09:00 in New York
       expect(kept[6].start).toBe('2026-10-20T19:00:00.000Z'); // 15:00
     });

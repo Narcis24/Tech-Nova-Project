@@ -59,23 +59,29 @@ export class MetricTabsComponent {
 
   // Left and right move between tabs, Home and End jump to the ends, as the ARIA tabs pattern expects
   onKeydown(event: KeyboardEvent, index: number): void {
-    const last = METRICS.length - 1;
-    const next =
-      event.key === 'ArrowRight'
-        ? (index + 1) % METRICS.length
-        : event.key === 'ArrowLeft'
-          ? (index - 1 + METRICS.length) % METRICS.length
-          : event.key === 'Home'
-            ? 0
-            : event.key === 'End'
-              ? last
-              : null;
+    const next = nextTab(event.key, index);
     if (next === null) {
       return;
     }
     event.preventDefault();
     this.choose(METRICS[next].key);
     this.buttons()[next]?.nativeElement.focus();
+  }
+}
+
+/** The tab a key moves to from the one at index, wrapping round at the ends; null for any other key. */
+function nextTab(key: string, index: number): number | null {
+  switch (key) {
+    case 'ArrowRight':
+      return (index + 1) % METRICS.length;
+    case 'ArrowLeft':
+      return (index - 1 + METRICS.length) % METRICS.length;
+    case 'Home':
+      return 0;
+    case 'End':
+      return METRICS.length - 1;
+    default:
+      return null;
   }
 }
 
@@ -95,6 +101,6 @@ function trend(values: (number | null)[]): { line: string | null; area: string |
   const y = (value: number) => HEIGHT - 3 - ((value - min) / span) * (HEIGHT - 6);
   const line = points.map((p, i) => `${i ? 'L' : 'M'}${x(p.index).toFixed(1)} ${y(p.value).toFixed(1)}`).join(' ');
   const first = x(points[0].index).toFixed(1);
-  const lastX = x(points[points.length - 1].index).toFixed(1);
+  const lastX = x(points.at(-1)!.index).toFixed(1);
   return { line, area: `${line} L${lastX} ${HEIGHT} L${first} ${HEIGHT} Z` };
 }

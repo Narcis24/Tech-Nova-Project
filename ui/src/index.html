@@ -9,12 +9,11 @@
       (() => {
         try {
           const storedTheme = localStorage.getItem('technova-theme');
-          const theme =
-            storedTheme === 'dark' || storedTheme === 'light'
-              ? storedTheme
-              : window.matchMedia('(prefers-color-scheme: dark)').matches
-                ? 'dark'
-                : 'light';
+          // The theme the user picked, or else the system's
+          let theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          if (storedTheme === 'dark' || storedTheme === 'light') {
+            theme = storedTheme;
+          }
           document.documentElement.dataset.theme = theme;
           document.documentElement.style.colorScheme = theme;
         } catch {

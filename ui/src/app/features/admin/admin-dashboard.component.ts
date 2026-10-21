@@ -1,4 +1,4 @@
-import { DOCUMENT } from '@angular/common';
+import { DatePipe, DOCUMENT } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
@@ -21,6 +21,7 @@ const CHART_WIDTH_KEY = 'technova-admin-chart-width';
 @Component({
   selector: 'app-admin-dashboard',
   imports: [
+    DatePipe,
     RouterLink,
     AnalyticsFiltersComponent,
     AnalyticsOverviewComponent,
@@ -37,6 +38,7 @@ export class AdminDashboardComponent {
   private readonly document = inject(DOCUMENT);
 
   readonly username = inject(AuthService).username;
+  readonly today = new Date();
   readonly users = signal<AdminUserResponse[] | null>(null);
   readonly error = signal(false);
 

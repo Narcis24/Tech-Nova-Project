@@ -9,7 +9,7 @@
 </header>
 
 @if (failed()) {
-  <p class="load-error" role="status">Couldn't refresh. Trying again in a minute.</p>
+  <output class="load-error">Couldn't refresh. Trying again in a minute.</output>
 }
 
 @if (live(); as live) {
@@ -21,7 +21,9 @@
 
     <figure class="hours">
       <figcaption class="caption">Orders per hour · last {{ days().length }} trading days</figcaption>
-      <div class="days" role="img" [attr.aria-label]="summary()">
+      <!-- Screen readers get the summary instead of the bars -->
+      <p class="visually-hidden">{{ summary() }}</p>
+      <div class="days" aria-hidden="true">
         @for (day of days(); track day.key) {
           <div class="day" [class.today]="day.today">
             <div class="bars">

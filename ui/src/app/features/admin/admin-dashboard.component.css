@@ -1,16 +1,79 @@
 /* Dashboard-only styles; headings, role badges and errors are in shared/admin-page.css */
 
-/* To the users page; underlined only on hover, like the nav tabs */
-.manage-link {
-  display: inline-block;
-  margin-bottom: 20px;
-  color: var(--primary-color);
+/* The greeting on the left, the button to the users page on the right; wraps on narrow screens */
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-bottom: 24px;
+}
+
+.greeting {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.greeting h1 {
+  margin: 0;
+  font-size: 30px;
   font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.name {
+  color: var(--primary-color);
+}
+
+.today {
+  margin: 0;
+  font-size: 14px;
+  color: var(--secondary-text-color);
+}
+
+/* To the users page; a card-coloured button like the chart's size button */
+.manage-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--elevated-background-color);
+  box-shadow: var(--card-shadow);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
   text-decoration: none;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.manage-link svg {
+  color: var(--primary-color);
 }
 
 .manage-link:hover {
-  text-decoration: underline;
+  border-color: var(--hover-border-color);
+  color: var(--primary-color);
+}
+
+.manage-link:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .greeting h1 {
+    font-size: 24px;
+  }
 }
 
 /* User count tiles, drawn as the same cards as the analytics widgets below, each in its own colour */

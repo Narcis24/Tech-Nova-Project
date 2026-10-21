@@ -9,13 +9,14 @@
   </ul>
 
   <div class="controls">
-    <div class="split" role="group" aria-label="Split the chart by">
+    <fieldset class="split">
+      <legend class="visually-hidden">Split the chart by</legend>
       @for (option of splits; track option.value) {
         <button type="button" [attr.aria-pressed]="split() === option.value" (click)="chooseSplit(option.value)">
           {{ option.label }}
         </button>
       }
-    </div>
+    </fieldset>
     <button type="button" class="link" [attr.aria-pressed]="bars()" (click)="chartType.set(bars() ? 'line' : 'bar')">
       {{ bars() ? 'Show as line chart' : 'Show as bar chart' }}
     </button>

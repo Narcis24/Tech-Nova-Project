@@ -88,7 +88,7 @@ describe('AdminDashboardComponent', () => {
   it('greets the signed-in admin', () => {
     const page = create(of(USERS));
 
-    expect(page.textContent).toContain('Signed in as test_admin');
+    expect(page.querySelector('h1')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Hi test_admin');
   });
 
   it('links to the users page', () => {

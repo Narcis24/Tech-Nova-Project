@@ -124,13 +124,16 @@ export class LivePanelComponent {
       key,
       label: key === today ? 'Today' : WEEKDAY.format(new Date(hours[0].start)),
       today: key === today,
-      bars: hours.map((hour) => ({
-        start: hour.start,
-        future: hour.future,
-        // At least a sliver, so an hour with no orders still shows where it is
-        height: hour.future ? 100 : Math.max(4, (hour.orders / busiest) * 100),
-        title: `${HOUR.format(new Date(hour.start))}: ${hour.future ? 'not yet' : `${hour.orders} orders`}`,
-      })),
+      bars: hours.map((hour) => {
+        const orders = hour.future ? 'not yet' : `${hour.orders} orders`;
+        return {
+          start: hour.start,
+          future: hour.future,
+          // At least a sliver, so an hour with no orders still shows where it is
+          height: hour.future ? 100 : Math.max(4, (hour.orders / busiest) * 100),
+          title: `${HOUR.format(new Date(hour.start))}: ${orders}`,
+        };
+      }),
     }));
   });
 

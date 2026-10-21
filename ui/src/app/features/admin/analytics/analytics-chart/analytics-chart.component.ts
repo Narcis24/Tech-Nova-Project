@@ -124,7 +124,7 @@ export class AnalyticsChartComponent {
           values: values((bucket) => bucket[field][group.value]),
         }))
         // Groups with nothing in them are left out, like the other asset classes while one is filtered
-        .filter((series) => series.values.some((value) => value))
+        .filter((series) => series.values.some(Boolean))
     );
   });
 
@@ -299,7 +299,7 @@ export class AnalyticsChartComponent {
   // The shape under each unbroken run of the line, down to the zero line; a lone point has none
   private area(values: (number | null)[]): string {
     const runs: number[][] = [[]];
-    values.forEach((value, index) => (value === null ? runs.push([]) : runs[runs.length - 1].push(index)));
+    values.forEach((value, index) => (value === null ? runs.push([]) : runs.at(-1)!.push(index)));
     const base = this.y(0).toFixed(1);
     return runs
       .filter((run) => run.length > 1)
