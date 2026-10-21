@@ -75,11 +75,7 @@
 
         @if (menuOpen()) {
           <div class="menu" id="user-menu">
-            <p class="menu-name">{{ name }}</p>
             @if (!isAdmin()) {
-              @if (accountId(); as id) {
-                <p class="menu-account">{{ id }}</p>
-              }
               <a class="menu-change-account" routerLink="/accounts" (click)="closeMenus()">Accounts</a>
               <a class="menu-change-account menu-risk-limits" routerLink="/risk-limits" (click)="closeMenus()"
                 >Risk limits</a
