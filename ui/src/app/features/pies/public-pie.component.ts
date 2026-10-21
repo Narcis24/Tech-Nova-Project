@@ -9,6 +9,7 @@ import { DonutChartComponent } from '../../components/donut-chart/donut-chart.co
 import { PublicPieControllerService, PublicPieResponse } from '../../generated/trading-api-client';
 import { AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
+import { SymbolIconComponent } from '../../components/symbol-icon/symbol-icon.component';
 
 type State =
   { status: 'loading' } | { status: 'missing' } | { status: 'error' } | { status: 'ready'; pie: PublicPieResponse };
@@ -16,7 +17,7 @@ type State =
 /** One public allocation template and its author. */
 @Component({
   selector: 'app-public-pie',
-  imports: [DatePipe, DecimalPipe, DonutChartComponent, RouterLink],
+  imports: [DatePipe, DecimalPipe, DonutChartComponent, RouterLink, SymbolIconComponent],
   templateUrl: './public-pie.component.html',
   styleUrls: ['./pies-shared.css', './public-pie.component.css'],
 })

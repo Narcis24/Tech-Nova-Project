@@ -74,7 +74,8 @@ ul {
 
 li {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) auto;
+  grid-template-columns: 104px minmax(0, 1fr) auto;
+  align-items: center;
   gap: 12px;
   padding: 10px 0;
   border-bottom: 1px solid var(--subtle-border-color);

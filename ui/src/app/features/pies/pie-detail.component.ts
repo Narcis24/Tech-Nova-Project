@@ -4,11 +4,12 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { DonutChartComponent } from '../../components/donut-chart/donut-chart.component';
 import { PieControllerService, PieResponse } from '../../generated/trading-api-client';
+import { SymbolIconComponent } from '../../components/symbol-icon/symbol-icon.component';
 
 /** One of the account holder's pies: its slices, and whether it is shown on Discover. */
 @Component({
   selector: 'app-pie-detail',
-  imports: [DatePipe, DecimalPipe, DonutChartComponent, RouterLink],
+  imports: [DatePipe, DecimalPipe, DonutChartComponent, RouterLink, SymbolIconComponent],
   templateUrl: './pie-detail.component.html',
   styleUrls: ['./pies-shared.css', './pie-detail.component.css'],
 })

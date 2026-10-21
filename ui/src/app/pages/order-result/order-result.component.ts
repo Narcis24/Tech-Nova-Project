@@ -4,6 +4,7 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, exhaustMap, filter, map, merge, of, startWith, switchMap, timer } from 'rxjs';
 import { OrderControllerService, OrderResponse } from '../../generated/trading-api-client';
+import { SymbolIconComponent } from '../../components/symbol-icon/symbol-icon.component';
 
 interface ResultState {
   id: string;
@@ -13,7 +14,7 @@ interface ResultState {
 }
 @Component({
   selector: 'app-order-result',
-  imports: [CurrencyPipe, DecimalPipe, TitleCasePipe, RouterLink],
+  imports: [CurrencyPipe, DecimalPipe, TitleCasePipe, RouterLink, SymbolIconComponent],
   templateUrl: './order-result.component.html',
   styleUrl: './order-result.component.css',
 })

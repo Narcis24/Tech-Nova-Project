@@ -39,7 +39,7 @@
     @for (leg of current.legs; track leg.orderId) {
       <li>
         <div class="trade">
-          <strong>{{ leg.side }} {{ leg.quantity }} {{ leg.symbol }}</strong
+          <strong><app-symbol-icon [symbol]="leg.symbol" />{{ leg.side }} {{ leg.quantity }} {{ leg.symbol }}</strong
           ><span class="status" [class.failed]="leg.status === 'REJECTED' || leg.status === 'CANCELLED'">{{
             leg.status
           }}</span>

@@ -4,6 +4,7 @@ import { Component, computed, inject, input, output, signal } from '@angular/cor
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { catchError, map, of, startWith, switchMap, timer } from 'rxjs';
 import { PriceControllerService, PriceHistoryPoint } from '../../generated/trading-api-client';
+import { SymbolIconComponent } from '../../components/symbol-icon/symbol-icon.component';
 
 export interface TradeQuote {
   symbol: string;
@@ -20,7 +21,7 @@ interface HistoryState {
 }
 @Component({
   selector: 'app-price-chart',
-  imports: [CurrencyPipe, DatePipe, DecimalPipe, PercentPipe],
+  imports: [CurrencyPipe, DatePipe, DecimalPipe, PercentPipe, SymbolIconComponent],
   templateUrl: './price-chart.component.html',
   styleUrl: './price-chart.component.css',
 })

@@ -41,7 +41,7 @@
         @for (leg of plan.legs; track leg.symbol) {
           <tr>
             <th scope="row">
-              {{ leg.symbol }}
+              <app-symbol-icon [symbol]="leg.symbol" />{{ leg.symbol }}
               @if (leg.inPie === false) {
                 <span class="outside">Not in pie: sold</span>
               }
