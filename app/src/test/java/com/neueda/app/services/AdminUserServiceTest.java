@@ -17,6 +17,7 @@ import com.neueda.app.repositories.AccountRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -37,7 +38,9 @@ class AdminUserServiceTest {
 
     private final UserRepository userRepository = mock(UserRepository.class);
     private final AccountRepository accountRepository = mock(AccountRepository.class);
-    private final AdminUserService adminUserService = new AdminUserService(userRepository, accountRepository);
+    private final AccountRiskBandService accountRiskBandService = mock(AccountRiskBandService.class);
+    private final AdminUserService adminUserService =
+        new AdminUserService(userRepository, accountRepository, accountRiskBandService);
 
     /** A real User: its fields are set the way Hibernate sets them, since the app never constructs one. */
     private static User user(String username, Role... roles) {
@@ -83,6 +86,9 @@ class AdminUserServiceTest {
         when(userRepository.findById("trader_one")).thenReturn(Optional.of(trader));
         when(accountRepository.findByOwnerUsernameOrderByAccountId("trader_one"))
             .thenReturn(List.of(account));
+        when(accountRiskBandService.classify(account)).thenReturn(
+            new com.neueda.app.dtos.AdminAccountResponse("ACC-1234", "Trader One",
+                BigDecimal.ZERO, AccountStatus.ACTIVE, com.neueda.app.enums.RiskBand.LOW));
 
         var result = adminUserService.getUser("trader_one");
 
