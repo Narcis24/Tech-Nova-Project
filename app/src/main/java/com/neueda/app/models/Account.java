@@ -16,6 +16,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import com.neueda.app.exceptions.AccountNotActiveException;
+import com.neueda.app.exceptions.AccountStatusChangeNotAllowedException;
 import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.contracts.AccountOperations;
 import jakarta.persistence.OneToMany;
@@ -114,6 +115,17 @@ public class Account  implements AccountOperations {
                 "Account " + accountId + " is " + accountStatus + ", not ACTIVE"
             );
         }
+    }
+
+    public void changeStatus(AccountStatus newStatus) {
+        boolean validTransition = (accountStatus == AccountStatus.ACTIVE && newStatus == AccountStatus.SUSPENDED)
+            || (accountStatus == AccountStatus.SUSPENDED && newStatus == AccountStatus.ACTIVE);
+        if (!validTransition) {
+            throw new AccountStatusChangeNotAllowedException(
+                "Account " + accountId + " cannot change from " + accountStatus + " to " + newStatus);
+        }
+        accountStatus = newStatus;
+        lastUpdated = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     /* This method will throw a custom exception if the account has insufficient funds */

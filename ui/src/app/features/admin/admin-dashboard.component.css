@@ -26,7 +26,11 @@
   overflow-wrap: anywhere;
 }
 
-.name {
+/* Dashboard navigation links */
+.manage-link {
+  display: block;
+  width: fit-content;
+  margin-bottom: 12px;
   color: var(--primary-color);
 }
 
@@ -215,6 +219,7 @@
   .chart-narrow > .live {
     grid-column: 1 / -1;
   }
+}
 
   .size {
     display: none;

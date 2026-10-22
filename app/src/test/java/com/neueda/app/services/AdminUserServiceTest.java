@@ -2,16 +2,22 @@ package com.neueda.app.services;
 
 import com.neueda.app.dtos.AdminUserResponse;
 import com.neueda.app.dtos.CreateUserRequest;
+import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.enums.Role;
+import com.neueda.app.exceptions.AccountNotFoundException;
+import com.neueda.app.exceptions.AccountStatusChangeNotAllowedException;
 import com.neueda.app.exceptions.RoleChangeNotAllowedException;
 import com.neueda.app.exceptions.UserAlreadyExistsException;
 import com.neueda.app.exceptions.UserNotFoundException;
 import com.neueda.app.models.User;
+import com.neueda.app.models.Account;
 import com.neueda.app.repositories.UserRepository;
+import com.neueda.app.repositories.AccountRepository;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -31,7 +37,10 @@ import static org.mockito.Mockito.when;
 class AdminUserServiceTest {
 
     private final UserRepository userRepository = mock(UserRepository.class);
-    private final AdminUserService adminUserService = new AdminUserService(userRepository);
+    private final AccountRepository accountRepository = mock(AccountRepository.class);
+    private final AccountRiskBandService accountRiskBandService = mock(AccountRiskBandService.class);
+    private final AdminUserService adminUserService =
+        new AdminUserService(userRepository, accountRepository, accountRiskBandService);
 
     /** A real User: its fields are set the way Hibernate sets them, since the app never constructs one. */
     private static User user(String username, Role... roles) {
@@ -68,6 +77,62 @@ class AdminUserServiceTest {
     void listUsers_NoUsers_ReturnsEmptyList() {
         when(userRepository.findAllByOrderByUsernameAsc()).thenReturn(List.of());
         assertEquals(List.of(), adminUserService.listUsers());
+    }
+
+    @Test
+    void getUser_ReturnsOnlyAccountsOwnedByThatUser() {
+        User trader = user("trader_one", Role.TRADER);
+        Account account = Account.open("ACC-1234", "Trader One", "trader_one");
+        when(userRepository.findById("trader_one")).thenReturn(Optional.of(trader));
+        when(accountRepository.findByOwnerUsernameOrderByAccountId("trader_one"))
+            .thenReturn(List.of(account));
+        when(accountRiskBandService.classify(account)).thenReturn(
+            new com.neueda.app.dtos.AdminAccountResponse("ACC-1234", "Trader One",
+                BigDecimal.ZERO, AccountStatus.ACTIVE, com.neueda.app.enums.RiskBand.LOW));
+
+        var result = adminUserService.getUser("trader_one");
+
+        assertEquals("trader_one", result.getUsername());
+        assertEquals(List.of("ACC-1234"), result.getAccounts().stream()
+            .map(accountResponse -> accountResponse.getAccountId()).toList());
+        verify(accountRepository).findByOwnerUsernameOrderByAccountId("trader_one");
+    }
+
+    @Test
+    void updateAccountStatus_SuspendsAndUnsuspendsOwnedAccount() {
+        User trader = user("trader_one", Role.TRADER);
+        Account account = Account.open("ACC-1234", "Trader One", "trader_one");
+        when(userRepository.findById("trader_one")).thenReturn(Optional.of(trader));
+        when(accountRepository.findByIdForUpdate("ACC-1234")).thenReturn(Optional.of(account));
+
+        adminUserService.updateAccountStatus("trader_one", "ACC-1234", AccountStatus.SUSPENDED);
+        assertEquals(AccountStatus.SUSPENDED, account.getAccountStatus());
+
+        adminUserService.updateAccountStatus("trader_one", "ACC-1234", AccountStatus.ACTIVE);
+        assertEquals(AccountStatus.ACTIVE, account.getAccountStatus());
+    }
+
+    @Test
+    void updateAccountStatus_RejectsAccountOwnedByAnotherUser() {
+        User other = user("other_user", Role.TRADER);
+        Account account = Account.open("ACC-1234", "Trader One", "trader_one");
+        when(userRepository.findById("other_user")).thenReturn(Optional.of(other));
+        when(accountRepository.findByIdForUpdate("ACC-1234")).thenReturn(Optional.of(account));
+
+        assertThrows(AccountNotFoundException.class,
+            () -> adminUserService.updateAccountStatus("other_user", "ACC-1234", AccountStatus.SUSPENDED));
+    }
+
+    @Test
+    void updateAccountStatus_RejectsUnsupportedStatusTransition() {
+        User trader = user("trader_one", Role.TRADER);
+        Account account = Account.open("ACC-1234", "Trader One", "trader_one");
+        when(userRepository.findById("trader_one")).thenReturn(Optional.of(trader));
+        when(accountRepository.findByIdForUpdate("ACC-1234")).thenReturn(Optional.of(account));
+
+        assertThrows(AccountStatusChangeNotAllowedException.class,
+            () -> adminUserService.updateAccountStatus("trader_one", "ACC-1234", AccountStatus.CLOSED));
+        assertEquals(AccountStatus.ACTIVE, account.getAccountStatus());
     }
 
     @Test

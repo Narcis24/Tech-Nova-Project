@@ -1,16 +1,23 @@
 package com.neueda.app.services;
 
 import com.neueda.app.dtos.AdminUserResponse;
+import com.neueda.app.dtos.AdminUserDetailResponse;
+import com.neueda.app.dtos.AccountResponse;
+import com.neueda.app.dtos.AdminAccountResponse;
 import com.neueda.app.dtos.CreateUserRequest;
+import com.neueda.app.enums.AccountStatus;
 import com.neueda.app.enums.Role;
+import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.RoleChangeNotAllowedException;
 import com.neueda.app.exceptions.UserAlreadyExistsException;
 import com.neueda.app.exceptions.UserNotFoundException;
 import com.neueda.app.models.User;
 import com.neueda.app.repositories.UserRepository;
+import com.neueda.app.repositories.AccountRepository;
 import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,9 +27,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminUserService {
 
     private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
+    private final AccountRiskBandService accountRiskBandService;
 
-    public AdminUserService(UserRepository userRepository) {
+    @Autowired
+    public AdminUserService(UserRepository userRepository, AccountRepository accountRepository,
+                            AccountRiskBandService accountRiskBandService) {
         this.userRepository = userRepository;
+        this.accountRepository = accountRepository;
+        this.accountRiskBandService = accountRiskBandService;
     }
 
     /** Every user with their roles, by username. */
@@ -31,6 +44,30 @@ public class AdminUserService {
         return userRepository.findAllByOrderByUsernameAsc().stream()
             .map(AdminUserService::toResponse)
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public AdminUserDetailResponse getUser(String username) {
+        User user = userRepository.findById(username)
+            .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+        List<AdminAccountResponse> accounts = accountRepository.findByOwnerUsernameOrderByAccountId(username).stream()
+            .map(accountRiskBandService::classify)
+            .toList();
+        return new AdminUserDetailResponse(
+            user.getUsername(), user.getEmail(), user.getRoles().stream().sorted().toList(),
+            user.getCreatedAt(), user.getCreatedBy(), accounts);
+    }
+
+    @Transactional
+    public AccountResponse updateAccountStatus(String username, String accountId, AccountStatus status) {
+        userRepository.findById(username)
+            .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+        var account = accountRepository.findByIdForUpdate(accountId)
+            .filter(candidate -> candidate.isOwnedBy(username))
+            .orElseThrow(() -> new AccountNotFoundException(
+                "Account not found for user: " + accountId));
+        account.changeStatus(status);
+        return new AccountResponse(account);
     }
 
     /**

@@ -1,8 +1,11 @@
 package com.neueda.app.controllers;
 
 import com.neueda.app.dtos.AdminUserResponse;
+import com.neueda.app.dtos.AdminUserDetailResponse;
+import com.neueda.app.dtos.AccountResponse;
 import com.neueda.app.dtos.CreateUserRequest;
 import com.neueda.app.dtos.CreateUserResponse;
+import com.neueda.app.dtos.UpdateAccountStatusRequest;
 import com.neueda.app.dtos.UpdateRolesRequest;
 import com.neueda.app.services.AdminUserService;
 import com.neueda.app.services.AuthClient;
@@ -36,6 +39,18 @@ public class AdminUserController {
     @GetMapping
     public ResponseEntity<List<AdminUserResponse>> listUsers() {
         return ResponseEntity.ok(adminUserService.listUsers());
+    }
+
+    @GetMapping("/{username}")
+    public ResponseEntity<AdminUserDetailResponse> getUser(@PathVariable String username) {
+        return ResponseEntity.ok(adminUserService.getUser(username));
+    }
+
+    @PutMapping("/{username}/accounts/{accountId}/status")
+    public ResponseEntity<AccountResponse> updateAccountStatus(
+            @PathVariable String username, @PathVariable String accountId,
+            @Valid @RequestBody UpdateAccountStatusRequest request) {
+        return ResponseEntity.ok(adminUserService.updateAccountStatus(username, accountId, request.getStatus()));
     }
 
     /**
