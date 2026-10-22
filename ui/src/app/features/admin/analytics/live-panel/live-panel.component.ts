@@ -15,8 +15,8 @@ import {
   timer,
 } from 'rxjs';
 
+import { SymbolIconComponent } from '../../../../components/symbol-icon/symbol-icon.component';
 import { AdminAnalyticsControllerService, AdminLiveResponse, LiveHour } from '../../../../generated/trading-api-client';
-import { ASSET_CLASSES } from '../analytics';
 import { AnalyticsStore } from '../analytics.store';
 
 /** How often the panel refreshes while the page is visible. */
@@ -36,6 +36,7 @@ const TIME = new Intl.DateTimeFormat('en-US', { timeZone: NY, hour: 'numeric', m
  */
 @Component({
   selector: 'app-live-panel',
+  imports: [SymbolIconComponent],
   templateUrl: './live-panel.component.html',
   styleUrls: ['../../../../shared/admin-page.css', './live-panel.component.css'],
 })
@@ -142,10 +143,5 @@ export class LivePanelComponent {
     return `${total} orders in market hours over the last ${this.days().length} trading days`;
   });
 
-  readonly top = computed(() =>
-    (this.live()?.topToday ?? []).map((instrument) => ({
-      ...instrument,
-      color: ASSET_CLASSES.find((assetClass) => assetClass.value === instrument.assetClass)?.color ?? 'currentColor',
-    })),
-  );
+  readonly top = computed(() => this.live()?.topToday ?? []);
 }

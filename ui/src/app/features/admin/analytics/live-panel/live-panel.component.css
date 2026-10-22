@@ -156,19 +156,6 @@
   font-size: 14px;
 }
 
-/* Ticker tile in its asset class's colour, tinted so the text stays readable in either theme */
-.tile {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--asset-color) 16%, var(--elevated-background-color));
-  font-size: 9px;
-  font-weight: 700;
-  color: color-mix(in srgb, var(--asset-color) 72%, var(--text-color));
-}
-
 .count {
   margin-left: auto;
   font-weight: 600;
