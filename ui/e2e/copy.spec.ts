@@ -128,7 +128,7 @@ test('copies a public pie and trades an author update only after confirmation', 
 
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Stop copying' }).click();
-  await expect(header).toContainText('No pie on this account yet');
+  await expect(header).toContainText('No strategy on this account yet');
 
   // Clean up so reruns leave no public pie behind
   expect((await request.post(`/api/v1/pies/${pieId}/unpublish`, { headers: author.headers })).ok()).toBeTruthy();

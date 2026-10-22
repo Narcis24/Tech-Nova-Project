@@ -141,5 +141,5 @@ function saveError(error: unknown): string {
     const message = error.error.message;
     if (typeof message === 'string' && message.trim()) return message;
   }
-  return "Couldn't save the pie. Try again.";
+  return "Couldn't save the strategy. Try again.";
 }

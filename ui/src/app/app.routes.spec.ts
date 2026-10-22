@@ -182,7 +182,7 @@ describe('app routes', () => {
     it('opens the new pie editor, not the pie detail', async () => {
       await harness.navigateByUrl('/pies/new');
 
-      expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('New pie');
+      expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('New strategy');
     });
 
     it('shows one of my pies', async () => {

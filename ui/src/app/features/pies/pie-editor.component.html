@@ -1,10 +1,10 @@
-<h1>{{ pieId ? 'Edit pie' : 'New pie' }}</h1>
+<h1>{{ pieId ? 'Edit strategy' : 'New strategy' }}</h1>
 
 @if (loading()) {
-  <output class="empty">Loading your pie…</output>
+  <output class="empty">Loading your strategy…</output>
 } @else if (loadError()) {
-  <p class="error" role="alert">Couldn't load this pie.</p>
-  <a routerLink="/pies">Back to pies</a>
+  <p class="error" role="alert">Couldn't load this strategy.</p>
+  <a routerLink="/pies">Back to strategies</a>
 } @else {
   @if (instrumentError()) {
     <p class="error" role="alert">Couldn't load stocks. Reload the page to try again.</p>

@@ -67,7 +67,7 @@ describe('PublicPieComponent', () => {
     create();
     expect(api.getPublicPie).toHaveBeenCalledWith('p1');
     expect(root.querySelector('h1')!.textContent).toBe('Steady Compounders');
-    expect(root.querySelector('.tag')!.textContent).toBe('Demo pie');
+    expect(root.querySelector('.tag')!.textContent).toBe('Demo strategy');
     expect(root.querySelector('.byline')!.textContent).toContain('by ada');
     expect(root.querySelector('.byline')!.textContent).toContain('Mar 2, 2026');
     expect(root.querySelector('.description')!.textContent).toBe('Slow and boring');
@@ -97,20 +97,20 @@ describe('PublicPieComponent', () => {
   it('explains a pie that is not public', () => {
     api.getPublicPie.and.returnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
     create();
-    expect(root.textContent).toContain("This pie isn't public");
+    expect(root.textContent).toContain("This strategy isn't public");
     expect(root.querySelector('[role="alert"]')).toBeNull();
   });
 
   it('shows a loading state', () => {
     api.getPublicPie.and.returnValue(new Subject<PublicPieResponse>());
     create();
-    expect(root.querySelector('output')!.textContent).toContain('Loading pie');
+    expect(root.querySelector('output')!.textContent).toContain('Loading strategy');
   });
 
   it('shows an error and retries', () => {
     api.getPublicPie.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
     create();
-    expect(root.querySelector('[role="alert"]')!.textContent).toContain("Couldn't load this pie");
+    expect(root.querySelector('[role="alert"]')!.textContent).toContain("Couldn't load this strategy");
     api.getPublicPie.and.returnValue(of(PIE));
     (root.querySelector('button') as HTMLButtonElement).click();
     fixture.detectChanges();

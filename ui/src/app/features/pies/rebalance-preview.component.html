@@ -1,8 +1,8 @@
 <h1>Rebalance preview</h1>
 @if (copyPieId) {
-  <a [routerLink]="['/discover', copyPieId]">Back to pie</a>
+  <a [routerLink]="['/discover', copyPieId]">Back to strategy</a>
 } @else {
-  <a routerLink="/pies">Back to pies</a>
+  <a routerLink="/pies">Back to strategies</a>
 }
 
 @if (error()) {
@@ -26,7 +26,7 @@
   <div class="table-scroll">
     <table>
       <caption>
-        Estimated trades to reach your pie targets
+        Estimated trades to reach your strategy targets
       </caption>
       <thead>
         <tr>
@@ -43,7 +43,7 @@
             <th scope="row">
               <app-symbol-icon [symbol]="leg.symbol" />{{ leg.symbol }}
               @if (leg.inPie === false) {
-                <span class="outside">Not in pie: sold</span>
+                <span class="outside">Not in strategy: sold</span>
               }
             </th>
             <td>{{ leg.currentPct | number: '1.0-2' }}% → {{ leg.targetPct | number: '1.0-2' }}%</td>
@@ -63,7 +63,7 @@
     </table>
   </div>
   @if (!hasTrades()) {
-    <p class="note">No trades needed: the account is already within the thresholds of this pie.</p>
+    <p class="note">No trades needed: the account is already within the thresholds of this strategy.</p>
   }
 
   @if (plan.warnings?.length) {
@@ -83,7 +83,7 @@
   <p class="note">Confirming places market orders for this account. Sells finish before buys are calculated.</p>
   @if (copyPieId) {
     <p class="note">
-      Confirming also copies this pie. Later author updates need your review and confirmation before any trades are
+      Confirming also copies this strategy. Later author updates need your review and confirmation before any trades are
       placed.
     </p>
   }

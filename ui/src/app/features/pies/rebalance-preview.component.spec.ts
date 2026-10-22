@@ -101,7 +101,7 @@ describe('RebalancePreviewComponent', () => {
     const root = render();
     expect(root.querySelectorAll('.outside').length).toBe(1);
     expect(root.querySelector('.outside')?.closest('tr')?.textContent).toContain('TSLA');
-    expect(root.querySelector('.outside')?.textContent).toContain('Not in pie: sold');
+    expect(root.querySelector('.outside')?.textContent).toContain('Not in strategy: sold');
   });
 
   it('shows risk warnings', () => {
@@ -119,7 +119,7 @@ describe('RebalancePreviewComponent', () => {
       ),
     );
     const root = render();
-    expect(root.querySelector('[role="alert"]')?.textContent).toContain('No pie is linked');
+    expect(root.querySelector('[role="alert"]')?.textContent).toContain('No strategy is linked');
     expect(root.querySelector('a')?.getAttribute('href')).toBe('/pies');
     expect(root.querySelector('table')).toBeNull();
   });
@@ -185,7 +185,7 @@ describe('RebalancePreviewComponent', () => {
       expect(api.previewCopy).toHaveBeenCalledOnceWith('acc1', { pieId: 'p9' });
       expect(api.previewRebalance).not.toHaveBeenCalled();
       expect(root.textContent).toContain('Later author updates need your review and confirmation');
-      expect(root.querySelector('a')?.textContent).toContain('Back to pie');
+      expect(root.querySelector('a')?.textContent).toContain('Back to strategy');
     });
 
     it('confirms by copying and opens the run', () => {

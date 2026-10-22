@@ -39,11 +39,11 @@ export class RebalancePreviewComponent {
       error: (error: unknown) => {
         if (error instanceof HttpErrorResponse && error.status === 404) {
           if (error.error?.errorCode === 'PIE_NOT_LINKED') {
-            this.error.set('No pie is linked to this account. Choose one to preview a rebalance.');
+            this.error.set('No strategy is linked to this account. Choose one to preview a rebalance.');
             return;
           }
           if (this.copyPieId && error.error?.errorCode === 'PIE_NOT_FOUND') {
-            this.error.set("This pie isn't public any more, so it can't be copied.");
+            this.error.set("This strategy isn't public any more, so it can't be copied.");
             return;
           }
           if (error.error?.errorCode === 'PRICE_NOT_FOUND' && typeof error.error.message === 'string') {

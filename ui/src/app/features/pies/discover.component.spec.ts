@@ -74,20 +74,20 @@ describe('DiscoverComponent', () => {
   it('shows a loading state', () => {
     api.listPublicPies.and.returnValue(new Subject<PublicPieSummary[]>());
     create();
-    expect(root.querySelector('output')!.textContent).toContain('Loading public pies');
+    expect(root.querySelector('output')!.textContent).toContain('Loading public strategies');
     expect(root.querySelector('.entry')).toBeNull();
   });
 
   it('explains an empty Discover page', () => {
     api.listPublicPies.and.returnValue(of([]));
     create();
-    expect(root.textContent).toContain('No public pies yet.');
+    expect(root.textContent).toContain('No public strategies yet.');
   });
 
   it('shows an error and retries', () => {
     api.listPublicPies.and.returnValue(throwError(() => new Error('down')));
     create();
-    expect(root.querySelector('[role="alert"]')!.textContent).toContain("Couldn't load public pies");
+    expect(root.querySelector('[role="alert"]')!.textContent).toContain("Couldn't load public strategies");
     api.listPublicPies.and.returnValue(of(PIES));
     button('Try again').click();
     fixture.detectChanges();

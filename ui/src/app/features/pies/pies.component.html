@@ -1,6 +1,6 @@
 <div class="top">
-  <h1>Pies</h1>
-  <a class="new" routerLink="/pies/new">New pie</a>
+  <h1>Strategies</h1>
+  <a class="new" routerLink="/pies/new">New strategy</a>
 </div>
 <app-pie-tabs />
 
@@ -47,10 +47,10 @@
         }
       }
       @case ('none') {
-        <p>No pie on this account yet</p>
+        <p>No strategy on this account yet</p>
       }
       @case ('error') {
-        <p class="error">Couldn't load this account's pie.</p>
+        <p class="error">Couldn't load this account's strategy.</p>
       }
       @default {
         <output>Loading…</output>
@@ -64,14 +64,14 @@
 }
 
 @if (loading()) {
-  <output class="empty">Loading your pies…</output>
+  <output class="empty">Loading your strategies…</output>
 } @else if (loadError()) {
   <div class="load-error" role="alert">
-    <p>Couldn't load your pies.</p>
+    <p>Couldn't load your strategies.</p>
     <button type="button" class="secondary" (click)="retry()">Try again</button>
   </div>
 } @else if (!pies().length) {
-  <p class="empty">Build your first pie: pick stocks and weights, and we'll work out the trades.</p>
+  <p class="empty">Build your first strategy: pick stocks and weights, and we'll work out the trades.</p>
 } @else {
   <ul class="grid">
     @for (pie of pies(); track pie.pieId) {

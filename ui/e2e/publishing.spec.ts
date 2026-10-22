@@ -20,7 +20,7 @@ test('publishes a pie, finds it on Discover, then unpublishes it', async ({ page
   await page.getByLabel('Username', { exact: true }).fill(username);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await page.getByRole('link', { name: 'New pie' }).click();
+  await page.getByRole('link', { name: 'New strategy' }).click();
   await page.getByLabel('Name', { exact: true }).fill(pieName);
   await page.getByLabel('Stock 1', { exact: true }).fill('AAPL');
   await page.getByLabel('Weight 1', { exact: true }).fill('60');
@@ -45,18 +45,18 @@ test('publishes a pie, finds it on Discover, then unpublishes it', async ({ page
   await expect(page.getByRole('link', { name: pieName, exact: true })).toBeVisible();
   await expect(page.locator('.entry', { hasText: pieName })).toContainText(`by ${username}`);
 
-  await page.getByRole('navigation', { name: 'Pies' }).getByRole('link', { name: 'My pies' }).click();
+  await page.getByRole('navigation', { name: 'Strategies' }).getByRole('link', { name: 'My strategies' }).click();
   await page.locator('.pie-card', { hasText: pieName }).getByRole('link', { name: pieName }).click();
   await page.getByRole('button', { name: 'Unpublish', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Private', exact: true })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Back to pies' }).click();
-  await page.getByRole('navigation', { name: 'Pies' }).getByRole('link', { name: 'Discover' }).click();
+  await page.getByRole('link', { name: 'Back to strategies' }).click();
+  await page.getByRole('navigation', { name: 'Strategies' }).getByRole('link', { name: 'Discover' }).click();
   await expect(page.locator('.entry').first()).toBeVisible();
   await expect(page.getByRole('link', { name: pieName, exact: true })).toHaveCount(0);
 
   // Clean up so reruns leave no pie behind
-  await page.getByRole('navigation', { name: 'Pies' }).getByRole('link', { name: 'My pies' }).click();
+  await page.getByRole('navigation', { name: 'Strategies' }).getByRole('link', { name: 'My strategies' }).click();
   page.once('dialog', (dialog) => dialog.accept());
   await page.locator('.pie-card', { hasText: pieName }).getByRole('button', { name: 'Delete', exact: true }).click();
   await expect(page.locator('.pie-card', { hasText: pieName })).toHaveCount(0);

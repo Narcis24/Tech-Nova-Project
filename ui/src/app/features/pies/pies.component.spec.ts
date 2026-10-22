@@ -98,7 +98,7 @@ describe('PiesComponent', () => {
   it('shows the no-pie header on 404', () => {
     accountPies.getAccountPie.and.returnValue(throwError(() => NOT_LINKED));
     create();
-    expect(root.querySelector('.header')!.textContent).toContain('No pie on this account yet');
+    expect(root.querySelector('.header')!.textContent).toContain('No strategy on this account yet');
   });
 
   it('keeps a linked pie whose prices are missing, with no drift', () => {
@@ -115,7 +115,7 @@ describe('PiesComponent', () => {
       throwError(() => new HttpErrorResponse({ status: 404, error: { errorCode: 'ACCOUNT_NOT_FOUND' } })),
     );
     create();
-    expect(root.querySelector('.header')!.textContent).toContain("Couldn't load this account's pie.");
+    expect(root.querySelector('.header')!.textContent).toContain("Couldn't load this account's strategy.");
   });
 
   it('unlinks the pie and shows the no-pie header', () => {
@@ -125,7 +125,7 @@ describe('PiesComponent', () => {
     button('Unlink').click();
     fixture.detectChanges();
     expect(accountPies.unlinkPie).toHaveBeenCalledWith('ACC001');
-    expect(root.querySelector('.header')!.textContent).toContain('No pie on this account yet');
+    expect(root.querySelector('.header')!.textContent).toContain('No strategy on this account yet');
   });
 
   it('links the pie for this account, then opens the preview', () => {
@@ -190,7 +190,7 @@ describe('PiesComponent', () => {
   it('shows the empty state with no pies', () => {
     pies.listMine.and.returnValue(of([] as PieResponse[]));
     create();
-    expect(root.textContent).toContain("Build your first pie: pick stocks and weights, and we'll work out the trades.");
+    expect(root.textContent).toContain("Build your first strategy: pick stocks and weights, and we'll work out the trades.");
   });
 
   describe('a copied pie', () => {

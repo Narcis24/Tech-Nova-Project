@@ -102,7 +102,7 @@ export class PiesComponent {
     this.actionError.set(null);
     this.accountPieApi.linkPie(id, { pieId: pie.pieId! }).subscribe({
       next: () => this.router.navigateByUrl(`/accounts/${id}/rebalance`),
-      error: () => this.actionError.set("Couldn't use this pie for the account. Try again."),
+      error: () => this.actionError.set("Couldn't use this strategy for the account. Try again."),
     });
   }
 
@@ -112,7 +112,7 @@ export class PiesComponent {
     this.actionError.set(null);
     this.accountPieApi.unlinkPie(id).subscribe({
       next: () => this.headerRevision.update((v) => v + 1),
-      error: () => this.actionError.set("Couldn't unlink the pie. Try again."),
+      error: () => this.actionError.set("Couldn't unlink the strategy. Try again."),
     });
   }
 
@@ -129,7 +129,7 @@ export class PiesComponent {
     this.accountPieApi.makePieMine(id).subscribe({
       next: () => this.retry(),
       error: (error: unknown) =>
-        this.actionError.set(conflictMessage(error) ?? "Couldn't make the pie yours. Try again."),
+        this.actionError.set(conflictMessage(error) ?? "Couldn't make the strategy yours. Try again."),
     });
   }
 
@@ -142,7 +142,7 @@ export class PiesComponent {
         this.actionError.set(
           error instanceof HttpErrorResponse && error.status === 409
             ? 'Unlink it from your accounts first'
-            : "Couldn't delete the pie. Try again.",
+            : "Couldn't delete the strategy. Try again.",
         ),
     });
   }
