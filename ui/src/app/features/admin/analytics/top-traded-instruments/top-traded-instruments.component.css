@@ -1,0 +1,148 @@
+/* Loading and empty styles come from shared/admin-page.css */
+:host {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.legend {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--secondary-text-color);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.buy {
+  background: var(--primary-color);
+}
+
+.sell {
+  background: var(--sell-color);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Rank, tile, name, buy/sell bar, value; the bar drops out when the widget is narrow */
+.rows li {
+  display: grid;
+  grid-template-columns: 14px 36px minmax(0, 1fr) 68px;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.rank {
+  font-size: 12px;
+  text-align: right;
+  color: var(--secondary-text-color);
+}
+
+/* Ticker tile in its asset class's colour, tinted so the text stays readable in either theme */
+.tile {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--asset-color) 16%, var(--elevated-background-color));
+  font-size: 10px;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--asset-color) 72%, var(--text-color));
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.symbol {
+  font-weight: 600;
+}
+
+.who small {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--secondary-text-color);
+}
+
+.track {
+  display: none;
+  gap: 2px;
+  height: 10px;
+}
+
+.part {
+  min-width: 2px;
+}
+
+.part:last-child {
+  border-radius: 0 3px 3px 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.value {
+  font-weight: 600;
+  text-align: right;
+}
+
+.stale {
+  opacity: 0.55;
+}
+
+@container (min-width: 460px) {
+  .rows li {
+    grid-template-columns: 14px 36px minmax(110px, 1.2fr) minmax(0, 1fr) 68px;
+  }
+
+  .track {
+    display: flex;
+  }
+}

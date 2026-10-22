@@ -12,7 +12,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.UUID;
 import java.util.List;
 
@@ -43,20 +42,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<OrderActivity> findActivity(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to,
                                      @Param("assetClass") AssetClass assetClass, @Param("side") OrderSide side,
                                      @Param("orderType") OrderType orderType, @Param("trader") String trader);
-
-    /** Orders in any of the statuses, whenever placed, after the same optional filters as findActivity. */
-    @Query("""
-        select count(o)
-        from Order o join o.instrument i join o.account a
-        where o.status in :statuses
-          and (:assetClass is null or i.assetClass = :assetClass)
-          and (:side is null or o.side = :side)
-          and (:orderType is null or o.orderType = :orderType)
-          and (:trader is null or a.ownerUsername = :trader)
-        """)
-    long countWithStatus(@Param("statuses") Collection<OrderStatus> statuses,
-                         @Param("assetClass") AssetClass assetClass, @Param("side") OrderSide side,
-                         @Param("orderType") OrderType orderType, @Param("trader") String trader);
 
     /**
      * Guarded status transition. Returns the rows changed: 0 means the order was not in

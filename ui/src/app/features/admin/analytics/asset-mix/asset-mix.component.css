@@ -1,0 +1,187 @@
+/* Loading and empty styles come from shared/admin-page.css */
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.note {
+  font-size: 13px;
+  color: var(--secondary-text-color);
+}
+
+/* Fills the rest of the card, so the chart sits in its middle when Top traded beside it is taller */
+.body {
+  flex: 1;
+  justify-content: center;
+}
+
+.body,
+.compact {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* One bar, a segment per class, a 2px gap between them like the dashboard's allocation strip */
+.bar {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.segment {
+  min-width: 3px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.empty-bar {
+  background: var(--muted-background-color);
+}
+
+.legend {
+  display: grid;
+  gap: 8px 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+
+/* Name, share and value in fixed columns, so the numbers line up from row to row */
+.legend li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3.5em 4.5em;
+  align-items: center;
+  gap: 8px;
+}
+
+.percent,
+.value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.value {
+  font-size: 13px;
+  color: var(--secondary-text-color);
+}
+
+.name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--secondary-text-color);
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+b {
+  font-weight: 600;
+}
+
+/* The bar chart, centred and kept narrow enough that its columns stay together on a wide card */
+.columns {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.columns li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.column-value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.column-value small {
+  font-size: 12px;
+  color: var(--secondary-text-color);
+}
+
+.column-track {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 140px;
+  border-bottom: 1px solid var(--strong-border-color);
+}
+
+/* Rounded top, square base on the axis line */
+.column-bar {
+  width: min(100%, 56px);
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+}
+
+.column-label {
+  font-size: 13px;
+  color: var(--secondary-text-color);
+}
+
+/* Phones: the single bar and legend instead of the bar chart */
+.compact {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .compact {
+    display: flex;
+  }
+
+  .columns {
+    display: none;
+  }
+}
+
+/* Outside the asset class filter: kept in place, but faded */
+.dimmed {
+  opacity: 0.4;
+}
+
+.stale {
+  opacity: 0.55;
+}

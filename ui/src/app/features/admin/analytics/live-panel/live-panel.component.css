@@ -1,0 +1,206 @@
+/*
+ * Styled like the mockup's Realtime box: a faint blue-violet tint fading down the card, a red
+ * pulsing LIVE badge, a big count, and small uppercase section labels. Lays itself out by its own width,
+ * so the dashboard can give it a column beside the chart or a whole row.
+ */
+:host {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--analytics-live-color) 7%, var(--elevated-background-color)),
+    var(--elevated-background-color) 70%
+  );
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--loss-color);
+}
+
+/* A ring that spreads out from the dot and fades, every two seconds */
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 50%, transparent);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  70% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--secondary-text-color);
+}
+
+.caption {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+.layout {
+  display: grid;
+  gap: 14px;
+}
+
+.big {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--secondary-text-color);
+}
+
+.hours {
+  margin: 0;
+}
+
+/* One strip of bars, a 6px gap between days */
+.days {
+  display: flex;
+  gap: 6px;
+}
+
+.day {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 64px;
+}
+
+/* Earlier days paler, today full strength, hours still to come greyed */
+.bar {
+  flex: 1;
+  min-height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: color-mix(in srgb, var(--analytics-live-color) 45%, var(--elevated-background-color));
+}
+
+.today .bar {
+  background: var(--analytics-live-color);
+}
+
+.bar.future,
+.today .bar.future {
+  background: var(--muted-background-color);
+}
+
+.day-label {
+  font-size: 11px;
+  color: var(--secondary-text-color);
+}
+
+/* Most ordered today, set off by a line as in the mockup */
+.top {
+  padding-top: 12px;
+  border-top: 1px solid var(--subtle-border-color);
+}
+
+.top ol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.top li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+/* Ticker tile in its asset class's colour, tinted so the text stays readable in either theme */
+.tile {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--asset-color) 16%, var(--elevated-background-color));
+  font-size: 9px;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--asset-color) 72%, var(--text-color));
+}
+
+.count {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+/* Given a whole row: counts, hours and the top list side by side, the line moving to the left */
+@container (min-width: 720px) {
+  .layout {
+    grid-template-columns: minmax(160px, 1fr) minmax(0, 2fr) minmax(180px, 1fr);
+    align-items: start;
+    gap: 24px;
+  }
+
+  .top {
+    padding: 0 0 0 24px;
+    border-top: 0;
+    border-left: 1px solid var(--subtle-border-color);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot {
+    animation: none;
+  }
+}
+
+/* Read out by screen readers, not shown */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -1,0 +1,61 @@
+<header class="head">
+  <h2 class="badge" id="live-heading"><span class="dot" aria-hidden="true"></span>Live</h2>
+  <span class="note">
+    @if (updatedAt(); as time) {
+      Updated {{ time }} ·
+    }
+    Every minute
+  </span>
+</header>
+
+@if (failed()) {
+  <output class="load-error">Couldn't refresh. Trying again in a minute.</output>
+}
+
+@if (live(); as live) {
+  <div class="layout">
+    <div class="counts">
+      <p class="big">{{ live.ordersToday }} orders today</p>
+      <p class="sub">{{ live.ordersLastHour }} in the last hour</p>
+    </div>
+
+    <figure class="hours">
+      <figcaption class="caption">Orders per hour · last {{ days().length }} trading days</figcaption>
+      <!-- Screen readers get the summary instead of the bars -->
+      <p class="visually-hidden">{{ summary() }}</p>
+      <div class="days" aria-hidden="true">
+        @for (day of days(); track day.key) {
+          <div class="day" [class.today]="day.today">
+            <div class="bars">
+              @for (bar of day.bars; track bar.start) {
+                <span class="bar" [class.future]="bar.future" [style.height.%]="bar.height" [title]="bar.title"></span>
+              }
+            </div>
+            <span class="day-label">{{ day.label }}</span>
+          </div>
+        }
+      </div>
+    </figure>
+
+    <div class="top">
+      <h3 class="caption">Most ordered today</h3>
+      @if (top().length) {
+        <ol>
+          @for (instrument of top(); track instrument.symbol) {
+            <li>
+              <span class="tile" [style.--asset-color]="instrument.color" aria-hidden="true">{{
+                instrument.symbol.slice(0, 4)
+              }}</span>
+              <span class="symbol" [title]="instrument.name">{{ instrument.symbol }}</span>
+              <span class="count">{{ instrument.orders }}</span>
+            </li>
+          }
+        </ol>
+      } @else {
+        <p class="note">No orders yet today.</p>
+      }
+    </div>
+  </div>
+} @else if (!failed()) {
+  <p class="loading">Loading live activity…</p>
+}
