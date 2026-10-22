@@ -219,6 +219,7 @@
   .chart-narrow > .live {
     grid-column: 1 / -1;
   }
+}
 
   .size {
     display: none;
