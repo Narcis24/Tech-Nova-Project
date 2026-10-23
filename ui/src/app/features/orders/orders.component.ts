@@ -12,6 +12,7 @@ import {
   OrderResponse,
 } from '../../generated/trading-api-client';
 import { AccountService } from '../../services/account.service';
+import { SymbolIconComponent } from '../../components/symbol-icon/symbol-icon.component';
 
 type Filter = 'ALL' | 'OPEN' | 'FILLED' | 'CANCELLED' | 'REJECTED';
 
@@ -39,7 +40,7 @@ const REFRESH_MS = 5000;
 /** The selected account's order history: totals, filters, orders grouped by day, and cancelling open orders. */
 @Component({
   selector: 'app-orders',
-  imports: [CurrencyPipe, DatePipe, DecimalPipe, TitleCasePipe, RouterLink],
+  imports: [CurrencyPipe, DatePipe, DecimalPipe, TitleCasePipe, RouterLink, SymbolIconComponent],
   templateUrl: './orders.component.html',
   styleUrl: './orders.component.css',
 })
@@ -167,6 +168,12 @@ export class OrdersComponent {
     return order.orderType === 'LIMIT' ? 'Limit' : 'Est.';
   }
 
+  /** When a pending limit order expires, in market time: "Expires Oct 21, 4:00 PM ET". */
+  expiryLabel(order: OrderResponse): string | null {
+    if (order.status !== 'PENDING' || !order.expiresAt) return null;
+    return `Expires ${EXPIRY_TIME.format(new Date(order.expiresAt))} ET`;
+  }
+
   askCancel(orderId: string): void {
     this.cancelError.set(null);
     this.confirmingCancel.set(orderId);
@@ -199,6 +206,14 @@ export class OrdersComponent {
     });
   }
 }
+
+const EXPIRY_TIME = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
 
 function amount(order: OrderResponse): number {
   return Number(order.quantity ?? 0) * Number(order.price ?? 0);

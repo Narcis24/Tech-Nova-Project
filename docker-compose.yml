@@ -2,6 +2,8 @@ services:
   ui:
     build: ./ui
     restart: unless-stopped
+    # Memory caps keep one service from starving the VM; a service over its cap is restarted
+    mem_limit: 64m
     depends_on: [app, auth-service]
     ports:
       - "${UI_PORT:-8091}:8080"
@@ -11,11 +13,14 @@ services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    mem_limit: 512m
 
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-technova}
       POSTGRES_USER: ${POSTGRES_USER:-technova}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      # Read once, when the volume is first created (V014); empty means no test admin
+      TEST_ADMIN_PASSWORD: ${TEST_ADMIN_PASSWORD:-}
 
     volumes:
       - db_data:/var/lib/postgresql/data
@@ -46,6 +51,7 @@ services:
       context: .
       dockerfile: app/Dockerfile
     restart: unless-stopped
+    mem_limit: 768m
 
     depends_on:
       db:
@@ -63,7 +69,17 @@ services:
 
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
 
+      # Invite emails for users an admin creates go through auth-service
+      AUTH_URL: http://auth-service:8082
+
+      # Admin journal page: the engine's internal journal API and the secret both sides share
+      ENGINE_URL: http://execution-engine:8082
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-}
+
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+
+      # Size the heap from mem_limit, as the execution engine's Dockerfile does
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75.0
 
     ports:
       - "${APP_PORT:-8081}:8081"
@@ -76,6 +92,7 @@ services:
       context: .
       dockerfile: execution-engine/Dockerfile
     restart: unless-stopped
+    mem_limit: 512m
 
     depends_on:
       kafka:
@@ -85,6 +102,13 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       ALPACA_KEY_ID: ${ALPACA_KEY_ID:-}
       ALPACA_SECRET_KEY: ${ALPACA_SECRET_KEY:-}
+      # Decision journal, one file per day; on a volume so it survives restarts
+      EXECUTION_ENGINE_JOURNAL_DIR: /data/journal
+      # Only the app, with this secret, may read journals through /internal/**
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-}
+
+    volumes:
+      - engine_journal:/data/journal
 
     networks:
       - tech-nova-network
@@ -92,6 +116,7 @@ services:
   auth-service:
     build: ./auth
     restart: unless-stopped
+    mem_limit: 256m
 
     depends_on:
       db:
@@ -121,6 +146,7 @@ services:
     image: apache/kafka:4.0.0
     container_name: kafka
     restart: unless-stopped
+    mem_limit: 768m
 
     environment:
       KAFKA_NODE_ID: 1
@@ -141,6 +167,9 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+      # Kafka sets its own heap (1 GB by default); keep it well inside mem_limit
+      KAFKA_HEAP_OPTS: -Xmx384m -Xms384m
 
     healthcheck:
       test:
@@ -172,6 +201,7 @@ services:
     ports:
       - ${KAFKA_UI_PORT:-8085}:8080
     restart: unless-stopped
+    mem_limit: 512m
     networks:
       - tech-nova-network
 
@@ -186,11 +216,13 @@ services:
     ports:
       - ${MAILPIT_PORT:-8025}:8025
     restart: unless-stopped
+    mem_limit: 64m
     networks:
       - tech-nova-network
 
   pipeline:
     build: ./data-pipeline
+    mem_limit: 512m
 
     profiles:
       - pipeline
@@ -208,6 +240,8 @@ services:
 
   sonarqube:
     image: sonarqube:26.9.0.129388-community
+    # Three JVMs inside (web, compute engine, Elasticsearch); it does not start with much less
+    mem_limit: 2560m
 
     profiles:
       - quality
@@ -228,6 +262,7 @@ services:
 
 volumes:
   db_data:
+  engine_journal:
   sonar_data:
   sonar_extensions:
 

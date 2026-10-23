@@ -1,0 +1,182 @@
+<!-- Outside the list states below, so an admin can be created even when the list is empty or failed to load -->
+<form class="card create-form" [formGroup]="createForm" (ngSubmit)="create()" novalidate>
+  <header class="card-header">
+    <div>
+      <h2>Create admin</h2>
+      <p class="hint">They'll get an email with a link to set their password.</p>
+    </div>
+  </header>
+
+  @if (createError()) {
+    <div class="create-error" role="alert">{{ createError() }}</div>
+  }
+
+  <!-- Side by side on wide screens, stacked on phones -->
+  <div class="field-row">
+    <div class="field">
+      <label for="new-username">Username</label>
+      <input
+        id="new-username"
+        type="text"
+        formControlName="username"
+        placeholder="8-16 letters, numbers or _"
+        autocomplete="off"
+        required
+      />
+      @if (showFieldErrors('username') && f.username.errors) {
+        <p class="field-error">
+          @if (f.username.errors['required']) {
+            Username is required
+          } @else if (f.username.errors['minlength'] || f.username.errors['maxlength']) {
+            Username must be 8-16 characters
+          } @else if (f.username.errors['pattern']) {
+            Username may contain only letters, numbers and underscores
+          }
+        </p>
+      }
+    </div>
+
+    <div class="field">
+      <label for="new-email">Email</label>
+      <input
+        id="new-email"
+        type="email"
+        formControlName="email"
+        placeholder="name@company.com"
+        autocomplete="off"
+        required
+      />
+      @if (showFieldErrors('email') && f.email.errors) {
+        <p class="field-error">
+          @if (f.email.errors['required']) {
+            Email is required
+          } @else {
+            Enter a valid email address
+          }
+        </p>
+      }
+    </div>
+  </div>
+
+  <div class="card-footer">
+    <fieldset class="role-options">
+      <legend>Role</legend>
+      <!-- Real radio buttons styled as chips, so arrow keys and screen readers work as usual -->
+      @for (role of allRoles; track role) {
+        <label class="role-option">
+          <input
+            type="radio"
+            name="new-role"
+            class="visually-hidden"
+            [value]="role"
+            [checked]="hasRole(role)"
+            (change)="selectRole(role)"
+          />
+          {{ role }}
+        </label>
+      }
+    </fieldset>
+
+    <button type="submit" class="primary" [disabled]="saving()">{{ saving() ? 'Creating…' : 'Create' }}</button>
+  </div>
+</form>
+
+@if (created(); as created) {
+  @if (created.inviteSent) {
+    <output class="create-result">Created {{ created.user.username }}. A set-password email is on its way.</output>
+  } @else {
+    <!-- The account exists either way; only the email failed -->
+    <output class="create-result create-warning">
+      Created {{ created.user.username }}, but the set-password email couldn't be sent. They can use "Forgot password"
+      to get one.
+    </output>
+  }
+}
+
+<section class="card users-card" aria-labelledby="users-heading">
+  <header class="card-header">
+    <h2 id="users-heading">
+      All users
+      @if (users(); as users) {
+        <span class="count">{{ users.length }}</span>
+      }
+    </h2>
+
+    @if (users()?.length) {
+      <div class="search">
+        <label for="user-search" class="visually-hidden">Search users</label>
+        <svg class="search-icon" viewBox="0 0 20 20" aria-hidden="true">
+          <circle cx="9" cy="9" r="6" />
+          <path d="m14 14 4 4" />
+        </svg>
+        <input
+          id="user-search"
+          type="search"
+          placeholder="Search username or email"
+          autocomplete="off"
+          [value]="query()"
+          (input)="search($event)"
+        />
+      </div>
+    }
+  </header>
+
+  @if (error()) {
+    <div class="load-error" role="alert">
+      <p>Couldn't load the users.</p>
+      <button type="button" class="retry" (click)="load()">Try again</button>
+    </div>
+  } @else if (users(); as users) {
+    @if (users.length) {
+      @if (query().trim()) {
+        <!-- aria-live: screen readers announce the new count as the admin types -->
+        <p class="result-count" aria-live="polite">Showing {{ visibleUsers().length }} of {{ users.length }} users</p>
+      }
+
+      @if (visibleUsers().length) {
+        <div class="table-wrap">
+          <table class="users">
+            <thead>
+              <tr>
+                <th scope="col">Username</th>
+                <th scope="col">Email</th>
+                <th scope="col">Roles</th>
+                <th scope="col">Created</th>
+                <th scope="col">Created by</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (user of visibleUsers(); track user.username) {
+                <tr>
+                  <td>
+                    <div class="user">
+                      <span class="avatar" aria-hidden="true">{{ user.username.charAt(0) }}</span>
+                      <a class="username" [href]="'/admin/users/' + user.username">{{ user.username }}</a>
+                    </div>
+                  </td>
+                  <td class="email">{{ user.email ?? '—' }}</td>
+                  <td>
+                    <div class="roles">
+                      @for (role of user.roles; track role) {
+                        <span class="role" [class.role-admin]="role === 'ADMIN'">{{ role }}</span>
+                      }
+                    </div>
+                  </td>
+                  <td class="created">{{ user.createdAt | date: 'd MMM y' }}</td>
+                  <!-- Empty for users who registered themselves -->
+                  <td class="created-by">{{ user.createdBy ?? '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="empty">No users match "{{ query().trim() }}".</p>
+      }
+    } @else {
+      <p class="empty">No users yet.</p>
+    }
+  } @else {
+    <p class="loading">Loading users…</p>
+  }
+</section>

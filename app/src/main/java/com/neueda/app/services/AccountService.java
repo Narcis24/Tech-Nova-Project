@@ -81,6 +81,13 @@ public class AccountService {
             ));
         
         account.validateStatus();  // Throws if not ACTIVE
+        // Cash locked by pending buys stays for them; only the rest can leave the account
+        BigDecimal locked = orderRepository.lockedCash(accountId);
+        BigDecimal available = account.getCashBalance().subtract(locked);
+        if (amount != null && amount.compareTo(available) > 0) {
+            throw new InsufficientFundsException("Account " + accountId + " has $" + available
+                + " available to withdraw ($" + locked + " locked in pending orders)");
+        }
         account.debitCash(amount);  // Throws if insufficient funds
         
         accountRepository.save(account);

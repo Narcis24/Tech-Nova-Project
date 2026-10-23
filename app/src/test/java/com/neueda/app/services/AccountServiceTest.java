@@ -43,6 +43,7 @@ class AccountServiceTest {
         orderRepository = mock(OrderRepository.class);
         positionRepository = mock(PositionRepository.class);
         priceRepository = mock(PriceRepository.class);
+        when(orderRepository.lockedCash(any())).thenReturn(BigDecimal.ZERO);
         // Real valuator over the mocked prices, so these tests still check the valuation math
         accountService = new AccountService(accountRepository, orderRepository, positionRepository, new PositionValuator(priceRepository));
     }
@@ -341,6 +342,25 @@ class AccountServiceTest {
         // Act & Assert
         BigDecimal amount = new BigDecimal("1000.00");
         assertThrows(InsufficientFundsException.class, () -> accountService.withdrawCash(accountId, amount));
+    }
+
+    @Test
+    void cashLockedByPendingBuysCannotBeWithdrawn() {
+        String accountId = "ACC001";
+        Account account = new Account(accountId, "John Doe", new BigDecimal("1000.00"), AccountStatus.ACTIVE,
+            LocalDateTime.now());
+        when(accountRepository.findByIdForUpdate(accountId)).thenReturn(Optional.of(account));
+        when(orderRepository.lockedCash(accountId)).thenReturn(new BigDecimal("700.00"));
+
+        BigDecimal tooMuch = new BigDecimal("300.01");
+        InsufficientFundsException ex = assertThrows(InsufficientFundsException.class,
+            () -> accountService.withdrawCash(accountId, tooMuch));
+        assertEquals("Account ACC001 has $300.00 available to withdraw ($700.00 locked in pending orders)",
+            ex.getMessage());
+        assertEquals(new BigDecimal("1000.00"), account.getCashBalance());
+
+        accountService.withdrawCash(accountId, new BigDecimal("300.00"));
+        assertEquals(new BigDecimal("700.00"), account.getCashBalance());
     }
 
     // ========== getAccountOrders Tests ==========

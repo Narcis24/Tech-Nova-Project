@@ -1,5 +1,5 @@
 <dialog #dialog aria-labelledby="close-title" (cancel)="onCancel($event)" (close)="dismiss.emit()">
-  <h2 id="close-title">Close {{ position().symbol }} position?</h2>
+  <h2 id="close-title"><app-symbol-icon [symbol]="position().symbol" />Close {{ position().symbol }} position?</h2>
   <p>Submit a market sell order for all {{ position().quantity }} shares in {{ accountId() }}.</p>
   <p>
     Last stored price: {{ position().currentPrice | currency: 'USD' }}. The execution price may differ. Your position

@@ -17,10 +17,13 @@ import com.neueda.app.services.OrderValidator.ValidatedOrder;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 
 /**
@@ -89,10 +92,35 @@ public class RiskService {
         // Step 4: Compare against the account's limits
         Map<RiskRule, EffectiveLimit> limits = effectiveLimits(order.getAccountId());
 
-        evaluate(warnings, limits.get(RiskRule.SINGLE_INSTRUMENT), RiskRule.SINGLE_INSTRUMENT,
-            symbol, valueBySymbol.get(symbol), total, symbol);
-        checkAssetClass(warnings, limits.get(RiskRule.ASSET_CLASS), symbol, valueBySymbol, total);
-        evaluate(warnings, limits.get(RiskRule.CASH_FLOOR), RiskRule.CASH_FLOOR, "CASH", cash, total, "cash");
+        String prefix = "After this order, ";
+        evaluate(warnings, prefix, limits.get(RiskRule.SINGLE_INSTRUMENT), RiskRule.SINGLE_INSTRUMENT,
+            new Exposure(symbol, valueBySymbol.get(symbol), symbol), total);
+        checkAssetClass(warnings, prefix, limits.get(RiskRule.ASSET_CLASS), List.of(symbol), valueBySymbol, total);
+        evaluate(warnings, prefix, limits.get(RiskRule.CASH_FLOOR), RiskRule.CASH_FLOOR,
+            new Exposure("CASH", cash, "cash"), total);
+        return warnings;
+    }
+
+    /** Checks every holding and asset class of a whole portfolio, e.g. the one a rebalance would leave. */
+    public List<RiskWarning> checkHoldings(String accountId, Map<String, BigDecimal> valueBySymbol, BigDecimal cash) {
+        List<RiskWarning> warnings = new ArrayList<>();
+        BigDecimal total = cash;
+        for (BigDecimal value : valueBySymbol.values()) {
+            total = total.add(value);
+        }
+        if (total.signum() <= 0) {
+            return warnings;
+        }
+
+        Map<RiskRule, EffectiveLimit> limits = effectiveLimits(accountId);
+        String prefix = "After rebalancing, ";
+        for (Map.Entry<String, BigDecimal> entry : valueBySymbol.entrySet()) {
+            evaluate(warnings, prefix, limits.get(RiskRule.SINGLE_INSTRUMENT), RiskRule.SINGLE_INSTRUMENT,
+                new Exposure(entry.getKey(), entry.getValue(), entry.getKey()), total);
+        }
+        checkAssetClass(warnings, prefix, limits.get(RiskRule.ASSET_CLASS), valueBySymbol.keySet(), valueBySymbol, total);
+        evaluate(warnings, prefix, limits.get(RiskRule.CASH_FLOOR), RiskRule.CASH_FLOOR,
+            new Exposure("CASH", cash, "cash"), total);
         return warnings;
     }
 
@@ -127,25 +155,31 @@ public class RiskService {
         return valueBySymbol;
     }
 
-    /** Warns when the asset class of the ordered symbol reaches its limit. */
-    private void checkAssetClass(List<RiskWarning> warnings, EffectiveLimit limit, String symbol,
-                                 Map<String, BigDecimal> valueBySymbol, BigDecimal total) {
+    /** Warns for each asset class of the given symbols that reaches its limit. */
+    private void checkAssetClass(List<RiskWarning> warnings, String prefix, EffectiveLimit limit,
+                                 Collection<String> symbols, Map<String, BigDecimal> valueBySymbol, BigDecimal total) {
         Map<String, AssetClass> assetClassBySymbol = new HashMap<>();
         for (Instrument instrument : instrumentRepository.findAllById(valueBySymbol.keySet())) {
             assetClassBySymbol.put(instrument.getSymbol(), instrument.getAssetClass());
         }
-        AssetClass orderClass = assetClassBySymbol.get(symbol);
-        if (orderClass == null) {
-            return;
-        }
-        BigDecimal classValue = BigDecimal.ZERO;
+        Map<AssetClass, BigDecimal> valueByClass = new EnumMap<>(AssetClass.class);
         for (Map.Entry<String, BigDecimal> entry : valueBySymbol.entrySet()) {
-            if (assetClassBySymbol.get(entry.getKey()) == orderClass) {
-                classValue = classValue.add(entry.getValue());
+            AssetClass assetClass = assetClassBySymbol.get(entry.getKey());
+            if (assetClass != null) {
+                valueByClass.merge(assetClass, entry.getValue(), BigDecimal::add);
             }
         }
-        evaluate(warnings, limit, RiskRule.ASSET_CLASS, orderClass.name(), classValue, total,
-            orderClass.name() + " holdings");
+        Set<AssetClass> classes = EnumSet.noneOf(AssetClass.class);
+        for (String symbol : symbols) {
+            AssetClass assetClass = assetClassBySymbol.get(symbol);
+            if (assetClass != null) {
+                classes.add(assetClass);
+            }
+        }
+        for (AssetClass assetClass : classes) {
+            evaluate(warnings, prefix, limit, RiskRule.ASSET_CLASS,
+                new Exposure(assetClass.name(), valueByClass.get(assetClass), assetClass.name() + " holdings"), total);
+        }
     }
 
     /** The limits in force for the account. Rules the account switched off are left out. */
@@ -161,12 +195,12 @@ public class RiskService {
     }
 
     /** Adds a warning when the value's share of the total reaches the limit (at or past it). */
-    private void evaluate(List<RiskWarning> warnings, EffectiveLimit limit, RiskRule rule,
-                          String subject, BigDecimal value, BigDecimal total, String label) {
+    private void evaluate(List<RiskWarning> warnings, String prefix, EffectiveLimit limit, RiskRule rule,
+                          Exposure exposure, BigDecimal total) {
         if (limit == null) {
             return;
         }
-        BigDecimal pct = value.multiply(HUNDRED).divide(total, 4, RoundingMode.HALF_UP);
+        BigDecimal pct = exposure.value().multiply(HUNDRED).divide(total, 4, RoundingMode.HALF_UP);
 
         boolean reached;
         if (limit.below()) {
@@ -181,13 +215,17 @@ public class RiskService {
         String shownPct = pct.setScale(1, RoundingMode.HALF_UP).toPlainString();
         String shownLimit = limit.thresholdPct().stripTrailingZeros().toPlainString();
         String limitWord = limit.below() ? "minimum" : "limit";
-        String message = "After this order, " + label + " would be " + shownPct
+        String message = prefix + exposure.label() + " would be " + shownPct
             + "% of your portfolio. Your " + limitWord + " is " + shownLimit + "%.";
 
-        warnings.add(new RiskWarning(rule, subject, pct.setScale(2, RoundingMode.HALF_UP),
+        warnings.add(new RiskWarning(rule, exposure.subject(), pct.setScale(2, RoundingMode.HALF_UP),
             limit.thresholdPct(), limit.source(), message));
     }
 
     private record EffectiveLimit(BigDecimal thresholdPct, boolean below, LimitSource source) {
+    }
+
+    /** What a limit is checked against: its subject (symbol, asset class or CASH), value and wording. */
+    private record Exposure(String subject, BigDecimal value, String label) {
     }
 }

@@ -22,8 +22,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -57,7 +61,7 @@ class RiskServiceTest {
             PlaceOrderRequest r = inv.getArgument(0);
             OrderType type = OrderType.valueOf(r.getOrderType());
             BigDecimal price = type == OrderType.LIMIT ? r.getPrice() : priceService.getCurrentPrice(r.getSymbol());
-            return new ValidatedOrder(null, null, OrderSide.valueOf(r.getSide()), type, price);
+            return new ValidatedOrder(null, null, OrderSide.valueOf(r.getSide()), type, price, null, null);
         });
 
         when(riskLimitRepository.findAll()).thenReturn(List.of(
@@ -72,6 +76,7 @@ class RiskServiceTest {
             instrument("NVDA", AssetClass.EQUITY),
             instrument("JPM", AssetClass.EQUITY),
             instrument("SPY", AssetClass.ETF),
+            instrument("VOO", AssetClass.ETF),
             instrument("XYZ", AssetClass.EQUITY)
         ));
         when(priceService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("254.10"));
@@ -247,6 +252,31 @@ class RiskServiceTest {
         List<RiskWarning> warnings = riskService.check(buy("XYZ", 16, new BigDecimal("90.00")));
 
         assertNull(find(warnings, RiskRule.CASH_FLOOR));
+    }
+
+    // ========== Whole portfolio ==========
+
+    @Test
+    void checkHoldings_warnsForEachOverweightSymbolAndClass() {
+        Map<String, BigDecimal> values = new LinkedHashMap<>();
+        values.put("AAPL", new BigDecimal("3000"));
+        values.put("MSFT", new BigDecimal("3000"));
+        values.put("VOO", new BigDecimal("4000"));
+
+        List<RiskWarning> warnings = riskService.checkHoldings(ACCOUNT, values, BigDecimal.ZERO);
+
+        assertEquals(Set.of("AAPL", "MSFT", "VOO"), warnings.stream()
+            .filter(w -> w.getRule() == RiskRule.SINGLE_INSTRUMENT).map(RiskWarning::getSubject).collect(toSet()));
+        assertEquals(60, find(warnings, RiskRule.ASSET_CLASS).getResultingPct().intValue());
+        assertEquals("EQUITY", find(warnings, RiskRule.ASSET_CLASS).getSubject());
+        assertEquals(0, find(warnings, RiskRule.CASH_FLOOR).getResultingPct().intValue());
+        assertEquals(5, warnings.size());
+        assertTrue(warnings.stream().allMatch(w -> w.getMessage().startsWith("After rebalancing, ")));
+    }
+
+    @Test
+    void checkHoldings_emptyPortfolio_noWarnings() {
+        assertTrue(riskService.checkHoldings(ACCOUNT, Map.of(), BigDecimal.ZERO).isEmpty());
     }
 
     // ========== Helpers ==========

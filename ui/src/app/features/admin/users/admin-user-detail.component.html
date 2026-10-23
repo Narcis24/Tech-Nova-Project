@@ -1,0 +1,79 @@
+<a class="back-link" routerLink="/admin/users">Back to users</a>
+
+@if (loading()) {
+  <p class="loading">Loading user…</p>
+} @else if (error()) {
+  <div class="load-error" role="alert">
+    <p>Couldn't load this user.</p>
+    <button type="button" class="retry" (click)="load()">Try again</button>
+  </div>
+} @else if (user(); as user) {
+  <header class="user-header">
+    <h1>{{ user.username }}</h1>
+    <p>{{ user.email ?? 'No email address' }}</p>
+  </header>
+
+  <dl class="details">
+    <div>
+      <dt>Roles</dt>
+      <dd>{{ user.roles.join(', ') }}</dd>
+    </div>
+    <div>
+      <dt>Created</dt>
+      <dd>{{ user.createdAt | date: 'd MMM y, HH:mm' }}</dd>
+    </div>
+    <div>
+      <dt>Created by</dt>
+      <dd>{{ user.createdBy ?? 'Self-registered' }}</dd>
+    </div>
+  </dl>
+
+  <section aria-labelledby="accounts-heading">
+    <h2 id="accounts-heading">Accounts</h2>
+    @if (user.accounts.length) {
+      <div class="table-wrap">
+        <table class="accounts">
+          <thead>
+            <tr>
+              <th scope="col">Account ID</th>
+              <th scope="col">Balance</th>
+              <th scope="col">Status</th>
+              <th scope="col">Risk</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (account of user.accounts; track account.accountId) {
+              <tr>
+                <td>{{ account.accountId }}</td>
+                <td>{{ account.cashBalance | number: '1.2-2' }}</td>
+                <td>
+                  <span class="status" [class.suspended]="account.status === 'SUSPENDED'">{{ account.status }}</span>
+                </td>
+                <td>
+                  <span class="risk-band" [class]="'risk-' + account.riskBand.toLowerCase()">{{
+                    account.riskBand
+                  }}</span>
+                </td>
+                <td>
+                  @if (account.status === 'ACTIVE' || account.status === 'SUSPENDED') {
+                    <button
+                      type="button"
+                      class="status-action"
+                      [disabled]="updatingAccountId() === account.accountId"
+                      (click)="changeStatus(account)"
+                    >
+                      {{ account.status === 'ACTIVE' ? 'Suspend' : 'Unsuspend' }}
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="empty">This user has no accounts.</p>
+    }
+  </section>
+}

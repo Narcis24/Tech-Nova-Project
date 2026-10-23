@@ -1,0 +1,40 @@
+<header class="head">
+  <h2 id="top-traded-heading">Top traded instruments</h2>
+  <ul class="legend" aria-label="Bar colours">
+    <li><span class="swatch buy"></span>Buy</li>
+    <li><span class="swatch sell"></span>Sell</li>
+  </ul>
+</header>
+
+@if (store.data(); as data) {
+  @if (rows().length) {
+    <ol class="rows" [class.stale]="store.loading()">
+      @for (row of rows(); track row.symbol) {
+        <li>
+          <span class="rank">{{ row.rank }}</span>
+          <app-symbol-icon [symbol]="row.symbol" />
+          <span class="who">
+            <span class="symbol">{{ row.symbol }}</span>
+            <small>{{ row.name }} · {{ row.orders }} orders · {{ row.traders }} traders</small>
+          </span>
+          <span class="visually-hidden">{{ row.split }}</span>
+          <span class="track" aria-hidden="true" [title]="row.split">
+            @if (row.buyWidth) {
+              <span class="part buy" [style.width.%]="row.buyWidth"></span>
+            }
+            @if (row.sellWidth) {
+              <span class="part sell" [style.width.%]="row.sellWidth"></span>
+            }
+          </span>
+          <span class="value">{{ row.value }}</span>
+        </li>
+      }
+    </ol>
+  } @else {
+    <p class="empty">Nothing was traded in this period with these filters.</p>
+  }
+} @else if (store.state().status === 'error') {
+  <p class="empty">Couldn't load the instruments.</p>
+} @else {
+  <p class="loading">Loading instruments…</p>
+}

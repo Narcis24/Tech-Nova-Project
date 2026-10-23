@@ -1,17 +1,21 @@
-import { signal } from '@angular/core';
+import { computed, signal } from '@angular/core';
 import { Location } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { of } from 'rxjs';
+import { NEVER, of } from 'rxjs';
 
 import {
   AccountControllerService,
+  AdminAnalyticsControllerService,
+  AdminUserControllerService,
   DashboardControllerService,
   OrderControllerService,
   PriceControllerService,
   InstrumentControllerService,
+  PieControllerService,
   PortfolioControllerService,
+  PublicPieControllerService,
   RiskControllerService,
   RiskLimitControllerService,
 } from './generated/trading-api-client';
@@ -23,14 +27,21 @@ import { AuthService } from './services/auth.service';
 // Runs the real route table and guards, with only the services faked
 describe('app routes', () => {
   const isAuthenticated = signal(false);
+  const isAdmin = signal(false);
   // The shell loads the accounts and its nav bar shows the username
-  const auth = { isAuthenticated, username: signal(null) };
+  const auth = {
+    isAuthenticated,
+    isAdmin,
+    homeUrl: computed(() => (isAdmin() ? '/admin' : '/dashboard')),
+    username: signal(null),
+  };
   const accounts = { accounts: signal([]), currentAccountId: signal(null), loadAccounts: () => of(undefined) };
   let harness: RouterTestingHarness;
   let router: Router;
 
   beforeEach(async () => {
     isAuthenticated.set(false);
+    isAdmin.set(false);
     TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
@@ -45,6 +56,17 @@ describe('app routes', () => {
         },
         { provide: AccountControllerService, useValue: { getAccountOrders: () => of([]) } },
         { provide: InstrumentControllerService, useValue: { getInstruments: () => of([]) } },
+        { provide: PieControllerService, useValue: { get: () => of({ pieId: 'p1', name: 'Tech Growth' }) } },
+        {
+          provide: PublicPieControllerService,
+          useValue: {
+            listPublicPies: () => of([]),
+            getPublicPie: () => of({ pieId: 'p1', name: 'Public Growth', authorUsername: 'ada' }),
+          },
+        },
+        { provide: AdminUserControllerService, useValue: { listUsers: () => of([]) } },
+        // The admin page's analytics never answer here, so its widgets just stay loading
+        { provide: AdminAnalyticsControllerService, useValue: { analytics: () => NEVER, live: () => NEVER } },
         { provide: AuthService, useValue: auth },
         { provide: AccountService, useValue: accounts },
       ],
@@ -66,11 +88,10 @@ describe('app routes', () => {
       expect(router.url).toBe('/login?returnUrl=%2Fdashboard%3Ftab%3Dorders');
     });
 
-    it('sends / to /login through the dashboard redirect', async () => {
+    it('sends / straight to /login, so each user lands on their own home page after logging in', async () => {
       await harness.navigateByUrl('/');
 
-      // The guard keeps the URL that was typed (/); after login, / redirects to /dashboard again
-      expect(router.url).toBe('/login?returnUrl=%2Fdashboard');
+      expect(router.url).toBe('/login');
     });
 
     it('shows the login page', async () => {
@@ -158,12 +179,96 @@ describe('app routes', () => {
       expect(harness.routeNativeElement?.textContent).toContain('Risk limits');
     });
 
+    it('opens the new pie editor, not the pie detail', async () => {
+      await harness.navigateByUrl('/strategies/new');
+
+      expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('New strategy');
+    });
+
+    it('shows one of my pies', async () => {
+      await harness.navigateByUrl('/strategies/p1');
+
+      expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('Tech Growth');
+    });
+
+    it('shows public templates in Discover', async () => {
+      await harness.navigateByUrl('/discover');
+
+      expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('Discover');
+    });
+
+    it('shows a public pie', async () => {
+      await harness.navigateByUrl('/discover/p1');
+
+      expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('Public Growth');
+    });
+
+    it('sends / to /dashboard for a trader', async () => {
+      await harness.navigateByUrl('/');
+
+      expect(router.url).toBe('/dashboard');
+    });
+
+    it('sends /admin to /dashboard for a trader', async () => {
+      await harness.navigateByUrl('/admin');
+
+      expect(router.url).toBe('/dashboard');
+    });
+
     it('wraps the page in the shell', async () => {
       await harness.navigateByUrl('/dashboard');
 
       const shell = harness.fixture.nativeElement.querySelector('app-shell');
       expect(shell).not.toBeNull();
     });
+  });
+
+  describe('when logged in as an admin', () => {
+    beforeEach(() => {
+      isAuthenticated.set(true);
+      isAdmin.set(true);
+    });
+
+    it('sends / to /admin', async () => {
+      await harness.navigateByUrl('/');
+
+      expect(router.url).toBe('/admin');
+    });
+
+    it('sends /login to /admin', async () => {
+      await harness.navigateByUrl('/login');
+
+      expect(router.url).toBe('/admin');
+    });
+
+    it('shows the admin page inside the shell', async () => {
+      await harness.navigateByUrl('/admin');
+
+      expect(router.url).toBe('/admin');
+      expect(harness.routeNativeElement?.textContent).toContain('Admin');
+      expect(harness.fixture.nativeElement.querySelector('app-shell')).not.toBeNull();
+    });
+
+    it('shows the users page', async () => {
+      await harness.navigateByUrl('/admin/users');
+
+      expect(router.url).toBe('/admin/users');
+      expect(harness.routeNativeElement?.textContent).toContain('Create admin');
+    });
+
+    for (const url of ['/dashboard', '/trade', '/orders', '/orders/ORD-1', '/accounts', '/risk-limits']) {
+      it(`sends the trading page ${url} to /admin`, async () => {
+        await harness.navigateByUrl(url);
+
+        expect(router.url).toBe('/admin');
+      });
+    }
+  });
+
+  it('sends /admin to /login when logged out', async () => {
+    await harness.navigateByUrl('/admin');
+
+    expect(router.url).toBe('/login?returnUrl=%2Fadmin');
   });
 
   it('shows the 404 page for unknown URLs', async () => {

@@ -18,6 +18,8 @@
     <properties>
         <sonar.projectKey>tech-nova-execution-engine</sonar.projectKey>
         <sonar.jacoco.reportPaths>target/jacoco.exec</sonar.jacoco.reportPaths>
+        <!-- what mvn exec:java runs; override with -Dexec.mainClass -->
+        <exec.mainClass>com.neueda.trading.engine.Replay</exec.mainClass>
         <!-- tomcat.version / jackson-bom.version security pins are inherited from the root pom -->
 
         <!-- SonarQube Exclusions: Enums, Events, Config, Data Classes, and Entry Point -->
@@ -137,6 +139,13 @@
                         com.neueda.trading.ExecutionEngineApplication
                     </mainClass>
                 </configuration>
+            </plugin>
+
+            <!-- Replay a decision journal: mvn -q -pl execution-engine exec:java -Dexec.args=<journal.jsonl> -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
             </plugin>
 
             <!-- SonarQube scanner -->

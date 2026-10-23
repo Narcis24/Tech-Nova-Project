@@ -20,6 +20,8 @@ h1 {
 }
 
 .empty {
+  /* Some are <output> status messages; keep the default <p> margins on all of them */
+  margin: 1em 0;
   color: var(--secondary-text-color);
 }
 
@@ -36,10 +38,10 @@ h1 {
 }
 
 .cards {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+  align-items: start;
   gap: 12px;
-  max-width: 560px;
   margin: 0;
   padding: 0;
   list-style: none;

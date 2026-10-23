@@ -8,8 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Component;
 
-
-
 /** Latest quote per symbol, updated by ExecutionEngine from the market-data topic. */
 @Component
 public class QuoteCache {
@@ -17,6 +15,11 @@ public class QuoteCache {
     private final Map<String, Quote> latest = new ConcurrentHashMap<>();
     void put(Quote quote) {
         latest.put(quote.symbol(), quote);
+    }
+
+    /** The latest quote for the symbol, however old; callers show its asOf time. */
+    Optional<Quote> latest(String symbol) {
+        return Optional.ofNullable(latest.get(symbol));
     }
 
     /** The quote for the symbol, unless there is none or it is older than maxAge. */

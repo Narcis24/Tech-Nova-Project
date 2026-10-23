@@ -106,7 +106,7 @@ public final class Stack {
 
     /** Postgres with the real migrations, plus reference prices the data pipeline would load. */
     private static PostgreSQLContainer<?> postgres(Network network) {
-        return new PostgreSQLContainer<>("postgres:16-alpine")
+        return limitMemory(new PostgreSQLContainer<>("postgres:16-alpine"), 512)
             .withNetwork(network).withNetworkAliases("db").withLogConsumer(logTo("db"))
             .withDatabaseName(DB_NAME).withUsername(DB_USER).withPassword(DB_PASSWORD)
             .withCopyFileToContainer(MountableFile.forHostPath(ROOT.resolve("db/migrations")),
@@ -116,15 +116,17 @@ public final class Stack {
     }
 
     private static KafkaContainer kafka(Network network) {
-        return new KafkaContainer("apache/kafka:4.0.0")
+        return limitMemory(new KafkaContainer("apache/kafka:4.0.0"), 768)
             .withNetwork(network).withListener(KAFKA).withLogConsumer(logTo("kafka"))
             // as in docker-compose: topics come from the services' NewTopic beans
-            .withEnv("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "false");
+            .withEnv("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "false")
+            // Kafka's own default heap is 1 GB, more than its limit
+            .withEnv("KAFKA_HEAP_OPTS", "-Xmx384m -Xms384m");
     }
 
     /** WireMock serving the quotes in wiremock/mappings; see {@link AlpacaStub}. */
     private static GenericContainer<?> alpacaStub(Network network) {
-        return new GenericContainer<>("wiremock/wiremock:3.13.1")
+        return limitMemory(new GenericContainer<>("wiremock/wiremock:3.13.1"), 256)
             .withNetwork(network).withNetworkAliases("alpaca").withLogConsumer(logTo("alpaca"))
             .withCopyFileToContainer(MountableFile.forClasspathResource("wiremock/mappings"), "/home/wiremock/mappings")
             .withExposedPorts(8080)
@@ -132,7 +134,7 @@ public final class Stack {
     }
 
     private static GenericContainer<?> authService(Network network, Map<String, String> env) {
-        return service("auth", "auth", network)
+        return limitMemory(service("auth", "auth", network), 256)
             .withEnv(env)
             .withExposedPorts(8082)
             // NestJS, so no Spring "Started ..." log line; ready once its health endpoint answers
@@ -140,21 +142,24 @@ public final class Stack {
     }
 
     private static GenericContainer<?> app(Network network, Map<String, String> env) {
-        return service("app", "app", network)
+        return limitMemory(service("app", "app", network), 768)
             .withEnv(env)
             .withEnv("SPRING_KAFKA_BOOTSTRAP_SERVERS", KAFKA)
+            // size the heap from the limit, as the engine's Dockerfile does
+            .withEnv("JAVA_TOOL_OPTIONS", "-XX:MaxRAMPercentage=75.0")
             .withExposedPorts(8081);
     }
 
     private static GenericContainer<?> executionEngine(Network network) {
-        return service("engine", "execution-engine", network)
+        return limitMemory(service("engine", "execution-engine", network), 512)
             .withEnv("SPRING_KAFKA_BOOTSTRAP_SERVERS", KAFKA)
             // poll the stub every second; the quota check would refuse that rate against real Alpaca.
             // Market hours off: the tests run at any time and expect market orders to fill
             .withEnv("SPRING_APPLICATION_JSON", """
                 {"market-data": {"base-url": "http://alpaca:8080", "interval-seconds": 1,
                  "daily-quota": 1000000, "key-id": "e2e", "secret-key": "e2e",
-                 "enforce-market-hours": false}}""")
+                 "enforce-market-hours": false},
+                 "execution-engine": {"journal": {"enabled": false}}}""")
             // ready once both consumers own their partitions, so no early order or quote is missed
             .waitingFor(new WaitAllStrategy()
                 .withStrategy(Wait.forLogMessage(".*execution-engine: partitions assigned: \\[order-request.*", 1))
@@ -175,6 +180,17 @@ public final class Stack {
     }
 
     // ---- helpers ----
+
+    /**
+     * Caps a container's memory (the same limits as docker-compose.yml), so the whole E2E stack stays
+     * around 3 GB on a small Jenkins machine. A container over its limit is killed (exit 137).
+     */
+    private static <T extends GenericContainer<?>> T limitMemory(T container, int megabytes) {
+        long bytes = megabytes * 1024L * 1024L;
+        container.withCreateContainerCmdModifier(cmd -> cmd.withHostConfig(
+            cmd.getHostConfig().withMemory(bytes).withMemorySwap(bytes)));
+        return container;
+    }
 
     /** The Java services build from the repo root, so they can see the parent pom and messaging. */
     private static final String[] JAVA_BUILD_CONTEXT = {

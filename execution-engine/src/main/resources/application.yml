@@ -50,3 +50,14 @@ market-data:
   key-id: ${ALPACA_KEY_ID:}
   secret-key: ${ALPACA_SECRET_KEY:}
   symbols: AAPL,MSFT,NVDA,AMZN,GOOGL,META,TSLA,AVGO,BRK-B,JPM,LLY,V,XOM,UNH,MA,JNJ,PG,HD,COST,ABBV,WMT,KO,PEP,BAC,CVX,SPY,QQQ,IWM,DIA,VTI,EFA,XLK,XLE,TLT,IEF,AGG,LQD,GLD,SLV
+
+# Every input and decision, one JSON line each, for replaying a trading day (DecisionJournal)
+execution-engine:
+  journal:
+    enabled: true
+    dir: ${EXECUTION_ENGINE_JOURNAL_DIR:journal}
+
+# Shared secret the app sends to /internal/** (admin journal page); empty refuses every internal call
+internal:
+  api:
+    token: ${INTERNAL_API_TOKEN:}

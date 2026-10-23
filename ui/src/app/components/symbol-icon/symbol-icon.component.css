@@ -1,0 +1,27 @@
+:host {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  overflow: hidden;
+  margin-inline-end: 0.5rem;
+  vertical-align: middle;
+  /* logos are drawn for a white backdrop, also in dark mode */
+  background: var(--text-on-primary-color);
+  border: 1px solid var(--subtle-border-color);
+  border-radius: 50%;
+}
+
+img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.initials {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--secondary-text-color);
+}

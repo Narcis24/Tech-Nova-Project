@@ -1,11 +1,24 @@
+import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
 
 import { NotFoundComponent } from './features/not-found/not-found.component';
+import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
 import { guestGuard } from './guards/guest.guard';
+import { traderGuard } from './guards/trader.guard';
+import { AuthService } from './services/auth.service';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+  // Each user starts on their home page. Logged out: straight to /login with no returnUrl, so after
+  // logging in an admin lands on /admin rather than the /dashboard a returnUrl would have pinned.
+  {
+    path: '',
+    pathMatch: 'full',
+    redirectTo: () => {
+      const auth = inject(AuthService);
+      return auth.isAuthenticated() ? auth.homeUrl() : '/login';
+    },
+  },
   {
     path: 'login',
     canActivate: [guestGuard],
@@ -33,29 +46,99 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./features/shell/shell.component').then((m) => m.ShellComponent),
     children: [
+      // The trading pages; admins are sent to /admin instead
       {
-        path: 'dashboard',
-        loadComponent: () => import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+        path: '',
+        canActivateChild: [traderGuard],
+        children: [
+          {
+            path: 'dashboard',
+            loadComponent: () => import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+          },
+          {
+            path: 'trade',
+            loadComponent: () =>
+              import('./pages/order-ticket/order-ticket.component').then((m) => m.OrderTicketComponent),
+          },
+          {
+            path: 'orders/:orderId',
+            loadComponent: () =>
+              import('./pages/order-result/order-result.component').then((m) => m.OrderResultComponent),
+          },
+          {
+            path: 'orders',
+            loadComponent: () => import('./features/orders/orders.component').then((m) => m.OrdersComponent),
+          },
+          {
+            path: 'strategies/new',
+            loadComponent: () => import('./features/pies/pie-editor.component').then((m) => m.PieEditorComponent),
+          },
+          {
+            path: 'strategies/:pieId/edit',
+            loadComponent: () => import('./features/pies/pie-editor.component').then((m) => m.PieEditorComponent),
+          },
+          {
+            path: 'strategies/:pieId',
+            loadComponent: () => import('./features/pies/pie-detail.component').then((m) => m.PieDetailComponent),
+          },
+          {
+            path: 'strategies',
+            loadComponent: () => import('./features/pies/pies.component').then((m) => m.PiesComponent),
+          },
+          // Old links from when strategies were called pies
+          { path: 'pies/:pieId/edit', redirectTo: 'strategies/:pieId/edit' },
+          { path: 'pies/:pieId', redirectTo: 'strategies/:pieId' },
+          { path: 'pies', redirectTo: 'strategies' },
+          {
+            path: 'accounts/:accountId/rebalance',
+            loadComponent: () =>
+              import('./features/pies/rebalance-preview.component').then((m) => m.RebalancePreviewComponent),
+          },
+          {
+            path: 'discover/:pieId',
+            loadComponent: () => import('./features/pies/public-pie.component').then((m) => m.PublicPieComponent),
+          },
+          {
+            path: 'discover',
+            loadComponent: () => import('./features/pies/discover.component').then((m) => m.DiscoverComponent),
+          },
+          {
+            path: 'rebalance-runs/:runId',
+            loadComponent: () => import('./features/pies/rebalance-run.component').then((m) => m.RebalanceRunComponent),
+          },
+          {
+            path: 'risk-limits',
+            loadComponent: () =>
+              import('./features/risk-limits/risk-limits.component').then((m) => m.RiskLimitsComponent),
+          },
+          {
+            path: 'accounts',
+            loadComponent: () => import('./features/accounts/accounts.component').then((m) => m.AccountsComponent),
+          },
+        ],
       },
       {
-        path: 'trade',
-        loadComponent: () => import('./pages/order-ticket/order-ticket.component').then((m) => m.OrderTicketComponent),
+        path: 'admin',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/admin/admin-dashboard.component').then((m) => m.AdminDashboardComponent),
       },
       {
-        path: 'orders/:orderId',
-        loadComponent: () => import('./pages/order-result/order-result.component').then((m) => m.OrderResultComponent),
+        path: 'admin/journal',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/admin/journal/admin-journal.component').then((m) => m.AdminJournalComponent),
       },
       {
-        path: 'orders',
-        loadComponent: () => import('./features/orders/orders.component').then((m) => m.OrdersComponent),
+        path: 'admin/users/:username',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/admin/users/admin-user-detail.component').then((m) => m.AdminUserDetailComponent),
       },
       {
-        path: 'risk-limits',
-        loadComponent: () => import('./features/risk-limits/risk-limits.component').then((m) => m.RiskLimitsComponent),
-      },
-      {
-        path: 'accounts',
-        loadComponent: () => import('./features/accounts/accounts.component').then((m) => m.AccountsComponent),
+        path: 'admin/users',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./features/admin/users/admin-users.component').then((m) => m.AdminUsersComponent),
       },
     ],
   },

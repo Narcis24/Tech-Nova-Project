@@ -3,9 +3,10 @@ import { Component, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PositionResponse } from '../../generated/trading-api-client';
 import { ActionButtonsComponent } from './action-buttons.component';
+import { SymbolIconComponent } from '../../components/symbol-icon/symbol-icon.component';
 @Component({
   selector: 'app-position-summary',
-  imports: [DecimalPipe, PercentPipe, RouterLink, ActionButtonsComponent],
+  imports: [DecimalPipe, PercentPipe, RouterLink, ActionButtonsComponent, SymbolIconComponent],
   templateUrl: './position-summary.component.html',
   styleUrl: './position-summary.component.css',
 })

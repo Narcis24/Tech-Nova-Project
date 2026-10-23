@@ -9,10 +9,13 @@ import org.springframework.stereotype.Component;
 import com.neueda.app.exceptions.AccountAccessDeniedException;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.OrderNotFoundException;
+import com.neueda.app.exceptions.RebalanceRunNotFoundException;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Order;
+import com.neueda.app.models.RebalanceRun;
 import com.neueda.app.repositories.AccountRepository;
 import com.neueda.app.repositories.OrderRepository;
+import com.neueda.app.repositories.RebalanceRunRepository;
 
 /**
  * Accounts belong to the user who opened them. Controllers call this before touching an account
@@ -23,10 +26,13 @@ public class AccountAccess {
 
     private final AccountRepository accountRepository;
     private final OrderRepository orderRepository;
+    private final RebalanceRunRepository rebalanceRunRepository;
 
-    public AccountAccess(AccountRepository accountRepository, OrderRepository orderRepository) {
+    public AccountAccess(AccountRepository accountRepository, OrderRepository orderRepository,
+                         RebalanceRunRepository rebalanceRunRepository) {
         this.accountRepository = accountRepository;
         this.orderRepository = orderRepository;
+        this.rebalanceRunRepository = rebalanceRunRepository;
     }
 
     public void requireOwned(String accountId) {
@@ -41,6 +47,12 @@ public class AccountAccess {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
         requireOwned(order.getAccountId());
+    }
+
+    public void requireOwnedRun(UUID runId) {
+        RebalanceRun run = rebalanceRunRepository.findById(runId)
+            .orElseThrow(() -> new RebalanceRunNotFoundException("Rebalance run not found: " + runId));
+        requireOwned(run.getAccountId());
     }
 
     /** The username JwtFilter put in the security context. */

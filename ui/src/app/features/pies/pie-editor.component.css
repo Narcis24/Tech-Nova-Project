@@ -1,0 +1,150 @@
+h1 {
+  margin: 0 0 16px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 880px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+label {
+  font-size: 14px;
+}
+
+input,
+input.symbol {
+  min-height: 48px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--elevated-background-color);
+  font: inherit;
+  color: var(--text-color);
+}
+
+input:focus-visible,
+input.symbol:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+[aria-invalid='true'] {
+  outline: 2px solid var(--loss-color);
+}
+
+.layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--card-background-color);
+}
+
+.rows {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.row .symbol {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+}
+
+.weight {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.weight input {
+  width: 90px;
+  font-variant-numeric: tabular-nums;
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.cash-line {
+  margin: 0;
+  font-size: 14px;
+  color: var(--secondary-text-color);
+}
+
+.cash-line.over {
+  color: var(--loss-color);
+}
+
+.empty {
+  margin: 1em 0;
+  color: var(--secondary-text-color);
+}
+
+.error {
+  margin: 0;
+  color: var(--loss-color);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 8px;
+}
+
+@media (max-width: 599.98px) {
+  .layout {
+    display: block;
+    padding: 16px;
+  }
+
+  .rows {
+    width: 100%;
+  }
+
+  .row .symbol {
+    flex-basis: 100%;
+    width: 100%;
+  }
+
+  .row {
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .weight {
+    flex: 1;
+  }
+
+  .preview {
+    margin-top: 24px;
+  }
+}

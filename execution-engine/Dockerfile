@@ -21,7 +21,11 @@ RUN mvn -B -q -pl execution-engine -am -Dmaven.test.skip=true package
 # ---- runtime stage ----
 FROM eclipse-temurin:21-jre-alpine
 
-RUN addgroup -S engine && adduser -S engine -G engine
+# pick up Alpine security fixes released after the base image, e.g. libexpat CVE-2026-77214
+RUN apk upgrade --no-cache
+
+RUN addgroup -S engine && adduser -S engine -G engine \
+    && mkdir -p /data/journal && chown engine:engine /data/journal
 
 WORKDIR /opt/execution-engine
 

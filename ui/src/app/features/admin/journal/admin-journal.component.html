@@ -1,0 +1,195 @@
+<h1>Trading journal</h1>
+<p class="subtitle">Everything the execution engine received and decided, day by day. Times are New York time.</p>
+
+@if (error()) {
+  <div class="load-error" role="alert">
+    <p>{{ error() }}</p>
+    <button type="button" class="retry" (click)="selectedDay() ? selectDay(selectedDay()!) : loadDays()">
+      Try again
+    </button>
+  </div>
+}
+
+@if (days() === null) {
+  <p class="loading">Loading the journal…</p>
+} @else if (!days()!.length && !error()) {
+  <p class="empty">No journal yet. The engine starts one as soon as it runs.</p>
+} @else if (days()!.length) {
+  <section class="card toolbar" aria-label="Day">
+    <div class="field">
+      <label for="journal-day">Day (UTC)</label>
+      <select id="journal-day" [value]="selectedDay()" (change)="selectDay($any($event.target).value)">
+        @for (d of days(); track d.day) {
+          <option [value]="d.day">{{ d.day }} · {{ sizeLabel(d.sizeBytes) }}</option>
+        }
+      </select>
+    </div>
+    <div class="actions">
+      <button type="button" class="secondary" (click)="download()" [disabled]="downloading()">
+        {{ downloading() ? 'Downloading…' : 'Download journal' }}
+      </button>
+      <button type="button" class="primary" (click)="verify()" [disabled]="verifying() || !summary()">
+        {{ verifying() ? 'Verifying…' : 'Verify this day' }}
+      </button>
+    </div>
+  </section>
+
+  @if (verifyError()) {
+    <div class="verify bad" role="alert">{{ verifyError() }}</div>
+  }
+  @if (verifyResult(); as v) {
+    @if (v.matches) {
+      <div class="verify good" aria-live="polite">
+        All {{ v.decisions | number }} decisions match: replaying {{ v.orders | number }} orders and
+        {{ v.quotes | number }} quotes with the running engine gave the same result.
+      </div>
+    } @else {
+      <div class="verify bad" aria-live="polite">
+        <p>{{ v.differences.length }} decision(s) came out differently when replayed with the running engine.</p>
+        <ul>
+          @for (d of v.differences; track $index) {
+            <li>
+              <code>{{ d.recorded ?? 'nothing recorded' }}</code> → <code>{{ d.replayed ?? 'nothing decided' }}</code>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+  }
+
+  @if (loadingDay()) {
+    <p class="loading">Loading {{ selectedDay() }}…</p>
+  }
+
+  @if (summary(); as s) {
+    <section class="tiles" aria-label="Day totals">
+      @for (t of tiles(); track t.label) {
+        <div class="tile">
+          <span class="tile-value">{{ t.value | number }}</span>
+          <span class="tile-label">{{ t.label }}</span>
+        </div>
+      }
+    </section>
+
+    @if (s.rejectReasons.length) {
+      <section class="card" aria-labelledby="reasons-heading">
+        <h2 id="reasons-heading">Why orders were rejected</h2>
+        <ul class="reasons">
+          @for (r of s.rejectReasons; track r.reason) {
+            <li>
+              <span>{{ r.reason }}</span
+              ><span class="count">{{ r.count }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    <section class="card orders-card" aria-labelledby="orders-heading">
+      <header class="card-header">
+        <h2 id="orders-heading">Orders</h2>
+        <p class="hint">Select an order to see its timeline.</p>
+      </header>
+      @if (!s.orderRows.length) {
+        <p class="empty">No orders on this day.</p>
+      } @else {
+        <div class="table-wrap">
+          <table class="orders">
+            <thead>
+              <tr>
+                <th scope="col">Received</th>
+                <th scope="col">Account</th>
+                <th scope="col">Order</th>
+                <th scope="col" class="num">Limit</th>
+                <th scope="col">Outcome</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of s.orderRows; track row.orderId) {
+                <tr
+                  tabindex="0"
+                  [class.selected]="selectedOrder()?.orderId === row.orderId"
+                  (click)="openOrder(row)"
+                  (keydown.enter)="openOrder(row)"
+                >
+                  <td [title]="row.receivedAt + ' UTC'">{{ nyTime(row.receivedAt) }}</td>
+                  <td>{{ row.accountId }}</td>
+                  <td>
+                    <span class="side" [class.sell]="row.side === 'SELL'">{{ row.side }}</span>
+                    {{ row.quantity }} {{ row.symbol }} · {{ row.orderType }}
+                  </td>
+                  <td class="num">{{ row.limitPrice != null ? (row.limitPrice | number: '1.2-2') : '—' }}</td>
+                  <td>
+                    <span [class]="'outcome outcome-' + row.outcome.toLowerCase()">{{ outcomeLabel(row) }}</span>
+                    @if (row.fillPrice != null) {
+                      <span class="detail">at {{ row.fillPrice | number: '1.2-2' }}</span>
+                    }
+                    @if (row.reason) {
+                      <span class="detail">{{ row.reason }}</span>
+                    }
+                    @if (row.resends) {
+                      <span class="detail">resent {{ row.resends }}× after restarts</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    @if (selectedOrder(); as order) {
+      <section class="card" aria-labelledby="timeline-heading">
+        <header class="card-header">
+          <div>
+            <h2 id="timeline-heading">Order timeline</h2>
+            <p class="hint">
+              {{ order.side }} {{ order.quantity }} {{ order.symbol }} · {{ order.orderType }} · account
+              {{ order.accountId }}
+            </p>
+            <p class="hint mono">{{ order.orderId }}</p>
+          </div>
+          <button type="button" class="retry" (click)="closeOrder()">Close</button>
+        </header>
+        @if (timelineError()) {
+          <p class="load-error">{{ timelineError() }}</p>
+        } @else if (timeline() === null) {
+          <p class="loading">Loading the timeline…</p>
+        } @else {
+          <ol class="timeline">
+            @for (e of timeline(); track e.seq + e.type + e.time) {
+              <li [class]="'event event-' + (e.decision ?? e.type).toLowerCase()">
+                <span class="time" [title]="e.time + ' UTC'">{{ nyTime(e.time) }}</span>
+                <div class="what">
+                  <span class="label">{{ eventLabel(e) }}</span>
+                  @if (e.price != null) {
+                    <span class="detail">at {{ e.price | number: '1.2-2' }}</span>
+                  }
+                  @if (e.reason) {
+                    <span class="detail">{{ e.reason }}</span>
+                  }
+                  @if (e.order?.price != null) {
+                    <span class="detail"
+                      >{{ e.order!.orderType === 'LIMIT' ? 'limit' : 'reference price' }}
+                      {{ e.order!.price | number: '1.2-2' }}</span
+                    >
+                  }
+                  @if (e.quote; as q) {
+                    <span class="quote">
+                      Based on {{ q.symbol }} bid {{ q.bid | number: '1.2-2' }} · ask {{ q.ask | number: '1.2-2' }},
+                      quoted
+                      {{ nyTime(q.asOf) }}
+                    </span>
+                  } @else if (e.decision) {
+                    <span class="quote">No quote for {{ order.symbol }} yet</span>
+                  }
+                </div>
+              </li>
+            }
+          </ol>
+        }
+      </section>
+    }
+  }
+}

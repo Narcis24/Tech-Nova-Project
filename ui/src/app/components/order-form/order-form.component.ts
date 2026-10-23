@@ -11,7 +11,14 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormControl,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, distinctUntilChanged, exhaustMap, map, of, Subject, startWith, switchMap } from 'rxjs';
 import {
@@ -22,13 +29,20 @@ import {
   PlaceOrderRequest,
   PortfolioControllerService,
   PortfolioSnapshotResponse,
+  PriceHistoryPoint,
   RiskControllerService,
   RiskWarning,
 } from '../../generated/trading-api-client';
 import { PriceChartComponent, TradeQuote } from '../../features/trade/price-chart.component';
 import { isRejection, orderError } from '../../features/trade/order-error';
 import { OrderConfirmationComponent } from '../../features/trade/order-confirmation.component';
+import { KeyStatsComponent } from '../../features/trade/key-stats.component';
+import { SymbolActivityComponent } from '../../features/trade/symbol-activity.component';
+import { FinancialsComponent } from '../../features/trade/financials.component';
 import { newUuid } from '../../core/uuid';
+import { newYorkDate } from '../../core/market-hours';
+import { MAX_DAYS_OPEN, TimeInForce } from '../../core/time-in-force';
+import { TimeInForcePickerComponent } from '../time-in-force-picker/time-in-force-picker.component';
 import { AccountService } from '../../services/account.service';
 
 @Component({
@@ -40,6 +54,10 @@ import { AccountService } from '../../services/account.service';
     RouterLink,
     PriceChartComponent,
     OrderConfirmationComponent,
+    KeyStatsComponent,
+    SymbolActivityComponent,
+    FinancialsComponent,
+    TimeInForcePickerComponent,
   ],
   templateUrl: './order-form.component.html',
   styleUrl: './order-form.component.css',
@@ -73,6 +91,9 @@ export class OrderFormComponent {
   private lastFingerprint = '';
   private key = '';
   readonly presets = [10, 25, 50, 100];
+  // A GTD order runs at least to tomorrow's close (today's is what a day order does), at most 90 days
+  readonly minExpiry = newYorkDate(new Date(), 1);
+  readonly maxExpiry = newYorkDate(new Date(), MAX_DAYS_OPEN);
   readonly form = inject(FormBuilder).group({
     symbol: new FormControl('', {
       nonNullable: true,
@@ -87,6 +108,8 @@ export class OrderFormComponent {
     ]),
     orderType: new FormControl('MARKET', { nonNullable: true, validators: [Validators.pattern(/^(MARKET|LIMIT)$/)] }),
     price: new FormControl<number | null>(null),
+    timeInForce: new FormControl<TimeInForce>('DAY', { nonNullable: true }),
+    expiresOn: new FormControl<string | null>(null),
   });
   readonly values = toSignal(this.form.valueChanges.pipe(startWith(this.form.getRawValue())));
   readonly chartSymbol = computed(() => this.values()?.symbol ?? '');
@@ -101,7 +124,9 @@ export class OrderFormComponent {
   readonly referencePrice = computed(() =>
     this.quote()?.symbol === this.chartSymbol() ? (this.quote()?.price ?? null) : null,
   );
-  private readonly contextRevision = signal(0);
+  // Bumped after an order is placed or cancelled; the account's balance, holdings and orders reload
+  readonly contextRevision = signal(0);
+  readonly history = signal<PriceHistoryPoint[]>([]);
   private readonly contextRequest = computed(() => ({ id: this.accountId(), revision: this.contextRevision() }));
   readonly context = signal<{
     id: string | null;
@@ -110,12 +135,16 @@ export class OrderFormComponent {
     portfolio: PortfolioSnapshotResponse | null;
   }>({ id: null, loading: false, error: false, portfolio: null });
   readonly portfolio = computed(() => (this.context().id === this.accountId() ? this.context().portfolio : null));
-  readonly cash = computed(() => this.portfolio()?.cashBalance ?? null);
-  readonly held = computed(() =>
+  // Cash and shares that pending orders have not already locked
+  readonly cash = computed(() => this.portfolio()?.availableCash ?? this.portfolio()?.cashBalance ?? null);
+  readonly lockedCash = computed(() => Number(this.portfolio()?.lockedCash ?? 0));
+  readonly owned = computed(() =>
     this.portfolio()
       ? Number(this.portfolio()!.positions?.find((p) => p.symbol === this.chartSymbol())?.quantity ?? 0)
       : null,
   );
+  readonly lockedShares = computed(() => Number(this.portfolio()?.lockedShares?.[this.chartSymbol()] ?? 0));
+  readonly held = computed(() => (this.owned() == null ? null : Math.max(0, this.owned()! - this.lockedShares())));
   readonly price = computed(() => (this.isLimit() ? (this.values()?.price ?? null) : this.referencePrice()));
   readonly total = computed(() => {
     const quantity = this.values()?.quantity,
@@ -143,9 +172,13 @@ export class OrderFormComponent {
   readonly validationIssue = computed(() => {
     const quantity = this.values()?.quantity;
     if (!this.isBuy() && quantity != null && this.held() != null && quantity > this.held()!)
-      return `You hold ${this.held()} ${this.chartSymbol()}, so you can sell up to ${this.held()}.`;
+      return this.lockedShares() > 0
+        ? `You hold ${this.owned()} ${this.chartSymbol()} and ${this.lockedShares()} are in pending sell orders, so you can sell up to ${this.held()}.`
+        : `You hold ${this.held()} ${this.chartSymbol()}, so you can sell up to ${this.held()}.`;
     if (this.isBuy() && this.cashAfter() != null && this.cashAfter()! < 0)
-      return 'The estimated cost exceeds available cash. Lower the quantity or deposit cash.';
+      return this.lockedCash() > 0
+        ? 'The estimated cost exceeds your available cash, part of which is locked in pending orders. Lower the quantity, cancel an order or deposit cash.'
+        : 'The estimated cost exceeds available cash. Lower the quantity or deposit cash.';
     return null;
   });
   readonly marker = computed(() => {
@@ -165,7 +198,11 @@ export class OrderFormComponent {
           type === 'LIMIT' ? [Validators.required, Validators.min(0.01), Validators.pattern(/^\d+(\.\d{1,2})?$/)] : [],
         );
         this.form.controls.price.updateValueAndValidity();
+        this.updateExpiryValidators();
       });
+    this.form.controls.timeInForce.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => this.updateExpiryValidators());
     // A limit price belongs to one instrument; carrying it to another symbol would submit a stale price.
     this.form.controls.symbol.valueChanges
       .pipe(distinctUntilChanged(), takeUntilDestroyed())
@@ -301,6 +338,18 @@ export class OrderFormComponent {
   setSide(side: 'BUY' | 'SELL'): void {
     this.form.controls.side.setValue(side);
   }
+  /** Only a GTD limit order needs a date, from tomorrow up to 90 days ahead. */
+  private updateExpiryValidators(): void {
+    const needsDate = this.form.controls.orderType.value === 'LIMIT' && this.form.controls.timeInForce.value === 'GTD';
+    this.form.controls.expiresOn.setValidators(
+      needsDate ? [Validators.required, (control) => this.expiryInRange(control)] : [],
+    );
+    this.form.controls.expiresOn.updateValueAndValidity({ emitEvent: false });
+  }
+  private expiryInRange(control: AbstractControl<string | null>): ValidationErrors | null {
+    const date = control.value;
+    return date && (date < this.minExpiry || date > this.maxExpiry) ? { range: true } : null;
+  }
   setOrderType(type: 'MARKET' | 'LIMIT'): void {
     this.form.controls.orderType.setValue(type);
     if (type === 'LIMIT' && this.form.controls.price.value == null && this.referencePrice() != null)
@@ -327,7 +376,8 @@ export class OrderFormComponent {
       side: value.side,
       quantity: value.quantity,
       orderType: value.orderType,
-      ...(value.orderType === 'LIMIT' ? { price: value.price! } : {}),
+      ...(value.orderType === 'LIMIT' ? { price: value.price!, timeInForce: value.timeInForce } : {}),
+      ...(value.orderType === 'LIMIT' && value.timeInForce === 'GTD' ? { expiresOn: value.expiresOn! } : {}),
     };
     const fingerprint = JSON.stringify(request);
     if (fingerprint !== this.lastFingerprint) {

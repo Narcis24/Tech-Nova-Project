@@ -1,4 +1,25 @@
 <div class="page">
+  <button
+    type="button"
+    class="auth-theme-toggle"
+    [attr.aria-label]="theme.isDark() ? 'Switch to light theme' : 'Switch to dark theme'"
+    [attr.aria-pressed]="theme.isDark()"
+    [title]="theme.isDark() ? 'Switch to light theme' : 'Switch to dark theme'"
+    (click)="theme.toggle()"
+  >
+    @if (theme.isDark()) {
+      <svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4" />
+        <path
+          d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+        />
+      </svg>
+    } @else {
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M21 15.5A9 9 0 0 1 8.5 3 9 9 0 1 0 21 15.5Z" />
+      </svg>
+    }
+  </button>
   <section class="brand">
     <p class="wordmark">TechNova</p>
     <p class="tagline">Every market, one account.</p>
@@ -10,7 +31,7 @@
       <p class="subtitle">Join TechNova to start trading.</p>
 
       @if (success) {
-        <div class="alert success-alert" role="status">{{ success }}</div>
+        <output class="alert success-alert">{{ success }}</output>
       }
 
       @if (error) {

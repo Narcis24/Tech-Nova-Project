@@ -12,6 +12,8 @@ COPY app/src app/src
 RUN mvn -B -pl app -am clean package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
+# pick up Alpine security fixes released after the base image, e.g. libexpat CVE-2026-77214
+RUN apk upgrade --no-cache
 WORKDIR /app
 COPY --from=build /build/app/target/tech-nova.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]

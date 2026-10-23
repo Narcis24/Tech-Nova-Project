@@ -8,10 +8,14 @@ import com.neueda.app.models.Account;
 
 import com.neueda.app.models.PortfolioMetrics;
 import com.neueda.app.repositories.AccountRepository;
+import com.neueda.app.repositories.LockedShares;
+import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
 import java.math.BigDecimal;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,11 +24,14 @@ public class PortfolioService {
     private final AccountRepository accountRepository;
     private final PositionRepository positionRepository;
     private final PositionValuator positionValuator;
+    private final OrderRepository orderRepository;
 
-    public PortfolioService(AccountRepository accountRepository, PositionRepository positionRepository, PositionValuator positionValuator) {
+    public PortfolioService(AccountRepository accountRepository, PositionRepository positionRepository,
+                            PositionValuator positionValuator, OrderRepository orderRepository) {
         this.accountRepository = accountRepository;
         this.positionRepository = positionRepository;
         this.positionValuator = positionValuator;
+        this.orderRepository = orderRepository;
     }
 
     public PortfolioSnapshotResponse getPortfolioSnapshot(String accountId) {
@@ -42,13 +49,21 @@ public class PortfolioService {
         }
         // Return snapshot
         BigDecimal totalPortfolioValue = account.getCashBalance().add(totalMarketValue);
-        
+
+        // Pending orders still own their cash and shares, but cannot spend or sell them twice
+        BigDecimal lockedCash = orderRepository.lockedCash(accountId);
+        Map<String, Long> lockedShares = orderRepository.lockedSharesBySymbol(accountId).stream()
+            .collect(Collectors.toMap(LockedShares::symbol, LockedShares::quantity));
+
         return new PortfolioSnapshotResponse(
             accountId,
             account.getCashBalance(),
             totalMarketValue,
             totalPortfolioValue,
-            positionResponses
+            positionResponses,
+            lockedCash,
+            account.getCashBalance().subtract(lockedCash),
+            lockedShares
         );
     }
 
@@ -80,7 +95,8 @@ public class PortfolioService {
         // Step 5: Get portfolio return %
         BigDecimal portfolioReturn = metrics.getPortfolioReturn();
         
-        // Step 6: Return response
+        // Step 6: Return response, with the cash pending buys hold back
+        BigDecimal lockedCash = orderRepository.lockedCash(accountId);
         return new PortfolioMetricsResponse(
             accountId,
             account.getCashBalance(),
@@ -88,7 +104,9 @@ public class PortfolioService {
             metrics.getTotalPortfolioValue(),
             totalUnrealizedPnL,
             portfolioReturn,
-            positionResponses
+            positionResponses,
+            lockedCash,
+            account.getCashBalance().subtract(lockedCash)
         );
     }
 }

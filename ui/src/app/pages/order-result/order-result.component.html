@@ -18,20 +18,22 @@
   </div>
 }
 @if (state().loading && !order()) {
-  <p class="notice" role="status">Loading order details…</p>
+  <output class="notice">Loading order details…</output>
 }
 @if (order(); as item) {
   <section class="order" aria-labelledby="order-summary" [attr.aria-busy]="state().loading">
     <div class="summary">
       <div>
         <p class="eyebrow">{{ item.side | titlecase }} order · {{ item.orderType | titlecase }}</p>
-        <h2 id="order-summary">{{ item.quantity | number }} {{ item.symbol }}</h2>
+        <h2 id="order-summary">
+          <app-symbol-icon [symbol]="item.symbol" />{{ item.quantity | number }} {{ item.symbol }}
+        </h2>
       </div>
       <span class="status" [class.rejected]="item.status === 'REJECTED'" [class.filled]="item.status === 'FILLED'">{{
         item.status?.replaceAll('_', ' ') | titlecase
       }}</span>
     </div>
-    <p class="explanation" role="status">
+    <output class="explanation">
       {{
         item.message ||
           (item.status === 'FILLED'
@@ -42,7 +44,7 @@
                 ? 'This order is no longer active.'
                 : 'Your order has been placed. Execution is pending; placement does not guarantee a fill.')
       }}
-    </p>
+    </output>
     <dl>
       <div>
         <dt>Account</dt>

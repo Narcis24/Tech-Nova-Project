@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { safeReturnUrl } from '../../core/return-url';
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 
 const INVALID_CREDENTIALS = 'Invalid username or password';
 
@@ -16,6 +17,7 @@ const INVALID_CREDENTIALS = 'Invalid username or password';
 })
 export class LoginComponent {
   private readonly auth = inject(AuthService);
+  readonly theme = inject(ThemeService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -61,7 +63,8 @@ export class LoginComponent {
     this.auth.login(this.form.getRawValue()).subscribe({
       next: () => {
         const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-        void this.router.navigateByUrl(safeReturnUrl(returnUrl));
+        // Read after login: homeUrl depends on the roles in the new token
+        void this.router.navigateByUrl(safeReturnUrl(returnUrl, this.auth.homeUrl()));
       },
       error: (err: HttpErrorResponse) => {
         this.submitting.set(false);

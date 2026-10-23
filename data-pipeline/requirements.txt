@@ -1,3 +1,5 @@
 yfinance==0.2.65
 pandas==2.3.2
 psycopg[binary]==3.2.10
+# Not used directly (requests needs it); pinned past GHSA-6q48-6c7w-9gw2, compromised emSign root CAs
+certifi==2026.10.23

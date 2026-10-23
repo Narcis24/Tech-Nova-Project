@@ -1,0 +1,113 @@
+:host {
+  position: relative;
+  display: inline-block;
+}
+
+/* Dashed while it shows everything, filled once it filters */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px dashed var(--strong-border-color);
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--secondary-text-color);
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--hover-border-color);
+  color: var(--text-color);
+}
+
+.chip b {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.chip.set {
+  border-style: solid;
+  border-color: transparent;
+  background: var(--primary-background-color);
+  color: var(--primary-color);
+}
+
+.chip.set b {
+  color: var(--primary-color);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 200px;
+  max-height: 320px;
+  padding: 6px;
+  overflow-y: auto;
+  border-radius: 12px;
+  background: var(--elevated-background-color);
+  box-shadow: var(--dropdown-shadow);
+}
+
+.search {
+  min-height: 36px;
+  margin: 2px 2px 6px;
+  padding: 0 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-background-color);
+  font: inherit;
+  color: var(--text-color);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  color: var(--text-color);
+  cursor: pointer;
+}
+
+.option:hover,
+.option:focus-visible {
+  background: var(--card-background-color);
+}
+
+.option[aria-checked='true'] {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.option[aria-checked='true']::after {
+  content: '✓';
+  margin-left: auto;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.none {
+  margin: 8px 10px;
+  font-size: 14px;
+  color: var(--secondary-text-color);
+}

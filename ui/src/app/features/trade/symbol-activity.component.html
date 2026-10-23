@@ -1,0 +1,101 @@
+@if (accountId() && symbol()) {
+  <section aria-labelledby="symbol-activity-title">
+    <h2 id="symbol-activity-title">Your {{ symbol() }}</h2>
+    @if (position(); as held) {
+      <dl class="position">
+        <div>
+          <dt>Shares</dt>
+          <dd>
+            {{ held.quantity | number }}
+            @if (lockedShares() > 0) {
+              <span class="note">{{ lockedShares() | number }} in pending sells</span>
+            }
+          </dd>
+        </div>
+        <div>
+          <dt>Average cost</dt>
+          <dd>{{ held.averageCost | currency: 'USD' }}</dd>
+        </div>
+        <div>
+          <dt>Market value</dt>
+          <dd>
+            {{ held.marketValue | currency: 'USD' }}
+            @if (share() != null) {
+              <span class="note">{{ share() | percent: '1.1-1' }} of your portfolio</span>
+            }
+          </dd>
+        </div>
+        <div>
+          <dt>Unrealized P&amp;L</dt>
+          <dd [class.gain]="Number(held.unrealizedPnL) > 0" [class.loss]="Number(held.unrealizedPnL) < 0">
+            {{ Number(held.unrealizedPnL) > 0 ? '+' : '' }}{{ held.unrealizedPnL | currency: 'USD' }}
+            @if (returnOnCost() != null) {
+              <span class="note">{{ returnOnCost()! > 0 ? '+' : '' }}{{ returnOnCost() | percent: '1.2-2' }}</span>
+            }
+          </dd>
+        </div>
+      </dl>
+    } @else if (portfolio()) {
+      <p class="muted">You don't hold {{ symbol() }} yet.</p>
+    }
+
+    @if (loadError()) {
+      <p class="muted" role="alert">
+        Couldn't load your {{ symbol() }} orders.
+        <button type="button" class="text-button" (click)="reload()">Retry</button>
+      </p>
+    } @else if (orders()) {
+      <h3>Open orders</h3>
+      @if (pending().length) {
+        <ul class="orders">
+          @for (order of pending(); track order.orderId) {
+            <li [class.sell]="order.side === 'SELL'">
+              <span class="what"
+                ><strong>{{ order.side | titlecase }} {{ order.quantity | number }}</strong> ·
+                {{ order.orderType | titlecase }}
+                @if (order.orderType === 'LIMIT') {
+                  at {{ order.price | currency: 'USD' }}
+                }
+              </span>
+              <span class="when">{{ goodFor(order) }}</span>
+              <span class="cancel">
+                @if (confirmingCancel() === order.orderId) {
+                  <button type="button" class="danger" [disabled]="cancelling()" (click)="cancel(order.orderId!)">
+                    {{ cancelling() ? 'Cancelling…' : 'Yes, cancel' }}
+                  </button>
+                  <button type="button" class="text-button" [disabled]="cancelling()" (click)="keepOrder()">
+                    Keep
+                  </button>
+                } @else {
+                  <button type="button" class="text-button" (click)="askCancel(order.orderId!)">Cancel</button>
+                }
+              </span>
+            </li>
+          }
+        </ul>
+        @if (cancelError()) {
+          <p class="error" role="alert">{{ cancelError() }}</p>
+        }
+      } @else {
+        <p class="muted">No open orders for {{ symbol() }}.</p>
+      }
+
+      <h3>Recent fills</h3>
+      @if (fills().length) {
+        <ul class="orders">
+          @for (order of fills(); track order.orderId) {
+            <li [class.sell]="order.side === 'SELL'">
+              <span class="what"
+                ><strong>{{ order.side === 'SELL' ? 'Sold' : 'Bought' }} {{ order.quantity | number }}</strong> at
+                {{ order.price | currency: 'USD' }}</span
+              >
+              <span class="when">{{ order.createdOn | date: 'MMM d, y' }}</span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="muted">No fills yet for {{ symbol() }}.</p>
+      }
+    }
+  </section>
+}

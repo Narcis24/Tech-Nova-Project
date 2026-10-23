@@ -1,5 +1,6 @@
 package com.neueda.app.services;
 
+import com.neueda.app.dtos.PriceHistoryPoint;
 import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.models.Price;
 import com.neueda.app.repositories.PriceRepository;
@@ -53,6 +54,21 @@ class PriceServiceTest {
         var history = priceService.getHistory("AAPL");
         assertEquals(List.of(earlier.getTradeDate(), latestDay), history.stream().map(p -> p.date()).toList());
         assertEquals(new BigDecimal("110"), history.getLast().close());
+    }
+
+    @Test
+    void historyCarriesEachDaysOpenHighLowCloseAndVolume() {
+        LocalDate day = LocalDate.of(2026, 10, 14);
+        Price bar = new Price("AAPL", day, new BigDecimal("101"), new BigDecimal("112"), new BigDecimal("99"),
+            new BigDecimal("110"), 52_000_000L);
+        when(priceRepository.findFirstBySymbolOrderByTradeDateDesc("AAPL")).thenReturn(Optional.of(bar));
+        when(priceRepository.findBySymbolAndTradeDateGreaterThanEqualOrderByTradeDateAsc("AAPL", day.minusYears(1)))
+            .thenReturn(List.of(bar));
+
+        assertEquals(
+            List.of(new PriceHistoryPoint(day, new BigDecimal("101"), new BigDecimal("112"), new BigDecimal("99"),
+                new BigDecimal("110"), 52_000_000L)),
+            priceService.getHistory("AAPL"));
     }
 
     @Test

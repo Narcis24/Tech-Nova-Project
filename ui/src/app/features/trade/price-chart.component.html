@@ -11,6 +11,9 @@
             (normalizedSymbol() || (pendingSymbol() ? 'Pending instrument' : 'Select instrument'))
           "
         >
+          @if (normalizedSymbol()) {
+            <app-symbol-icon [symbol]="normalizedSymbol()" />
+          }
           {{ normalizedSymbol() || (pendingSymbol() ? '—' : 'Select instrument')
           }}<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4 3 3 3-3" /></svg>
         </button>
@@ -27,17 +30,28 @@
         ><span class="session-copy"> vs previous session.</span>
       </p>
     </div>
-    <div class="ranges" role="group" aria-label="Price chart range">
-      @for (option of ranges; track option.months) {
-        <button type="button" [attr.aria-pressed]="range() === option.months" (click)="chooseRange(option.months)">
+    <fieldset class="ranges" aria-label="Price chart style">
+      @for (option of chartStyles; track option.value) {
+        <button type="button" [attr.aria-pressed]="chartStyle() === option.value" (click)="chooseStyle(option.value)">
           {{ option.label }}
         </button>
       }
-    </div>
+    </fieldset>
+    <fieldset class="ranges" aria-label="Price chart range">
+      @for (option of ranges; track option.months) {
+        <button
+          type="button"
+          [attr.aria-pressed]="window() == null && range() === option.months"
+          (click)="chooseRange(option.months)"
+        >
+          {{ option.label }}
+        </button>
+      }
+    </fieldset>
   </div>
   @if (loading()) {
-    <div class="chart-loading" role="status" aria-label="Loading price history">
-      <p class="as-of">Loading price history…</p>
+    <div class="chart-loading">
+      <output class="as-of">Loading price history…</output>
       <button type="button" class="mobile-chart-toggle" disabled>
         Show price chart <span aria-hidden="true">+</span>
       </button>
@@ -81,8 +95,29 @@
     <p class="message">No stored price history for {{ normalizedSymbol() }}.</p>
   } @else {
     <p class="as-of">
-      Daily close · USD · as of {{ sessionDate(latest()!.date) | date: 'mediumDate' : 'UTC' }} · provider-delayed
+      {{ chartStyle() === 'candles' ? 'Daily open, high, low, close' : 'Daily close' }} · USD · as of
+      {{ sessionDate(latest()!.date) | date: 'mediumDate' : 'UTC' }} · provider-delayed
     </p>
+    <fieldset class="ranges zoom" aria-label="Zoom the chart">
+      <button type="button" aria-label="Zoom out: show more sessions" [disabled]="!canZoomOut()" (click)="zoom(1.5)">
+        −
+      </button>
+      <button type="button" aria-label="Zoom in: show fewer sessions" [disabled]="!canZoomIn()" (click)="zoom(1 / 1.5)">
+        +
+      </button>
+    </fieldset>
+    <fieldset class="ranges indicators" aria-label="Chart indicators">
+      @for (option of indicatorOptions; track option.key) {
+        <button
+          type="button"
+          [class]="option.key"
+          [attr.aria-pressed]="indicators()[option.key]"
+          (click)="toggleIndicator(option.key)"
+        >
+          {{ option.label }}
+        </button>
+      }
+    </fieldset>
     <button
       type="button"
       class="mobile-chart-toggle"
@@ -96,8 +131,14 @@
       <div class="readout" aria-live="polite">
         <span [class.hidden]="hovered() == null"
           >{{ sessionDate(selected()?.date) | date: 'mediumDate' : 'UTC' }} ·
-          {{ selected()?.close | currency: 'USD' }}</span
-        >
+          {{ selected()?.close | currency: 'USD' }}
+          @if (chartStyle() === 'candles' && selected(); as point) {
+            <span class="ohlc"
+              >· O {{ point.open ?? point.close | number: '1.2-2' }} · H {{ high(point) | number: '1.2-2' }} · L
+              {{ low(point) | number: '1.2-2' }}</span
+            >
+          }
+        </span>
       </div>
       <div class="plot">
         <!-- Native range input gives keyboard, touch and screen reader support; the chart follows its value -->
@@ -118,18 +159,63 @@
           viewBox="0 0 640 220"
           preserveAspectRatio="none"
           role="img"
-          [attr.aria-label]="normalizedSymbol() + ' daily closing prices'"
+          [attr.aria-label]="
+            normalizedSymbol() + (chartStyle() === 'candles' ? ' daily candlesticks' : ' daily closing prices')
+          "
           (pointermove)="pointAt($event)"
           (pointerleave)="hovered.set(null)"
+          (pointerdown)="startPan($event)"
+          (pointerup)="endPan()"
+          (pointercancel)="endPan()"
+          (wheel)="zoomWith($event)"
         >
           <path class="grid" d="M0 16H640 M0 75H640 M0 133H640 M0 192H640" />
-          <polyline class="line" [attr.points]="line()" />
+          @if (indicators().volume) {
+            @for (bar of volumeBars(); track $index) {
+              <rect
+                class="volume"
+                [class.down]="!bar.up"
+                [attr.x]="bar.x"
+                [attr.y]="bar.y"
+                [attr.width]="bar.width"
+                [attr.height]="bar.height"
+              />
+            }
+          }
+          @if (chartStyle() === 'candles') {
+            @for (candle of candles(); track $index) {
+              <g class="candle" [class.down]="!candle.up" [class.dimmed]="hovered() != null && hovered() !== $index">
+                <line
+                  [attr.x1]="candle.x"
+                  [attr.x2]="candle.x"
+                  [attr.y1]="candle.wickTop"
+                  [attr.y2]="candle.wickBottom"
+                />
+                <rect
+                  [attr.x]="candle.x - candle.width / 2"
+                  [attr.y]="candle.bodyTop"
+                  [attr.width]="candle.width"
+                  [attr.height]="candle.bodyHeight"
+                />
+              </g>
+            }
+          } @else {
+            <polyline class="line" [attr.points]="line()" />
+          }
+          @if (indicators().ma20) {
+            <polyline class="average ma20" [attr.points]="ma20()" />
+          }
+          @if (indicators().ma50) {
+            <polyline class="average ma50" [attr.points]="ma50()" />
+          }
           @if (selected(); as point) {
             @if (hovered() != null) {
               <line class="cursor" [attr.x1]="x(selectedIndex())" [attr.x2]="x(selectedIndex())" y1="8" y2="208" />
             }
-            <circle class="halo" [attr.cx]="x(selectedIndex())" [attr.cy]="y(point.close!)" r="9" />
-            <circle [attr.cx]="x(selectedIndex())" [attr.cy]="y(point.close!)" r="4" />
+            @if (chartStyle() === 'line') {
+              <circle class="halo" [attr.cx]="x(selectedIndex())" [attr.cy]="y(point.close!)" r="9" />
+              <circle [attr.cx]="x(selectedIndex())" [attr.cy]="y(point.close!)" r="4" />
+            }
           }
         </svg>
         <div class="prices" aria-hidden="true">
@@ -144,31 +230,44 @@
       <div class="dates">
         <span>{{ sessionDate(visible().at(0)?.date) | date: 'd MMM' : 'UTC' }}</span
         ><span>{{ sessionDate(visible().at(Math.floor(visible().length / 2))?.date) | date: 'd MMM' : 'UTC' }}</span
-        ><span>{{ sessionDate(latest()!.date) | date: 'd MMM' : 'UTC' }}</span>
+        ><span>{{ sessionDate(visible().at(-1)?.date) | date: 'd MMM' : 'UTC' }}</span>
       </div>
       <p class="range-change">
         {{ (rangeChange() ?? 0) > 0 ? '+' : '' }}{{ (rangeChange() | percent: '1.2-2') ?? '—' }}
         <span class="muted">over displayed sessions · {{ visible().length }} observations</span>
+        <span class="muted hint"> · Scroll to zoom, drag to move, pull the corner to resize</span>
       </p>
     </div>
     <dl class="quote-facts">
       <div>
         <dt>Bid</dt>
-        <dd>—</dd>
+        <dd>{{ (bid() | number: '1.2-2') ?? '—' }}</dd>
       </div>
       <div>
         <dt>Ask</dt>
-        <dd>—</dd>
+        <dd>{{ (ask() | number: '1.2-2') ?? '—' }}</dd>
       </div>
       <div>
         <dt>Spread</dt>
-        <dd>—</dd>
+        <dd>
+          {{ (spread() | number: '1.2-2') ?? '—' }}
+          @if (spreadPercent() != null) {
+            <span class="spread-percent">({{ spreadPercent() | percent: '1.2-2' }})</span>
+          }
+        </dd>
       </div>
       <div>
         <dt>Previous close</dt>
         <dd>{{ (points().at(-2)?.close | number: '1.2-2') ?? '—' }}</dd>
       </div>
     </dl>
-    <p class="quote-note">Live bid and ask are unavailable from the daily price feed.</p>
+    <p class="quote-note">
+      @if (bid() != null || ask() != null) {
+        Live quote from Alpaca (IEX) as of {{ liveQuote()!.asOf | date: 'MMM d, h:mm a' }}. Market orders can still fill
+        at a different price.
+      } @else {
+        No live bid and ask right now. They appear while the market data feed has a quote for this symbol.
+      }
+    </p>
   }
 </section>

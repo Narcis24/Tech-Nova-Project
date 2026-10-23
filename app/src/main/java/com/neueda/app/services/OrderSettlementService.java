@@ -7,6 +7,7 @@ import com.neueda.app.enums.OrderStatus;
 import com.neueda.events.EventEnvelope;
 import com.neueda.events.EventTypes;
 import com.neueda.events.Topics;
+import com.neueda.app.events.OrderResolved;
 import com.neueda.app.exceptions.AccountNotFoundException;
 import com.neueda.app.exceptions.InstrumentNotFoundException;
 import com.neueda.app.exceptions.InsufficientFundsException;
@@ -20,6 +21,7 @@ import com.neueda.app.repositories.InstrumentRepository;
 import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,17 +49,20 @@ public class OrderSettlementService {
     private final PositionRepository positionRepository;
     private final InstrumentRepository instrumentRepository;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher events;
 
     public OrderSettlementService(OrderRepository orderRepository,
                                   AccountRepository accountRepository,
                                   PositionRepository positionRepository,
                                   InstrumentRepository instrumentRepository,
-                                  ObjectMapper objectMapper) {
+                                  ObjectMapper objectMapper,
+                                  ApplicationEventPublisher events) {
         this.orderRepository = orderRepository;
         this.accountRepository = accountRepository;
         this.positionRepository = positionRepository;
         this.instrumentRepository = instrumentRepository;
         this.objectMapper = objectMapper;
+        this.events = events;
     }
 
     /**
@@ -128,6 +133,7 @@ public class OrderSettlementService {
             return;
         }
         log.info("Order rejected: orderId={}, reason={}", event.orderId(), event.reason());
+        events.publishEvent(new OrderResolved(event.orderId(), OrderStatus.REJECTED));
     }
 
     /**
@@ -201,12 +207,14 @@ public class OrderSettlementService {
                 orderId,
                 event.executionPrice()
             );
+            events.publishEvent(new OrderResolved(orderId, OrderStatus.FILLED));
 
         } catch (InsufficientFundsException | InsufficientHoldingsException e) {
             // The fill cannot be settled. Nothing else was written, so flip the guard's FILLED
             // back and resolve the order as REJECTED instead of leaving it for the dead-letter topic.
             log.warn("Rejecting unsettleable fill: orderId={}, reason={}", orderId, e.getMessage());
             orderRepository.reject(orderId, OrderStatus.FILLED, OrderStatus.REJECTED, e.getMessage());
+            events.publishEvent(new OrderResolved(orderId, OrderStatus.REJECTED));
         } catch (Exception e) {
             log.error("Error processing ORDER_EXECUTED event: orderId={}", orderId, e);
             throw new RuntimeException("Failed to process order execution: " + orderId, e);

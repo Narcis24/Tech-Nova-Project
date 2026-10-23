@@ -1,4 +1,6 @@
 :root {
+  color-scheme: light;
+
   /* Backgrounds */
   --background-color: #ffffff;
   --muted-background-color: #f3f4f7;
@@ -40,6 +42,27 @@
   --warning-color: #6b4200;
   --warning-background-color: #fff8eb;
   --warning-border-color: #f1d29b;
+  --error-color: #b42318;
+  --error-background-color: #fdecea;
+  --success-color: #176b45;
+  --success-background-color: #e9f7ef;
+
+  /*
+   * Admin analytics: one colour per metric tab, and one per asset class for the chart's lines and the
+   * asset mix. Checked for colour-blind separation in this order, as neighbours in the legend; teal
+   * and gold are below 3:1 on white, so the chart always names values in its legend and tooltip too.
+   * Status colours (gain, loss) are left for meaning, not identity.
+   */
+  --metric-traded-value-color: #2a78d6;
+  --metric-orders-color: #eb6834;
+  --metric-fill-rate-color: #1baf7a;
+  --metric-active-traders-color: #6250d6;
+  --asset-equity-color: #2a78d6;
+  --asset-etf-color: #eb6834;
+  --asset-bond-color: #1baf7a;
+  --asset-commodity-color: #eda100;
+  /* The Live panel's bars and tint: the blue-violet of the mockup's Realtime box */
+  --analytics-live-color: #6250d6;
 
   /* Shadows and dialog backdrops */
   --shadow-color: #14182b;
@@ -56,6 +79,42 @@
     0 0 0 1px color-mix(in srgb, var(--shadow-color) 2.4%, transparent);
   --switch-knob-shadow: 0 1px 3px color-mix(in srgb, var(--shadow-color) 20%, transparent);
   --dialog-shadow: 0 24px 80px color-mix(in srgb, var(--shadow-color) 20%, transparent);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --background-color: #111318;
+  --muted-background-color: #1a1d24;
+  --card-background-color: #20242d;
+  --elevated-background-color: #272c36;
+  --text-color: #f3f5fa;
+  --secondary-text-color: #aeb6c7;
+  --primary-color: #5969ed;
+  --primary-hover-color: #8994ff;
+  --primary-background-color: #29336f;
+  --toast-border-color: #4b5873;
+  --gain-color: #61d39a;
+  --loss-color: #ff8790;
+  --sell-color: #ffab72;
+  --warning-color: #ffd27a;
+  --warning-background-color: #3d3018;
+  --warning-border-color: #79602d;
+  --error-color: #ff9a93;
+  --error-background-color: #482321;
+  --success-color: #7ee2ae;
+  --success-background-color: #173b2b;
+  /* The same hues, stepped for the dark card; all at least 3:1 on it */
+  --metric-traded-value-color: #3987e5;
+  --metric-orders-color: #d95926;
+  --metric-fill-rate-color: #199e70;
+  --metric-active-traders-color: #9085e9;
+  --asset-equity-color: #3987e5;
+  --asset-etf-color: #d95926;
+  --asset-bond-color: #199e70;
+  --asset-commodity-color: #c98500;
+  --analytics-live-color: #9085e9;
+  --shadow-color: #000000;
 }
 
 body {
@@ -80,6 +139,66 @@ a:hover {
   outline-offset: 2px;
 }
 
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  background: var(--control-background-color);
+  color: var(--text-color);
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  background: var(--control-hover-background-color);
+}
+
+.theme-toggle svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.sun-icon {
+  color: #f2b84b;
+}
+
+.auth-theme-toggle svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.auth-theme-toggle {
+  position: fixed;
+  top: 32px;
+  right: 32px;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  background: var(--elevated-background-color);
+  color: var(--text-color);
+  font: inherit;
+  cursor: pointer;
+}
+
+.auth-theme-toggle:hover {
+  background: var(--control-hover-background-color);
+}
+
 html {
   scroll-padding-bottom: 112px;
 }
@@ -99,4 +218,9 @@ select {
     transition: none !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Status messages use <output>, which is inline by default; lay them out like paragraphs */
+output {
+  display: block;
 }

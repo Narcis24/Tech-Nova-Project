@@ -1,14 +1,18 @@
 package com.neueda.app.services;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.neueda.events.EventTypes;
+import com.neueda.events.OrderCancelledEvent;
 import com.neueda.events.OrderPlacedEvent;
 import com.neueda.events.Topics;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.enums.OrderStatus;
+import com.neueda.app.enums.OrderType;
+import com.neueda.app.events.OrderResolved;
 import com.neueda.app.exceptions.*;
 
 import com.neueda.app.models.Order;
@@ -32,16 +36,19 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderValidator orderValidator;
     private final EventProducerService eventProducerService;
+    private final ApplicationEventPublisher events;
 
 
     public OrderService(
             OrderRepository orderRepository,
             OrderValidator orderValidator,
-            EventProducerService eventProducerService) {
+            EventProducerService eventProducerService,
+            ApplicationEventPublisher events) {
 
         this.orderRepository = orderRepository;
         this.orderValidator = orderValidator;
         this.eventProducerService = eventProducerService;
+        this.events = events;
     }
 
     public OrderResponse placeOrder(PlaceOrderRequest request) {
@@ -72,6 +79,9 @@ public class OrderService {
             request.getIdempotencyKey() != null ? request.getIdempotencyKey() : UUID.randomUUID().toString(),
             LocalDateTime.now(ZoneOffset.UTC)
         );
+        if (valid.orderType() == OrderType.LIMIT) {
+            order.setExpiry(valid.timeInForce(), valid.expiresAt());
+        }
 
         orderRepository.save(order);
         publishPlaced(order);
@@ -89,7 +99,35 @@ public class OrderService {
             throw new InvalidOrderStateException(
                 "Operation not allowed. Only PENDING orders can be modified. Order is " + order.getStatus());
         }
+        tellEngineCancelled(orderId);
+        events.publishEvent(new OrderResolved(orderId, OrderStatus.CANCELLED));
         return new OrderResponse(order);
+    }
+
+    /**
+     * Expires a LIMIT order whose time ran out: PENDING → EXPIRED, which releases the cash or shares
+     * it locked. Returns false when the order already left PENDING, e.g. it filled first.
+     */
+    public boolean expireOrder(UUID orderId) {
+        // Guarded like cancel, so an expiry and a fill reaching the row together cannot both win
+        if (orderRepository.changeStatus(orderId, OrderStatus.PENDING, OrderStatus.EXPIRED) == 0) {
+            return false;
+        }
+        tellEngineCancelled(orderId);
+        events.publishEvent(new OrderResolved(orderId, OrderStatus.EXPIRED));
+        return true;
+    }
+
+    /** Tells the engine to stop waiting on the order, or it may later decide to fill it. */
+    private void tellEngineCancelled(UUID orderId) {
+        // Same key as ORDER_PLACED, so Kafka delivers the cancel after the order itself.
+        eventProducerService.publishEvent(
+            Topics.ORDER_REQUEST,
+            orderId.toString(),
+            EventTypes.ORDER_CANCELLED,
+            "OrderService",
+            new OrderCancelledEvent(orderId)
+        );
     }
     
     public OrderResponse rejectOrder(UUID orderId, String reason) {
@@ -98,6 +136,7 @@ public class OrderService {
 
         order.reject(reason);  // Entity handles state validation
         orderRepository.save(order);
+        events.publishEvent(new OrderResolved(orderId, OrderStatus.REJECTED));
         return new OrderResponse(order);
     }
 

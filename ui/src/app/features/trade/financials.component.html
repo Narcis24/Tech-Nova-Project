@@ -1,0 +1,189 @@
+@if (data(); as company) {
+  <section aria-labelledby="financials-title">
+    <div class="heading">
+      <div>
+        <h2 id="financials-title">{{ isFund() ? 'Fund facts' : 'Financials' }}</h2>
+        <p class="muted">{{ subtitle() }}</p>
+      </div>
+      @if (!isFund() && (company.quarters?.length || company.years?.length)) {
+        <fieldset class="toggle" aria-label="Reporting period">
+          <button type="button" [attr.aria-pressed]="periodType() === 'quarters'" (click)="periodType.set('quarters')">
+            Quarterly
+          </button>
+          <button type="button" [attr.aria-pressed]="periodType() === 'years'" (click)="periodType.set('years')">
+            Annual
+          </button>
+        </fieldset>
+      }
+    </div>
+
+    <dl class="figures">
+      @if (isFund()) {
+        <div>
+          <dt>Total assets</dt>
+          <dd>{{ money(company.totalAssets) }}</dd>
+        </div>
+        <div>
+          <dt>Expense ratio</dt>
+          <dd>{{ (company.expenseRatio | percent: '1.2-2') ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt>Yield</dt>
+          <dd>{{ (company.dividendYield | percent: '1.2-2') ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt>P/E</dt>
+          <dd>{{ (company.trailingPe | number: '1.1-1') ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt>Beta</dt>
+          <dd>{{ (company.beta | number: '1.2-2') ?? '—' }}</dd>
+        </div>
+      } @else {
+        <div>
+          <dt>Market cap</dt>
+          <dd>{{ money(company.marketCap) }}</dd>
+        </div>
+        <div>
+          <dt>P/E (TTM)</dt>
+          <dd>{{ (company.trailingPe | number: '1.1-1') ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt>Forward P/E</dt>
+          <dd>{{ (company.forwardPe | number: '1.1-1') ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt>EPS (TTM)</dt>
+          <dd>{{ (company.epsTtm | number: '1.2-2') ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt>Forward EPS</dt>
+          <dd>{{ (company.epsForward | number: '1.2-2') ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt>Dividend yield</dt>
+          <dd>{{ (company.dividendYield | percent: '1.2-2') ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt>Revenue (TTM)</dt>
+          <dd>{{ money(company.revenueTtm) }}</dd>
+        </div>
+        <div>
+          <dt>Gross profit (TTM)</dt>
+          <dd>{{ money(company.grossProfitTtm) }}</dd>
+        </div>
+        <div>
+          <dt>Profit margin</dt>
+          <dd>{{ (company.profitMargin | percent: '1.1-1') ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt>Revenue growth (YoY)</dt>
+          <dd [class.gain]="(company.revenueGrowth ?? 0) > 0" [class.loss]="(company.revenueGrowth ?? 0) < 0">
+            {{ (company.revenueGrowth ?? 0) > 0 ? '+' : '' }}{{ (company.revenueGrowth | percent: '1.1-1') ?? '—' }}
+          </dd>
+        </div>
+        <div>
+          <dt>Beta</dt>
+          <dd>{{ (company.beta | number: '1.2-2') ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt>Employees</dt>
+          <dd>{{ (company.employees | number) ?? '—' }}</dd>
+        </div>
+      }
+    </dl>
+
+    @if (!isFund() && bars().length) {
+      <div class="results">
+        <div class="legend" aria-hidden="true">
+          <span class="key revenue">Revenue</span><span class="key income">Net income</span>
+        </div>
+        <svg
+          viewBox="0 0 600 200"
+          preserveAspectRatio="none"
+          role="img"
+          [attr.aria-label]="'Revenue and net income by ' + (periodType() === 'quarters' ? 'quarter' : 'year')"
+        >
+          <line class="axis" x1="0" x2="600" [attr.y1]="zeroY()" [attr.y2]="zeroY()" />
+          @for (bar of bars(); track bar.period.periodEnd) {
+            <rect
+              class="revenue"
+              [attr.x]="bar.revenue.x"
+              [attr.y]="bar.revenue.y"
+              [attr.width]="bar.width"
+              [attr.height]="bar.revenue.height"
+            >
+              <title>{{ bar.label }} revenue {{ money(bar.period.revenue) }}</title>
+            </rect>
+            <rect
+              class="income"
+              [class.loss]="bar.income.loss"
+              [attr.x]="bar.income.x"
+              [attr.y]="bar.income.y"
+              [attr.width]="bar.width"
+              [attr.height]="bar.income.height"
+            >
+              <title>{{ bar.label }} net income {{ money(bar.period.netIncome) }}</title>
+            </rect>
+          }
+        </svg>
+        <table>
+          <caption class="visually-hidden">
+            Results by
+            {{
+              periodType() === 'quarters' ? 'quarter' : 'fiscal year'
+            }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="row">Period</th>
+              @for (bar of bars(); track bar.period.periodEnd) {
+                <th scope="col">{{ bar.label }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Revenue</th>
+              @for (bar of bars(); track bar.period.periodEnd) {
+                <td>{{ money(bar.period.revenue) }}</td>
+              }
+            </tr>
+            <tr>
+              <th scope="row">Net income</th>
+              @for (bar of bars(); track bar.period.periodEnd) {
+                <td [class.loss]="bar.income.loss">{{ money(bar.period.netIncome) }}</td>
+              }
+            </tr>
+            <tr>
+              <th scope="row">EPS</th>
+              @for (bar of bars(); track bar.period.periodEnd) {
+                <td>{{ (bar.period.epsDiluted | number: '1.2-2') ?? '—' }}</td>
+              }
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    }
+
+    @if (company.description) {
+      <div class="about">
+        <h3>About</h3>
+        <p id="about-text" [class.clamped]="!aboutOpen()">{{ company.description }}</p>
+        <button
+          type="button"
+          class="text-button"
+          aria-controls="about-text"
+          [attr.aria-expanded]="aboutOpen()"
+          (click)="aboutOpen.set(!aboutOpen())"
+        >
+          {{ aboutOpen() ? 'Show less' : 'Show more' }}
+        </button>
+        @if (company.website) {
+          <a [href]="company.website" target="_blank" rel="noopener noreferrer">{{ company.website }}</a>
+        }
+      </div>
+    }
+    <p class="source">Source: Yahoo Finance · updated {{ company.updatedAt | date: 'MMM d, y' }}</p>
+  </section>
+}

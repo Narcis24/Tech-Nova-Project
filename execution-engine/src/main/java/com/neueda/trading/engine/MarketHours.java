@@ -22,7 +22,7 @@ public final class MarketHours {
     public static boolean isOpen(Instant now) {
         ZonedDateTime local = now.atZone(NEW_YORK);
         DayOfWeek day = local.getDayOfWeek();
-        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+        if (day.equals(DayOfWeek.SATURDAY) || day.equals(DayOfWeek.SUNDAY)) {
             return false;
         }
         LocalTime time = local.toLocalTime();

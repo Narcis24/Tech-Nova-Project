@@ -1,9 +1,10 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
 import { Account, AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 import { NavBarComponent } from './nav-bar.component';
 
 // An empty page for the tab links to point at
@@ -16,12 +17,15 @@ describe('NavBarComponent', () => {
   const username = signal<string | null>('trader01');
   const accounts = signal<Account[]>(ACCOUNTS);
   const currentAccountId = signal<string | null>('ACC001');
-  let auth: { username: typeof username; logout: jasmine.Spy };
+  const isAdmin = signal(false);
+  const homeUrl = computed(() => (isAdmin() ? '/admin' : '/dashboard'));
+  let auth: { username: typeof username; isAdmin: typeof isAdmin; homeUrl: typeof homeUrl; logout: jasmine.Spy };
   let accountService: {
     accounts: typeof accounts;
     currentAccountId: typeof currentAccountId;
     selectAccount: jasmine.Spy;
   };
+  let theme: jasmine.SpyObj<ThemeService>;
   let component: NavBarComponent;
   let fixture: ComponentFixture<NavBarComponent>;
 
@@ -29,8 +33,12 @@ describe('NavBarComponent', () => {
     username.set('trader01');
     accounts.set(ACCOUNTS);
     currentAccountId.set('ACC001');
-    auth = { username, logout: jasmine.createSpy('logout') };
+    isAdmin.set(false);
+    auth = { username, isAdmin, homeUrl, logout: jasmine.createSpy('logout') };
     accountService = { accounts, currentAccountId, selectAccount: jasmine.createSpy('selectAccount') };
+    theme = jasmine.createSpyObj<ThemeService>('ThemeService', ['toggle'], {
+      isDark: signal(false),
+    });
 
     await TestBed.configureTestingModule({
       imports: [NavBarComponent],
@@ -39,9 +47,12 @@ describe('NavBarComponent', () => {
           { path: 'dashboard', component: BlankComponent },
           { path: 'trade', component: BlankComponent },
           { path: 'orders', component: BlankComponent },
+          { path: 'admin', component: BlankComponent },
+          { path: 'admin/users', component: BlankComponent },
         ]),
         { provide: AuthService, useValue: auth },
         { provide: AccountService, useValue: accountService },
+        { provide: ThemeService, useValue: theme },
       ],
     }).compileComponents();
 
@@ -60,6 +71,53 @@ describe('NavBarComponent', () => {
 
     const current: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('[aria-current="page"]'));
     expect(current.map((tab) => tab.textContent?.trim())).toEqual(['Trade']);
+  });
+
+  describe('for an admin', () => {
+    const tabs = (): (string | undefined)[] =>
+      Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('.tab')).map((tab) => tab.textContent?.trim());
+
+    it('shows the trading tabs to traders', () => {
+      expect(tabs()).toEqual(['Portfolio', 'Trade', 'Strategies', 'Orders']);
+    });
+
+    it('shows only the admin tabs, no trading ones', () => {
+      isAdmin.set(true);
+      fixture.detectChanges();
+
+      expect(tabs()).toEqual(['Overview', 'Users', 'Journal']);
+    });
+
+    it('marks only Users as current on /admin/users, not Overview too', async () => {
+      isAdmin.set(true);
+      fixture.detectChanges();
+      await TestBed.inject(Router).navigateByUrl('/admin/users');
+      fixture.detectChanges();
+
+      const current: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('[aria-current="page"]'));
+      expect(current.map((tab) => tab.textContent?.trim())).toEqual(['Users']);
+    });
+
+    it('points the logo at the home page', () => {
+      expect(fixture.nativeElement.querySelector('.brand').getAttribute('href')).toBe('/dashboard');
+
+      isAdmin.set(true);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.brand').getAttribute('href')).toBe('/admin');
+    });
+
+    it('hides the account pill and the trading links in the avatar menu', () => {
+      isAdmin.set(true);
+      fixture.detectChanges();
+      fixture.nativeElement.querySelector('.menu-button').click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.account')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.menu-account')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.menu-change-account')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.menu-sign-out')).not.toBeNull();
+    });
   });
 
   it("shows the user's initial and name", () => {
@@ -87,6 +145,17 @@ describe('NavBarComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.account')).toBeNull();
+  });
+
+  it('toggles the theme from the accessible theme button', () => {
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('.theme-toggle');
+
+    expect(button.getAttribute('aria-label')).toBe('Switch to dark theme');
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+
+    button.click();
+
+    expect(theme.toggle).toHaveBeenCalled();
   });
 
   describe('account switcher', () => {
@@ -141,10 +210,11 @@ describe('NavBarComponent', () => {
       fixture.detectChanges();
     }
 
-    it('shows the current account and a link to change it', () => {
+    it('hides identity details and shows a link to change the account', () => {
       openMenu();
 
-      expect(fixture.nativeElement.querySelector('.menu-account').textContent).toContain('ACC001');
+      expect(fixture.nativeElement.querySelector('.menu-name')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.menu-account')).toBeNull();
       const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.menu-change-account');
       expect(link.getAttribute('href')).toBe('/accounts');
     });
@@ -163,12 +233,6 @@ describe('NavBarComponent', () => {
 
       expect(fixture.nativeElement.querySelector('.menu')).toBeNull();
     });
-  });
-
-  it('signs out from the link beside the avatar', () => {
-    fixture.nativeElement.querySelector('.sign-out').click();
-
-    expect(auth.logout).toHaveBeenCalled();
   });
 
   // The menu's Sign out is only shown on phones (by CSS); the click still works whatever the screen size

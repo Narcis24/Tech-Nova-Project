@@ -1,0 +1,73 @@
+:host {
+  display: block;
+}
+
+button,
+a {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+a {
+  text-decoration: none;
+}
+
+button,
+.new,
+.edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+button,
+.new {
+  background: var(--primary-color);
+  color: var(--text-on-primary-color);
+}
+
+button:not(:disabled):hover,
+.new:hover {
+  background: var(--primary-hover-color);
+  color: var(--text-on-primary-color);
+}
+
+button.secondary,
+.edit {
+  background: var(--elevated-background-color);
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+button.secondary:not(:disabled):hover,
+.edit:hover {
+  background: var(--control-background-color);
+  color: var(--text-color);
+}
+
+button.danger {
+  color: var(--loss-color);
+}
+
+button.danger:not(:disabled):hover {
+  background: var(--loss-background-color);
+  color: var(--loss-color);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+a:not(.new, .edit) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}

@@ -12,7 +12,10 @@
       {{ result() ? 'Order ' + (result()!.status?.replaceAll('_', ' ') | titlecase) : 'Review your order' }}
     </h2>
   </div>
-  <p class="instrument">{{ order().side | titlecase }} {{ order().quantity | number }} {{ order().symbol }}</p>
+  <p class="instrument">
+    <app-symbol-icon [symbol]="order().symbol" />{{ order().side | titlecase }} {{ order().quantity | number }}
+    {{ order().symbol }}
+  </p>
   <dl>
     <div>
       <dt>Account</dt>
@@ -26,6 +29,12 @@
       <div>
         <dt>Limit per share</dt>
         <dd>{{ order().price | currency: 'USD' }}</dd>
+      </div>
+    }
+    @if (order().orderType === 'LIMIT') {
+      <div>
+        <dt>Good for</dt>
+        <dd>{{ goodFor() }}</dd>
       </div>
     }
     <div class="total">
@@ -53,28 +62,23 @@
   </dl>
   @if (!result() && warnings().length) {
     <section class="warnings" aria-labelledby="order-warnings-title">
-      <h3 id="order-warnings-title">This order goes past your risk limits</h3>
+      <h3 id="order-warnings-title">Review your risk limits</h3>
+      <p class="warnings-intro">This order would exceed the following limits:</p>
       <ul>
         @for (warning of warnings(); track warning.rule + (warning.subject ?? '')) {
           <li>
             <p>{{ warning.message }}</p>
-            @if (warning.resultingPct != null && warning.limitPct != null) {
-              <p class="figures">
-                {{ warning.resultingPct | number: '1.0-1' }}% after this order ·
-                {{ warning.limitSource === 'CUSTOM' ? 'your limit' : 'limit' }}
-                {{ warning.limitPct | number: '1.0-1' }}%
-              </p>
-            }
           </li>
         }
       </ul>
-      <p class="hint">You can still place it. <a routerLink="/risk-limits">Change your limits</a></p>
+      <p class="hint">You can still place this order.</p>
+      <a class="limits-link" routerLink="/risk-limits">Adjust risk limits</a>
     </section>
   }
   @if (!result() && !marketOpen) {
-    <p class="market-closed" role="status">
+    <output class="market-closed">
       The market is closed. Your order will stay open until the market opens at 09:30 ET, Monday to Friday.
-    </p>
+    </output>
   }
   <p id="order-dialog-note" class="note">
     {{ result()?.message || 'Placement does not guarantee a fill. Market prices can change before execution.' }}

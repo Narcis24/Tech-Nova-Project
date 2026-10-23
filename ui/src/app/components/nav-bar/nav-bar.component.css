@@ -1,8 +1,6 @@
 .nav-bar {
-  max-width: 1360px;
-  margin: 0 auto;
   box-sizing: border-box;
-  padding: 20px 56px;
+  padding: 20px clamp(24px, 3.5vw, 72px);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -100,31 +98,27 @@
 /* The account list shows at most 4 options; longer lists scroll */
 .account-menu {
   --option-height: 40px;
-  max-height: calc(4 * var(--option-height));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  /* Still scrolls with wheel, touch and keyboard, just without a visible bar */
-  scrollbar-width: none;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.account-menu::-webkit-scrollbar {
-  display: none;
-}
-
-.account-menu {
   position: absolute;
   top: calc(100% + 8px);
   /* Pinned to both edges of the pill, so the list is exactly as wide as it */
   left: 0;
   right: 0;
   z-index: 20;
+  max-height: calc(4 * var(--option-height));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Still scrolls with wheel, touch and keyboard, just without a visible bar */
+  scrollbar-width: none;
+  margin: 0;
   padding: 6px;
+  list-style: none;
   border-radius: 12px;
   background: var(--elevated-background-color);
   box-shadow: var(--dropdown-shadow);
+}
+
+.account-menu::-webkit-scrollbar {
+  display: none;
 }
 
 .account-option {
@@ -152,22 +146,6 @@
   background: var(--primary-background-color);
   color: var(--primary-color);
   font-weight: 600;
-}
-
-/* Sign out sits beside the avatar on desktop; on phones it moves into the avatar menu */
-.sign-out {
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: 15px;
-  color: var(--secondary-text-color);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.sign-out:hover {
-  color: var(--text-color);
 }
 
 /* The avatar and name are one button that opens the user menu, on every screen size */
@@ -204,20 +182,6 @@
   box-shadow: var(--dropdown-shadow);
 }
 
-.menu-name,
-.menu-account {
-  margin: 0;
-  font-size: 15px;
-}
-
-.menu-name {
-  font-weight: 600;
-}
-
-.menu-account {
-  color: var(--secondary-text-color);
-}
-
 .menu-change-account {
   display: flex;
   align-items: center;
@@ -236,15 +200,19 @@
 }
 
 .menu-sign-out {
-  display: none;
+  display: block;
   min-height: 44px;
   border: 0;
   border-radius: 10px;
-  background: var(--muted-background-color);
+  background: transparent;
   font: inherit;
   font-weight: 600;
   color: var(--text-color);
   cursor: pointer;
+}
+
+.menu-sign-out:hover {
+  background: var(--muted-background-color);
 }
 
 @media (max-width: 767.98px) {
@@ -273,13 +241,8 @@
 
   /* The right side shrinks to just the avatar */
   .account-switcher,
-  .menu-button .username,
-  .sign-out {
+  .menu-button .username {
     display: none;
-  }
-
-  .menu-sign-out {
-    display: block;
   }
 
   .menu-button {

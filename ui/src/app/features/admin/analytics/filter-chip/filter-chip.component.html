@@ -1,0 +1,63 @@
+<button
+  #button
+  type="button"
+  class="chip"
+  [class.set]="selected()"
+  aria-haspopup="menu"
+  [attr.aria-expanded]="isOpen()"
+  [attr.aria-controls]="isOpen() ? menuId : null"
+  (click)="toggle()"
+>
+  {{ label() }}: <b>{{ selected()?.label ?? allLabel() }}</b>
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 12 12"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.6"
+    aria-hidden="true"
+  >
+    <path d="M2.5 4.5 6 8l3.5-3.5" />
+  </svg>
+</button>
+
+@if (isOpen()) {
+  <div #menu class="menu" role="menu" [id]="menuId" [attr.aria-label]="label()" (keydown)="moveFocus($event)">
+    @if (searchable()) {
+      <input
+        class="search"
+        type="search"
+        [placeholder]="'Search ' + label().toLowerCase()"
+        [attr.aria-label]="'Search ' + label().toLowerCase()"
+        [value]="query()"
+        (input)="onSearch($event)"
+      />
+    }
+    <button
+      type="button"
+      class="option"
+      role="menuitemradio"
+      [attr.aria-checked]="value() === null"
+      (click)="choose(null)"
+    >
+      {{ allLabel() }}
+    </button>
+    @for (option of visibleOptions(); track option.value) {
+      <button
+        type="button"
+        class="option"
+        role="menuitemradio"
+        [attr.aria-checked]="option.value === value()"
+        (click)="choose(option.value)"
+      >
+        @if (option.color) {
+          <span class="swatch" [style.background]="option.color" aria-hidden="true"></span>
+        }
+        {{ option.label }}
+      </button>
+    } @empty {
+      <p class="none">No match</p>
+    }
+  </div>
+}

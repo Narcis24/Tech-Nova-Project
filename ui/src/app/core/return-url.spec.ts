@@ -19,4 +19,10 @@ describe('safeReturnUrl', () => {
     expect(safeReturnUrl(null)).toBe('/dashboard');
     expect(safeReturnUrl(undefined)).toBe('/dashboard');
   });
+
+  it('falls back to the given home page instead, such as /admin for admins', () => {
+    expect(safeReturnUrl(null, '/admin')).toBe('/admin');
+    expect(safeReturnUrl('https://evil.com', '/admin')).toBe('/admin');
+    expect(safeReturnUrl('/orders', '/admin')).toBe('/orders');
+  });
 });

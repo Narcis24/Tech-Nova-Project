@@ -39,10 +39,10 @@
       </div>
     }
     @if (instrumentError()) {
-      <p class="data-note" role="status">
+      <output class="data-note">
         Couldn't load the instrument list.
         <button type="button" class="text-button" (click)="loadInstruments()">Retry</button>
-      </p>
+      </output>
     }
     <app-price-chart
       [pendingSymbol]="instrumentsLoading() && !chartSymbol()"
@@ -50,6 +50,7 @@
       [instrumentName]="instrumentName()"
       (changeInstrument)="toggleInstrumentPicker()"
       (quoteChange)="onQuote($event)"
+      (historyChange)="history.set($event)"
     />
   </div>
   <form
@@ -138,6 +139,14 @@
           </div>
         }
       </div>
+      @if (isLimit()) {
+        <app-time-in-force-picker
+          [timeInForce]="form.controls.timeInForce"
+          [expiresOn]="form.controls.expiresOn"
+          [min]="minExpiry"
+          [max]="maxExpiry"
+        />
+      }
       <div class="execution-card">
         <div
           class="price-ruler"
@@ -170,9 +179,15 @@
       </div>
       <dl class="order-totals">
         <div>
-          <dt>Buying power (cash)</dt>
+          <dt>Buying power (available cash)</dt>
           <dd>{{ (cash() | currency: 'USD') ?? '—' }}</dd>
         </div>
+        @if (lockedCash() > 0) {
+          <div>
+            <dt>Locked in pending orders</dt>
+            <dd>{{ lockedCash() | currency: 'USD' }}</dd>
+          </div>
+        }
         <div>
           <dt>
             {{
@@ -199,13 +214,13 @@
         </div>
       </dl>
       @if (context().loading) {
-        <p class="loading-context" role="status">Loading account balance and holdings…</p>
+        <output class="loading-context">Loading account balance and holdings…</output>
       }
       @if (context().error) {
-        <p class="data-note" role="status">
+        <output class="data-note">
           Account estimates unavailable.
           <button type="button" class="text-button" (click)="refreshContext()">Retry</button>
-        </p>
+        </output>
       }
       @if (validationIssue()) {
         <p class="field-error" role="alert">{{ validationIssue() }}</p>
@@ -229,6 +244,15 @@
       </button>
     </fieldset>
   </form>
+  <app-key-stats [points]="history()" />
+  <app-symbol-activity
+    [accountId]="accountId()"
+    [symbol]="chartSymbol()"
+    [portfolio]="portfolio()"
+    [revision]="contextRevision()"
+    (changed)="refreshContext()"
+  />
+  <app-financials [symbol]="chartSymbol()" />
 }
 
 @if (review() || result()) {

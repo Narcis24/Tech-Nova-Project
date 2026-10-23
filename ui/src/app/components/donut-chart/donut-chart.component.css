@@ -1,0 +1,22 @@
+:host {
+  display: inline-block;
+}
+
+svg {
+  display: block;
+}
+
+circle {
+  fill: none;
+  stroke-width: 20;
+}
+
+.arc {
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+.cash,
+.empty {
+  stroke: var(--control-background-color);
+}

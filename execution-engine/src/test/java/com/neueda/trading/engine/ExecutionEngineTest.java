@@ -11,6 +11,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -19,8 +21,10 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import com.neueda.events.EventEnvelope;
@@ -36,6 +40,10 @@ class ExecutionEngineTest {
     private QuoteCache cache;
     private ExecutionEngine engine;
     private Clock clock;
+    private DecisionJournal journal;
+
+    @TempDir
+    Path journalDir;
 
     // Wednesday 11:00 and Friday 03:24 in New York
     private static final Instant MARKET_OPEN = Instant.parse("2026-10-14T15:00:00Z");
@@ -49,7 +57,8 @@ class ExecutionEngineTest {
             new MarketDataProperties(List.of("AAPL"), 120, 25, 2000, 600, "http://x", "", "");
         clock = mock(Clock.class);
         when(clock.instant()).thenReturn(MARKET_OPEN);
-        engine = new ExecutionEngine(mapper, producer, cache, props, clock, true);
+        journal = new DecisionJournal(mapper, journalDir.toString(), true);
+        engine = new ExecutionEngine(mapper, producer, cache, props, journal, clock, true);
     }
 
     private void place(String type, String limit) throws Exception {
@@ -231,7 +240,7 @@ class ExecutionEngineTest {
     void withMarketHoursOffOrdersFillAtAnyTime() throws Exception {
         MarketDataProperties props =
             new MarketDataProperties(List.of("AAPL"), 120, 25, 2000, 600, "http://x", "", "");
-        engine = new ExecutionEngine(mapper, producer, cache, props, clock, false);
+        engine = new ExecutionEngine(mapper, producer, cache, props, journal, clock, false);
         when(clock.instant()).thenReturn(MARKET_CLOSED);
         cache.put(new Quote("AAPL", new BigDecimal("99.50"), new BigDecimal("100.50"), Instant.now()));
 
@@ -244,6 +253,115 @@ class ExecutionEngineTest {
     void announcesItsStartSoTheAppSendsPendingOrdersAgain() {
         engine.announceStarted();
         verify(producer).publishEvent(eq("order-execution"), any(), eq("ENGINE_STARTED"), any(), any());
+    }
+
+    @Test
+    void quoteFreshnessIsJudgedByTheEngineClock() throws Exception {
+        // 600 s is the maximum quote age in setUp
+        cache.put(new Quote("AAPL", new BigDecimal("99.50"), new BigDecimal("100.50"),
+            MARKET_OPEN.minusSeconds(601)));
+
+        place("MARKET", null);
+
+        verify(producer).publishEvent(any(), any(), eq("ORDER_REJECTED"), any(), any());
+    }
+
+    @Test
+    void theSameOrderQuoteAndTimeAlwaysGiveTheSameDecision() throws Exception {
+        Quote quote = new Quote("AAPL", new BigDecimal("99.50"), new BigDecimal("100.50"),
+            MARKET_OPEN.minusSeconds(599));
+        for (int run = 0; run < 2; run++) {
+            setUp();
+            cache.put(quote);
+
+            place("MARKET", null);
+
+            ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
+            verify(producer).publishEvent(any(), any(), eq("ORDER_EXECUTED"), any(), payload.capture());
+            assertEquals(new BigDecimal("100.50"), ((OrderExecutedEvent) payload.getValue()).executionPrice());
+        }
+    }
+
+    // --- decision journal -------------------------------------------------------------
+
+    /** The journal lines written for the clock's day, as "TYPE" or "DECISION:KIND". */
+    private List<String> journalTypes(String day) throws Exception {
+        return journalLines(day).stream()
+            .map(l -> l.get("type").asString() + (l.has("decision") ? ":" + l.get("decision").asString() : ""))
+            .toList();
+    }
+
+    private List<JsonNode> journalLines(String day) throws Exception {
+        return Files.readAllLines(journalDir.resolve(day + ".jsonl")).stream().map(mapper::readTree).toList();
+    }
+
+    @Test
+    void journalRecordsAFillWithItsPrice() throws Exception {
+        cache.put(new Quote("AAPL", new BigDecimal("99.50"), new BigDecimal("100.50"), MARKET_OPEN));
+
+        place("MARKET", null);
+
+        assertEquals(List.of("ORDER_RECEIVED", "DECISION:FILL"), journalTypes("2026-10-14"));
+        JsonNode fill = journalLines("2026-10-14").get(1);
+        assertEquals(orderId.toString(), fill.get("orderId").asString());
+        assertEquals(0, new BigDecimal("100.50").compareTo(fill.get("price").decimalValue()));
+    }
+
+    @Test
+    void journalRecordsARejectionWithItsReason() throws Exception {
+        place("MARKET", null);
+
+        assertEquals(List.of("ORDER_RECEIVED", "DECISION:REJECT"), journalTypes("2026-10-14"));
+        assertEquals("No fresh quote for AAPL", journalLines("2026-10-14").get(1).get("reason").asString());
+    }
+
+    @Test
+    void journalRecordsAWaitingLimitAndTheQuoteThatFillsIt() throws Exception {
+        place("LIMIT", "90.00");
+        engine.onQuote(quoteMessage("88.50", "89.00"));
+
+        assertEquals(List.of("ORDER_RECEIVED", "DECISION:WAIT", "QUOTE_RECEIVED", "DECISION:FILL"),
+            journalTypes("2026-10-14"));
+        List<JsonNode> lines = journalLines("2026-10-14");
+        assertEquals(0, new BigDecimal("89.00").compareTo(lines.get(2).get("quote").get("ask").decimalValue()));
+        assertEquals(List.of(1L, 2L, 3L, 4L), lines.stream().map(l -> l.get("seq").asLong()).toList());
+    }
+
+    @Test
+    void journalRecordsAnOrderQueuedWhileTheMarketIsClosed() throws Exception {
+        when(clock.instant()).thenReturn(MARKET_CLOSED);
+
+        place("MARKET", null);
+
+        assertEquals(List.of("ORDER_RECEIVED", "DECISION:QUEUED_MARKET_CLOSED"), journalTypes("2026-10-16"));
+    }
+
+    @Test
+    void journalMarksEachEngineStart() throws Exception {
+        engine.announceStarted();
+
+        assertEquals(List.of("ENGINE_STARTED"), journalTypes("2026-10-14"));
+    }
+
+    @Test
+    void aCancelledWaitingOrderNeverFillsOnALaterQuote() throws Exception {
+        place("LIMIT", "90.00");
+        engine.handleOrderPlaced(mapper.writeValueAsString(new EventEnvelope<>("e2", "ORDER_CANCELLED",
+            Instant.now(), "app", 1, new com.neueda.events.OrderCancelledEvent(orderId))));
+
+        engine.onQuote(quoteMessage("88.50", "89.00"));             // would have crossed the 90.00 limit
+
+        verify(producer, never()).publishEvent(any(), any(), eq("ORDER_EXECUTED"), any(), any());
+        assertEquals(List.of("ORDER_RECEIVED", "DECISION:WAIT", "ORDER_CANCELLED", "QUOTE_RECEIVED"),
+            journalTypes("2026-10-14"));
+    }
+
+    @Test
+    void cancellingAnOrderThatIsNotWaitingIsHarmless() throws Exception {
+        engine.cancel(UUID.randomUUID());
+
+        verify(producer, never()).publishEvent(any(), any(), any(), any(), any());
+        assertEquals(List.of("ORDER_CANCELLED"), journalTypes("2026-10-14"));
     }
 
     private String quoteMessage(String bid, String ask) throws Exception {

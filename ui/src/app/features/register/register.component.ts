@@ -4,6 +4,7 @@ import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, Validator
 import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 
 // Something@domain.tld: Angular's Validators.email also accepts 'john@example', which the auth service refuses
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+\.[^\s@]+$/;
@@ -26,6 +27,7 @@ export class RegisterComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  readonly theme = inject(ThemeService);
 
   constructor() {
     this.registerForm = this.formBuilder.group(

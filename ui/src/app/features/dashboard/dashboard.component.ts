@@ -10,6 +10,8 @@ import { PositionSummaryComponent } from './position-summary.component';
 import { MarketOverviewComponent } from './market-overview.component';
 import { ClosePositionComponent } from './close-position.component';
 import { DashboardStore } from './dashboard.store';
+import { AccountPieSummaryComponent } from '../pies/account-pie-summary.component';
+import { SymbolIconComponent } from '../../components/symbol-icon/symbol-icon.component';
 @Component({
   selector: 'app-dashboard',
   imports: [
@@ -25,6 +27,8 @@ import { DashboardStore } from './dashboard.store';
     PositionSummaryComponent,
     MarketOverviewComponent,
     ClosePositionComponent,
+    AccountPieSummaryComponent,
+    SymbolIconComponent,
   ],
   providers: [DashboardStore],
   templateUrl: './dashboard.component.html',

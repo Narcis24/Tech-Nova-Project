@@ -1,0 +1,77 @@
+h1 {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+h2 {
+  margin: 8px 0 16px;
+  font-size: 24px;
+}
+.progress {
+  margin: 20px 0;
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--card-background-color);
+}
+.account {
+  margin: 0;
+  font-size: 13px;
+  color: var(--secondary-text-color);
+}
+.progress p {
+  line-height: 1.6;
+}
+.steps {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+}
+.steps li {
+  padding: 8px 14px;
+  border-radius: 8px;
+  color: var(--secondary-text-color);
+}
+.steps .current {
+  background: var(--primary-background-color);
+  color: var(--primary-color);
+  font-weight: 600;
+}
+.legs {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0;
+  padding: 0;
+  list-style: none;
+}
+.legs li {
+  padding: 16px 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+.trade {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+}
+.status {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--muted-background-color);
+  font-size: 12px;
+}
+.failed,
+.error {
+  color: var(--loss-color);
+}
+.actions,
+.feedback {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.feedback {
+  color: var(--loss-color);
+}

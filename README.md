@@ -57,13 +57,20 @@ For building and testing outside containers:
 git clone -b develop git@github.com:Narcis24/Tech-Nova-Project.git   # needs an SSH key on GitHub,
 cd Tech-Nova-Project                     # or use https://github.com/Narcis24/Tech-Nova-Project.git
 cp .env.example .env            # set POSTGRES_PASSWORD and JWT_SECRET (see the comments in the file)
-./db/scripts/reset.sh           # fresh db + prices (pass e.g. 2020-01-01 for more history)
+./db/scripts/reset.sh           # fresh db + prices + company data (pass e.g. 2020-01-01 for more history)
 docker-compose up -d --build    # first build takes a few minutes
 ```
 
 `reset.sh` runs `docker-compose down -v`: it **deletes all data** (users, accounts, orders). Use it
 for the first setup or when you want a clean database, not to restart the stack. To stop and
 start without losing data, use `docker-compose stop` and `docker-compose up -d`.
+
+To refresh market data without touching anything else (both are safe to rerun):
+
+```bash
+docker-compose --profile pipeline run --rm pipeline                                       # daily prices
+docker-compose --profile pipeline run --rm --entrypoint python pipeline fundamentals.py   # company and fund facts
+```
 
 Then open the app at **http://localhost:8091** and create an account with **Create an account**.
 
@@ -156,6 +163,65 @@ npm run check                       # lint, format, type check, unit tests with 
 See [ui/README.md](ui/README.md) for running the dev server on your IP, regenerating the API
 clients and the Playwright smoke tests against the UI container.
 
+## Replaying a trading day
+
+The execution engine writes every order, quote and decision it handles to a daily journal,
+`/data/journal/<yyyy-MM-dd>.jsonl` (UTC day) on the `engine_journal` volume. A replay feeds a
+journal's orders and quotes into a fresh engine and checks that it makes the same decisions;
+it exits 0 when all match and 1 otherwise, listing each difference.
+
+```bash
+# today's journal, inside the running engine container
+docker exec tech-nova-project-execution-engine-1 sh -c 'java -Xmx256m -cp app.jar \
+  -Dloader.main=com.neueda.trading.engine.Replay \
+  org.springframework.boot.loader.launch.PropertiesLauncher /data/journal/$(date -u +%F).jsonl'
+
+# a journal file on your machine (after mvn install)
+docker cp tech-nova-project-execution-engine-1:/data/journal/2026-10-19.jsonl .
+mvn -q -pl execution-engine exec:java -Dexec.args=2026-10-19.jsonl
+```
+
+Journals can also be gzipped (`.jsonl.gz`); the replay reads both. It also takes several files or
+folders (every journal in a folder) and `--report <file>`, which saves every difference with the order
+and the last quote behind it as JSON:
+
+```bash
+mvn -q -pl execution-engine exec:java \
+  -Dexec.args="--report shadow-report.json execution-engine/src/test/resources/journals"
+```
+
+### Journal page for admins
+
+Admins can explore the journals in the UI under **Journal** (`/admin/journal`): pick a day, see its
+totals and reject reasons, open any order's timeline with the quote behind each decision, download the
+day gzipped, or **Verify this day** (a replay with the running engine). The page goes through the app
+(`/api/v1/admin/journal/**`, ADMIN only) to the engine's internal API, which only answers with the
+shared `INTERNAL_API_TOKEN` from `.env` (generate one with `openssl rand -hex 32`). Without it the page
+says the journal is unavailable.
+
+For a local admin login, set `TEST_ADMIN_PASSWORD` in `.env` before creating the database (user
+`test_admin`).
+
+### Golden journals
+
+`execution-engine/src/test/resources/journals/` holds recorded days that `mvn test` replays
+(`GoldenJournalTest`), so a change that makes any recorded decision come out differently fails the
+build:
+
+- `2026-10-14-edge-cases.jsonl`: small, written by hand; every tricky rule on purpose.
+- `2026-10-15-full-day.jsonl.gz`: a realistic full day (28,000 lines), made by `JournalGenerator`.
+
+To add a real day from a running stack (replace the account ids first; they are real data):
+
+```bash
+docker cp tech-nova-project-execution-engine-1:/data/journal/2026-10-19.jsonl .
+gzip 2026-10-19.jsonl && mv 2026-10-19.jsonl.gz execution-engine/src/test/resources/journals/
+```
+
+Replace a golden journal only when a change to the engine's decisions is **intended**: re-record it
+(the `JournalGenerator` javadoc has the command), say in the pull request which decisions changed
+and why, and never re-record just to make a failing test pass.
+
 ## End-to-end tests
 
 `e2e/` runs the real services, Postgres and Kafka in containers (Testcontainers) and drives them
@@ -198,6 +264,13 @@ SonarQube needs about 2 GB of memory; stop it when you are done:
 ## CI (Jenkins)
 
 The `Jenkinsfile` runs, in order: GitLeaks secret scan, image builds, UI checks, Java and auth
-unit tests, a data-pipeline smoke test, the e2e tests, SonarQube and a Trivy vulnerability scan
-of every image. Jenkins needs a "Secret text" credential `sonar-token`. A full run is heavy; on a
-small VM run the stages above by hand instead.
+unit tests, the shadow gate, a data-pipeline smoke test, the e2e tests, SonarQube and a Trivy
+vulnerability scan of every image. Jenkins needs a "Secret text" credential `sonar-token`. A full run
+is heavy; on a small VM run the stages above by hand instead.
+
+**Shadow gate** (only on `develop` and `sprint-*`, the branches that get released): the candidate
+engine replays the golden journals and any real days kept on the Jenkins machine in
+`/var/lib/jenkins/shadow-journals` (not in git). One changed decision fails the build. The report,
+`execution-engine/target/shadow-gate/report.json`, is archived with every build; open it from the
+build page to see each changed decision with its order and quote. It needs no running services and
+takes a few seconds.

@@ -1,5 +1,6 @@
 package com.neueda.app.services;
 
+import com.neueda.app.configs.ClockConfig;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.enums.OrderStatus;
@@ -36,7 +37,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({OrderService.class, OrderValidator.class, PriceService.class})
+@Import({OrderService.class, OrderValidator.class, PriceService.class, ClockConfig.class})
 // Uses application-test.properties imports for Integration Testing
 @ActiveProfiles("test")
 @DisplayName("OrderService End-to-End Integration Tests")
