@@ -1,6 +1,7 @@
 package com.neueda.app.dtos;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Min;
@@ -21,6 +22,7 @@ import lombok.NoArgsConstructor;
  * - quantity: 1 to 100,000 shares
  * - symbol: 1-10 characters (e.g., V, AAPL, BRK-B)
  * - price: Must be positive when given (null is allowed for MARKET orders)
+ * - timeInForce: DAY (default), GTC or GTD, LIMIT orders only; expiresOn: the date for GTD
  */
 @Getter
 @Setter
@@ -53,4 +55,17 @@ public class PlaceOrderRequest {
 
     @NotBlank(message = "Idempotency key is required")
     private String idempotencyKey;
+
+    /** How long a LIMIT order stays open; DAY when not given. Not allowed for MARKET orders. */
+    @Pattern(regexp = "(?i)DAY|GTC|GTD", message = "Time in force must be one of [DAY, GTC, GTD]")
+    private String timeInForce;
+
+    /** The New York date a GTD order expires at the close of. Only for GTD. */
+    private LocalDate expiresOn;
+
+    /** An order that expires as the defaults say: a DAY order for LIMIT, none for MARKET. */
+    public PlaceOrderRequest(String accountId, String symbol, String side, String orderType,
+                             Integer quantity, BigDecimal price, String idempotencyKey) {
+        this(accountId, symbol, side, orderType, quantity, price, idempotencyKey, null, null);
+    }
 }

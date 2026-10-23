@@ -19,7 +19,7 @@ describe('DonutChartComponent', () => {
     fixture.detectChanges();
 
     const arcs: SVGCircleElement[] = Array.from(fixture.nativeElement.querySelectorAll('circle.arc'));
-    expect(arcs.length).toBe(3);
+    expect(arcs).toHaveSize(3);
     expect(arcs.every((arc) => arc.hasAttribute('stroke-dasharray'))).toBeTrue();
   });
 
@@ -52,7 +52,7 @@ describe('DonutChartComponent', () => {
     fixture.detectChanges();
 
     const circles: SVGCircleElement[] = Array.from(fixture.nativeElement.querySelectorAll('circle'));
-    expect(circles.length).toBe(1);
+    expect(circles).toHaveSize(1);
     expect(circles[0].classList.contains('empty')).toBeTrue();
     expect(circles[0].getAttribute('stroke-dasharray')).not.toContain('NaN');
   });

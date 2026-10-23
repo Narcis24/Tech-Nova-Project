@@ -1,0 +1,103 @@
+/* Laid out like the order ticket's other fields: a label, then the choices */
+fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+legend,
+label {
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+legend {
+  margin-bottom: 8px;
+}
+/* Cards like the order type choice above them */
+.options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+button {
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--elevated-background-color);
+  text-align: left;
+  font: inherit;
+  color: var(--text-color);
+  box-shadow: 0 0 0 1px var(--border-color);
+  cursor: pointer;
+}
+button[aria-pressed='true'] {
+  box-shadow: 0 0 0 2px var(--text-color);
+}
+button:not([aria-pressed='true']):hover {
+  box-shadow: 0 0 0 1px var(--hover-border-color);
+}
+strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+}
+span {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--secondary-text-color);
+}
+input {
+  min-height: 52px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--elevated-background-color);
+  box-shadow: 0 0 0 1px var(--border-color);
+  font: inherit;
+  font-size: 16px;
+  color: var(--text-color);
+}
+input[aria-invalid='true'] {
+  box-shadow: 0 0 0 1px var(--loss-color);
+}
+.error {
+  min-height: 28px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 14px;
+  color: var(--loss-color);
+}
+/* Phone: a segmented control without the hints, like the order type choice there */
+@media (max-width: 767.98px) {
+  .options {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 14px;
+    background: var(--muted-background-color);
+  }
+  button {
+    flex: 1;
+    min-height: 40px;
+    padding: 0;
+    border-radius: 10px;
+    background: transparent;
+    text-align: center;
+    box-shadow: none;
+  }
+  button[aria-pressed='true'] {
+    background: var(--elevated-background-color);
+    box-shadow: var(--card-shadow);
+  }
+  span {
+    display: none;
+  }
+}

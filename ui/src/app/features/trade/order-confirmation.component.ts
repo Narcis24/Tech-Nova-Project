@@ -1,7 +1,8 @@
 import { CurrencyPipe, DecimalPipe, TitleCasePipe } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, input, OnDestroy, output, viewChild } from '@angular/core';
+import { AfterViewInit, Component, computed, ElementRef, input, OnDestroy, output, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { isMarketOpen } from '../../core/market-hours';
+import { timeInForceLabel } from '../../core/time-in-force';
 import { OrderResponse, PlaceOrderRequest, RiskWarning } from '../../generated/trading-api-client';
 import { SymbolIconComponent } from '../../components/symbol-icon/symbol-icon.component';
 
@@ -24,6 +25,7 @@ export class OrderConfirmationComponent implements AfterViewInit, OnDestroy {
   readonly dismiss = output<void>();
   // Checked when the dialog opens
   readonly marketOpen = isMarketOpen();
+  readonly goodFor = computed(() => timeInForceLabel(this.order().timeInForce, this.order().expiresOn));
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
   ngAfterViewInit(): void {

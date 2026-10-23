@@ -7,6 +7,7 @@ RUN apt-get update \
 WORKDIR /pipeline
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY load.py .
+# load.py (prices) is the default; fundamentals.py (company facts) runs with --entrypoint python
+COPY *.py .
 USER pipeline
 ENTRYPOINT ["python", "load.py"]

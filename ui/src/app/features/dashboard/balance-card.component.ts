@@ -19,7 +19,10 @@ import { PortfolioMetricsResponse } from '../../generated/trading-api-client';
       <p class="previous">Previous close value: {{ previousValue() | currency: 'USD' }}</p>
     }
     <div class="cash">
-      <span>Available cash</span><strong>{{ portfolio().cashBalance | currency: 'USD' }}</strong>
+      <span>Available cash</span><strong>{{ availableCash() | currency: 'USD' }}</strong>
+      @if (lockedCash() > 0) {
+        <span class="locked">+ {{ lockedCash() | currency: 'USD' }} locked in pending orders</span>
+      }
     </div>
   `,
   styles: `
@@ -69,6 +72,9 @@ import { PortfolioMetricsResponse } from '../../generated/trading-api-client';
       font-size: 28px;
       font-weight: 500;
     }
+    .cash .locked {
+      font-size: 14px;
+    }
     .gain {
       color: var(--gain-color);
     }
@@ -81,6 +87,9 @@ export class BalanceCardComponent {
   readonly portfolio = input.required<PortfolioMetricsResponse>();
   /** Change in holdings' value since the previous close, from DashboardStore.dayChange. */
   readonly dayChange = input<number | null>(null);
+  /** Cash pending buy orders hold back; the rest is free to trade or withdraw. */
+  readonly lockedCash = computed(() => Number(this.portfolio().lockedCash ?? 0));
+  readonly availableCash = computed(() => this.portfolio().availableCash ?? this.portfolio().cashBalance);
   /** Cash is unchanged by price moves, so the previous close value is today's value minus the change. */
   readonly previousValue = computed(() => {
     const change = this.dayChange(),

@@ -19,3 +19,17 @@ export function isMarketOpen(now: Date = new Date()): boolean {
   const minutes = Number(part('hour')) * 60 + Number(part('minute'));
   return minutes >= 9 * 60 + 30 && minutes < 16 * 60;
 }
+
+const NEW_YORK_DATE = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/New_York',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+/** The New York date, as YYYY-MM-DD, some days after now: the calendar limit orders expire on. */
+export function newYorkDate(now: Date = new Date(), plusDays = 0): string {
+  const date = new Date(`${NEW_YORK_DATE.format(now)}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + plusDays);
+  return date.toISOString().slice(0, 10);
+}

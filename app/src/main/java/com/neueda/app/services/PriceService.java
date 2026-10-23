@@ -21,7 +21,10 @@ public class PriceService {
         return priceRepository.findFirstBySymbolOrderByTradeDateDesc(symbol)
             .map(latest -> priceRepository.findBySymbolAndTradeDateGreaterThanEqualOrderByTradeDateAsc(
                 symbol, latest.getTradeDate().minusYears(1)).stream()
-                .map(price -> new PriceHistoryPoint(price.getTradeDate(), price.getPrice())).toList())
+                .map(price -> new PriceHistoryPoint(
+                    price.getTradeDate(), price.getOpen(), price.getHigh(), price.getLow(), price.getPrice(),
+                    price.getVolume()))
+                .toList())
             .orElse(List.of());
     }
 

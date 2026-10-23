@@ -31,6 +31,12 @@
         <dd>{{ order().price | currency: 'USD' }}</dd>
       </div>
     }
+    @if (order().orderType === 'LIMIT') {
+      <div>
+        <dt>Good for</dt>
+        <dd>{{ goodFor() }}</dd>
+      </div>
+    }
     <div class="total">
       <dt>
         {{

@@ -26,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class AdminUserService {
 
+    private static final String USER_NOT_FOUND = "User not found: ";
+
     private final UserRepository userRepository;
     private final AccountRepository accountRepository;
     private final AccountRiskBandService accountRiskBandService;
@@ -49,7 +51,7 @@ public class AdminUserService {
     @Transactional(readOnly = true)
     public AdminUserDetailResponse getUser(String username) {
         User user = userRepository.findById(username)
-            .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+            .orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND + username));
         List<AdminAccountResponse> accounts = accountRepository.findByOwnerUsernameOrderByAccountId(username).stream()
             .map(accountRiskBandService::classify)
             .toList();
@@ -61,7 +63,7 @@ public class AdminUserService {
     @Transactional
     public AccountResponse updateAccountStatus(String username, String accountId, AccountStatus status) {
         userRepository.findById(username)
-            .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+            .orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND + username));
         var account = accountRepository.findByIdForUpdate(accountId)
             .filter(candidate -> candidate.isOwnedBy(username))
             .orElseThrow(() -> new AccountNotFoundException(
@@ -80,7 +82,7 @@ public class AdminUserService {
         // Lock first, so a concurrent change waits and the count below is current
         List<String> admins = userRepository.lockAdminUsernames();
         User user = userRepository.findById(username)
-            .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+            .orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND + username));
 
         boolean losesAdmin = user.getRoles().contains(Role.ADMIN) && !roles.contains(Role.ADMIN);
         if (losesAdmin && username.equals(actingAdmin)) {

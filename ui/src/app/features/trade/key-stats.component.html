@@ -1,0 +1,49 @@
+@if (latest(); as day) {
+  <section aria-labelledby="key-stats-title">
+    <h2 id="key-stats-title">Key stats</h2>
+    <dl class="facts">
+      <div>
+        <dt>Open</dt>
+        <dd>{{ (day.open | number: '1.2-2') ?? '—' }}</dd>
+      </div>
+      <div>
+        <dt>Day's range</dt>
+        <dd>{{ (day.low | number: '1.2-2') ?? '—' }} – {{ (day.high | number: '1.2-2') ?? '—' }}</dd>
+      </div>
+      <div>
+        <dt>Previous close</dt>
+        <dd>{{ (previousClose() | number: '1.2-2') ?? '—' }}</dd>
+      </div>
+      <div>
+        <dt>Volume</dt>
+        <dd>{{ (day.volume | number) ?? '—' }}</dd>
+      </div>
+      <div>
+        <dt>Avg. volume (30d)</dt>
+        <dd>{{ (averageVolume() | number: '1.0-0') ?? '—' }}</dd>
+      </div>
+    </dl>
+    <div class="year-range">
+      <div class="year-heading">
+        <span>52-week range</span>
+        <span>{{ yearLow() | number: '1.2-2' }} – {{ yearHigh() | number: '1.2-2' }}</span>
+      </div>
+      <!-- The bar is a picture of the sentence below it, which is what screen readers get -->
+      <div class="track" aria-hidden="true">
+        <span class="marker" [style.left.%]="yearPosition()"></span>
+      </div>
+      <p class="visually-hidden">
+        Last close {{ day.close | number: '1.2-2' }}, {{ yearPosition() / 100 | percent: '1.0-0' }} of the way from the
+        52-week low to the high.
+      </p>
+    </div>
+    <ul class="returns" aria-label="Returns">
+      @for (period of returns(); track period.label) {
+        <li [class.gain]="(period.value ?? 0) > 0" [class.loss]="(period.value ?? 0) < 0">
+          <span>{{ period.label }}</span>
+          <strong>{{ (period.value ?? 0) > 0 ? '+' : '' }}{{ (period.value | percent: '1.1-1') ?? '—' }}</strong>
+        </li>
+      }
+    </ul>
+  </section>
+}

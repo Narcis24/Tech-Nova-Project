@@ -84,8 +84,9 @@ pipeline {
         }
         stage('Smoke Test') {
             steps {
-                // imports dependencies and compiles load.py without hitting Yahoo or a database
-                sh 'docker run --rm --memory 256m --entrypoint python tech-nova-pipeline:latest -c "import load"'
+                // imports dependencies and compiles both scripts, then runs the mapping tests, without hitting Yahoo or a database
+                sh 'docker run --rm --memory 256m --entrypoint python tech-nova-pipeline:latest -c "import load, fundamentals"'
+                sh 'docker run --rm --memory 256m --entrypoint python tech-nova-pipeline:latest -m unittest -v'
             }
         }
         stage('E2E Tests') {

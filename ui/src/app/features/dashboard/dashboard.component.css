@@ -83,6 +83,10 @@ app-position-card {
   font-size: 14px;
   color: var(--secondary-text-color);
 }
+.cash-card .locked {
+  display: block;
+  margin-top: 4px;
+}
 .cash-card a {
   font-size: 14px;
 }

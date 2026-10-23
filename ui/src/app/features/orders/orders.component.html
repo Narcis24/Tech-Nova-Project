@@ -80,7 +80,12 @@
               <span class="symbol"><app-symbol-icon [symbol]="order.symbol" />{{ order.symbol }}</span>
               <span class="name">{{ names()[order.symbol ?? ''] }}</span>
             </a>
-            <span class="detail">{{ order.quantity | number }} shares · {{ order.orderType | titlecase }}</span>
+            <span class="detail"
+              >{{ order.quantity | number }} shares · {{ order.orderType | titlecase }}
+              @if (expiryLabel(order); as expiry) {
+                · {{ expiry }}
+              }
+            </span>
             <span class="money">
               <span class="amount">{{ amount(order) | currency: 'USD' }}</span>
               <span class="price">{{ priceLabel(order) }} {{ order.price | currency: 'USD' }}</span>

@@ -99,7 +99,7 @@ describe('RebalancePreviewComponent', () => {
 
   it('tags holdings outside the pie', () => {
     const root = render();
-    expect(root.querySelectorAll('.outside').length).toBe(1);
+    expect(root.querySelectorAll('.outside')).toHaveSize(1);
     expect(root.querySelector('.outside')?.closest('tr')?.textContent).toContain('TSLA');
     expect(root.querySelector('.outside')?.textContent).toContain('Not in strategy: sold');
   });

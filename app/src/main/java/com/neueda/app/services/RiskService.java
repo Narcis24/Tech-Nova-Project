@@ -94,9 +94,10 @@ public class RiskService {
 
         String prefix = "After this order, ";
         evaluate(warnings, prefix, limits.get(RiskRule.SINGLE_INSTRUMENT), RiskRule.SINGLE_INSTRUMENT,
-            symbol, valueBySymbol.get(symbol), total, symbol);
+            new Exposure(symbol, valueBySymbol.get(symbol), symbol), total);
         checkAssetClass(warnings, prefix, limits.get(RiskRule.ASSET_CLASS), List.of(symbol), valueBySymbol, total);
-        evaluate(warnings, prefix, limits.get(RiskRule.CASH_FLOOR), RiskRule.CASH_FLOOR, "CASH", cash, total, "cash");
+        evaluate(warnings, prefix, limits.get(RiskRule.CASH_FLOOR), RiskRule.CASH_FLOOR,
+            new Exposure("CASH", cash, "cash"), total);
         return warnings;
     }
 
@@ -115,10 +116,11 @@ public class RiskService {
         String prefix = "After rebalancing, ";
         for (Map.Entry<String, BigDecimal> entry : valueBySymbol.entrySet()) {
             evaluate(warnings, prefix, limits.get(RiskRule.SINGLE_INSTRUMENT), RiskRule.SINGLE_INSTRUMENT,
-                entry.getKey(), entry.getValue(), total, entry.getKey());
+                new Exposure(entry.getKey(), entry.getValue(), entry.getKey()), total);
         }
         checkAssetClass(warnings, prefix, limits.get(RiskRule.ASSET_CLASS), valueBySymbol.keySet(), valueBySymbol, total);
-        evaluate(warnings, prefix, limits.get(RiskRule.CASH_FLOOR), RiskRule.CASH_FLOOR, "CASH", cash, total, "cash");
+        evaluate(warnings, prefix, limits.get(RiskRule.CASH_FLOOR), RiskRule.CASH_FLOOR,
+            new Exposure("CASH", cash, "cash"), total);
         return warnings;
     }
 
@@ -175,8 +177,8 @@ public class RiskService {
             }
         }
         for (AssetClass assetClass : classes) {
-            evaluate(warnings, prefix, limit, RiskRule.ASSET_CLASS, assetClass.name(), valueByClass.get(assetClass),
-                total, assetClass.name() + " holdings");
+            evaluate(warnings, prefix, limit, RiskRule.ASSET_CLASS,
+                new Exposure(assetClass.name(), valueByClass.get(assetClass), assetClass.name() + " holdings"), total);
         }
     }
 
@@ -194,11 +196,11 @@ public class RiskService {
 
     /** Adds a warning when the value's share of the total reaches the limit (at or past it). */
     private void evaluate(List<RiskWarning> warnings, String prefix, EffectiveLimit limit, RiskRule rule,
-                          String subject, BigDecimal value, BigDecimal total, String label) {
+                          Exposure exposure, BigDecimal total) {
         if (limit == null) {
             return;
         }
-        BigDecimal pct = value.multiply(HUNDRED).divide(total, 4, RoundingMode.HALF_UP);
+        BigDecimal pct = exposure.value().multiply(HUNDRED).divide(total, 4, RoundingMode.HALF_UP);
 
         boolean reached;
         if (limit.below()) {
@@ -213,13 +215,17 @@ public class RiskService {
         String shownPct = pct.setScale(1, RoundingMode.HALF_UP).toPlainString();
         String shownLimit = limit.thresholdPct().stripTrailingZeros().toPlainString();
         String limitWord = limit.below() ? "minimum" : "limit";
-        String message = prefix + label + " would be " + shownPct
+        String message = prefix + exposure.label() + " would be " + shownPct
             + "% of your portfolio. Your " + limitWord + " is " + shownLimit + "%.";
 
-        warnings.add(new RiskWarning(rule, subject, pct.setScale(2, RoundingMode.HALF_UP),
+        warnings.add(new RiskWarning(rule, exposure.subject(), pct.setScale(2, RoundingMode.HALF_UP),
             limit.thresholdPct(), limit.source(), message));
     }
 
     private record EffectiveLimit(BigDecimal thresholdPct, boolean below, LimitSource source) {
+    }
+
+    /** What a limit is checked against: its subject (symbol, asset class or CASH), value and wording. */
+    private record Exposure(String subject, BigDecimal value, String label) {
     }
 }

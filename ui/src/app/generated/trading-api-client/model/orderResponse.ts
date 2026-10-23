@@ -20,6 +20,8 @@ export interface OrderResponse {
     status?: OrderResponse.StatusEnum;
     message?: string;
     createdOn?: string;
+    timeInForce?: OrderResponse.TimeInForceEnum;
+    expiresAt?: string;
 }
 export namespace OrderResponse {
     export const OrderTypeEnum = {
@@ -37,6 +39,12 @@ export namespace OrderResponse {
         Expired: 'EXPIRED',
     } as const;
     export type StatusEnum = typeof StatusEnum[keyof typeof StatusEnum];
+    export const TimeInForceEnum = {
+        Day: 'DAY',
+        Gtc: 'GTC',
+        Gtd: 'GTD',
+    } as const;
+    export type TimeInForceEnum = typeof TimeInForceEnum[keyof typeof TimeInForceEnum];
 }
 
 

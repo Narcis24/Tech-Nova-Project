@@ -54,9 +54,10 @@ export class PieEditorComponent {
   readonly symbols = computed(() => this.rows().map((r) => r.symbol.trim().toUpperCase()));
   readonly unavailable = computed(() => this.symbols().filter((s) => s && !this.isTradable(s)));
   readonly weights = computed(() =>
-    this.rows().map((r) => (WEIGHT_PATTERN.test(r.weight.trim()) ? Number(r.weight) : NaN)),
+    this.rows().map((r) => (WEIGHT_PATTERN.test(r.weight.trim()) ? Number(r.weight) : Number.NaN)),
   );
-  readonly total = computed(() => this.weights().reduce((sum, w) => sum + (w > 0 ? w : 0), 0));
+  // An invalid weight is NaN and counts as 0, like a negative one
+  readonly total = computed(() => this.weights().reduce((sum, w) => sum + Math.max(w || 0, 0), 0));
   readonly cash = computed(() => Math.round((100 - this.total()) * 100) / 100);
   readonly overAllocated = computed(() => this.cash() < 0);
   readonly segments = computed(() => {

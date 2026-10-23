@@ -190,7 +190,9 @@ describe('PiesComponent', () => {
   it('shows the empty state with no pies', () => {
     pies.listMine.and.returnValue(of([] as PieResponse[]));
     create();
-    expect(root.textContent).toContain("Build your first strategy: pick stocks and weights, and we'll work out the trades.");
+    expect(root.textContent).toContain(
+      "Build your first strategy: pick stocks and weights, and we'll work out the trades.",
+    );
   });
 
   describe('a copied pie', () => {

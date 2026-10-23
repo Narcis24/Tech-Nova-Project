@@ -45,11 +45,11 @@ public class RebalancePlanner {
             prices.put(position.getSymbol(), position.getCurrentPrice());
         }
         for (String symbol : targets.keySet()) {
-            if (!prices.containsKey(symbol)) {
-                BigDecimal price = currentPrice(symbol);
-                requirePrice(symbol, price);
-                prices.put(symbol, price);
-            }
+            prices.computeIfAbsent(symbol, missing -> {
+                BigDecimal price = currentPrice(missing);
+                requirePrice(missing, price);
+                return price;
+            });
         }
         return rebalanceCalculator.plan(quantities, prices, snapshot.getCashBalance(), targets, sellsFundBuys);
     }

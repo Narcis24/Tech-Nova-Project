@@ -15,8 +15,8 @@ import java.util.Optional;
 public interface PriceRepository extends JpaRepository<Price, PriceKey> {
     /** Last 20 sessions per instrument, bounded in the database and fetched in one query. */
     @Query(value = """
-        SELECT symbol, trade_date, close FROM (
-            SELECT symbol, trade_date, close,
+        SELECT symbol, trade_date, open, high, low, close, volume FROM (
+            SELECT symbol, trade_date, open, high, low, close, volume,
                    ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY trade_date DESC) AS rank
             FROM price_data
         ) recent WHERE rank <= 20

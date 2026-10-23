@@ -6,6 +6,7 @@ import com.neueda.app.enums.AssetClass;
 import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.enums.OrderType;
+import com.neueda.app.enums.TimeInForce;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.exceptions.PriceNotFoundException;
 import com.neueda.app.events.OrderResolved;
@@ -13,7 +14,6 @@ import com.neueda.app.exceptions.DuplicateOrderException;
 import com.neueda.app.exceptions.InvalidOrderStateException;
 import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.exceptions.InsufficientHoldingsException;
-import com.neueda.app.exceptions.InvalidOrderStateException;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Order;
@@ -31,11 +31,17 @@ import java.util.List;
 import java.util.UUID;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class OrderServiceTest {
+
+    /** Wednesday 2026-10-21, 10:00 in New York: the market is open. */
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-21T14:00:00Z"), ZoneOffset.UTC);
 
     private OrderRepository orderRepository;
     private AccountRepository accountRepository;
@@ -57,11 +63,13 @@ class OrderServiceTest {
         priceService = mock(PriceService.class);
         eventProducerService = mock(EventProducerService.class);
         events = mock(ApplicationEventPublisher.class);
+        when(orderRepository.lockedCash(any())).thenReturn(BigDecimal.ZERO);
 
         // Real validator over the mocked repositories, so these tests still cover every placement check
         orderService = new OrderService(
             orderRepository,
-            new OrderValidator(accountRepository, positionRepository, instrumentRepository, priceService),
+            new OrderValidator(accountRepository, positionRepository, instrumentRepository, priceService,
+                orderRepository, CLOCK),
             eventProducerService,
             events
         );
@@ -181,6 +189,55 @@ class OrderServiceTest {
 
         UUID orderId = order.getId();
         assertThrows(InvalidOrderStateException.class, () -> orderService.cancelOrder(orderId));
+
+        verifyNoInteractions(eventProducerService);
+        verifyNoInteractions(events);
+    }
+
+    @Test
+    void placedLimitOrderCarriesItsTimeInForceAndExpiry() {
+        stubAccountAndInstrument(activeAccount(), aapl());
+        PlaceOrderRequest request = new PlaceOrderRequest(
+            "12345", "AAPL", "BUY", "LIMIT", 1, new BigDecimal("150.00"), "key-gtc");
+        request.setTimeInForce("GTC");
+
+        OrderResponse response = orderService.placeOrder(request);
+
+        assertEquals(TimeInForce.GTC, response.getTimeInForce());
+        assertEquals(Instant.parse("2027-01-19T21:00:00Z"), response.getExpiresAt());
+    }
+
+    @Test
+    void placedMarketOrderNeverExpires() {
+        stubAccountAndInstrument(activeAccount(), aapl());
+        when(priceService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("150.00"));
+
+        OrderResponse response = orderService.placeOrder(new PlaceOrderRequest(
+            "12345", "AAPL", "BUY", "MARKET", 1, null, "key-m"));
+
+        assertNull(response.getTimeInForce());
+        assertNull(response.getExpiresAt());
+    }
+
+    @Test
+    void expiringAPendingOrderTellsTheEngineAndAnnouncesItResolved() {
+        UUID orderId = UUID.randomUUID();
+        when(orderRepository.changeStatus(orderId, OrderStatus.PENDING, OrderStatus.EXPIRED)).thenReturn(1);
+
+        assertTrue(orderService.expireOrder(orderId));
+
+        verify(eventProducerService).publishEvent(
+            eq("order-request"), eq(orderId.toString()), eq("ORDER_CANCELLED"), anyString(), any());
+        verify(events).publishEvent(new OrderResolved(orderId, OrderStatus.EXPIRED));
+    }
+
+    @Test
+    void anOrderThatLeftPendingFirstIsNotExpired() {
+        UUID orderId = UUID.randomUUID();
+        // filled or cancelled just before: the guarded update moves no row
+        when(orderRepository.changeStatus(orderId, OrderStatus.PENDING, OrderStatus.EXPIRED)).thenReturn(0);
+
+        assertFalse(orderService.expireOrder(orderId));
 
         verifyNoInteractions(eventProducerService);
         verifyNoInteractions(events);

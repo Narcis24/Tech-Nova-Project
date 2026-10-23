@@ -2,6 +2,7 @@ package com.neueda.app.services;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,13 +19,15 @@ import com.neueda.app.dtos.JournalDtos.JournalDay;
 import com.neueda.app.dtos.JournalDtos.JournalDaySummary;
 import com.neueda.app.dtos.JournalDtos.JournalTimelineEntry;
 import com.neueda.app.dtos.JournalDtos.JournalVerifyResult;
+import com.neueda.app.dtos.QuoteResponse;
 import com.neueda.app.exceptions.JournalException;
 
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Calls the execution engine's internal journal API for the admin journal page, with the shared
- * INTERNAL_API_TOKEN. Engine errors become JournalExceptions with a status the admin can act on.
+ * Calls the execution engine's internal API with the shared INTERNAL_API_TOKEN: the journal for the
+ * admin journal page, where engine errors become JournalExceptions with a status the admin can act on,
+ * and the latest quotes for the trade page.
  */
 @Component
 @Slf4j
@@ -77,6 +80,20 @@ public class EngineClient {
 
     public JournalVerifyResult verify(String day) {
         return call(() -> verifyClient.post().uri(DAY + "/verify", day).retrieve().body(JournalVerifyResult.class));
+    }
+
+    /**
+     * The engine's latest bid and ask for the symbol. Empty when it has none or cannot be reached: the
+     * trade page then shows no quote rather than an error.
+     */
+    public Optional<QuoteResponse> quote(String symbol) {
+        try {
+            return Optional.ofNullable(restClient.get().uri("/internal/quotes/{symbol}", symbol).retrieve()
+                .body(QuoteResponse.class));
+        } catch (RestClientResponseException | ResourceAccessException e) {
+            log.debug("No quote from the execution engine for {}: {}", symbol, e.getMessage());
+            return Optional.empty();
+        }
     }
 
     private interface Call<T> {

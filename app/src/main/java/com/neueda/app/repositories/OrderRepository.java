@@ -22,6 +22,38 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Order> findByStatus(OrderStatus status);
     boolean existsByIdempotencyKey(String idempotencyKey);
     boolean existsByAccountIdAndStatus(String accountId, OrderStatus status);
+    List<Order> findByStatusAndExpiresAtLessThanEqual(OrderStatus status, LocalDateTime time);
+
+    /**
+     * Cash held back by the account's open buys: the limit price, or the reference price for a
+     * market order, times the quantity. Released when the order fills, is cancelled, rejected or expires.
+     */
+    @Query("""
+        select coalesce(sum(o.price * o.quantity), 0) from Order o
+        where o.accountId = :accountId
+          and o.side = com.neueda.app.enums.OrderSide.BUY
+          and o.status = com.neueda.app.enums.OrderStatus.PENDING
+        """)
+    BigDecimal lockedCash(@Param("accountId") String accountId);
+
+    /** Shares of one symbol held back by the account's open sells. */
+    @Query("""
+        select coalesce(sum(o.quantity), 0) from Order o
+        where o.accountId = :accountId and o.symbol = :symbol
+          and o.side = com.neueda.app.enums.OrderSide.SELL
+          and o.status = com.neueda.app.enums.OrderStatus.PENDING
+        """)
+    long lockedShares(@Param("accountId") String accountId, @Param("symbol") String symbol);
+
+    /** Shares held back by the account's open sells, per symbol. */
+    @Query("""
+        select new com.neueda.app.repositories.LockedShares(o.symbol, sum(o.quantity)) from Order o
+        where o.accountId = :accountId
+          and o.side = com.neueda.app.enums.OrderSide.SELL
+          and o.status = com.neueda.app.enums.OrderStatus.PENDING
+        group by o.symbol
+        """)
+    List<LockedShares> lockedSharesBySymbol(@Param("accountId") String accountId);
 
     /**
      * Orders placed in [from, to) across all accounts, for the admin analytics. Each filter is

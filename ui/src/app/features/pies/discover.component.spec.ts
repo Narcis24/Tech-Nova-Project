@@ -92,6 +92,6 @@ describe('DiscoverComponent', () => {
     button('Try again').click();
     fixture.detectChanges();
     expect(root.querySelector('[role="alert"]')).toBeNull();
-    expect(root.querySelectorAll('.entry').length).toBe(3);
+    expect(root.querySelectorAll('.entry')).toHaveSize(3);
   });
 });

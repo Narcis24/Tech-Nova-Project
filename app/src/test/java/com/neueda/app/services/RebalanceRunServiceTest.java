@@ -281,7 +281,8 @@ class RebalanceRunServiceTest {
 
         assertEquals(OrderStatus.CANCELLED, orderRepository.findById(sell).orElseThrow().getStatus());
         assertEquals(0, new BigDecimal("5000.00").compareTo(accountRepository.findById(ACCOUNT).orElseThrow().getCashBalance()));
-        assertThrows(RebalanceConflictException.class, () -> runService.cancel(started.getRunId()));
+        UUID runId = started.getRunId();
+        assertThrows(RebalanceConflictException.class, () -> runService.cancel(runId));
     }
 
     @Test

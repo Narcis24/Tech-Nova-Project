@@ -17,15 +17,19 @@ import { Observable }                                        from 'rxjs';
 import { OpenApiHttpParams, QueryParamStyle } from '../query.params';
 
 // @ts-ignore
-import { AdminUserResponse } from '../model/adminUserResponse';
+import { AccountResponse } from '../model/accountResponse';
+// @ts-ignore
 import { AdminUserDetailResponse } from '../model/adminUserDetailResponse';
+// @ts-ignore
+import { AdminUserResponse } from '../model/adminUserResponse';
 // @ts-ignore
 import { CreateUserRequest } from '../model/createUserRequest';
 // @ts-ignore
 import { CreateUserResponse } from '../model/createUserResponse';
 // @ts-ignore
-import { UpdateRolesRequest } from '../model/updateRolesRequest';
 import { UpdateAccountStatusRequest } from '../model/updateAccountStatusRequest';
+// @ts-ignore
+import { UpdateRolesRequest } from '../model/updateRolesRequest';
 
 // @ts-ignore
 import { BASE_PATH, COLLECTION_FORMATS }                     from '../variables';
@@ -112,6 +116,64 @@ export class AdminUserControllerService extends BaseService {
     }
 
     /**
+     * @endpoint get /v1/admin/users/{username}
+     * @param username 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public getUser(username: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdminUserDetailResponse>;
+    public getUser(username: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdminUserDetailResponse>>;
+    public getUser(username: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdminUserDetailResponse>>;
+    public getUser(username: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (username === null || username === undefined) {
+            throw new Error('Required parameter username was null or undefined when calling getUser.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearerAuth) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', localVarHeaders, 'Bearer ');
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/v1/admin/users/${this.configuration.encodeParam({name: "username", value: username, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: undefined})}`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<AdminUserDetailResponse>('get', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
      * @endpoint get /v1/admin/users
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
@@ -165,40 +227,80 @@ export class AdminUserControllerService extends BaseService {
         );
     }
 
-    public getUser(username: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AdminUserDetailResponse>;
-    public getUser(username: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AdminUserDetailResponse>>;
-    public getUser(username: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AdminUserDetailResponse>>;
-    public getUser(username: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
-        if (username === null || username === undefined) throw new Error('Required parameter username was null or undefined when calling getUser.');
-        let headers = this.defaultHeaders;
-        headers = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', headers, 'Bearer ');
-        const accept = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept(['application/json']);
-        if (accept !== undefined) headers = headers.set('Accept', accept);
-        const path = `/v1/admin/users/${this.configuration.encodeParam({name: 'username', value: username, in: 'path', style: 'simple', explode: false, dataType: 'string', dataFormat: undefined})}`;
-        const { basePath, withCredentials } = this.configuration;
-        return this.httpClient.request<AdminUserDetailResponse>('get', `${basePath}${path}`, {
-            context: options?.context ?? new HttpContext(), responseType: <any>(accept?.startsWith('text') ? 'text' : 'json'),
-            ...(withCredentials ? { withCredentials } : {}), headers, observe,
-            ...(options?.transferCache !== undefined ? { transferCache: options.transferCache } : {}), reportProgress
-        });
-    }
+    /**
+     * @endpoint put /v1/admin/users/{username}/accounts/{accountId}/status
+     * @param username 
+     * @param accountId 
+     * @param updateAccountStatusRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public updateAccountStatus(username: string, accountId: string, updateAccountStatusRequest: UpdateAccountStatusRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<AccountResponse>;
+    public updateAccountStatus(username: string, accountId: string, updateAccountStatusRequest: UpdateAccountStatusRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<AccountResponse>>;
+    public updateAccountStatus(username: string, accountId: string, updateAccountStatusRequest: UpdateAccountStatusRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<AccountResponse>>;
+    public updateAccountStatus(username: string, accountId: string, updateAccountStatusRequest: UpdateAccountStatusRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (username === null || username === undefined) {
+            throw new Error('Required parameter username was null or undefined when calling updateAccountStatus.');
+        }
+        if (accountId === null || accountId === undefined) {
+            throw new Error('Required parameter accountId was null or undefined when calling updateAccountStatus.');
+        }
+        if (updateAccountStatusRequest === null || updateAccountStatusRequest === undefined) {
+            throw new Error('Required parameter updateAccountStatusRequest was null or undefined when calling updateAccountStatus.');
+        }
 
-    public updateAccountStatus(username: string, accountId: string, request: UpdateAccountStatusRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<import('../model/accountResponse').AccountResponse>;
-    public updateAccountStatus(username: string, accountId: string, request: UpdateAccountStatusRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<import('../model/accountResponse').AccountResponse>>;
-    public updateAccountStatus(username: string, accountId: string, request: UpdateAccountStatusRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
-        if (username === null || username === undefined || accountId === null || accountId === undefined || request === null || request === undefined) throw new Error('Required parameter was null or undefined when calling updateAccountStatus.');
-        let headers = this.defaultHeaders;
-        headers = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', headers, 'Bearer ');
-        const accept = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept(['application/json']);
-        if (accept !== undefined) headers = headers.set('Accept', accept);
-        headers = headers.set('Content-Type', 'application/json');
-        const path = `/v1/admin/users/${this.configuration.encodeParam({name: 'username', value: username, in: 'path', style: 'simple', explode: false, dataType: 'string', dataFormat: undefined})}/accounts/${this.configuration.encodeParam({name: 'accountId', value: accountId, in: 'path', style: 'simple', explode: false, dataType: 'string', dataFormat: undefined})}/status`;
+        let localVarHeaders = this.defaultHeaders;
+
+        // authentication (bearerAuth) required
+        localVarHeaders = this.configuration.addCredentialToHeaders('bearerAuth', 'Authorization', localVarHeaders, 'Bearer ');
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/v1/admin/users/${this.configuration.encodeParam({name: "username", value: username, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: undefined})}/accounts/${this.configuration.encodeParam({name: "accountId", value: accountId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: undefined})}/status`;
         const { basePath, withCredentials } = this.configuration;
-        return this.httpClient.request('put', `${basePath}${path}`, {
-            context: options?.context ?? new HttpContext(), body: request, responseType: <any>(accept?.startsWith('text') ? 'text' : 'json'),
-            ...(withCredentials ? { withCredentials } : {}), headers, observe,
-            ...(options?.transferCache !== undefined ? { transferCache: options.transferCache } : {}), reportProgress
-        });
+        return this.httpClient.request<AccountResponse>('put', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: updateAccountStatusRequest,
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
     }
 
     /**

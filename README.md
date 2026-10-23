@@ -57,13 +57,20 @@ For building and testing outside containers:
 git clone -b develop git@github.com:Narcis24/Tech-Nova-Project.git   # needs an SSH key on GitHub,
 cd Tech-Nova-Project                     # or use https://github.com/Narcis24/Tech-Nova-Project.git
 cp .env.example .env            # set POSTGRES_PASSWORD and JWT_SECRET (see the comments in the file)
-./db/scripts/reset.sh           # fresh db + prices (pass e.g. 2020-01-01 for more history)
+./db/scripts/reset.sh           # fresh db + prices + company data (pass e.g. 2020-01-01 for more history)
 docker-compose up -d --build    # first build takes a few minutes
 ```
 
 `reset.sh` runs `docker-compose down -v`: it **deletes all data** (users, accounts, orders). Use it
 for the first setup or when you want a clean database, not to restart the stack. To stop and
 start without losing data, use `docker-compose stop` and `docker-compose up -d`.
+
+To refresh market data without touching anything else (both are safe to rerun):
+
+```bash
+docker-compose --profile pipeline run --rm pipeline                                       # daily prices
+docker-compose --profile pipeline run --rm --entrypoint python pipeline fundamentals.py   # company and fund facts
+```
 
 Then open the app at **http://localhost:8091** and create an account with **Create an account**.
 
