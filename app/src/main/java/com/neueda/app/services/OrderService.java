@@ -11,6 +11,7 @@ import com.neueda.events.Topics;
 import com.neueda.app.dtos.OrderResponse;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.enums.OrderStatus;
+import com.neueda.app.enums.OrderType;
 import com.neueda.app.events.OrderResolved;
 import com.neueda.app.exceptions.*;
 
@@ -78,6 +79,9 @@ public class OrderService {
             request.getIdempotencyKey() != null ? request.getIdempotencyKey() : UUID.randomUUID().toString(),
             LocalDateTime.now(ZoneOffset.UTC)
         );
+        if (valid.orderType() == OrderType.LIMIT) {
+            order.setExpiry(valid.timeInForce(), valid.expiresAt());
+        }
 
         orderRepository.save(order);
         publishPlaced(order);
@@ -95,7 +99,27 @@ public class OrderService {
             throw new InvalidOrderStateException(
                 "Operation not allowed. Only PENDING orders can be modified. Order is " + order.getStatus());
         }
-        // Tell the engine, or it keeps waiting on the order and may later decide to fill it.
+        tellEngineCancelled(orderId);
+        events.publishEvent(new OrderResolved(orderId, OrderStatus.CANCELLED));
+        return new OrderResponse(order);
+    }
+
+    /**
+     * Expires a LIMIT order whose time ran out: PENDING → EXPIRED, which releases the cash or shares
+     * it locked. Returns false when the order already left PENDING, e.g. it filled first.
+     */
+    public boolean expireOrder(UUID orderId) {
+        // Guarded like cancel, so an expiry and a fill reaching the row together cannot both win
+        if (orderRepository.changeStatus(orderId, OrderStatus.PENDING, OrderStatus.EXPIRED) == 0) {
+            return false;
+        }
+        tellEngineCancelled(orderId);
+        events.publishEvent(new OrderResolved(orderId, OrderStatus.EXPIRED));
+        return true;
+    }
+
+    /** Tells the engine to stop waiting on the order, or it may later decide to fill it. */
+    private void tellEngineCancelled(UUID orderId) {
         // Same key as ORDER_PLACED, so Kafka delivers the cancel after the order itself.
         eventProducerService.publishEvent(
             Topics.ORDER_REQUEST,
@@ -104,8 +128,6 @@ public class OrderService {
             "OrderService",
             new OrderCancelledEvent(orderId)
         );
-        events.publishEvent(new OrderResolved(orderId, OrderStatus.CANCELLED));
-        return new OrderResponse(order);
     }
     
     public OrderResponse rejectOrder(UUID orderId, String reason) {

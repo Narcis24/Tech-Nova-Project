@@ -3,6 +3,7 @@ package com.neueda.app.models;
 import com.neueda.app.enums.OrderSide;
 import com.neueda.app.enums.OrderStatus;
 import com.neueda.app.enums.OrderType;
+import com.neueda.app.enums.TimeInForce;
 import com.neueda.app.contracts.OrderOperations;
 import com.neueda.app.exceptions.InvalidOrderStateException;
 import jakarta.persistence.Entity;
@@ -76,6 +77,15 @@ public class Order implements OrderOperations {
     
     @Column(name = "created_on")
     private LocalDateTime createdOn;
+
+    /** How long a LIMIT order stays open; null for MARKET orders. */
+    @Column(name = "time_in_force")
+    @Enumerated(EnumType.STRING)
+    private TimeInForce timeInForce;
+
+    /** When the order expires if still PENDING, in UTC; null when it never does. */
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
     
     /**MUTABLE*/
     @Column(name = "status")
@@ -214,6 +224,18 @@ public class Order implements OrderOperations {
         }
     }
 
+    /** Sets how long a LIMIT order stays open, before it is saved. */
+    public void setExpiry(TimeInForce timeInForce, LocalDateTime expiresAt) {
+        if (orderType != OrderType.LIMIT) {
+            throw new IllegalArgumentException("Only LIMIT orders expire");
+        }
+        if (timeInForce == null || expiresAt == null) {
+            throw new IllegalArgumentException("Time in force and expiry are both required");
+        }
+        this.timeInForce = timeInForce;
+        this.expiresAt = expiresAt;
+    }
+
     /**
      * Sets the order status directly. Used for state transitions managed externally.
      */
@@ -251,6 +273,8 @@ public class Order implements OrderOperations {
                 ", status=" + status +
                 ", totalValue=" + getTotalValue() +
                 ", createdOn=" + createdOn +
+                ", timeInForce=" + timeInForce +
+                ", expiresAt=" + expiresAt +
                 ", lastModified=" + lastModified +
                 ", rejectionReason=" + rejectionReason +
                 '}';

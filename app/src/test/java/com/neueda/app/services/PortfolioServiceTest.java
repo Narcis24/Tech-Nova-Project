@@ -10,6 +10,8 @@ import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Position;
 import com.neueda.app.models.Price;
 import com.neueda.app.repositories.AccountRepository;
+import com.neueda.app.repositories.LockedShares;
+import com.neueda.app.repositories.OrderRepository;
 import com.neueda.app.repositories.PositionRepository;
 import com.neueda.app.repositories.PriceRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,6 +34,7 @@ class PortfolioServiceTest {
     private PositionRepository positionRepository;
     private PriceRepository priceRepository;
     private PortfolioService portfolioService;
+    private OrderRepository orderRepository;
 
     @BeforeEach
     void setUp() {
@@ -38,10 +42,45 @@ class PortfolioServiceTest {
         positionRepository = mock(PositionRepository.class);
         priceRepository = mock(PriceRepository.class);
         // Real valuator over the mocked prices, so these tests still check the valuation math
-        portfolioService = new PortfolioService(accountRepository, positionRepository, new PositionValuator(priceRepository));
+        orderRepository = mock(OrderRepository.class);
+        when(orderRepository.lockedCash(any())).thenReturn(BigDecimal.ZERO);
+        portfolioService = new PortfolioService(accountRepository, positionRepository,
+            new PositionValuator(priceRepository), orderRepository);
     }
 
     // ========== getPortfolioSnapshot Tests ==========
+    @Test
+    void snapshotSplitsCashIntoAvailableAndLockedByPendingOrders() {
+        String accountId = "ACC001";
+        when(accountRepository.findById(accountId)).thenReturn(Optional.of(new Account(
+            accountId, "John Doe", new BigDecimal("10000.00"), AccountStatus.ACTIVE, LocalDateTime.now())));
+        when(positionRepository.findByAccountId(accountId)).thenReturn(List.of());
+        when(orderRepository.lockedCash(accountId)).thenReturn(new BigDecimal("2500.00"));
+        when(orderRepository.lockedSharesBySymbol(accountId)).thenReturn(List.of(new LockedShares("AAPL", 7L)));
+
+        PortfolioSnapshotResponse snapshot = portfolioService.getPortfolioSnapshot(accountId);
+
+        assertEquals(new BigDecimal("10000.00"), snapshot.getCashBalance());
+        assertEquals(new BigDecimal("2500.00"), snapshot.getLockedCash());
+        assertEquals(new BigDecimal("7500.00"), snapshot.getAvailableCash());
+        assertEquals(Map.of("AAPL", 7L), snapshot.getLockedShares());
+    }
+
+    @Test
+    void metricsSplitCashIntoAvailableAndLockedByPendingOrders() {
+        String accountId = "ACC001";
+        when(accountRepository.findById(accountId)).thenReturn(Optional.of(new Account(
+            accountId, "John Doe", new BigDecimal("10000.00"), AccountStatus.ACTIVE, LocalDateTime.now())));
+        when(positionRepository.findByAccountId(accountId)).thenReturn(List.of());
+        when(orderRepository.lockedCash(accountId)).thenReturn(new BigDecimal("2500.00"));
+
+        PortfolioMetricsResponse metrics = portfolioService.getPortfolioMetrics(accountId);
+
+        assertEquals(new BigDecimal("10000.00"), metrics.getCashBalance());
+        assertEquals(new BigDecimal("2500.00"), metrics.getLockedCash());
+        assertEquals(new BigDecimal("7500.00"), metrics.getAvailableCash());
+    }
+
     @Test
     void testGetPortfolioSnapshotSuccess() {
         // Arrange

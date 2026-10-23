@@ -2,6 +2,7 @@ package com.neueda.app.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -10,6 +11,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +47,24 @@ class EngineClientTest {
 
         assertEquals("2026-10-20", engineClient.days().getFirst().day());
         server.verify();
+    }
+
+    @Test
+    void readsTheLatestQuote() {
+        server.expect(requestTo(ENGINE + "/internal/quotes/AAPL"))
+            .andRespond(withSuccess("{\"symbol\":\"AAPL\",\"bid\":229.10,\"ask\":229.14,"
+                + "\"asOf\":\"2026-10-22T19:58:00Z\"}", MediaType.APPLICATION_JSON));
+
+        assertEquals(new BigDecimal("229.14"), engineClient.quote("AAPL").orElseThrow().ask());
+    }
+
+    @Test
+    void aMissingOrUnreachableQuoteIsEmptyNotAnError() {
+        server.expect(requestTo(ENGINE + "/internal/quotes/MSFT")).andRespond(withStatus(HttpStatus.NOT_FOUND));
+        server.expect(requestTo(ENGINE + "/internal/quotes/TSLA")).andRespond(withException(new IOException("down")));
+
+        assertTrue(engineClient.quote("MSFT").isEmpty());
+        assertTrue(engineClient.quote("TSLA").isEmpty());
     }
 
     @Test

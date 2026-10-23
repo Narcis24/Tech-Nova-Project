@@ -61,7 +61,7 @@ class RiskServiceTest {
             PlaceOrderRequest r = inv.getArgument(0);
             OrderType type = OrderType.valueOf(r.getOrderType());
             BigDecimal price = type == OrderType.LIMIT ? r.getPrice() : priceService.getCurrentPrice(r.getSymbol());
-            return new ValidatedOrder(null, null, OrderSide.valueOf(r.getSide()), type, price);
+            return new ValidatedOrder(null, null, OrderSide.valueOf(r.getSide()), type, price, null, null);
         });
 
         when(riskLimitRepository.findAll()).thenReturn(List.of(

@@ -78,7 +78,7 @@ class OrderControllerTest {
         UUID orderId = UUID.randomUUID();
         OrderResponse mockResponse = new OrderResponse(
             orderId, "ACC123", "AAPL", "BUY", null, 100,
-            new BigDecimal("150.00"), null, null, null
+            new BigDecimal("150.00"), null, null, null, null, null
         );
 
         when(orderService.getOrder(orderId)).thenReturn(mockResponse);
