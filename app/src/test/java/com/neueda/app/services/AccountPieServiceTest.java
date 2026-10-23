@@ -283,7 +283,8 @@ class AccountPieServiceTest {
         when(pie.getDeletedAt()).thenReturn(java.time.LocalDateTime.now());
 
         assertThrows(PieNotFoundException.class, () -> service.previewCopy(ACCOUNT, "jay", PIE_ID));
-        assertThrows(PieNotFoundException.class, () -> service.copy(ACCOUNT, "jay", UUID.randomUUID()));
+        UUID unknownPie = UUID.randomUUID();
+        assertThrows(PieNotFoundException.class, () -> service.copy(ACCOUNT, "jay", unknownPie));
         verify(accountPieRepository, never()).save(any());
     }
 

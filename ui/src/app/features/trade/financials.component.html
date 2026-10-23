@@ -6,14 +6,14 @@
         <p class="muted">{{ subtitle() }}</p>
       </div>
       @if (!isFund() && (company.quarters?.length || company.years?.length)) {
-        <div class="toggle" role="group" aria-label="Reporting period">
+        <fieldset class="toggle" aria-label="Reporting period">
           <button type="button" [attr.aria-pressed]="periodType() === 'quarters'" (click)="periodType.set('quarters')">
             Quarterly
           </button>
           <button type="button" [attr.aria-pressed]="periodType() === 'years'" (click)="periodType.set('years')">
             Annual
           </button>
-        </div>
+        </fieldset>
       }
     </div>
 

@@ -1,7 +1,6 @@
 package com.neueda.app.services;
 
 import com.neueda.app.dtos.AccountPieResponse;
-import com.neueda.app.dtos.PieResponse;
 import com.neueda.app.dtos.PieSliceRequest;
 import com.neueda.app.dtos.PlaceOrderRequest;
 import com.neueda.app.dtos.RebalanceLegResponse;
@@ -255,7 +254,8 @@ class PieCopyIntegrationTest {
         complete(accountPieService.copy(ACC1, BUYER, pieId));
 
         assertThrows(PieNotFoundException.class, () -> pieService.get(pieId, BUYER));
-        assertThrows(PieNotFoundException.class, () -> pieService.update(pieId, BUYER, request("10", "10")));
+        SavePieRequest edit = request("10", "10");
+        assertThrows(PieNotFoundException.class, () -> pieService.update(pieId, BUYER, edit));
         assertThrows(PieNotFoundException.class, () -> pieService.publish(pieId, BUYER));
         assertThrows(PieNotFoundException.class, () -> pieService.delete(pieId, BUYER));
         assertThrows(PieNotFoundException.class, () -> accountPieService.link(ACC1, BUYER, pieId));
@@ -427,7 +427,7 @@ class PieCopyIntegrationTest {
     }
 
     @Test
-    void makeMine_isRefusedWhileARunIsActive_orBeforeAnythingWasApplied() throws Exception {
+    void makeMine_isRefusedWhileARunIsActive_orBeforeAnythingWasApplied() {
         account(ACC1, "10000.00");
         RebalanceRunResponse run = accountPieService.copy(ACC1, BUYER, pieId);
         long pies = pieRepository.count();

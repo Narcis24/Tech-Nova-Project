@@ -144,7 +144,7 @@ public class AccountPieService {
                 case SELL -> -leg.quantity();
                 case NONE -> 0;
             };
-            valuesAfter.put(leg.symbol(), leg.price().multiply(BigDecimal.valueOf(leg.currentQuantity() + delta)));
+            valuesAfter.put(leg.symbol(), leg.price().multiply(BigDecimal.valueOf((long) leg.currentQuantity() + delta)));
             return new PreviewLeg(leg.symbol(), leg.inPie(), leg.currentQuantity(), leg.price(),
                 leg.currentValue(), leg.currentPct(), leg.targetPct(), leg.targetValue(),
                 leg.targetValue().subtract(leg.currentValue()), leg.action().name(),

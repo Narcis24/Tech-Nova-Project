@@ -199,9 +199,6 @@ input {
 .limit-control input::-webkit-inner-spin-button {
   appearance: none;
 }
-.three {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
 .execution-card {
   display: flex;
   flex-direction: column;

@@ -187,10 +187,7 @@ public class RebalanceRunService {
 
     private void place(RebalanceRun run, RebalancePlan plan, PlannedAction action) {
         OrderSide side = OrderSide.valueOf(action.name());
-        for (PlannedLeg leg : plan.legs()) {
-            if (leg.action() != action) {
-                continue;
-            }
+        for (PlannedLeg leg : plan.legs().stream().filter(l -> l.action() == action).toList()) {
             PlaceOrderRequest request = new PlaceOrderRequest(run.getAccountId(), leg.symbol(), side.name(),
                 "MARKET", leg.quantity(), null, "rebalance:" + run.getRunId() + ":" + side + ":" + leg.symbol());
             try {

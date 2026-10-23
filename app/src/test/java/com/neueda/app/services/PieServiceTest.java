@@ -29,6 +29,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -120,8 +121,8 @@ class PieServiceTest {
 
     @Test
     void create_rejectsDuplicateAfterUppercase() {
-        assertThrows(InvalidPieException.class,
-            () -> pieService.create(OWNER, request("Tech", "AAPL", "10", "aapl", "10")));
+        SavePieRequest duplicate = request("Tech", "AAPL", "10", "aapl", "10");
+        assertThrows(InvalidPieException.class, () -> pieService.create(OWNER, duplicate));
         verify(pieRepository, never()).save(any());
     }
 
@@ -154,12 +155,14 @@ class PieServiceTest {
 
     @Test
     void create_rejectsUnknownAndUntradable() {
+        SavePieRequest withUnknown = request("Tech", "NOPE", "10");
         InvalidPieException unknown = assertThrows(InvalidPieException.class,
-            () -> pieService.create(OWNER, request("Tech", "NOPE", "10")));
+            () -> pieService.create(OWNER, withUnknown));
         assertEquals("Unknown symbol: NOPE", unknown.getMessage());
 
+        SavePieRequest withHalted = request("Tech", "HALT", "10");
         InvalidPieException halted = assertThrows(InvalidPieException.class,
-            () -> pieService.create(OWNER, request("Tech", "HALT", "10")));
+            () -> pieService.create(OWNER, withHalted));
         assertEquals("Not tradable: HALT", halted.getMessage());
     }
 
@@ -191,10 +194,11 @@ class PieServiceTest {
     void getUpdateDelete_otherOwner_notFound() {
         Pie pie = existingPie(1, "AAPL", "60");
 
-        assertThrows(PieNotFoundException.class, () -> pieService.get(pie.getPieId(), "eve"));
-        assertThrows(PieNotFoundException.class,
-            () -> pieService.update(pie.getPieId(), "eve", request("New", "AAPL", "10")));
-        assertThrows(PieNotFoundException.class, () -> pieService.delete(pie.getPieId(), "eve"));
+        UUID pieId = pie.getPieId();
+        SavePieRequest edit = request("New", "AAPL", "10");
+        assertThrows(PieNotFoundException.class, () -> pieService.get(pieId, "eve"));
+        assertThrows(PieNotFoundException.class, () -> pieService.update(pieId, "eve", edit));
+        assertThrows(PieNotFoundException.class, () -> pieService.delete(pieId, "eve"));
     }
 
     @Test
@@ -205,7 +209,8 @@ class PieServiceTest {
         when(accountRepository.findByOwnerUsernameOrderByAccountId(OWNER)).thenReturn(List.of(account));
         when(accountPieRepository.existsByPieIdAndAccountIdIn(pie.getPieId(), List.of("ACC1"))).thenReturn(true);
 
-        assertThrows(PieInUseException.class, () -> pieService.delete(pie.getPieId(), OWNER));
+        UUID pieId = pie.getPieId();
+        assertThrows(PieInUseException.class, () -> pieService.delete(pieId, OWNER));
         assertNull(pie.getDeletedAt());
     }
 
@@ -252,8 +257,9 @@ class PieServiceTest {
     void publish_otherOwner_notFound() {
         Pie pie = existingPie(1, "AAPL", "60");
 
-        assertThrows(PieNotFoundException.class, () -> pieService.publish(pie.getPieId(), "eve"));
-        assertThrows(PieNotFoundException.class, () -> pieService.unpublish(pie.getPieId(), "eve"));
+        UUID pieId = pie.getPieId();
+        assertThrows(PieNotFoundException.class, () -> pieService.publish(pieId, "eve"));
+        assertThrows(PieNotFoundException.class, () -> pieService.unpublish(pieId, "eve"));
         assertEquals(PieVisibility.PRIVATE, pie.getVisibility());
     }
 

@@ -110,7 +110,7 @@ public class PieService {
     @Transactional
     public Pie duplicate(String owner, Pie source, int version) {
         Pie pie = pieRepository.save(Pie.create(owner, source.getName(), source.getDescription()));
-        saveVersion(pie.getPieId(), 1, weightsAt(source.getPieId(), version));
+        saveVersion(pie.getPieId(), 1, weightsOf(source.getPieId(), version));
         return pie;
     }
 
@@ -146,6 +146,11 @@ public class PieService {
     /** Symbol to target weight (%) at one version, which never changes once saved. */
     @Transactional(readOnly = true)
     public Map<String, BigDecimal> weightsAt(UUID pieId, int version) {
+        return weightsOf(pieId, version);
+    }
+
+    // Called directly by this class's transactional methods, which a call through the proxy would not need
+    private Map<String, BigDecimal> weightsOf(UUID pieId, int version) {
         return toWeights(pieSliceRepository.findByPieIdAndVersionOrderByWeightPctDescSymbolAsc(pieId, version));
     }
 

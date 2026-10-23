@@ -78,6 +78,10 @@ h1 {
   color: var(--sell-color);
 }
 .ranges {
+  /* Fieldsets: without the browser's border, margin and min-width */
+  min-width: 0;
+  margin: 0;
+  border: 0;
   display: flex;
   gap: 2px;
   padding: 4px;

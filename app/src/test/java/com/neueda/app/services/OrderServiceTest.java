@@ -14,7 +14,6 @@ import com.neueda.app.exceptions.DuplicateOrderException;
 import com.neueda.app.exceptions.InvalidOrderStateException;
 import com.neueda.app.exceptions.InsufficientFundsException;
 import com.neueda.app.exceptions.InsufficientHoldingsException;
-import com.neueda.app.exceptions.InvalidOrderStateException;
 import com.neueda.app.models.Account;
 import com.neueda.app.models.Instrument;
 import com.neueda.app.models.Order;

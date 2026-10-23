@@ -28,19 +28,14 @@
         <span>52-week range</span>
         <span>{{ yearLow() | number: '1.2-2' }} – {{ yearHigh() | number: '1.2-2' }}</span>
       </div>
-      <div
-        class="track"
-        role="img"
-        [attr.aria-label]="
-          'Last close ' +
-          (day.close | number: '1.2-2') +
-          ', ' +
-          (yearPosition() / 100 | percent: '1.0-0') +
-          ' of the way from the 52-week low to the high'
-        "
-      >
+      <!-- The bar is a picture of the sentence below it, which is what screen readers get -->
+      <div class="track" aria-hidden="true">
         <span class="marker" [style.left.%]="yearPosition()"></span>
       </div>
+      <p class="visually-hidden">
+        Last close {{ day.close | number: '1.2-2' }}, {{ yearPosition() / 100 | percent: '1.0-0' }} of the way from the
+        52-week low to the high.
+      </p>
     </div>
     <ul class="returns" aria-label="Returns">
       @for (period of returns(); track period.label) {

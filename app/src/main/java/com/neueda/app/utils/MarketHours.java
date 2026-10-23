@@ -8,6 +8,8 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * US regular trading hours: Monday to Friday, 09:30 to 16:00 New York time, the hours the
@@ -18,14 +20,14 @@ public final class MarketHours {
     private static final ZoneId NEW_YORK = ZoneId.of("America/New_York");
     private static final LocalTime OPEN = LocalTime.of(9, 30);
     private static final LocalTime CLOSE = LocalTime.of(16, 0);
+    private static final Set<DayOfWeek> WEEKEND = EnumSet.of(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
 
     private MarketHours() {
     }
 
     public static boolean isOpen(Instant now) {
         ZonedDateTime local = now.atZone(NEW_YORK);
-        DayOfWeek day = local.getDayOfWeek();
-        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+        if (WEEKEND.contains(local.getDayOfWeek())) {
             return false;
         }
         LocalTime time = local.toLocalTime();
@@ -49,7 +51,7 @@ public final class MarketHours {
         if (!local.toLocalTime().isBefore(CLOSE)) {
             date = date.plusDays(1);
         }
-        while (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+        while (WEEKEND.contains(date.getDayOfWeek())) {
             date = date.plusDays(1);
         }
         return closeOn(date);

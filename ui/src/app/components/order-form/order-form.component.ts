@@ -41,7 +41,8 @@ import { SymbolActivityComponent } from '../../features/trade/symbol-activity.co
 import { FinancialsComponent } from '../../features/trade/financials.component';
 import { newUuid } from '../../core/uuid';
 import { newYorkDate } from '../../core/market-hours';
-import { MAX_DAYS_OPEN, TIME_IN_FORCE_OPTIONS, TimeInForce } from '../../core/time-in-force';
+import { MAX_DAYS_OPEN, TimeInForce } from '../../core/time-in-force';
+import { TimeInForcePickerComponent } from '../time-in-force-picker/time-in-force-picker.component';
 import { AccountService } from '../../services/account.service';
 
 @Component({
@@ -56,6 +57,7 @@ import { AccountService } from '../../services/account.service';
     KeyStatsComponent,
     SymbolActivityComponent,
     FinancialsComponent,
+    TimeInForcePickerComponent,
   ],
   templateUrl: './order-form.component.html',
   styleUrl: './order-form.component.css',
@@ -89,7 +91,6 @@ export class OrderFormComponent {
   private lastFingerprint = '';
   private key = '';
   readonly presets = [10, 25, 50, 100];
-  readonly timeInForceOptions = TIME_IN_FORCE_OPTIONS;
   // A GTD order runs at least to tomorrow's close (today's is what a day order does), at most 90 days
   readonly minExpiry = newYorkDate(new Date(), 1);
   readonly maxExpiry = newYorkDate(new Date(), MAX_DAYS_OPEN);
@@ -119,7 +120,6 @@ export class OrderFormComponent {
   );
   readonly isBuy = computed(() => this.values()?.side !== 'SELL');
   readonly isLimit = computed(() => this.values()?.orderType === 'LIMIT');
-  readonly isGtd = computed(() => this.isLimit() && this.values()?.timeInForce === 'GTD');
   readonly quote = signal<TradeQuote | null>(null);
   readonly referencePrice = computed(() =>
     this.quote()?.symbol === this.chartSymbol() ? (this.quote()?.price ?? null) : null,
@@ -337,9 +337,6 @@ export class OrderFormComponent {
   }
   setSide(side: 'BUY' | 'SELL'): void {
     this.form.controls.side.setValue(side);
-  }
-  setTimeInForce(timeInForce: TimeInForce): void {
-    this.form.controls.timeInForce.setValue(timeInForce);
   }
   /** Only a GTD limit order needs a date, from tomorrow up to 90 days ahead. */
   private updateExpiryValidators(): void {

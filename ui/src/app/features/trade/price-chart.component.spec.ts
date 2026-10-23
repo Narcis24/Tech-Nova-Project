@@ -41,13 +41,13 @@ describe('PriceChartComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Mar 31, 2026');
     expect(component.dailyChange()).toBe(2);
     // Opens on three months; one month is a click away
-    expect(component.visible().length).toBe(4);
+    expect(component.visible()).toHaveSize(4);
     component.chooseRange(1);
     expect(component.visible().map((p) => p.date)).toEqual(['2026-02-28', '2026-03-01', '2026-03-31']);
     component.chooseRange(3);
-    expect(component.visible().length).toBe(4);
+    expect(component.visible()).toHaveSize(4);
     component.chooseRange(12);
-    expect(component.visible().length).toBe(5);
+    expect(component.visible()).toHaveSize(5);
     expect(api.getPriceHistory).toHaveBeenCalledTimes(1);
   }));
   it('draws a candle per day by default, green when it closed up and red when down', fakeAsync(() => {
@@ -64,7 +64,7 @@ describe('PriceChartComponent', () => {
     fixture.detectChanges();
     const root: HTMLElement = fixture.nativeElement;
     const candles = Array.from(root.querySelectorAll('svg[role="img"] .candle'));
-    expect(candles.length).toBe(2);
+    expect(candles).toHaveSize(2);
     expect(candles.map((c) => c.classList.contains('down'))).toEqual([false, true]);
     expect(root.querySelector('svg[role="img"] .line')).toBeNull();
     // The scale runs from the lowest low to the highest high, not just the closes
@@ -124,7 +124,7 @@ describe('PriceChartComponent', () => {
       root: HTMLElement = fixture.nativeElement;
     component.chooseRange(12);
     fixture.detectChanges();
-    expect(root.querySelectorAll('svg[role="img"] .volume').length).toBe(60);
+    expect(root.querySelectorAll('svg[role="img"] .volume')).toHaveSize(60);
     // The busiest day fills the volume band
     expect(component.volumeBars().at(-1)!.height).toBe(28);
     expect(root.querySelector('.ma20')?.tagName).not.toBe('polyline');
@@ -132,9 +132,9 @@ describe('PriceChartComponent', () => {
     component.toggleIndicator('ma20');
     component.toggleIndicator('volume');
     fixture.detectChanges();
-    expect(root.querySelectorAll('svg[role="img"] .volume').length).toBe(0);
+    expect(root.querySelectorAll('svg[role="img"] .volume')).toHaveSize(0);
     // A 20-day average needs 20 closes, so it starts on the 20th day
-    expect(component.ma20().split(' ').length).toBe(41);
+    expect(component.ma20().split(' ')).toHaveSize(41);
     const lastAverage = (101 + 59 + (101 + 40)) / 2;
     expect(component.ma20().split(' ').at(-1)).toBe(`${component.x(59)},${component.y(lastAverage)}`);
     expect(root.querySelector('polyline.ma20')).not.toBeNull();
@@ -165,17 +165,17 @@ describe('PriceChartComponent', () => {
       component.chooseRange(1);
       const month = component.visible().length;
       component.zoom(1.5);
-      expect(component.visible().length).toBe(Math.round(month * 1.5));
+      expect(component.visible()).toHaveSize(Math.round(month * 1.5));
       expect(component.visible().at(-1)).toBe(year.at(-1));
       // The range buttons no longer describe what is shown
       fixture.detectChanges();
       expect(fixture.nativeElement.querySelector('[aria-label="Price chart range"] [aria-pressed="true"]')).toBeNull();
 
       for (let i = 0; i < 10; i++) component.zoom(1.5);
-      expect(component.visible().length).toBe(250);
+      expect(component.visible()).toHaveSize(250);
       expect(component.canZoomOut()).toBeFalse();
       for (let i = 0; i < 20; i++) component.zoom(1 / 1.5);
-      expect(component.visible().length).toBe(10);
+      expect(component.visible()).toHaveSize(10);
       expect(component.canZoomIn()).toBeFalse();
     }));
 
@@ -246,7 +246,7 @@ describe('PriceChartComponent', () => {
     expect(root.querySelector('.as-of')?.textContent).toContain('Daily close');
     styleButton('Candles').click();
     fixture.detectChanges();
-    expect(root.querySelectorAll('svg[role="img"] .candle').length).toBe(4);
+    expect(root.querySelectorAll('svg[role="img"] .candle')).toHaveSize(4);
   }));
   it('reserves the quote and chart layout while price history is pending', fakeAsync(() => {
     const fixture = setup(),

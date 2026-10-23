@@ -30,14 +30,14 @@
         ><span class="session-copy"> vs previous session.</span>
       </p>
     </div>
-    <div class="ranges" role="group" aria-label="Price chart style">
+    <fieldset class="ranges" aria-label="Price chart style">
       @for (option of chartStyles; track option.value) {
         <button type="button" [attr.aria-pressed]="chartStyle() === option.value" (click)="chooseStyle(option.value)">
           {{ option.label }}
         </button>
       }
-    </div>
-    <div class="ranges" role="group" aria-label="Price chart range">
+    </fieldset>
+    <fieldset class="ranges" aria-label="Price chart range">
       @for (option of ranges; track option.months) {
         <button
           type="button"
@@ -47,7 +47,7 @@
           {{ option.label }}
         </button>
       }
-    </div>
+    </fieldset>
   </div>
   @if (loading()) {
     <div class="chart-loading">
@@ -98,15 +98,15 @@
       {{ chartStyle() === 'candles' ? 'Daily open, high, low, close' : 'Daily close' }} · USD · as of
       {{ sessionDate(latest()!.date) | date: 'mediumDate' : 'UTC' }} · provider-delayed
     </p>
-    <div class="ranges zoom" role="group" aria-label="Zoom the chart">
+    <fieldset class="ranges zoom" aria-label="Zoom the chart">
       <button type="button" aria-label="Zoom out: show more sessions" [disabled]="!canZoomOut()" (click)="zoom(1.5)">
         −
       </button>
       <button type="button" aria-label="Zoom in: show fewer sessions" [disabled]="!canZoomIn()" (click)="zoom(1 / 1.5)">
         +
       </button>
-    </div>
-    <div class="ranges indicators" role="group" aria-label="Chart indicators">
+    </fieldset>
+    <fieldset class="ranges indicators" aria-label="Chart indicators">
       @for (option of indicatorOptions; track option.key) {
         <button
           type="button"
@@ -117,7 +117,7 @@
           {{ option.label }}
         </button>
       }
-    </div>
+    </fieldset>
     <button
       type="button"
       class="mobile-chart-toggle"

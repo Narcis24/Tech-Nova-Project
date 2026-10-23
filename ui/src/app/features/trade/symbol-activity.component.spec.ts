@@ -76,7 +76,7 @@ describe('SymbolActivityComponent', () => {
   it("lists only this symbol's open orders with how long they last, and its latest fills", () => {
     const root: HTMLElement = render().nativeElement;
     const lists = root.querySelectorAll('.orders');
-    expect(lists[0].querySelectorAll('li').length).toBe(1);
+    expect(lists[0].querySelectorAll('li')).toHaveSize(1);
     expect(lists[0].textContent).toContain('Sell 5');
     expect(lists[0].textContent).toContain('Until cancelled · expires Jan 21, 4:00 PM ET');
     expect(lists[1].textContent).toContain('Bought 10');

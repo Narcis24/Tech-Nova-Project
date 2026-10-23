@@ -1,5 +1,6 @@
 package com.neueda.app.services;
 
+import com.neueda.app.dtos.AdminAccountResponse;
 import com.neueda.app.dtos.AdminUserResponse;
 import com.neueda.app.dtos.CreateUserRequest;
 import com.neueda.app.enums.AccountStatus;
@@ -94,7 +95,7 @@ class AdminUserServiceTest {
 
         assertEquals("trader_one", result.getUsername());
         assertEquals(List.of("ACC-1234"), result.getAccounts().stream()
-            .map(accountResponse -> accountResponse.getAccountId()).toList());
+            .map(AdminAccountResponse::getAccountId).toList());
         verify(accountRepository).findByOwnerUsernameOrderByAccountId("trader_one");
     }
 

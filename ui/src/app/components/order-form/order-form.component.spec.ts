@@ -270,11 +270,11 @@ describe('OrderFormComponent', () => {
     expect(checked().timeInForce).toBe('DAY');
     expect(checked().expiresOn).toBeUndefined();
 
-    component.setTimeInForce('GTC');
+    component.form.controls.timeInForce.setValue('GTC');
     component.prepare();
     expect(checked().timeInForce).toBe('GTC');
 
-    component.setTimeInForce('GTD');
+    component.form.controls.timeInForce.setValue('GTD');
     risk.check.calls.reset();
     component.prepare();
     expect(component.form.controls.expiresOn.invalid).toBeTrue();
@@ -290,7 +290,7 @@ describe('OrderFormComponent', () => {
   it('sends no time in force for market orders, which do not expire', () => {
     const component = setup().componentInstance;
     component.setSide('BUY');
-    component.setTimeInForce('GTC');
+    component.form.controls.timeInForce.setValue('GTC');
     component.prepare();
     expect(risk.check.calls.mostRecent().args[0].timeInForce).toBeUndefined();
   });

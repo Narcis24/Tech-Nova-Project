@@ -73,7 +73,7 @@ describe('FinancialsComponent', () => {
       'Mar 2026',
       'Jun 2026',
     ]);
-    expect(root.querySelectorAll('rect.revenue').length).toBe(2);
+    expect(root.querySelectorAll('rect.revenue')).toHaveSize(2);
     const [, lossQuarter] = component.bars();
     expect(lossQuarter.income.loss).toBeTrue();
     expect(lossQuarter.income.y).toBe(component.zeroY());
