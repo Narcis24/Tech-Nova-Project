@@ -173,11 +173,14 @@ describe('LivePanelComponent', () => {
 
   it('lists the most ordered instruments today, or says there are none', fakeAsync(() => {
     const page = create();
-    // Each cell on its own, as Angular drops the whitespace between the spans
+    // Symbol and count, each cell on its own, as Angular drops the whitespace between the spans
     const rows = Array.from(page.querySelectorAll('.top li')).map((li) =>
-      Array.from(li.children, (cell) => cell.textContent?.trim()).join(' '),
+      Array.from(li.querySelectorAll('.symbol, .count'), (cell) => cell.textContent?.trim()).join(' '),
     );
-    expect(rows).toEqual(['NVDA NVDA 4', 'GLD GLD 2']);
+    expect(rows).toEqual(['NVDA 4', 'GLD 2']);
+    expect(page.querySelector('.top li app-symbol-icon img')?.getAttribute('src')).toBe(
+      'https://financialmodelingprep.com/image-stock/NVDA.png',
+    );
 
     liveApi.and.returnValue(of({ ...live(0), topToday: [] }));
     tick(LIVE_REFRESH_MS);

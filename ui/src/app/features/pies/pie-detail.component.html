@@ -1,13 +1,13 @@
-<a class="back" routerLink="/pies">Back to pies</a>
+<a class="back" routerLink="/strategies">Back to strategies</a>
 
 @if (loading()) {
-  <output class="empty">Loading your pie…</output>
+  <output class="empty">Loading your strategy…</output>
 } @else if (loadError()) {
-  <p class="error" role="alert">Couldn't load this pie.</p>
+  <p class="error" role="alert">Couldn't load this strategy.</p>
 } @else if (pie(); as pie) {
   <div class="top">
     <h1>{{ pie.name }}</h1>
-    <a class="edit" [routerLink]="['/pies', pie.pieId, 'edit']">Edit</a>
+    <a class="edit" [routerLink]="['/strategies', pie.pieId, 'edit']">Edit</a>
   </div>
   @if (pie.description) {
     <p class="description">{{ pie.description }}</p>
@@ -20,7 +20,7 @@
         <p>On Discover since {{ pie.publishedAt | date: 'mediumDate' }}.</p>
         <a [routerLink]="['/discover', pie.pieId]">View public page</a>
       } @else {
-        <p>Publish to show this pie's stocks and weights on Discover. Your accounts and balances stay private.</p>
+        <p>Publish to show this strategy's stocks and weights on Discover. Your accounts and balances stay private.</p>
       }
     </div>
     <button type="button" [class.secondary]="published()" [disabled]="working()" (click)="togglePublished()">

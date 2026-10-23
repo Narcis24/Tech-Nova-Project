@@ -88,7 +88,7 @@ test('copies a public pie and trades an author update only after confirmation', 
   };
   await endRun(runId);
 
-  await page.goto('/pies');
+  await page.goto('/strategies');
   const header = page.locator('.header');
   await expect(header).toContainText(`This account copies ${pieName}`);
   await expect(page.getByRole('switch')).toHaveCount(0);
@@ -123,12 +123,12 @@ test('copies a public pie and trades an author update only after confirmation', 
   expect(updateRunId).not.toBe(runId);
   await expect(page).toHaveURL(new RegExp(`/rebalance-runs/${updateRunId}$`));
   await endRun(updateRunId);
-  await page.goto('/pies');
+  await page.goto('/strategies');
   await expect(header).toContainText(`This account copies ${pieName}`);
 
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Stop copying' }).click();
-  await expect(header).toContainText('No pie on this account yet');
+  await expect(header).toContainText('No strategy on this account yet');
 
   // Clean up so reruns leave no public pie behind
   expect((await request.post(`/api/v1/pies/${pieId}/unpublish`, { headers: author.headers })).ok()).toBeTruthy();

@@ -1,5 +1,5 @@
 <h1>Rebalance</h1>
-<a routerLink="/pies">Back to pies</a>
+<a routerLink="/strategies">Back to strategies</a>
 
 @if (error()) {
   <div class="feedback" role="alert">
@@ -9,7 +9,7 @@
 }
 @if (run(); as current) {
   <section class="progress" aria-live="polite" aria-atomic="true">
-    <p class="account">{{ current.accountId }} · Pie version {{ current.targetVersion }}</p>
+    <p class="account">{{ current.accountId }} · Strategy version {{ current.targetVersion }}</p>
     <h2>{{ heading() }}</h2>
     @if (active() || current.status === 'COMPLETED') {
       <ol class="steps" aria-label="Rebalance progress">

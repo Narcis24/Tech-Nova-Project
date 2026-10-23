@@ -3,17 +3,17 @@
 </div>
 <app-pie-tabs />
 
-<p class="intro">Browse public pies and their target allocations.</p>
+<p class="intro">Browse public strategies and their target allocations.</p>
 
 @if (loading()) {
-  <output class="empty">Loading public pies…</output>
+  <output class="empty">Loading public strategies…</output>
 } @else if (loadError()) {
   <div class="load-error" role="alert">
-    <p>Couldn't load public pies.</p>
+    <p>Couldn't load public strategies.</p>
     <button type="button" class="secondary" (click)="retry()">Try again</button>
   </div>
 } @else if (!pies().length) {
-  <p class="empty">No public pies yet.</p>
+  <p class="empty">No public strategies yet.</p>
 } @else {
   <ul class="board">
     @for (pie of pies(); track pie.pieId) {

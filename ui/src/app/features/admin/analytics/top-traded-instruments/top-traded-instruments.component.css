@@ -59,7 +59,7 @@ h2 {
   list-style: none;
 }
 
-/* Rank, tile, name, buy/sell bar, value; the bar drops out when the widget is narrow */
+/* Rank, logo, name, buy/sell bar, value; the bar drops out when the widget is narrow */
 .rows li {
   display: grid;
   grid-template-columns: 14px 36px minmax(0, 1fr) 68px;
@@ -72,19 +72,6 @@ h2 {
   font-size: 12px;
   text-align: right;
   color: var(--secondary-text-color);
-}
-
-/* Ticker tile in its asset class's colour, tinted so the text stays readable in either theme */
-.tile {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  background: color-mix(in srgb, var(--asset-color) 16%, var(--elevated-background-color));
-  font-size: 10px;
-  font-weight: 700;
-  color: color-mix(in srgb, var(--asset-color) 72%, var(--text-color));
 }
 
 .who {

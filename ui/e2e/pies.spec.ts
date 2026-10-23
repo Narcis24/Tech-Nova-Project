@@ -28,12 +28,12 @@ test('creates, edits, links and previews a pie without placing orders', async ({
     if (req.method() === 'POST' && new URL(req.url()).pathname === '/api/v1/orders') placements.push(req.url());
   });
 
-  await page.goto('/pies');
+  await page.goto('/strategies');
   await page.getByLabel('Username', { exact: true }).fill(username);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Pies', exact: true })).toBeVisible();
-  await page.getByRole('link', { name: 'New pie' }).click();
+  await expect(page.getByRole('heading', { name: 'Strategies', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'New strategy' }).click();
   await page.getByLabel('Name', { exact: true }).fill('My test pie');
   await page.getByLabel('Stock 1', { exact: true }).fill('AAPL');
   await page.getByLabel('Weight 1', { exact: true }).fill('50');
@@ -64,10 +64,10 @@ test('creates, edits, links and previews a pie without placing orders', async ({
   const orders = await request.get(`/api/v1/accounts/${accountId}/orders`, { headers });
   expect(orders.ok()).toBeTruthy();
   expect(await orders.json()).toEqual([]);
-  await page.getByRole('link', { name: 'Back to pies' }).click();
+  await page.getByRole('link', { name: 'Back to strategies' }).click();
   await expect(page.locator('.header')).toContainText('Edited pie');
   await page.getByRole('button', { name: 'Unlink', exact: true }).click();
-  await expect(page.locator('.header')).toContainText('No pie on this account yet');
+  await expect(page.locator('.header')).toContainText('No strategy on this account yet');
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Delete', exact: true }).click();
   await expect(page.locator('.pie-card')).toHaveCount(0);

@@ -6,7 +6,7 @@
       <header class="head">
         <h1>{{ pie.name }}</h1>
         @if (pie.demo) {
-          <span class="tag">Demo pie</span>
+          <span class="tag">Demo strategy</span>
         }
       </header>
       <p class="byline">by {{ pie.authorUsername }} · public since {{ pie.publishedAt | date: 'mediumDate' }}</p>
@@ -23,7 +23,7 @@
           </p>
         </div>
       } @else if (!ownPie()) {
-        <p class="note copy">Open an account to copy this pie.</p>
+        <p class="note copy">Open an account to copy this strategy.</p>
       }
 
       <dl class="stats">
@@ -57,15 +57,15 @@
     }
   }
   @case ('missing') {
-    <p class="empty">This pie isn't public. Its owner may have unpublished it.</p>
+    <p class="empty">This strategy isn't public. Its owner may have unpublished it.</p>
   }
   @case ('error') {
     <div class="load-error" role="alert">
-      <p>Couldn't load this pie.</p>
+      <p>Couldn't load this strategy.</p>
       <button type="button" class="secondary" (click)="retry()">Try again</button>
     </div>
   }
   @default {
-    <output class="empty">Loading pie…</output>
+    <output class="empty">Loading strategy…</output>
   }
 }

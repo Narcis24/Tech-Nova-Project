@@ -60,7 +60,7 @@ export class PieDetailComponent {
       },
       error: () => {
         this.working.set(false);
-        this.actionError.set(`Couldn't ${publishing ? 'publish' : 'unpublish'} the pie. Try again.`);
+        this.actionError.set(`Couldn't ${publishing ? 'publish' : 'unpublish'} the strategy. Try again.`);
       },
     });
   }

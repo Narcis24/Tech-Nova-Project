@@ -180,13 +180,13 @@ describe('app routes', () => {
     });
 
     it('opens the new pie editor, not the pie detail', async () => {
-      await harness.navigateByUrl('/pies/new');
+      await harness.navigateByUrl('/strategies/new');
 
-      expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('New pie');
+      expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('New strategy');
     });
 
     it('shows one of my pies', async () => {
-      await harness.navigateByUrl('/pies/p1');
+      await harness.navigateByUrl('/strategies/p1');
 
       expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('Tech Growth');
     });

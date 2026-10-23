@@ -98,7 +98,7 @@ describe('PiesComponent', () => {
   it('shows the no-pie header on 404', () => {
     accountPies.getAccountPie.and.returnValue(throwError(() => NOT_LINKED));
     create();
-    expect(root.querySelector('.header')!.textContent).toContain('No pie on this account yet');
+    expect(root.querySelector('.header')!.textContent).toContain('No strategy on this account yet');
   });
 
   it('keeps a linked pie whose prices are missing, with no drift', () => {
@@ -115,7 +115,7 @@ describe('PiesComponent', () => {
       throwError(() => new HttpErrorResponse({ status: 404, error: { errorCode: 'ACCOUNT_NOT_FOUND' } })),
     );
     create();
-    expect(root.querySelector('.header')!.textContent).toContain("Couldn't load this account's pie.");
+    expect(root.querySelector('.header')!.textContent).toContain("Couldn't load this account's strategy.");
   });
 
   it('unlinks the pie and shows the no-pie header', () => {
@@ -125,7 +125,7 @@ describe('PiesComponent', () => {
     button('Unlink').click();
     fixture.detectChanges();
     expect(accountPies.unlinkPie).toHaveBeenCalledWith('ACC001');
-    expect(root.querySelector('.header')!.textContent).toContain('No pie on this account yet');
+    expect(root.querySelector('.header')!.textContent).toContain('No strategy on this account yet');
   });
 
   it('links the pie for this account, then opens the preview', () => {
@@ -139,10 +139,10 @@ describe('PiesComponent', () => {
 
   it('links each pie name to its details, and the tabs to Discover', () => {
     create();
-    expect(root.querySelector('.pie-card h2 a')!.getAttribute('href')).toBe('/pies/p1');
+    expect(root.querySelector('.pie-card h2 a')!.getAttribute('href')).toBe('/strategies/p1');
     expect(root.querySelector('.pie-card .public')).toBeNull();
     expect(Array.from(root.querySelectorAll('app-pie-tabs a')).map((a) => a.getAttribute('href'))).toEqual([
-      '/pies',
+      '/strategies',
       '/discover',
     ]);
   });
@@ -155,8 +155,8 @@ describe('PiesComponent', () => {
 
   it('links to new and edit', () => {
     create();
-    expect(root.querySelector('a.new')!.getAttribute('href')).toBe('/pies/new');
-    expect(root.querySelector('.pie-card a.edit')!.getAttribute('href')).toBe('/pies/p1/edit');
+    expect(root.querySelector('a.new')!.getAttribute('href')).toBe('/strategies/new');
+    expect(root.querySelector('.pie-card a.edit')!.getAttribute('href')).toBe('/strategies/p1/edit');
   });
 
   it('deletes after confirming', () => {
@@ -190,7 +190,7 @@ describe('PiesComponent', () => {
   it('shows the empty state with no pies', () => {
     pies.listMine.and.returnValue(of([] as PieResponse[]));
     create();
-    expect(root.textContent).toContain("Build your first pie: pick stocks and weights, and we'll work out the trades.");
+    expect(root.textContent).toContain("Build your first strategy: pick stocks and weights, and we'll work out the trades.");
   });
 
   describe('a copied pie', () => {

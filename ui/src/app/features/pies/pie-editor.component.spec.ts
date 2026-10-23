@@ -121,7 +121,7 @@ describe('PieEditorComponent', () => {
       description: undefined,
       slices: [{ symbol: 'AAPL', weightPct: 50.5 }],
     });
-    expect(navigate).toHaveBeenCalledWith('/pies');
+    expect(navigate).toHaveBeenCalledWith('/strategies');
   });
 
   it('loads the pie in edit mode, then updates it', () => {
@@ -141,7 +141,7 @@ describe('PieEditorComponent', () => {
         { symbol: 'MSFT', weightPct: 40 },
       ],
     });
-    expect(navigate).toHaveBeenCalledWith('/pies');
+    expect(navigate).toHaveBeenCalledWith('/strategies');
   });
 
   it('shows the server message on a 422', () => {

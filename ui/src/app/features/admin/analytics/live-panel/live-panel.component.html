@@ -43,9 +43,7 @@
         <ol>
           @for (instrument of top(); track instrument.symbol) {
             <li>
-              <span class="tile" [style.--asset-color]="instrument.color" aria-hidden="true">{{
-                instrument.symbol.slice(0, 4)
-              }}</span>
+              <app-symbol-icon [symbol]="instrument.symbol" />
               <span class="symbol" [title]="instrument.name">{{ instrument.symbol }}</span>
               <span class="count">{{ instrument.orders }}</span>
             </li>

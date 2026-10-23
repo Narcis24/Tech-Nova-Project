@@ -73,13 +73,14 @@ describe('TopTradedInstrumentsComponent', () => {
     expect(rows(page)[0].querySelector('.value')?.textContent?.trim()).toBe('$654K');
   });
 
-  it('colours each ticker tile by asset class', () => {
+  it("shows each instrument's logo, as the trader pages do", () => {
     const page = create(withInstruments(INSTRUMENTS));
-    const tiles = rows(page).map((row) =>
-      (row.querySelector('.tile') as HTMLElement).style.getPropertyValue('--asset-color'),
-    );
+    const logos = rows(page).map((row) => row.querySelector('app-symbol-icon img')?.getAttribute('src'));
 
-    expect(tiles).toEqual(['var(--asset-equity-color)', 'var(--asset-etf-color)']);
+    expect(logos).toEqual([
+      'https://financialmodelingprep.com/image-stock/MSFT.png',
+      'https://financialmodelingprep.com/image-stock/SPY.png',
+    ]);
   });
 
   it('splits each bar into buys and sells, scaled to the top instrument', () => {

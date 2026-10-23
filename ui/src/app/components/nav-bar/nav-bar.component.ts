@@ -15,7 +15,7 @@ interface NavTab {
 const TRADER_TABS: readonly NavTab[] = [
   { label: 'Portfolio', path: '/dashboard' },
   { label: 'Trade', path: '/trade' },
-  { label: 'Pies', path: '/pies' },
+  { label: 'Strategies', path: '/strategies' },
   { label: 'Orders', path: '/orders' },
 ];
 

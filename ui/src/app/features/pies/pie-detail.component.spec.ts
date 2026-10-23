@@ -62,8 +62,8 @@ describe('PieDetailComponent', () => {
     expect(root.querySelector('.description')!.textContent).toBe('My core pie');
     const rows = Array.from(root.querySelectorAll('.holdings li')).map(cells);
     expect(rows).toEqual(['AAPL Apple 50%', 'MSFT Microsoft 40%', 'Cash 10%']);
-    expect(root.querySelector('a.edit')!.getAttribute('href')).toBe('/pies/p1/edit');
-    expect(root.querySelector('.back')!.getAttribute('href')).toBe('/pies');
+    expect(root.querySelector('a.edit')!.getAttribute('href')).toBe('/strategies/p1/edit');
+    expect(root.querySelector('.back')!.getAttribute('href')).toBe('/strategies');
   });
 
   it('offers to publish a private pie', () => {
@@ -112,7 +112,7 @@ describe('PieDetailComponent', () => {
     create();
     button('Publish').click();
     fixture.detectChanges();
-    expect(root.querySelector('[role="alert"]')!.textContent).toContain("Couldn't publish the pie");
+    expect(root.querySelector('[role="alert"]')!.textContent).toContain("Couldn't publish the strategy");
     expect(root.querySelector('.publishing h2')!.textContent).toBe('Private');
     expect(button('Publish').disabled).toBeFalse();
   });
@@ -123,20 +123,20 @@ describe('PieDetailComponent', () => {
     create();
     button('Unpublish').click();
     fixture.detectChanges();
-    expect(root.querySelector('[role="alert"]')!.textContent).toContain("Couldn't unpublish the pie");
+    expect(root.querySelector('[role="alert"]')!.textContent).toContain("Couldn't unpublish the strategy");
     expect(root.querySelector('.publishing h2')!.textContent).toBe('Public');
   });
 
   it('shows a loading state', () => {
     api.get.and.returnValue(new Subject<PieResponse>());
     create();
-    expect(root.querySelector('output')!.textContent).toContain('Loading your pie');
+    expect(root.querySelector('output')!.textContent).toContain('Loading your strategy');
   });
 
   it('shows an error when the pie cannot be loaded', () => {
     api.get.and.returnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
     create();
-    expect(root.querySelector('[role="alert"]')!.textContent).toContain("Couldn't load this pie");
+    expect(root.querySelector('[role="alert"]')!.textContent).toContain("Couldn't load this strategy");
     expect(root.querySelector('h1')).toBeNull();
   });
 });

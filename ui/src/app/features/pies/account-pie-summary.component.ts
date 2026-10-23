@@ -22,12 +22,12 @@ import { AccountPieControllerService, AccountPieResponse } from '../../generated
           <a [routerLink]="['/rebalance-runs', linked.activeRunId]">View rebalance</a>
         } @else {
           <a [routerLink]="['/accounts', accountId(), 'rebalance']">{{
-            (linked.maxDriftPct ?? 0) >= 5 ? 'Rebalance' : 'Preview pie'
+            (linked.maxDriftPct ?? 0) >= 5 ? 'Rebalance' : 'Preview strategy'
           }}</a>
         }
       </div>
     } @else if (error()) {
-      <p class="error">Couldn't load the account's pie. <a routerLink="/pies">View pies</a></p>
+      <p class="error">Couldn't load the account's strategy. <a routerLink="/strategies">View strategies</a></p>
     }
   `,
   styles: `
