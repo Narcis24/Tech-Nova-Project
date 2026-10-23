@@ -70,21 +70,25 @@ export const routes: Routes = [
             loadComponent: () => import('./features/orders/orders.component').then((m) => m.OrdersComponent),
           },
           {
-            path: 'pies/new',
+            path: 'strategies/new',
             loadComponent: () => import('./features/pies/pie-editor.component').then((m) => m.PieEditorComponent),
           },
           {
-            path: 'pies/:pieId/edit',
+            path: 'strategies/:pieId/edit',
             loadComponent: () => import('./features/pies/pie-editor.component').then((m) => m.PieEditorComponent),
           },
           {
-            path: 'pies/:pieId',
+            path: 'strategies/:pieId',
             loadComponent: () => import('./features/pies/pie-detail.component').then((m) => m.PieDetailComponent),
           },
           {
-            path: 'pies',
+            path: 'strategies',
             loadComponent: () => import('./features/pies/pies.component').then((m) => m.PiesComponent),
           },
+          // Old links from when strategies were called pies
+          { path: 'pies/:pieId/edit', redirectTo: 'strategies/:pieId/edit' },
+          { path: 'pies/:pieId', redirectTo: 'strategies/:pieId' },
+          { path: 'pies', redirectTo: 'strategies' },
           {
             path: 'accounts/:accountId/rebalance',
             loadComponent: () =>

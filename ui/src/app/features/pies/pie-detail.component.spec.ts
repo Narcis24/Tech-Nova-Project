@@ -62,8 +62,8 @@ describe('PieDetailComponent', () => {
     expect(root.querySelector('.description')!.textContent).toBe('My core pie');
     const rows = Array.from(root.querySelectorAll('.holdings li')).map(cells);
     expect(rows).toEqual(['AAPL Apple 50%', 'MSFT Microsoft 40%', 'Cash 10%']);
-    expect(root.querySelector('a.edit')!.getAttribute('href')).toBe('/pies/p1/edit');
-    expect(root.querySelector('.back')!.getAttribute('href')).toBe('/pies');
+    expect(root.querySelector('a.edit')!.getAttribute('href')).toBe('/strategies/p1/edit');
+    expect(root.querySelector('.back')!.getAttribute('href')).toBe('/strategies');
   });
 
   it('offers to publish a private pie', () => {

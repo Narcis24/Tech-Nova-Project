@@ -68,7 +68,7 @@ describe('DiscoverComponent', () => {
   it('links the tabs', () => {
     create();
     const links = Array.from(root.querySelectorAll('app-pie-tabs a'));
-    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/pies', '/discover']);
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/strategies', '/discover']);
   });
 
   it('shows a loading state', () => {

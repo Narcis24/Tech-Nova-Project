@@ -120,7 +120,7 @@ describe('RebalancePreviewComponent', () => {
     );
     const root = render();
     expect(root.querySelector('[role="alert"]')?.textContent).toContain('No strategy is linked');
-    expect(root.querySelector('a')?.getAttribute('href')).toBe('/pies');
+    expect(root.querySelector('a')?.getAttribute('href')).toBe('/strategies');
     expect(root.querySelector('table')).toBeNull();
   });
 

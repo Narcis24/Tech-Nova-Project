@@ -4,7 +4,7 @@
   <output class="empty">Loading your strategy…</output>
 } @else if (loadError()) {
   <p class="error" role="alert">Couldn't load this strategy.</p>
-  <a routerLink="/pies">Back to strategies</a>
+  <a routerLink="/strategies">Back to strategies</a>
 } @else {
   @if (instrumentError()) {
     <p class="error" role="alert">Couldn't load stocks. Reload the page to try again.</p>
@@ -90,7 +90,7 @@
 
     <div class="actions">
       <button type="submit" [disabled]="!valid() || saving()">Save</button>
-      <a routerLink="/pies">Cancel</a>
+      <a routerLink="/strategies">Cancel</a>
     </div>
   </form>
 }

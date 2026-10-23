@@ -1,6 +1,6 @@
 <div class="top">
   <h1>Strategies</h1>
-  <a class="new" routerLink="/pies/new">New strategy</a>
+  <a class="new" routerLink="/strategies/new">New strategy</a>
 </div>
 <app-pie-tabs />
 
@@ -78,7 +78,7 @@
       <li class="pie-card">
         <app-donut-chart [segments]="segments(pie)" [size]="120" />
         <h2>
-          <a [routerLink]="['/pies', pie.pieId]">{{ pie.name }}</a>
+          <a [routerLink]="['/strategies', pie.pieId]">{{ pie.name }}</a>
         </h2>
         @if (pie.publishedAt) {
           <span class="public">Public</span>
@@ -91,7 +91,7 @@
         <p class="cash">Cash {{ pie.cashPct }}%</p>
         <div class="actions">
           <button type="button" (click)="use(pie)" [disabled]="!accountId()">Use for this account</button>
-          <a class="edit" [routerLink]="['/pies', pie.pieId, 'edit']">Edit</a>
+          <a class="edit" [routerLink]="['/strategies', pie.pieId, 'edit']">Edit</a>
           <button type="button" class="secondary danger" (click)="remove(pie)">Delete</button>
         </div>
       </li>

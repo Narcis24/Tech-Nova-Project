@@ -139,10 +139,10 @@ describe('PiesComponent', () => {
 
   it('links each pie name to its details, and the tabs to Discover', () => {
     create();
-    expect(root.querySelector('.pie-card h2 a')!.getAttribute('href')).toBe('/pies/p1');
+    expect(root.querySelector('.pie-card h2 a')!.getAttribute('href')).toBe('/strategies/p1');
     expect(root.querySelector('.pie-card .public')).toBeNull();
     expect(Array.from(root.querySelectorAll('app-pie-tabs a')).map((a) => a.getAttribute('href'))).toEqual([
-      '/pies',
+      '/strategies',
       '/discover',
     ]);
   });
@@ -155,8 +155,8 @@ describe('PiesComponent', () => {
 
   it('links to new and edit', () => {
     create();
-    expect(root.querySelector('a.new')!.getAttribute('href')).toBe('/pies/new');
-    expect(root.querySelector('.pie-card a.edit')!.getAttribute('href')).toBe('/pies/p1/edit');
+    expect(root.querySelector('a.new')!.getAttribute('href')).toBe('/strategies/new');
+    expect(root.querySelector('.pie-card a.edit')!.getAttribute('href')).toBe('/strategies/p1/edit');
   });
 
   it('deletes after confirming', () => {

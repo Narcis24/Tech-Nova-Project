@@ -16,7 +16,7 @@ test('publishes a pie, finds it on Discover, then unpublishes it', async ({ page
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
 
-  await page.goto('/pies');
+  await page.goto('/strategies');
   await page.getByLabel('Username', { exact: true }).fill(username);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();

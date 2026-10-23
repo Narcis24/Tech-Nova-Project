@@ -27,7 +27,7 @@ import { AccountPieControllerService, AccountPieResponse } from '../../generated
         }
       </div>
     } @else if (error()) {
-      <p class="error">Couldn't load the account's strategy. <a routerLink="/pies">View strategies</a></p>
+      <p class="error">Couldn't load the account's strategy. <a routerLink="/strategies">View strategies</a></p>
     }
   `,
   styles: `

@@ -127,7 +127,7 @@ export class PieEditorComponent {
     this.saving.set(true);
     this.saveError.set(null);
     (this.pieId ? this.api.update(this.pieId, body) : this.api.create(body)).subscribe({
-      next: () => this.router.navigateByUrl('/pies'),
+      next: () => this.router.navigateByUrl('/strategies'),
       error: (error: unknown) => {
         this.saving.set(false);
         this.saveError.set(saveError(error));
