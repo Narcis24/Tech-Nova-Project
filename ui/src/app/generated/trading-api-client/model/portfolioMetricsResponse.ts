@@ -18,5 +18,7 @@ export interface PortfolioMetricsResponse {
     totalUnrealizedPnL?: number;
     portfolioReturn?: number;
     positions?: Array<PositionResponse>;
+    lockedCash?: number;
+    availableCash?: number;
 }
 

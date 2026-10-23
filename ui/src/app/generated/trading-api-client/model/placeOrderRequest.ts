@@ -17,5 +17,7 @@ export interface PlaceOrderRequest {
     quantity: number;
     price?: number;
     idempotencyKey: string;
+    timeInForce?: string;
+    expiresOn?: string;
 }
 

@@ -16,5 +16,8 @@ export interface PortfolioSnapshotResponse {
     totalMarketValue?: number;
     totalPortfolioValue?: number;
     positions?: Array<PositionResponse>;
+    lockedCash?: number;
+    availableCash?: number;
+    lockedShares?: { [key: string]: number; };
 }
 

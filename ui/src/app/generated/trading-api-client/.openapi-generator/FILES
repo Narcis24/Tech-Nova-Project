@@ -22,8 +22,10 @@ encoder.ts
 index.ts
 model/accountPieResponse.ts
 model/accountResponse.ts
+model/adminAccountResponse.ts
 model/adminAnalyticsResponse.ts
 model/adminLiveResponse.ts
+model/adminUserDetailResponse.ts
 model/adminUserResponse.ts
 model/analyticsBucket.ts
 model/analyticsTotals.ts
@@ -33,8 +35,9 @@ model/cashAmountRequest.ts
 model/copyPieRequest.ts
 model/createUserRequest.ts
 model/createUserResponse.ts
+model/financialPeriod.ts
+model/fundamentalsResponse.ts
 model/instrumentResponse.ts
-model/linkPieRequest.ts
 model/journalDay.ts
 model/journalDaySummary.ts
 model/journalDifference.ts
@@ -44,6 +47,7 @@ model/journalQuote.ts
 model/journalReasonCount.ts
 model/journalTimelineEntry.ts
 model/journalVerifyResult.ts
+model/linkPieRequest.ts
 model/liveHour.ts
 model/liveInstrument.ts
 model/marketAssetResponse.ts
@@ -63,6 +67,7 @@ model/priceHistoryPoint.ts
 model/priceResponse.ts
 model/publicPieResponse.ts
 model/publicPieSummary.ts
+model/quoteResponse.ts
 model/rebalanceLegResponse.ts
 model/rebalancePreviewResponse.ts
 model/rebalanceRunResponse.ts
@@ -71,6 +76,7 @@ model/riskWarning.ts
 model/savePieRequest.ts
 model/sliceDrift.ts
 model/topTradedInstrument.ts
+model/updateAccountStatusRequest.ts
 model/updateRiskLimitRequest.ts
 model/updateRolesRequest.ts
 param.ts
