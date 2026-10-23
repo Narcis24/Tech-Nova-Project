@@ -42,6 +42,25 @@ describe('OrderConfirmationComponent', () => {
   const confirmButton = (root: HTMLElement) =>
     root.querySelector<HTMLButtonElement>('.actions button:not(.secondary)')!;
 
+  it('says how long a limit order is good for, and nothing for a market order', () => {
+    TestBed.configureTestingModule({ imports: [OrderConfirmationComponent], providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(OrderConfirmationComponent);
+    fixture.componentRef.setInput('order', order);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.textContent).not.toContain('Good for');
+    fixture.componentRef.setInput('order', {
+      ...order,
+      orderType: 'LIMIT',
+      price: 150,
+      timeInForce: 'GTD',
+      expiresOn: '2026-10-30',
+    });
+    fixture.detectChanges();
+    expect(root.textContent).toContain('Good for');
+    expect(root.textContent).toContain('Until Oct 30, 2026');
+  });
+
   it('looks as before when there are no warnings', () => {
     const root = setup();
     expect(root.querySelector('.warnings')).toBeNull();

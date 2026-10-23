@@ -1,8 +1,6 @@
 .nav-bar {
-  max-width: 1360px;
-  margin: 0 auto;
   box-sizing: border-box;
-  padding: 20px 56px;
+  padding: 20px clamp(24px, 3.5vw, 72px);
   display: flex;
   flex-wrap: wrap;
   align-items: center;

@@ -7,6 +7,7 @@ import { AccountService } from '../../services/account.service';
 import {
   PortfolioControllerService,
   PriceControllerService,
+  AccountControllerService,
   InstrumentControllerService,
   OrderControllerService,
   OrderResponse,
@@ -52,8 +53,12 @@ describe('OrderFormComponent', () => {
               of({ accountId: id, cashBalance: 50000, positions: [{ symbol: 'AAPL', quantity: 120 }] }),
           },
         },
-        { provide: PriceControllerService, useValue: { getPriceHistory: () => of([]) } },
-        { provide: InstrumentControllerService, useValue: { getInstruments: () => of([]) } },
+        { provide: PriceControllerService, useValue: { getPriceHistory: () => of([]), getQuote: () => of(null) } },
+        { provide: AccountControllerService, useValue: { getAccountOrders: () => of([]) } },
+        {
+          provide: InstrumentControllerService,
+          useValue: { getInstruments: () => of([]), getFundamentals: () => of(null) },
+        },
       ],
     });
     const fixture = TestBed.createComponent(OrderFormComponent);
@@ -222,6 +227,72 @@ describe('OrderFormComponent', () => {
     component.prepare();
     expect(component.validationIssue()).toContain('120 AAPL');
     expect(api.placeOrder).not.toHaveBeenCalled();
+  });
+
+  it('checks buys against cash and sells against shares that pending orders have not locked', () => {
+    const component = setup().componentInstance;
+    component.context.set({
+      id: 'ACC001',
+      loading: false,
+      error: false,
+      portfolio: {
+        accountId: 'ACC001',
+        cashBalance: 50000,
+        lockedCash: 30000,
+        availableCash: 20000,
+        lockedShares: { AAPL: 100 },
+        positions: [{ symbol: 'AAPL', quantity: 120 }],
+      },
+    });
+    component.setSide('BUY');
+    expect(component.cash()).toBe(20000);
+    expect(component.maxShares()).toBe(200);
+    component.form.controls.quantity.setValue(201);
+    expect(component.validationIssue()).toContain('locked in pending orders');
+    component.setSide('SELL');
+    expect(component.held()).toBe(20);
+    component.form.controls.quantity.setValue(21);
+    expect(component.validationIssue()).toBe(
+      'You hold 120 AAPL and 100 are in pending sell orders, so you can sell up to 20.',
+    );
+    component.form.controls.quantity.setValue(20);
+    expect(component.validationIssue()).toBeNull();
+  });
+
+  it('sends a day limit order by default, and the time in force the user picks', () => {
+    const component = setup().componentInstance;
+    component.setSide('BUY');
+    component.setOrderType('LIMIT');
+    component.form.controls.quantity.setValue(1);
+    const checked = () => risk.check.calls.mostRecent().args[0];
+
+    component.prepare();
+    expect(checked().timeInForce).toBe('DAY');
+    expect(checked().expiresOn).toBeUndefined();
+
+    component.setTimeInForce('GTC');
+    component.prepare();
+    expect(checked().timeInForce).toBe('GTC');
+
+    component.setTimeInForce('GTD');
+    risk.check.calls.reset();
+    component.prepare();
+    expect(component.form.controls.expiresOn.invalid).toBeTrue();
+    component.form.controls.expiresOn.setValue('2000-01-01');
+    expect(component.form.controls.expiresOn.invalid).toBeTrue();
+    expect(risk.check).not.toHaveBeenCalled();
+
+    component.form.controls.expiresOn.setValue(component.maxExpiry);
+    component.prepare();
+    expect(checked()).toEqual(jasmine.objectContaining({ timeInForce: 'GTD', expiresOn: component.maxExpiry }));
+  });
+
+  it('sends no time in force for market orders, which do not expire', () => {
+    const component = setup().componentInstance;
+    component.setSide('BUY');
+    component.setTimeInForce('GTC');
+    component.prepare();
+    expect(risk.check.calls.mostRecent().args[0].timeInForce).toBeUndefined();
   });
 
   it('validates limit price precision immediately and clears price validation for market orders', () => {

@@ -9,6 +9,22 @@
   min-width: 0;
   position: relative;
 }
+/* Wide screens: chart across two columns with the stats under it, the ticket kept in view on the right */
+@media (min-width: 1200px) {
+  :host {
+    display: grid;
+    grid-template-columns: 1fr 1fr 420px;
+    gap: 40px;
+  }
+  .market-column {
+    grid-column: span 2;
+  }
+  .order-ticket {
+    grid-area: 1 / 3 / 3;
+    position: sticky;
+    top: 24px;
+  }
+}
 .order-ticket {
   --trade-side: var(--primary-color);
   flex: 1 1 380px;
@@ -183,6 +199,9 @@ input {
 .limit-control input::-webkit-inner-spin-button {
   appearance: none;
 }
+.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 .execution-card {
   display: flex;
   flex-direction: column;
@@ -351,6 +370,9 @@ dd {
     flex: auto;
     width: 100%;
   }
+  .instrument-picker input {
+    font-size: 16px;
+  }
   .mobile-back {
     display: flex;
     align-items: center;
@@ -477,11 +499,6 @@ dd {
 .submit-order:not(:disabled):hover {
   filter: brightness(0.94);
 }
-@media (max-width: 767.98px) {
-  .instrument-picker input {
-    font-size: 16px;
-  }
-}
 
 @media (max-width: 767.98px) and (max-height: 740px) {
   :host {
@@ -512,11 +529,9 @@ dd {
   }
 }
 
+/* Read out, never seen */
 .loading-context {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
   clip-path: inset(50%);
 }
 

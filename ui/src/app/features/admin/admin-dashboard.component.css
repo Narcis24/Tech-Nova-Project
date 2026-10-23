@@ -26,14 +26,6 @@
   overflow-wrap: anywhere;
 }
 
-/* Dashboard navigation links */
-.manage-link {
-  display: block;
-  width: fit-content;
-  margin-bottom: 12px;
-  color: var(--primary-color);
-}
-
 .today {
   margin: 0;
   font-size: 14px;
@@ -51,6 +43,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  width: fit-content;
+  margin-bottom: 12px;
   padding: 9px 16px;
   border: 1px solid var(--border-color);
   border-radius: 12px;

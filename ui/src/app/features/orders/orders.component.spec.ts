@@ -36,6 +36,8 @@ const ORDERS: OrderResponse[] = [
     price: 400,
     status: 'PENDING',
     createdOn: NOW,
+    timeInForce: 'DAY',
+    expiresAt: '2026-10-21T20:00:00Z',
   },
   {
     orderId: 'o3',
@@ -106,6 +108,10 @@ describe('OrdersComponent', () => {
     expect(rows()[1].querySelector('.status')?.textContent).toContain('Open');
   });
 
+  it('shows when a pending limit order expires, in market time', () => {
+    expect(rows()[1].querySelector('.detail')?.textContent).toContain('Expires Oct 21, 4:00 PM ET');
+    expect(rows()[0].querySelector('.detail')?.textContent).not.toContain('Expires');
+  });
   it('shows the rejection reason under a rejected order', () => {
     expect(rows()[2].querySelector('.reason')?.textContent).toContain('Only 1 share held');
   });

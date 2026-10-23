@@ -34,7 +34,7 @@
     <section class="summary" aria-label="Portfolio summary">
       <app-balance-card [portfolio]="portfolio" [dayChange]="store.dayChange()" /><app-cash-actions
         [accountId]="account()!.accountId"
-        [cashBalance]="portfolio.cashBalance ?? 0"
+        [cashBalance]="portfolio.availableCash ?? portfolio.cashBalance ?? 0"
         (completed)="store.refresh()"
       />
     </section>
@@ -63,7 +63,15 @@
         <strong>Cash</strong>
         <div>
           <p>{{ portfolio.cashBalance | currency: 'USD' }}</p>
-          <span>{{ (store.allocation(portfolio.cashBalance) | percent: '1.1-1') ?? '—' }}, ready to trade</span>
+          @if (+(portfolio.lockedCash ?? 0) > 0) {
+            <span>{{ (store.allocation(portfolio.cashBalance) | percent: '1.1-1') ?? '—' }} of your portfolio</span>
+            <span class="locked"
+              >{{ portfolio.availableCash | currency: 'USD' }} ready to trade,
+              {{ portfolio.lockedCash | currency: 'USD' }} in pending orders</span
+            >
+          } @else {
+            <span>{{ (store.allocation(portfolio.cashBalance) | percent: '1.1-1') ?? '—' }}, ready to trade</span>
+          }
         </div>
         <a routerLink="/trade">Buy an asset →</a>
       </div>

@@ -30,6 +30,24 @@ describe('BalanceCardComponent', () => {
     expect(fixture.nativeElement.querySelector('.change').textContent).not.toContain('%');
   });
 
+  it('shows the cash free to trade, and what pending orders lock, only when they lock some', () => {
+    const fixture = setup();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.cash strong').textContent).toContain('$20.00');
+    expect(fixture.nativeElement.querySelector('.cash .locked')).toBeNull();
+    fixture.componentRef.setInput('portfolio', {
+      totalPortfolioValue: 120,
+      cashBalance: 20,
+      lockedCash: 15,
+      availableCash: 5,
+    });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.cash strong').textContent).toContain('$5.00');
+    expect(fixture.nativeElement.querySelector('.cash .locked').textContent).toContain(
+      '+ $15.00 locked in pending orders',
+    );
+  });
+
   it('hides the change line when it is unavailable', () => {
     const fixture = setup();
     fixture.detectChanges();

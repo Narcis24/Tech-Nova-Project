@@ -50,6 +50,7 @@
       [instrumentName]="instrumentName()"
       (changeInstrument)="toggleInstrumentPicker()"
       (quoteChange)="onQuote($event)"
+      (historyChange)="history.set($event)"
     />
   </div>
   <form
@@ -138,6 +139,45 @@
           </div>
         }
       </div>
+      @if (isLimit()) {
+        <div class="limit-field">
+          <!-- Names the group below through aria-labelledby; styled like the other field labels -->
+          <label id="good-for-label">Good for</label>
+          <div class="order-types three" role="group" aria-labelledby="good-for-label">
+            @for (option of timeInForceOptions; track option.value) {
+              <button
+                type="button"
+                [attr.aria-pressed]="values()?.timeInForce === option.value"
+                (click)="setTimeInForce(option.value)"
+              >
+                <strong>{{ option.label }}</strong
+                ><span>{{ option.hint }}</span>
+              </button>
+            }
+          </div>
+          @if (isGtd()) {
+            <label for="trade-expires">Expires at the market close on</label>
+            <input
+              id="trade-expires"
+              type="date"
+              formControlName="expiresOn"
+              [min]="minExpiry"
+              [max]="maxExpiry"
+              [attr.aria-invalid]="
+                form.controls.expiresOn.invalid && (form.controls.expiresOn.dirty || form.controls.expiresOn.touched)
+              "
+              aria-describedby="expires-error"
+            />
+            <p id="expires-error" class="input-help" aria-live="polite">
+              @if (
+                form.controls.expiresOn.invalid && (form.controls.expiresOn.dirty || form.controls.expiresOn.touched)
+              ) {
+                Pick a date from tomorrow up to 90 days ahead.
+              }
+            </p>
+          }
+        </div>
+      }
       <div class="execution-card">
         <div
           class="price-ruler"
@@ -170,9 +210,15 @@
       </div>
       <dl class="order-totals">
         <div>
-          <dt>Buying power (cash)</dt>
+          <dt>Buying power (available cash)</dt>
           <dd>{{ (cash() | currency: 'USD') ?? '—' }}</dd>
         </div>
+        @if (lockedCash() > 0) {
+          <div>
+            <dt>Locked in pending orders</dt>
+            <dd>{{ lockedCash() | currency: 'USD' }}</dd>
+          </div>
+        }
         <div>
           <dt>
             {{
@@ -229,6 +275,15 @@
       </button>
     </fieldset>
   </form>
+  <app-key-stats [points]="history()" />
+  <app-symbol-activity
+    [accountId]="accountId()"
+    [symbol]="chartSymbol()"
+    [portfolio]="portfolio()"
+    [revision]="contextRevision()"
+    (changed)="refreshContext()"
+  />
+  <app-financials [symbol]="chartSymbol()" />
 }
 
 @if (review() || result()) {

@@ -1,8 +1,7 @@
+/* Full width at every size; the side margins grow with the screen */
 main {
-  max-width: 1360px;
-  margin: 0 auto;
   box-sizing: border-box;
-  padding: 32px 56px 88px;
+  padding: 32px clamp(24px, 3.5vw, 72px) 88px;
 }
 
 /* Room at the bottom for the nav bar's fixed tab bar */
