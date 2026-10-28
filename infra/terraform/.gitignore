@@ -1,0 +1,7 @@
+# Provider downloads and local state: never committed (state can hold secrets)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+# The provider lock file IS committed, so everyone gets the same provider versions

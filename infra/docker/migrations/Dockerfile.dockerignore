@@ -1,0 +1,4 @@
+# Used instead of the repository's .dockerignore for this Dockerfile (BuildKit): only the migrations and the runner
+*
+!db/migrations
+!infra/docker/migrations/migrate.sh
